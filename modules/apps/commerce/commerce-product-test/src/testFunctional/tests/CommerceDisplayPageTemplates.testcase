@@ -982,7 +982,7 @@ definition {
 
 			DropdownMenuItem.click(menuItem = "Select Other Item");
 
-			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
 
 			var orderId = CommerceJSONOrdersAPI._getCommerceOrder();
 
