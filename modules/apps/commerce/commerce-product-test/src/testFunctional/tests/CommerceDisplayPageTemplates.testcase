@@ -992,29 +992,12 @@ definition {
 		}
 
 		task ("Then it is verified that the mapped fragments for that order are listed") {
-
-			//CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "Commerce Account,1,Buyer User,$ 39.00,true");
-			//PageEditor.closeSidebar(tabName = "Fragments and Widgets");
-
-			//Click(locator1 = "//div[contains(@class,'page-editor__sidebar__buttons')]//*[@*='Fragments and Widgets']");
-
-			AssertTextEquals(
-				key_text = "Commerce Account",
-				locator1 = "Fragment#EDITABLE_FIELD_CONTENT");
-
-			//for (var entry : list "Commerce Account,1,Buyer User,$ 39.00,true") {
-			//	AssertElementPresent(
-			//		key_text = "${entry}",
-			//		locator1 = "Fragment#EDITABLE_FIELD_CONTENT");
-			//PageEditor.viewFragmentEditableText(
-			//	editableText = "${entry}",
-			//	fragmentName = "Heading",
-			//	id = "element-text");
-			//AssertElementPresent(
-			//	key_entry = "${entry}",
-			//	locator1 = "VisualizeObjectDisplayPage#DISPLAY_ENTRY");
-			//}
-
+			for (var entry : list "Commerce Account,1,Buyer User,$ 39.00,true") {
+				PageEditor.viewFragmentEditableText(
+					editableText = "${entry}",
+					fragmentName = "Heading",
+					id = "element-text");
+			}
 		}
 	}
 
