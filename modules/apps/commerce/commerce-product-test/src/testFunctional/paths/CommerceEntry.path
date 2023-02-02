@@ -341,6 +341,16 @@
 	<td></td>
 </tr>
 <tr>
+	<td>OVERRIDE_DEFAULT_DISPLAY_PAGE_SIDE_PANEL_CHOOSE_BUTTON</td>
+	<td>//button[contains(@id, '_com_liferay_commerce_channel_web_internal_portlet_CommerceChannelsPortlet_chooseLayoutPageTemplateEntry')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OVERRIDE_DEFAULT_DISPLAY_PAGE_MODAL_CHOOSE_BUTTON</td>
+	<td>//*[contains(text(),'${key_dptName}')]/ancestor::tr[contains(@data-qa-id,'row')]//*[contains(@class, 'lfr-btn-label') and text()='Choose']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>CURRENCY_SELECT</td>
 	<td>//div[label[contains(.,'Store Currency')]]/select</td>
 	<td></td>
