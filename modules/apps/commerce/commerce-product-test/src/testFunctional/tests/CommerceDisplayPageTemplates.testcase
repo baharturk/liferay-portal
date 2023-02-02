@@ -1016,6 +1016,115 @@ definition {
 		}
 	}
 
+	@description = "This is a test for COMMERCE-9433 In the Product Display Page tab on Channels, you can select a display page template for a specific product"
+	@priority = "3"
+	test CanSelectDefaultDisplayPageTemplateForSpecificProduct {
+		property portal.acceptance = "false";
+
+		task ("Given a new Commerce Product type display page template with fragments created and mapped with fields") {
+			CommerceDisplayPageTemplates.addMappedDisplayPageTemplateEntry(
+				contentType = "Commerce Product",
+				displayPageName = "Test Commerce Product DPT",
+				fieldsList = "Availability Status,Inventory,Author Name",
+				fragmentName = "Heading",
+				groupName = "Minium",
+				siteURLKey = "minium");
+		}
+
+		task ("And admin sets the DPT for a specific product by navigating to Channels page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Product Display Pages");
+
+			CommerceChannels.addOverrideDefaultProductDisplayPageTemplate(
+				displayPageTemplateName = "Test Commerce Product DPT",
+				displayPageTemplateTab = "Display Page Template",
+				product = "ABS Sensor");
+		}
+
+		task ("When buyer user logs in and goes to the Catalog page") {
+			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = "test",
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+		}
+
+		task ("And clicks on ABS Sensor product") {
+			CommerceNavigator.searchCatalog(productName = "ABS Sensor");
+
+			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "ABS Sensor");
+		}
+
+		task ("Then the mapped fields of the DPT are shown correctly for the product") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Commerce Product DPT");
+
+			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "available,180,Test Test");
+		}
+
+		task ("And the DPT is not applied to another product") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoProductDetails(productName = "U-Joint");
+
+			FrontStore.assertProductDetails(
+				productListPrice = "24.00",
+				productName = "U-Joint",
+				productSKU = "MIN55861");
+		}
+
+		task ("When admin edits the DPT product") {
+			User.logoutAndLoginPG();
+
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Product Display Pages");
+
+			CommerceChannels.editOverrideProductDisplayPage(
+				newProduct = "Bearings",
+				product = "ABS Sensor");
+
+			CommerceEntry.assertNoDisplayPageOverride(
+				entryName = "ABS Sensor",
+				layout = "Test Commerce Product DPT");
+
+			CommerceEntry.assertDisplayPageOverride(
+				entryName = "Bearings",
+				layout = "Test Commerce Product DPT");
+		}
+
+		task ("When admin removes the DPT product") {
+			CommerceEntry.deleteCommerceEntry(key_value = "Bearings");
+
+			CommerceEntry.assertNoDisplayPageOverride(
+				entryName = "ABS Sensor",
+				layout = "Test Commerce Product DPT");
+		}
+
+		task ("Then Bearings product does not show DPT mapped fields but the general product details") {
+			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = "test",
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+
+			CommerceNavigator.searchCatalog(productName = "Bearings");
+
+			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "Bearings");
+
+			FrontStore.assertProductDetails(
+				productListPrice = "70.00",
+				productName = "Bearings",
+				productSKU = "MIN00673");
+		}
+	}
+
 	@description = "Verify that order fields values are mapped to fragments."
 	@priority = "3"
 	test CanUseCommerceOrderFieldsWithFragments {
