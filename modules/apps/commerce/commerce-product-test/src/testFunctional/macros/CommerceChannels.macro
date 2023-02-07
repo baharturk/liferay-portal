@@ -91,23 +91,31 @@ definition {
 			edit = "true",
 			product = "${product}");
 
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Click(
+			key_tabName = "${displayPageTemplateTab}",
+			locator1 = "CommerceEntry#OVERRIDE_DEFAULT_DISPLAY_PAGE_SIDE_PANEL_CHOOSE_BUTTON");
+
+		SelectFrame.selectFrameTop();
+
+		SelectFrame(
+			key_title = "Select Product Display Page",
+			locator1 = "IFrame#MODAL_ANY");
+
+		Click(
+			key_siteName = "${displayPageTemplateName}",
+			locator1 = "CommerceNavigation#CHOOSE_SITE_BUTTON");
+
 		SelectFrame.selectFrameTop();
 
 		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
 
-		Click(locator1 = "CommerceEntry#OVERRIDE_DEFAULT_DISPLAY_PAGE_SIDE_PANEL_CHOOSE_BUTTON");
+		Click(locator1 = "Button#SAVE");
 
-		WaitForElementPresent(locator1 = "IFrame#MODAL_BODY");
+		Alert.viewSuccessMessage();
 
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
-
-		Click(
-			key_dptName = "${displayPageTemplateName}",
-			locator1 = "CommerceEntry#OVERRIDE_DEFAULT_DISPLAY_PAGE_MODAL_CHOOSE_BUTTON");
-
-		SelectFrame.selectFrameTop();
-
-		Button.clickSave();
+		SelectFrameTop();
 
 		Click(locator1 = "Icon#CLOSE");
 	}
