@@ -342,7 +342,7 @@
 </tr>
 <tr>
 	<td>OVERRIDE_DEFAULT_DISPLAY_PAGE_SIDE_PANEL_CHOOSE_BUTTON</td>
-	<td>//button[contains(@id, '_com_liferay_commerce_channel_web_internal_portlet_CommerceChannelsPortlet_chooseLayoutPageTemplateEntry')]</td>
+	<td>//*[contains(.,'${key_tabName}')]//..//button[contains(.,'Choose')]</td>
 	<td></td>
 </tr>
 <tr>
