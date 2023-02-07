@@ -171,6 +171,143 @@ definition {
 		}
 	}
 
+	@description = "This is a test for COMMERCE-9433 A default display page template for a specific product can override another display page template that is marked as default for all products"
+	@priority = "3"
+	test CanDefaulDPTForSpecificProductOverrideDefaultMarkedDPT {
+		property portal.acceptance = "false";
+
+		task ("Given a Commerce Product type display page template with fragments created and mapped with fields") {
+			CommerceDisplayPageTemplates.addMappedDisplayPageTemplateEntry(
+				contentType = "Commerce Product",
+				displayPageName = "Test Commerce Product DPT",
+				fieldsList = "Availability Status,Inventory,Author Name",
+				fragmentName = "Heading",
+				groupName = "Minium",
+				siteURLKey = "minium");
+		}
+
+		task ("And a second Commerce Product type display page template with fragments created and mapped with fields and marked as default") {
+			CommerceDisplayPageTemplates.addMappedDisplayPageTemplateEntry(
+				contentType = "Commerce Product",
+				displayPageName = "New Commerce Product DPT",
+				fieldsList = "Name,SKU",
+				fragmentName = "Heading",
+				groupName = "Minium",
+				siteURLKey = "minium");
+
+			LexiconEntry.gotoEntryMenuItem(
+				menuItem = "Mark as Default",
+				rowEntry = "New Commerce Product DPT");
+
+			Alert.viewSuccessMessage();
+		}
+
+		task ("And the first DPT is set as default for a specific product") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Product Display Pages");
+
+			CommerceChannels.addOverrideDefaultProductDisplayPageTemplate(
+				displayPageTemplateName = "Test Commerce Product DPT",
+				displayPageTemplateTab = "Display Page Template",
+				product = "ABS Sensor");
+		}
+
+		task ("When buyer user logs in and goes to the Catalog page") {
+			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = "test",
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+		}
+
+		task ("And clicks on ABS Sensor product") {
+			CommerceNavigator.searchCatalog(productName = "ABS Sensor");
+
+			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "ABS Sensor");
+		}
+
+		task ("Then the mapped fields of the first DPT are shown correctly for the product") {
+			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "available,140,Test Test");
+		}
+
+		task ("And the second default marked DPT mapped fields are shown for another product") {
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
+
+			CommerceNavigator.gotoProductDetails(productName = "U-Joint");
+
+			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "U-Joint,MIN55861");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-9433 A default display page template for a specific product can override a default product display page that redirects the products to other public pages"
+	@priority = "3"
+	test CanDefaulDPTForSpecificProductOverrideDefaultProductDisplayPage {
+		property portal.acceptance = "false";
+
+		task ("Given a new Commerce Product type display page template with fragments created and mapped with fields") {
+			CommerceDisplayPageTemplates.addMappedDisplayPageTemplateEntry(
+				contentType = "Commerce Product",
+				displayPageName = "Test Commerce Product DPT",
+				fieldsList = "Availability Status,Inventory,Author Name",
+				fragmentName = "Heading",
+				groupName = "Minium",
+				siteURLKey = "minium");
+		}
+
+		task ("And a Default Product Display Page is set") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Product Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Account Management",
+				pageType = "Public");
+		}
+
+		task ("And the Default Display Page Template is set for a specific product") {
+			CommerceChannels.addOverrideDefaultProductDisplayPageTemplate(
+				displayPageTemplateName = "Test Commerce Product DPT",
+				displayPageTemplateTab = "Display Page Template",
+				product = "ABS Sensor");
+		}
+
+		task ("When buyer user logs in and goes to the Catalog page") {
+			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = "test",
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+		}
+
+		task ("And clicks on ABS Sensor product") {
+			CommerceNavigator.searchCatalog(productName = "ABS Sensor");
+
+			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "ABS Sensor");
+		}
+
+		task ("Then the mapped fields of the DPT are shown correctly for the product") {
+			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "available,140,Test Test");
+		}
+
+		task ("And the Default Display Product Page redirections is applied to another product") {
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
+
+			CommerceNavigator.gotoProductDetails(productName = "U-Joint");
+
+			AssertTextEquals(
+				key_rowNumber = "1",
+				locator1 = "WorkflowMetricsProcessListView#METRICS_OVERDUE_ITEMS_TABLE_ROW",
+				value1 = "Commerce Account");
+		}
+	}
+
 	@description = "Verify an Override Default Product Display Page overrides a Commerce Product Display Page Template marked as default."
 	@priority = "4"
 	test CanDefaultCommerceProductDPTBeOverriddenByOverrideDefaultProductDisplayPageSet {
@@ -1016,9 +1153,9 @@ definition {
 		}
 	}
 
-	@description = "This is a test for COMMERCE-9433 In the Product Display Page tab on Channels, you can select a display page template for a specific product"
+	@description = "This is a test for COMMERCE-9433 In the Product Display Page tab on Channels, we can select a display page template type Override Product Display Page for a specific product"
 	@priority = "3"
-	test CanSelectDefaultDisplayPageTemplateForSpecificProduct {
+	test CanSelectDefaultDPTAsOverrideDefaultProductDisplayPageForSpecificProduct {
 		property portal.acceptance = "false";
 
 		task ("Given a new Commerce Product type display page template with fragments created and mapped with fields") {
@@ -1060,13 +1197,11 @@ definition {
 		}
 
 		task ("Then the mapped fields of the DPT are shown correctly for the product") {
-			ControlMenu.viewHeaderTitle(headerTitle = "Test Commerce Product DPT");
-
-			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "available,180,Test Test");
+			CommerceDisplayPageTemplates.viewMappedFragmentsText(fragmentsTextList = "available,140,Test Test");
 		}
 
 		task ("And the DPT is not applied to another product") {
-			ApplicationsMenu.gotoSite(site = "Minium");
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
 
 			CommerceNavigator.gotoProductDetails(productName = "U-Joint");
 
@@ -1102,7 +1237,7 @@ definition {
 			CommerceEntry.deleteCommerceEntry(key_value = "Bearings");
 
 			CommerceEntry.assertNoDisplayPageOverride(
-				entryName = "ABS Sensor",
+				entryName = "Bearings",
 				layout = "Test Commerce Product DPT");
 		}
 
