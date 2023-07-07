@@ -254,28 +254,32 @@ definition {
 	}
 
 	macro setupB2BGuestCheckout {
-		if (isSet(pageNameList)) {
+		if (isSet(siteName)) {
+			var siteName = CommerceUtilities.convertStringToKey(string = ${siteName});
+
 			CommerceConfiguration.setupB2BGuestCheckoutPages(
 				pageNameList = "Catalog,Checkout,Search",
 				siteName = ${siteName});
 		}
 
-		CommerceChannels.openChannelsAdmin();
+		if (isSet(channelName)) {
+			CommerceChannels.openChannelsAdmin();
 
-		CommerceNavigator.gotoEntry(entryName = ${channelName});
+			CommerceNavigator.gotoEntry(entryName = ${channelName});
 
-		Check.checkToggleSwitch(
-			key_toggleSwitchLabel = "Guest Checkout",
-			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+			Check.checkToggleSwitch(
+				key_toggleSwitchLabel = "Guest Checkout",
+				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
 
-		Button.clickSave();
+			Button.clickSave();
 
-		for (var fixIsueButtonName : list "Commerce Cart,Guest Checkout Authentication") {
-			Click(
-				key_fixIssueButtonName = ${fixIsueButtonName},
-				locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
+			for (var fixIsueButtonName : list "Commerce Cart,Guest Checkout Authentication") {
+				Click(
+					key_fixIssueButtonName = ${fixIsueButtonName},
+					locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
 
-			Alert.viewSuccessMessage();
+				Alert.viewSuccessMessage();
+			}
 		}
 	}
 
@@ -289,7 +293,7 @@ definition {
 				PagesAdmin.gotoPageEllipsisMenuItem(
 					menuItem = "Permissions",
 					pageName = ${pageName},
-					parentPagesHierarchy = "Catalog");
+					parentPagesHierarchy = "Pending Orders");
 			}
 			else {
 				PagesAdmin.gotoPageEllipsisMenuItem(
