@@ -205,11 +205,10 @@ definition {
 
 			CommerceEntry.gotoMenuTab(menuTab = "Virtual");
 
-			CommerceProducts.updateProductVirtualConfiguration(
+			CommerceProducts.configureVirtualProduct(
 				activationStatus = "Pending",
-				key_contentType = "Base Information",
-				key_fieldLabel = "Activation Status",
-				virtualProductFile = "Commerce_White.jpg");
+				assertUploaded = "true",
+				attachment = "Commerce_White.jpg");
 		}
 
 		task ("And the admin enables the override for the SKU") {
@@ -317,11 +316,10 @@ definition {
 
 			CommerceEntry.gotoMenuTab(menuTab = "Virtual");
 
-			CommerceProducts.updateProductVirtualConfiguration(
+			CommerceProducts.configureVirtualProduct(
 				activationStatus = "Pending",
-				key_contentType = "Base Information",
-				key_fieldLabel = "Activation Status",
-				virtualProductFile = "Commerce_White.jpg");
+				assertUploaded = "true",
+				attachment = "Commerce_White.jpg");
 		}
 
 		task ("And the admin enables the override for the SKU") {
@@ -440,11 +438,10 @@ definition {
 
 			CommerceEntry.gotoMenuTab(menuTab = "Virtual");
 
-			CommerceProducts.updateProductVirtualConfiguration(
+			CommerceProducts.configureVirtualProduct(
 				activationStatus = "Processing",
-				key_contentType = "Base Information",
-				key_fieldLabel = "Activation Status",
-				virtualProductFile = "Commerce_White.jpg");
+				assertUploaded = "true",
+				attachment = "Commerce_White.jpg");
 		}
 
 		task ("And the admin enables the override for the SKU") {
@@ -542,11 +539,10 @@ definition {
 
 			CommerceEntry.gotoMenuTab(menuTab = "Virtual");
 
-			CommerceProducts.updateProductVirtualConfiguration(
+			CommerceProducts.configureVirtualProduct(
 				activationStatus = "Completed",
-				key_contentType = "Base Information",
-				key_fieldLabel = "Activation Status",
-				virtualProductFile = "Commerce_White.jpg");
+				assertUploaded = "true",
+				attachment = "Commerce_White.jpg");
 		}
 
 		task ("And the admin enables the override for the SKU") {
@@ -651,11 +647,10 @@ definition {
 
 			CommerceEntry.gotoMenuTab(menuTab = "Virtual");
 
-			CommerceProducts.updateProductVirtualConfiguration(
+			CommerceProducts.configureVirtualProduct(
 				activationStatus = "Pending",
-				key_contentType = "Base Information",
-				key_fieldLabel = "Activation Status",
-				virtualProductFile = "Commerce_White.jpg");
+				assertUploaded = "true",
+				attachment = "Commerce_White.jpg");
 		}
 
 		task ("And the admin enables the override for the SKU") {
@@ -792,10 +787,14 @@ definition {
 
 			CommerceEntry.gotoMenuTab(menuTab = "Virtual");
 
+			CommerceProducts.configureVirtualProduct(
+				activationStatus = "Pending",
+				assertUploaded = "true",
+				attachment = "Commerce_Blue.jpg");
+
 			CommerceProducts.updateProductVirtualConfiguration(
 				enableSample = "true",
-				sampleFileName = ${sampleFileName},
-				virtualProductFile = "Commerce_Blue.jpg");
+				sampleFileName = ${sampleFileName});
 
 			CommerceEntry.gotoMenuTab(menuTab = "SKUs");
 
