@@ -471,11 +471,17 @@ definition {
 
 	@summary = "Default summary"
 	macro configureVirtualProduct(assertUploaded = null, attachment = null, activationStatus = null, maxDownloads = null) {
+		Click(locator1 = "Button#SAVE");
+
+		Click(locator1 = "Button#PLUS");
+
+		WaitForElementPresent(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
 		Click(locator1 = "FormFields#SELECT_UPLOAD_FIELD");
 
-		SelectFrameTop();
-
-		SelectFrame(
+		SelectFrame.selectFrameNoLoading(
 			key_frameTitle = "Select File",
 			locator1 = "CommerceEntry#ANY_IFRAME");
 
@@ -487,18 +493,29 @@ definition {
 			key_filterOption = "Add",
 			locator1 = "AppBuilder#CHOOSE_SEARCH_FILTER_BY_OPTION");
 
-		SelectFrameTop();
+		SelectFrame.selectFrameTop();
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		if (isSet(version)) {
+			Type(
+				key_fieldLabel = "Version",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = ${version});
+		}
 
 		Click(locator1 = "Button#SAVE");
 
 		Alert.viewSuccessMessage();
 
-		if (isSet(assertUploaded) && (${assertUploaded} == "true")) {
-			Refresh();
+		Click(locator1 = "CommerceEntry#MODAL_BUTTON_CLOSE");
 
+		SelectFrame.selectFrameTop();
+
+		if (isSet(assertUploaded) && (${assertUploaded} == "true")) {
 			AssertElementPresent(
-				key_index = ${attachment},
-				locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
+				key_tableEntryURL = ${attachment},
+				locator1 = "ClientExtension#TABLE_ENTRY_URL_REMOTE_TABLE");
 		}
 
 		if (isSet(activationStatus) || isSet(maxDownloads)) {
@@ -830,15 +847,38 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro updateProductVirtualConfiguration(sampleFileName = null, activationStatus = null, virtualProductFile = null, key_contentType = null, key_fieldLabel = null, enableSample = null) {
+	macro updateProductVirtualConfiguration(sampleFileName = null, activationStatus = null, virtualProductFile = null, key_contentType = null, key_fieldLabel = null, enableSample = null, currentVirtualProductFile = null, version = null) {
 		if (IsElementPresent(key_accordionTitle = "details", locator1 = "CommerceEntry#ACCORDION_COLLAPSED")) {
 			Click(
 				key_accordionTitle = "details",
 				locator1 = "CommerceEntry#ACCORDION_COLLAPSED");
 		}
 
-		if (isSet(virtualProductFile)) {
+		if (isSet(virtualProductFile) && isSet(version)) {
+			Click(
+				key_value = ${currentVirtualProductFile},
+				locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+			ClickNoError(
+				key_selectAction = "Edit",
+				locator1 = "FormViewBuilder#FIELD_ELLIPSIS_ACTION");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
 			CommerceUtilities.uploadSingleFile(uploadFileName = ${virtualProductFile});
+
+			Type(
+				key_fieldLabel = "Version",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = ${version});
+
+			Click(locator1 = "Button#SAVE");
+
+			Alert.viewSuccessMessage();
+
+			Click(locator1 = "CommerceEntry#MODAL_BUTTON_CLOSE");
+
+			SelectFrame.selectFrameTop();
 		}
 
 		if (isSet(enableSample) && isSet(sampleFileName)) {
@@ -908,7 +948,17 @@ definition {
 		}
 
 		if (isSet(virtualProductFile)) {
+			Click(locator1 = "Button#SAVE");
+
+			Click(locator1 = "Button#PLUS");
+
+			WaitForElementPresent(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
 			CommerceUtilities.uploadSingleFileWithoutFrameTop(uploadFileName = ${virtualProductFile});
+
+			Click(locator1 = "Button#SAVE");
 		}
 
 		WaitForElementPresent(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
