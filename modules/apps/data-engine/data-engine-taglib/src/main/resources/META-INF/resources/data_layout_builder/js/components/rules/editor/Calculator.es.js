@@ -1,28 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
-
-import './Calculator.scss';
 
 import ClayButton from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
 import ClayForm from '@clayui/form';
 import ClayLayout from '@clayui/layout';
-import {FieldStateless, RulesSupport} from 'data-engine-js-components-web';
-import Token from 'dynamic-data-mapping-form-builder/js/expressions/Token.es';
-import Tokenizer from 'dynamic-data-mapping-form-builder/js/expressions/Tokenizer.es';
+import {
+	FieldStateless,
+	RulesSupport,
+	Token,
+	Tokenizer,
+} from 'data-engine-js-components-web';
 import React, {forwardRef, useMemo, useState} from 'react';
 
+import './Calculator.scss';
 import CalculatorButtonArea from './CalculatorButtonArea.es';
 
 function getRepeatableFields(fields) {
@@ -35,15 +28,18 @@ function getStateBasedOnExpression(expression) {
 	const tokens = Tokenizer.tokenize(expression);
 
 	if (
-		tokens.length === 0 ||
-		(tokens.length > 0 && tokens[tokens.length - 1].type !== Token.LITERAL)
+		!tokens.length ||
+		(!!tokens.length &&
+			(tokens[tokens.length - 1].type !== Token.LITERAL ||
+				tokens[tokens.length - 1].value.includes('.')))
 	) {
 		disableDot = true;
 	}
 
 	if (
-		tokens.length > 0 &&
-		tokens[tokens.length - 1].type === Token.OPERATOR
+		!!tokens.length &&
+		(tokens[tokens.length - 1].type === Token.OPERATOR ||
+			tokens[tokens.length - 1].value.slice(-1) === '.')
 	) {
 		disableOperators = true;
 	}

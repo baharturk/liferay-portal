@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.google.merchant.internal.xml;
@@ -23,14 +14,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
-import com.liferay.commerce.account.constants.CommerceAccountConstants;
+import com.liferay.account.constants.AccountConstants;
 import com.liferay.commerce.google.merchant.internal.xml.model.Feed;
 import com.liferay.commerce.google.merchant.internal.xml.model.Link;
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
 import com.liferay.commerce.product.catalog.CPQuery;
 import com.liferay.commerce.product.constants.CommerceChannelConstants;
 import com.liferay.commerce.product.data.source.CPDataSourceResult;
-import com.liferay.commerce.product.exception.InvalidCommerceChannelTypeException;
+import com.liferay.commerce.product.exception.CommerceChannelTypeException;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.product.util.CPDefinitionHelper;
@@ -63,9 +54,7 @@ import org.osgi.service.component.annotations.Reference;
  * Implementation for generating XML for Google Merchant Center feed in
  * Atom 1.0 XML format
  */
-@Component(
-	enabled = false, immediate = true, service = ProductFeedXMLGenerator.class
-)
+@Component(service = ProductFeedXMLGenerator.class)
 public class ProductFeedXMLGenerator {
 
 	public String generateProductFeedXML(long commerceChannelId)
@@ -77,7 +66,7 @@ public class ProductFeedXMLGenerator {
 		if (!CommerceChannelConstants.CHANNEL_TYPE_SITE.equals(
 				commerceChannel.getType())) {
 
-			throw new InvalidCommerceChannelTypeException(
+			throw new CommerceChannelTypeException(
 				"Cannot generate products XML for channel with ID " +
 					commerceChannelId +
 						" because channel must be site type channel");
@@ -97,10 +86,9 @@ public class ProductFeedXMLGenerator {
 
 		feed.setLink(link);
 
-		String updated = DateUtil.getCurrentDate(
-			DateUtil.ISO_8601_PATTERN, null, TimeZoneUtil.GMT);
-
-		feed.setUpdated(updated);
+		feed.setUpdated(
+			DateUtil.getCurrentDate(
+				DateUtil.ISO_8601_PATTERN, null, TimeZoneUtil.GMT));
 
 		int total = _countCPCatalogEntriesByChannel(commerceChannel);
 
@@ -115,7 +103,9 @@ public class ProductFeedXMLGenerator {
 				/* TODO: To be implemented in COMMERCE-2690.
 
 				for (CPCatalogEntry cpCatalogEntry : cpCatalogEntries) {
-					//TODO COMMERCE-2690 add XML for a product here
+
+					// TODO COMMERCE-2690 add XML for a product here
+
 				}
 				*/
 
@@ -180,7 +170,7 @@ public class ProductFeedXMLGenerator {
 				Field.STATUS, WorkflowConstants.STATUS_APPROVED
 			).put(
 				"commerceAccountGroupIds",
-				new long[] {CommerceAccountConstants.ACCOUNT_ID_GUEST}
+				new long[] {AccountConstants.ACCOUNT_ENTRY_ID_GUEST}
 			).put(
 				"commerceChannelGroupId", commerceChannel.getGroupId()
 			).build());

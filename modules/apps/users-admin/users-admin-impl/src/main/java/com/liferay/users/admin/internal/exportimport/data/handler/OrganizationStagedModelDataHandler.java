@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.internal.exportimport.data.handler;
@@ -44,7 +35,7 @@ import com.liferay.portal.kernel.service.WebsiteLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.users.admin.kernel.util.UsersAdminUtil;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -58,7 +49,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author David Mendez Gonzalez
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class OrganizationStagedModelDataHandler
 	extends BaseStagedModelDataHandler<Organization> {
 
@@ -181,19 +172,20 @@ public class OrganizationStagedModelDataHandler
 			serviceContext.setUuid(organization.getUuid());
 
 			importedOrganization = _organizationLocalService.addOrganization(
-				userId, parentOrganizationId, organization.getName(),
+				null, userId, parentOrganizationId, organization.getName(),
 				organization.getType(), organization.getRegionId(),
-				organization.getCountryId(), organization.getStatusId(),
+				organization.getCountryId(), organization.getStatusListTypeId(),
 				organization.getComments(), false, serviceContext);
 		}
 		else {
 			importedOrganization = _organizationLocalService.updateOrganization(
+				existingOrganization.getExternalReferenceCode(),
 				portletDataContext.getCompanyId(),
 				existingOrganization.getOrganizationId(), parentOrganizationId,
 				organization.getName(), organization.getType(),
 				organization.getRegionId(), organization.getCountryId(),
-				organization.getStatusId(), organization.getComments(), true,
-				null, false, serviceContext);
+				organization.getStatusListTypeId(), organization.getComments(),
+				true, null, false, serviceContext);
 		}
 
 		_importAddresses(
@@ -223,65 +215,6 @@ public class OrganizationStagedModelDataHandler
 				portletDataContext, organization, Organization.class,
 				organization.getParentOrganizationId());
 		}
-	}
-
-	@Reference(unbind = "-")
-	protected void setAddressLocalService(
-		AddressLocalService addressLocalService) {
-
-		_addressLocalService = addressLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setEmailAddressLocalService(
-		EmailAddressLocalService emailAddressLocalService) {
-
-		_emailAddressLocalService = emailAddressLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setOrganizationLocalService(
-		OrganizationLocalService organizationLocalService) {
-
-		_organizationLocalService = organizationLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setOrgLaborLocalService(
-		OrgLaborLocalService orgLaborLocalService) {
-
-		_orgLaborLocalService = orgLaborLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPasswordPolicyLocalService(
-		PasswordPolicyLocalService passwordPolicyLocalService) {
-
-		_passwordPolicyLocalService = passwordPolicyLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPasswordPolicyRelLocalService(
-		PasswordPolicyRelLocalService passwordPolicyRelLocalService) {
-
-		_passwordPolicyRelLocalService = passwordPolicyRelLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPhoneLocalService(PhoneLocalService phoneLocalService) {
-		_phoneLocalService = phoneLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setWebsiteLocalService(
-		WebsiteLocalService websiteLocalService) {
-
-		_websiteLocalService = websiteLocalService;
 	}
 
 	private void _exportAddresses(
@@ -339,12 +272,10 @@ public class OrganizationStagedModelDataHandler
 			return;
 		}
 
-		PasswordPolicy passwordPolicy =
-			_passwordPolicyLocalService.getPasswordPolicy(
-				passwordPolicyRel.getPasswordPolicyId());
-
 		StagedModelDataHandlerUtil.exportReferenceStagedModel(
-			portletDataContext, organization, passwordPolicy,
+			portletDataContext, organization,
+			_passwordPolicyLocalService.getPasswordPolicy(
+				passwordPolicyRel.getPasswordPolicyId()),
 			PortletDataContext.REFERENCE_TYPE_STRONG);
 	}
 
@@ -584,14 +515,31 @@ public class OrganizationStagedModelDataHandler
 			importedOrganization.getOrganizationId(), websites);
 	}
 
+	@Reference
 	private AddressLocalService _addressLocalService;
+
+	@Reference
 	private EmailAddressLocalService _emailAddressLocalService;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
 	private OrganizationLocalService _organizationLocalService;
+
+	@Reference
 	private OrgLaborLocalService _orgLaborLocalService;
+
+	@Reference
 	private PasswordPolicyLocalService _passwordPolicyLocalService;
+
+	@Reference
 	private PasswordPolicyRelLocalService _passwordPolicyRelLocalService;
+
+	@Reference
 	private PhoneLocalService _phoneLocalService;
+
+	@Reference
 	private WebsiteLocalService _websiteLocalService;
 
 }

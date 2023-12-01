@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.redirect.service.persistence.impl;
@@ -36,7 +27,6 @@ import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -58,7 +48,6 @@ import com.liferay.redirect.service.persistence.impl.constants.RedirectPersisten
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -85,7 +74,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {RedirectEntryPersistence.class, BasePersistence.class})
+@Component(service = RedirectEntryPersistence.class)
 public class RedirectEntryPersistenceImpl
 	extends BasePersistenceImpl<RedirectEntry>
 	implements RedirectEntryPersistence {
@@ -202,7 +191,7 @@ public class RedirectEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RedirectEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (RedirectEntry redirectEntry : list) {
@@ -584,7 +573,7 @@ public class RedirectEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -714,7 +703,7 @@ public class RedirectEntryPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
 
 		if (result instanceof RedirectEntry) {
@@ -825,7 +814,7 @@ public class RedirectEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, groupId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -991,7 +980,7 @@ public class RedirectEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RedirectEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (RedirectEntry redirectEntry : list) {
@@ -1407,7 +1396,7 @@ public class RedirectEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1562,7 +1551,7 @@ public class RedirectEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RedirectEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (RedirectEntry redirectEntry : list) {
@@ -2252,7 +2241,7 @@ public class RedirectEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2446,7 +2435,7 @@ public class RedirectEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RedirectEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (RedirectEntry redirectEntry : list) {
@@ -3239,7 +3228,7 @@ public class RedirectEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, destinationURL};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -3441,7 +3430,8 @@ public class RedirectEntryPersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByG_S, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByG_S, finderArgs, this);
 		}
 
 		if (result instanceof RedirectEntry) {
@@ -3552,7 +3542,7 @@ public class RedirectEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, sourceURL};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -4104,7 +4094,7 @@ public class RedirectEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RedirectEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -4174,7 +4164,7 @@ public class RedirectEntryPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -4339,30 +4329,14 @@ public class RedirectEntryPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"groupId", "sourceURL"}, false);
 
-		_setRedirectEntryUtilPersistence(this);
+		RedirectEntryUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setRedirectEntryUtilPersistence(null);
+		RedirectEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(RedirectEntryImpl.class.getName());
-	}
-
-	private void _setRedirectEntryUtilPersistence(
-		RedirectEntryPersistence redirectEntryPersistence) {
-
-		try {
-			Field field = RedirectEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, redirectEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -4450,9 +4424,5 @@ public class RedirectEntryPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private RedirectEntryModelArgumentsResolver
-		_redirectEntryModelArgumentsResolver;
 
 }

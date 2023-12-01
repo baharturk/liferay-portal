@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model;
@@ -17,10 +8,12 @@ package com.liferay.commerce.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
+import com.liferay.portal.kernel.model.StagedAuditedModel;
 
 import java.math.BigDecimal;
 
@@ -43,8 +36,9 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface CommerceOrderItemModel
-	extends BaseModel<CommerceOrderItem>, GroupedModel, LocalizedModel,
-			MVCCModel, ShardedModel {
+	extends BaseModel<CommerceOrderItem>, ExternalReferenceCodeModel,
+			GroupedModel, LocalizedModel, MVCCModel, ShardedModel,
+			StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -83,11 +77,29 @@ public interface CommerceOrderItemModel
 	public void setMvccVersion(long mvccVersion);
 
 	/**
+	 * Returns the uuid of this commerce order item.
+	 *
+	 * @return the uuid of this commerce order item
+	 */
+	@AutoEscape
+	@Override
+	public String getUuid();
+
+	/**
+	 * Sets the uuid of this commerce order item.
+	 *
+	 * @param uuid the uuid of this commerce order item
+	 */
+	@Override
+	public void setUuid(String uuid);
+
+	/**
 	 * Returns the external reference code of this commerce order item.
 	 *
 	 * @return the external reference code of this commerce order item
 	 */
 	@AutoEscape
+	@Override
 	public String getExternalReferenceCode();
 
 	/**
@@ -95,6 +107,7 @@ public interface CommerceOrderItemModel
 	 *
 	 * @param externalReferenceCode the external reference code of this commerce order item
 	 */
+	@Override
 	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
@@ -225,18 +238,19 @@ public interface CommerceOrderItemModel
 	public void setModifiedDate(Date modifiedDate);
 
 	/**
-	 * Returns the booked quantity ID of this commerce order item.
+	 * Returns the commerce inventory booked quantity ID of this commerce order item.
 	 *
-	 * @return the booked quantity ID of this commerce order item
+	 * @return the commerce inventory booked quantity ID of this commerce order item
 	 */
-	public long getBookedQuantityId();
+	public long getCommerceInventoryBookedQuantityId();
 
 	/**
-	 * Sets the booked quantity ID of this commerce order item.
+	 * Sets the commerce inventory booked quantity ID of this commerce order item.
 	 *
-	 * @param bookedQuantityId the booked quantity ID of this commerce order item
+	 * @param commerceInventoryBookedQuantityId the commerce inventory booked quantity ID of this commerce order item
 	 */
-	public void setBookedQuantityId(long bookedQuantityId);
+	public void setCommerceInventoryBookedQuantityId(
+		long commerceInventoryBookedQuantityId);
 
 	/**
 	 * Returns the commerce order ID of this commerce order item.
@@ -309,6 +323,21 @@ public interface CommerceOrderItemModel
 	public void setCProductId(long CProductId);
 
 	/**
+	 * Returns the customer commerce order item ID of this commerce order item.
+	 *
+	 * @return the customer commerce order item ID of this commerce order item
+	 */
+	public long getCustomerCommerceOrderItemId();
+
+	/**
+	 * Sets the customer commerce order item ID of this commerce order item.
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID of this commerce order item
+	 */
+	public void setCustomerCommerceOrderItemId(
+		long customerCommerceOrderItemId);
+
+	/**
 	 * Returns the parent commerce order item ID of this commerce order item.
 	 *
 	 * @return the parent commerce order item ID of this commerce order item
@@ -323,18 +352,18 @@ public interface CommerceOrderItemModel
 	public void setParentCommerceOrderItemId(long parentCommerceOrderItemId);
 
 	/**
-	 * Returns the decimal quantity of this commerce order item.
+	 * Returns the shipping address ID of this commerce order item.
 	 *
-	 * @return the decimal quantity of this commerce order item
+	 * @return the shipping address ID of this commerce order item
 	 */
-	public BigDecimal getDecimalQuantity();
+	public long getShippingAddressId();
 
 	/**
-	 * Sets the decimal quantity of this commerce order item.
+	 * Sets the shipping address ID of this commerce order item.
 	 *
-	 * @param decimalQuantity the decimal quantity of this commerce order item
+	 * @param shippingAddressId the shipping address ID of this commerce order item
 	 */
-	public void setDecimalQuantity(BigDecimal decimalQuantity);
+	public void setShippingAddressId(long shippingAddressId);
 
 	/**
 	 * Returns the delivery group of this commerce order item.
@@ -438,6 +467,27 @@ public interface CommerceOrderItemModel
 	 * @param discountAmount the discount amount of this commerce order item
 	 */
 	public void setDiscountAmount(BigDecimal discountAmount);
+
+	/**
+	 * Returns the discount manually adjusted of this commerce order item.
+	 *
+	 * @return the discount manually adjusted of this commerce order item
+	 */
+	public boolean getDiscountManuallyAdjusted();
+
+	/**
+	 * Returns <code>true</code> if this commerce order item is discount manually adjusted.
+	 *
+	 * @return <code>true</code> if this commerce order item is discount manually adjusted; <code>false</code> otherwise
+	 */
+	public boolean isDiscountManuallyAdjusted();
+
+	/**
+	 * Sets whether this commerce order item is discount manually adjusted.
+	 *
+	 * @param discountManuallyAdjusted the discount manually adjusted of this commerce order item
+	 */
+	public void setDiscountManuallyAdjusted(boolean discountManuallyAdjusted);
 
 	/**
 	 * Returns the discount percentage level1 of this commerce order item.
@@ -786,6 +836,48 @@ public interface CommerceOrderItemModel
 	public void setNameMap(Map<Locale, String> nameMap, Locale defaultLocale);
 
 	/**
+	 * Returns the price manually adjusted of this commerce order item.
+	 *
+	 * @return the price manually adjusted of this commerce order item
+	 */
+	public boolean getPriceManuallyAdjusted();
+
+	/**
+	 * Returns <code>true</code> if this commerce order item is price manually adjusted.
+	 *
+	 * @return <code>true</code> if this commerce order item is price manually adjusted; <code>false</code> otherwise
+	 */
+	public boolean isPriceManuallyAdjusted();
+
+	/**
+	 * Sets whether this commerce order item is price manually adjusted.
+	 *
+	 * @param priceManuallyAdjusted the price manually adjusted of this commerce order item
+	 */
+	public void setPriceManuallyAdjusted(boolean priceManuallyAdjusted);
+
+	/**
+	 * Returns the price on application of this commerce order item.
+	 *
+	 * @return the price on application of this commerce order item
+	 */
+	public boolean getPriceOnApplication();
+
+	/**
+	 * Returns <code>true</code> if this commerce order item is price on application.
+	 *
+	 * @return <code>true</code> if this commerce order item is price on application; <code>false</code> otherwise
+	 */
+	public boolean isPriceOnApplication();
+
+	/**
+	 * Sets whether this commerce order item is price on application.
+	 *
+	 * @param priceOnApplication the price on application of this commerce order item
+	 */
+	public void setPriceOnApplication(boolean priceOnApplication);
+
+	/**
 	 * Returns the printed note of this commerce order item.
 	 *
 	 * @return the printed note of this commerce order item
@@ -833,14 +925,43 @@ public interface CommerceOrderItemModel
 	 *
 	 * @return the quantity of this commerce order item
 	 */
-	public int getQuantity();
+	public BigDecimal getQuantity();
 
 	/**
 	 * Sets the quantity of this commerce order item.
 	 *
 	 * @param quantity the quantity of this commerce order item
 	 */
-	public void setQuantity(int quantity);
+	public void setQuantity(BigDecimal quantity);
+
+	/**
+	 * Returns the replaced cp instance ID of this commerce order item.
+	 *
+	 * @return the replaced cp instance ID of this commerce order item
+	 */
+	public long getReplacedCPInstanceId();
+
+	/**
+	 * Sets the replaced cp instance ID of this commerce order item.
+	 *
+	 * @param replacedCPInstanceId the replaced cp instance ID of this commerce order item
+	 */
+	public void setReplacedCPInstanceId(long replacedCPInstanceId);
+
+	/**
+	 * Returns the replaced sku of this commerce order item.
+	 *
+	 * @return the replaced sku of this commerce order item
+	 */
+	@AutoEscape
+	public String getReplacedSku();
+
+	/**
+	 * Sets the replaced sku of this commerce order item.
+	 *
+	 * @param replacedSku the replaced sku of this commerce order item
+	 */
+	public void setReplacedSku(String replacedSku);
 
 	/**
 	 * Returns the requested delivery date of this commerce order item.
@@ -855,20 +976,6 @@ public interface CommerceOrderItemModel
 	 * @param requestedDeliveryDate the requested delivery date of this commerce order item
 	 */
 	public void setRequestedDeliveryDate(Date requestedDeliveryDate);
-
-	/**
-	 * Returns the shipping address ID of this commerce order item.
-	 *
-	 * @return the shipping address ID of this commerce order item
-	 */
-	public long getShippingAddressId();
-
-	/**
-	 * Sets the shipping address ID of this commerce order item.
-	 *
-	 * @param shippingAddressId the shipping address ID of this commerce order item
-	 */
-	public void setShippingAddressId(long shippingAddressId);
 
 	/**
 	 * Returns the ship separately of this commerce order item.
@@ -917,14 +1024,14 @@ public interface CommerceOrderItemModel
 	 *
 	 * @return the shipped quantity of this commerce order item
 	 */
-	public int getShippedQuantity();
+	public BigDecimal getShippedQuantity();
 
 	/**
 	 * Sets the shipped quantity of this commerce order item.
 	 *
 	 * @param shippedQuantity the shipped quantity of this commerce order item
 	 */
-	public void setShippedQuantity(int shippedQuantity);
+	public void setShippedQuantity(BigDecimal shippedQuantity);
 
 	/**
 	 * Returns the shipping extra price of this commerce order item.
@@ -1021,6 +1128,36 @@ public interface CommerceOrderItemModel
 	public void setSubscriptionTypeSettings(String subscriptionTypeSettings);
 
 	/**
+	 * Returns the unit of measure incremental order quantity of this commerce order item.
+	 *
+	 * @return the unit of measure incremental order quantity of this commerce order item
+	 */
+	public BigDecimal getUnitOfMeasureIncrementalOrderQuantity();
+
+	/**
+	 * Sets the unit of measure incremental order quantity of this commerce order item.
+	 *
+	 * @param unitOfMeasureIncrementalOrderQuantity the unit of measure incremental order quantity of this commerce order item
+	 */
+	public void setUnitOfMeasureIncrementalOrderQuantity(
+		BigDecimal unitOfMeasureIncrementalOrderQuantity);
+
+	/**
+	 * Returns the unit of measure key of this commerce order item.
+	 *
+	 * @return the unit of measure key of this commerce order item
+	 */
+	@AutoEscape
+	public String getUnitOfMeasureKey();
+
+	/**
+	 * Sets the unit of measure key of this commerce order item.
+	 *
+	 * @param unitOfMeasureKey the unit of measure key of this commerce order item
+	 */
+	public void setUnitOfMeasureKey(String unitOfMeasureKey);
+
+	/**
 	 * Returns the unit price of this commerce order item.
 	 *
 	 * @return the unit price of this commerce order item
@@ -1091,5 +1228,9 @@ public interface CommerceOrderItemModel
 
 	@Override
 	public CommerceOrderItem cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

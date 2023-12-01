@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.service.persistence.impl;
@@ -55,7 +46,6 @@ import com.liferay.portlet.asset.model.impl.AssetEntryModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Timestamp;
@@ -199,7 +189,7 @@ public class AssetEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetEntry>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetEntry assetEntry : list) {
@@ -564,7 +554,8 @@ public class AssetEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -708,7 +699,7 @@ public class AssetEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetEntry>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetEntry assetEntry : list) {
@@ -1075,7 +1066,8 @@ public class AssetEntryPersistenceImpl
 
 			finderArgs = new Object[] {companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1215,7 +1207,7 @@ public class AssetEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetEntry>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetEntry assetEntry : list) {
@@ -1580,7 +1572,8 @@ public class AssetEntryPersistenceImpl
 
 			finderArgs = new Object[] {visible};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1725,7 +1718,7 @@ public class AssetEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetEntry>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetEntry assetEntry : list) {
@@ -2116,7 +2109,8 @@ public class AssetEntryPersistenceImpl
 
 			finderArgs = new Object[] {_getTime(publishDate)};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2275,7 +2269,7 @@ public class AssetEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetEntry>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetEntry assetEntry : list) {
@@ -2669,7 +2663,8 @@ public class AssetEntryPersistenceImpl
 
 			finderArgs = new Object[] {_getTime(expirationDate)};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2830,7 +2825,7 @@ public class AssetEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetEntry>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetEntry assetEntry : list) {
@@ -3223,7 +3218,8 @@ public class AssetEntryPersistenceImpl
 
 			finderArgs = new Object[] {layoutUuid};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3346,21 +3342,21 @@ public class AssetEntryPersistenceImpl
 
 		classUuid = Objects.toString(classUuid, "");
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			AssetEntry.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {groupId, classUuid};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByG_CU, finderArgs);
+				_finderPathFetchByG_CU, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			AssetEntry.class);
 
 		if (result instanceof AssetEntry) {
 			AssetEntry assetEntry = (AssetEntry)result;
@@ -3370,6 +3366,14 @@ public class AssetEntryPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						AssetEntry.class, assetEntry.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -3494,7 +3498,8 @@ public class AssetEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId, classUuid};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3622,21 +3627,21 @@ public class AssetEntryPersistenceImpl
 	public AssetEntry fetchByC_C(
 		long classNameId, long classPK, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			AssetEntry.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {classNameId, classPK};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_C, finderArgs);
+				_finderPathFetchByC_C, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			AssetEntry.class);
 
 		if (result instanceof AssetEntry) {
 			AssetEntry assetEntry = (AssetEntry)result;
@@ -3646,6 +3651,14 @@ public class AssetEntryPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						AssetEntry.class, assetEntry.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -3742,7 +3755,8 @@ public class AssetEntryPersistenceImpl
 
 			finderArgs = new Object[] {classNameId, classPK};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3905,7 +3919,7 @@ public class AssetEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetEntry>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetEntry assetEntry : list) {
@@ -4325,7 +4339,8 @@ public class AssetEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId, classNameId, visible};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -4507,7 +4522,7 @@ public class AssetEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetEntry>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetEntry assetEntry : list) {
@@ -5010,7 +5025,8 @@ public class AssetEntryPersistenceImpl
 				_getTime(expirationDate)
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -5477,7 +5493,9 @@ public class AssetEntryPersistenceImpl
 	 */
 	@Override
 	public AssetEntry fetchByPrimaryKey(Serializable primaryKey) {
-		if (CTPersistenceHelperUtil.isProductionMode(AssetEntry.class)) {
+		if (CTPersistenceHelperUtil.isProductionMode(
+				AssetEntry.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -5693,7 +5711,7 @@ public class AssetEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetEntry>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -5769,7 +5787,7 @@ public class AssetEntryPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -5911,17 +5929,18 @@ public class AssetEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the asset entry
 	 * @param assetTagPK the primary key of the asset tag
+	 * @return <code>true</code> if an association between the asset entry and the asset tag was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addAssetTag(long pk, long assetTagPK) {
+	public boolean addAssetTag(long pk, long assetTagPK) {
 		AssetEntry assetEntry = fetchByPrimaryKey(pk);
 
 		if (assetEntry == null) {
-			assetEntryToAssetTagTableMapper.addTableMapping(
+			return assetEntryToAssetTagTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, assetTagPK);
 		}
 		else {
-			assetEntryToAssetTagTableMapper.addTableMapping(
+			return assetEntryToAssetTagTableMapper.addTableMapping(
 				assetEntry.getCompanyId(), pk, assetTagPK);
 		}
 	}
@@ -5931,20 +5950,21 @@ public class AssetEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the asset entry
 	 * @param assetTag the asset tag
+	 * @return <code>true</code> if an association between the asset entry and the asset tag was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addAssetTag(
+	public boolean addAssetTag(
 		long pk, com.liferay.asset.kernel.model.AssetTag assetTag) {
 
 		AssetEntry assetEntry = fetchByPrimaryKey(pk);
 
 		if (assetEntry == null) {
-			assetEntryToAssetTagTableMapper.addTableMapping(
+			return assetEntryToAssetTagTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk,
 				assetTag.getPrimaryKey());
 		}
 		else {
-			assetEntryToAssetTagTableMapper.addTableMapping(
+			return assetEntryToAssetTagTableMapper.addTableMapping(
 				assetEntry.getCompanyId(), pk, assetTag.getPrimaryKey());
 		}
 	}
@@ -5954,9 +5974,10 @@ public class AssetEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the asset entry
 	 * @param assetTagPKs the primary keys of the asset tags
+	 * @return <code>true</code> if at least one association between the asset entry and the asset tags was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addAssetTags(long pk, long[] assetTagPKs) {
+	public boolean addAssetTags(long pk, long[] assetTagPKs) {
 		long companyId = 0;
 
 		AssetEntry assetEntry = fetchByPrimaryKey(pk);
@@ -5968,8 +5989,14 @@ public class AssetEntryPersistenceImpl
 			companyId = assetEntry.getCompanyId();
 		}
 
-		assetEntryToAssetTagTableMapper.addTableMappings(
+		long[] addedKeys = assetEntryToAssetTagTableMapper.addTableMappings(
 			companyId, pk, assetTagPKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -5977,12 +6004,13 @@ public class AssetEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the asset entry
 	 * @param assetTags the asset tags
+	 * @return <code>true</code> if at least one association between the asset entry and the asset tags was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addAssetTags(
+	public boolean addAssetTags(
 		long pk, List<com.liferay.asset.kernel.model.AssetTag> assetTags) {
 
-		addAssetTags(
+		return addAssetTags(
 			pk,
 			ListUtil.toLongArray(
 				assetTags,
@@ -6168,7 +6196,7 @@ public class AssetEntryPersistenceImpl
 
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
-		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
@@ -6178,19 +6206,19 @@ public class AssetEntryPersistenceImpl
 		ctStrictColumnNames.add("userId");
 		ctStrictColumnNames.add("userName");
 		ctStrictColumnNames.add("createDate");
-		ctIgnoreColumnNames.add("modifiedDate");
+		ctMergeColumnNames.add("modifiedDate");
 		ctStrictColumnNames.add("classNameId");
 		ctStrictColumnNames.add("classPK");
 		ctStrictColumnNames.add("classUuid");
 		ctStrictColumnNames.add("classTypeId");
 		ctStrictColumnNames.add("listable");
-		ctStrictColumnNames.add("visible");
+		ctMergeColumnNames.add("visible");
 		ctStrictColumnNames.add("startDate");
 		ctStrictColumnNames.add("endDate");
 		ctStrictColumnNames.add("publishDate");
 		ctStrictColumnNames.add("expirationDate");
 		ctStrictColumnNames.add("mimeType");
-		ctStrictColumnNames.add("title");
+		ctMergeColumnNames.add("title");
 		ctStrictColumnNames.add("description");
 		ctStrictColumnNames.add("summary");
 		ctStrictColumnNames.add("url");
@@ -6202,8 +6230,7 @@ public class AssetEntryPersistenceImpl
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
-		_ctColumnNamesMap.put(
-			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK, Collections.singleton("entryId"));
 		_ctColumnNamesMap.put(
@@ -6425,30 +6452,15 @@ public class AssetEntryPersistenceImpl
 			},
 			false);
 
-		_setAssetEntryUtilPersistence(this);
+		AssetEntryUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setAssetEntryUtilPersistence(null);
+		AssetEntryUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(AssetEntryImpl.class.getName());
 
 		TableMapperFactory.removeTableMapper("AssetEntries_AssetTags");
-	}
-
-	private void _setAssetEntryUtilPersistence(
-		AssetEntryPersistence assetEntryPersistence) {
-
-		try {
-			Field field = AssetEntryUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, assetEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@BeanReference(type = AssetTagPersistence.class)

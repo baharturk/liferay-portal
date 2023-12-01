@@ -1,48 +1,38 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.web.internal.display.context;
 
-import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.constants.SegmentsEntryConstants;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
-import com.liferay.segments.constants.SegmentsWebKeys;
+import com.liferay.segments.manager.SegmentsExperienceManager;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.model.SegmentsExperiment;
 import com.liferay.segments.model.SegmentsExperimentRel;
-import com.liferay.segments.model.SegmentsExperimentRelTable;
-import com.liferay.segments.service.SegmentsEntryLocalServiceUtil;
-import com.liferay.segments.service.SegmentsExperienceLocalServiceUtil;
-import com.liferay.segments.service.SegmentsExperimentLocalServiceUtil;
-import com.liferay.segments.service.SegmentsExperimentRelLocalServiceUtil;
+import com.liferay.segments.service.SegmentsEntryLocalService;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
+import com.liferay.segments.service.SegmentsExperimentLocalService;
+import com.liferay.segments.service.SegmentsExperimentRelLocalService;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -52,172 +42,58 @@ import javax.servlet.http.HttpServletRequest;
 public class SegmentsExperienceSelectorDisplayContext {
 
 	public SegmentsExperienceSelectorDisplayContext(
-		HttpServletRequest httpServletRequest) {
+		HttpServletRequest httpServletRequest, JSONFactory jsonFactory,
+		Language language, Portal portal,
+		SegmentsEntryLocalService segmentsEntryLocalService,
+		SegmentsExperienceManager segmentsExperienceManager,
+		SegmentsExperienceLocalService segmentsExperienceLocalService,
+		SegmentsExperimentLocalService segmentsExperimentLocalService,
+		SegmentsExperimentRelLocalService segmentsExperimentRelLocalService) {
 
 		_httpServletRequest = httpServletRequest;
+		_jsonFactory = jsonFactory;
+		_language = language;
+		_portal = portal;
+		_segmentsEntryLocalService = segmentsEntryLocalService;
+		_segmentsExperienceManager = segmentsExperienceManager;
+		_segmentsExperienceLocalService = segmentsExperienceLocalService;
+		_segmentsExperimentLocalService = segmentsExperimentLocalService;
+		_segmentsExperimentRelLocalService = segmentsExperimentRelLocalService;
 
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
-	public JSONArray getSegmentsExperiencesJSONArray() throws PortalException {
-		JSONArray segmentsExperiencesJSONArray =
-			JSONFactoryUtil.createJSONArray();
-
-		boolean addedDefault = false;
-
-		List<SegmentsExperience> segmentsExperiences =
-			SegmentsExperienceLocalServiceUtil.getSegmentsExperiences(
-				_themeDisplay.getScopeGroupId(),
-				PortalUtil.getClassNameId(Layout.class.getName()),
-				_themeDisplay.getPlid(), true);
-
-		for (SegmentsExperience segmentsExperience : segmentsExperiences) {
-			if ((segmentsExperience.getPriority() <
-					SegmentsExperienceConstants.PRIORITY_DEFAULT) &&
-				!addedDefault) {
-
-				segmentsExperiencesJSONArray.put(
-					_getDefaultSegmentsExperienceJSONObject());
-
-				addedDefault = true;
-			}
-
-			segmentsExperiencesJSONArray.put(
-				_getSegmentsExperienceJSONObject(segmentsExperience));
-		}
-
-		if (!addedDefault) {
-			segmentsExperiencesJSONArray.put(
-				_getDefaultSegmentsExperienceJSONObject());
-		}
-
-		_calculateActiveSegmentsExperiencesJSONArray(
-			segmentsExperiencesJSONArray);
-
-		return segmentsExperiencesJSONArray;
+	public Map<String, Object> getData() throws PortalException {
+		return HashMapBuilder.<String, Object>put(
+			"segmentsExperiences", _getSegmentsExperiencesJSONArray()
+		).put(
+			"selectedSegmentsExperience",
+			_getSegmentsExperienceSelectedJSONObject()
+		).build();
 	}
 
-	public String getSelectedSegmentsExperienceName() {
+	private SegmentsExperience _fetchSegmentsExperienceFromRequest() {
 		long segmentsExperienceId = ParamUtil.getLong(
 			_httpServletRequest, "segmentsExperienceId", -1);
 
 		if (segmentsExperienceId == -1) {
-			long[] segmentsExperienceIds = GetterUtil.getLongValues(
-				_httpServletRequest.getAttribute(
-					SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS),
-				new long[] {SegmentsExperienceConstants.ID_DEFAULT});
-
-			if (segmentsExperienceIds.length > 0) {
-				segmentsExperienceId = segmentsExperienceIds[0];
-			}
+			segmentsExperienceId =
+				_segmentsExperienceManager.getSegmentsExperienceId(
+					_httpServletRequest);
 		}
 
-		SegmentsExperience segmentsExperience =
-			SegmentsExperienceLocalServiceUtil.fetchSegmentsExperience(
-				segmentsExperienceId);
-
-		if (segmentsExperience == null) {
-			return SegmentsExperienceConstants.getDefaultSegmentsExperienceName(
-				_themeDisplay.getLocale());
-		}
-
-		SegmentsExperience parentSegmentsExperience =
-			_getParentSegmentExperience(segmentsExperience);
-
-		if (parentSegmentsExperience != null) {
-			segmentsExperience = parentSegmentsExperience;
-		}
-
-		return segmentsExperience.getName(_themeDisplay.getLocale());
+		return _segmentsExperienceLocalService.fetchSegmentsExperience(
+			segmentsExperienceId);
 	}
 
-	private void _calculateActiveSegmentsExperiencesJSONArray(
-		JSONArray segmentsExperiencesJSONArray) {
-
-		for (int i = 0; i < segmentsExperiencesJSONArray.length(); i++) {
-			JSONObject segmentsExperiencesJSONObject =
-				segmentsExperiencesJSONArray.getJSONObject(i);
-
-			JSONObject firstSegmentsExperienceJSONObject =
-				_getFirstSegmentsExperienceJSONObject(
-					segmentsExperiencesJSONObject.getLong("segmentsEntryId"),
-					segmentsExperiencesJSONArray);
-
-			long firstSegmentsExperienceId =
-				firstSegmentsExperienceJSONObject.getLong(
-					"segmentsExperienceId");
-
-			if (firstSegmentsExperienceId ==
-					segmentsExperiencesJSONObject.getLong(
-						"segmentsExperienceId")) {
-
-				segmentsExperiencesJSONObject.put("active", true);
-
-				break;
-			}
-		}
-	}
-
-	private JSONObject _getDefaultSegmentsExperienceJSONObject() {
-		return JSONUtil.put(
-			"segmentsEntryId", SegmentsEntryConstants.ID_DEFAULT
-		).put(
-			"segmentsEntryName",
-			SegmentsEntryConstants.getDefaultSegmentsEntryName(
-				_themeDisplay.getLocale())
-		).put(
-			"segmentsExperienceId", SegmentsExperienceConstants.ID_DEFAULT
-		).put(
-			"segmentsExperienceName",
-			SegmentsExperienceConstants.getDefaultSegmentsExperienceName(
-				_themeDisplay.getLocale())
-		).put(
-			"url",
-			HttpUtil.setParameter(
-				PortalUtil.getCurrentURL(_httpServletRequest),
-				"segmentsExperienceId", SegmentsExperienceConstants.ID_DEFAULT)
-		);
-	}
-
-	private JSONObject _getFirstSegmentsExperienceJSONObject(
-		long segmentsEntryId, JSONArray segmentsExperiencesJSONArray) {
-
-		JSONObject firstSegmentsExperienceJSONObject =
-			JSONFactoryUtil.createJSONObject();
-
-		for (int i = 0; i < segmentsExperiencesJSONArray.length(); i++) {
-			JSONObject segmentsExperiencesJSONObject =
-				segmentsExperiencesJSONArray.getJSONObject(i);
-
-			if ((segmentsExperiencesJSONObject.getLong("segmentsEntryId") ==
-					segmentsEntryId) ||
-				(segmentsExperiencesJSONObject.getLong("segmentsEntryId") ==
-					SegmentsEntryConstants.ID_DEFAULT)) {
-
-				firstSegmentsExperienceJSONObject =
-					segmentsExperiencesJSONObject;
-
-				break;
-			}
-		}
-
-		return firstSegmentsExperienceJSONObject;
-	}
-
-	private SegmentsExperience _getParentSegmentExperience(
+	private SegmentsExperience _getParentSegmentsExperience(
 		SegmentsExperience segmentsExperience) {
 
 		List<SegmentsExperimentRel> segmentsExperimentRels =
-			SegmentsExperimentRelLocalServiceUtil.dslQuery(
-				DSLQueryFactoryUtil.select(
-					SegmentsExperimentRelTable.INSTANCE
-				).from(
-					SegmentsExperimentRelTable.INSTANCE
-				).where(
-					SegmentsExperimentRelTable.INSTANCE.segmentsExperienceId.eq(
-						segmentsExperience.getSegmentsExperienceId())
-				));
+			_segmentsExperimentRelLocalService.
+				getSegmentsExperimentRelsBySegmentsExperienceId(
+					segmentsExperience.getSegmentsExperienceId());
 
 		if (segmentsExperimentRels.isEmpty()) {
 			return null;
@@ -228,10 +104,10 @@ public class SegmentsExperienceSelectorDisplayContext {
 
 		try {
 			SegmentsExperiment segmentsExperiment =
-				SegmentsExperimentLocalServiceUtil.getSegmentsExperiment(
+				_segmentsExperimentLocalService.getSegmentsExperiment(
 					segmentsExperimentRel.getSegmentsExperimentId());
 
-			return SegmentsExperienceLocalServiceUtil.getSegmentsExperience(
+			return _segmentsExperienceLocalService.getSegmentsExperience(
 				segmentsExperiment.getSegmentsExperienceId());
 		}
 		catch (PortalException portalException) {
@@ -242,15 +118,42 @@ public class SegmentsExperienceSelectorDisplayContext {
 	}
 
 	private JSONObject _getSegmentsExperienceJSONObject(
-		SegmentsExperience segmentsExperience) {
+			long segmentsExperienceId)
+		throws PortalException {
+
+		JSONArray segmentsExperiencesJSONArray =
+			_getSegmentsExperiencesJSONArray();
+
+		for (int i = 0; i < segmentsExperiencesJSONArray.length(); i++) {
+			JSONObject segmentsExperiencesJSONObject =
+				segmentsExperiencesJSONArray.getJSONObject(i);
+
+			if (segmentsExperienceId == segmentsExperiencesJSONObject.getLong(
+					"segmentsExperienceId")) {
+
+				return segmentsExperiencesJSONObject;
+			}
+		}
+
+		return _jsonFactory.createJSONObject();
+	}
+
+	private JSONObject _getSegmentsExperienceJSONObject(
+		SegmentsExperience segmentsExperience,
+		List<SegmentsExperience> segmentsExperiences) {
+
+		boolean segmentsExperienceIsActive = _isActive(
+			segmentsExperience, segmentsExperiences);
 
 		return JSONUtil.put(
+			"active", segmentsExperienceIsActive
+		).put(
 			"segmentsEntryId", segmentsExperience.getSegmentsEntryId()
 		).put(
 			"segmentsEntryName",
 			() -> {
 				SegmentsEntry segmentsEntry =
-					SegmentsEntryLocalServiceUtil.fetchSegmentsEntry(
+					_segmentsEntryLocalService.fetchSegmentsEntry(
 						segmentsExperience.getSegmentsEntryId());
 
 				if (segmentsEntry != null) {
@@ -266,18 +169,149 @@ public class SegmentsExperienceSelectorDisplayContext {
 			"segmentsExperienceName",
 			segmentsExperience.getName(_themeDisplay.getLocale())
 		).put(
+			"statusLabel",
+			() -> {
+				String statusLabelKey = "inactive";
+
+				if (segmentsExperienceIsActive) {
+					statusLabelKey = "active";
+				}
+
+				return _language.get(_httpServletRequest, statusLabelKey);
+			}
+		).put(
 			"url",
-			HttpUtil.setParameter(
-				PortalUtil.getCurrentURL(_httpServletRequest),
+			HttpComponentsUtil.setParameter(
+				_portal.getCurrentURL(_httpServletRequest),
 				"segmentsExperienceId",
 				segmentsExperience.getSegmentsExperienceId())
 		);
+	}
+
+	private JSONObject _getSegmentsExperienceSelectedJSONObject()
+		throws PortalException {
+
+		SegmentsExperience segmentsExperience =
+			_fetchSegmentsExperienceFromRequest();
+
+		long plid = _themeDisplay.getPlid();
+
+		Layout layout = _themeDisplay.getLayout();
+
+		if (layout.isDraftLayout()) {
+			plid = layout.getClassPK();
+		}
+
+		if ((segmentsExperience == null) ||
+			(segmentsExperience.getPlid() != plid)) {
+
+			long defaultSegmentsExperienceId =
+				_segmentsExperienceLocalService.
+					fetchDefaultSegmentsExperienceId(plid);
+
+			segmentsExperience =
+				_segmentsExperienceLocalService.fetchSegmentsExperience(
+					defaultSegmentsExperienceId);
+		}
+
+		if (segmentsExperience != null) {
+			JSONObject segmentsExperienceSelectedJSONObject =
+				_getSegmentsExperienceJSONObject(
+					segmentsExperience.getSegmentsExperienceId());
+
+			segmentsExperienceSelectedJSONObject.put(
+				"segmentsExperienceName",
+				_getSelectedSegmentsExperienceName(segmentsExperience));
+
+			return segmentsExperienceSelectedJSONObject;
+		}
+
+		return _jsonFactory.createJSONObject();
+	}
+
+	private JSONArray _getSegmentsExperiencesJSONArray()
+		throws PortalException {
+
+		if (_segmentsExperiencesJSONArray != null) {
+			return _segmentsExperiencesJSONArray;
+		}
+
+		JSONArray segmentsExperiencesJSONArray = _jsonFactory.createJSONArray();
+
+		List<SegmentsExperience> segmentsExperiences =
+			_segmentsExperienceLocalService.getSegmentsExperiences(
+				_themeDisplay.getScopeGroupId(), _themeDisplay.getPlid(), true);
+
+		for (SegmentsExperience segmentsExperience : segmentsExperiences) {
+			segmentsExperiencesJSONArray.put(
+				_getSegmentsExperienceJSONObject(
+					segmentsExperience, segmentsExperiences));
+		}
+
+		_segmentsExperiencesJSONArray = segmentsExperiencesJSONArray;
+
+		return _segmentsExperiencesJSONArray;
+	}
+
+	private String _getSelectedSegmentsExperienceName(
+		SegmentsExperience segmentsExperience) {
+
+		SegmentsExperience parentSegmentsExperience =
+			_getParentSegmentsExperience(segmentsExperience);
+
+		if ((segmentsExperience != null) &&
+			(parentSegmentsExperience != null)) {
+
+			segmentsExperience = parentSegmentsExperience;
+		}
+
+		if (segmentsExperience != null) {
+			return segmentsExperience.getName(_themeDisplay.getLocale());
+		}
+
+		return SegmentsEntryConstants.getDefaultSegmentsEntryName(
+			_themeDisplay.getLocale());
+	}
+
+	private boolean _isActive(
+		SegmentsExperience segmentsExperience,
+		List<SegmentsExperience> segmentsExperiences) {
+
+		for (SegmentsExperience curSegmentsExperience : segmentsExperiences) {
+			if ((curSegmentsExperience.getSegmentsEntryId() ==
+					segmentsExperience.getSegmentsEntryId()) ||
+				(curSegmentsExperience.getSegmentsEntryId() ==
+					SegmentsEntryConstants.ID_DEFAULT)) {
+
+				if (curSegmentsExperience.getSegmentsExperienceId() ==
+						segmentsExperience.getSegmentsExperienceId()) {
+
+					return true;
+				}
+
+				return false;
+			}
+		}
+
+		return false;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SegmentsExperienceSelectorDisplayContext.class);
 
 	private final HttpServletRequest _httpServletRequest;
+	private final JSONFactory _jsonFactory;
+	private final Language _language;
+	private final Portal _portal;
+	private final SegmentsEntryLocalService _segmentsEntryLocalService;
+	private final SegmentsExperienceLocalService
+		_segmentsExperienceLocalService;
+	private final SegmentsExperienceManager _segmentsExperienceManager;
+	private JSONArray _segmentsExperiencesJSONArray;
+	private final SegmentsExperimentLocalService
+		_segmentsExperimentLocalService;
+	private final SegmentsExperimentRelLocalService
+		_segmentsExperimentRelLocalService;
 	private final ThemeDisplay _themeDisplay;
 
 }

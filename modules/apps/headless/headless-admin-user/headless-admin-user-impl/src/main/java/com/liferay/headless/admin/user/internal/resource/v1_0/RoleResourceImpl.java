@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.internal.resource.v1_0;
@@ -98,7 +89,8 @@ public class RoleResourceImpl extends BaseRoleResourceImpl {
 	}
 
 	@Override
-	public Page<Role> getRolesPage(Integer[] types, Pagination pagination)
+	public Page<Role> getRolesPage(
+			Integer[] types, String search, Pagination pagination)
 		throws Exception {
 
 		if (types == null) {
@@ -116,13 +108,13 @@ public class RoleResourceImpl extends BaseRoleResourceImpl {
 			).build(),
 			transform(
 				_roleService.search(
-					contextCompany.getCompanyId(), null, types, null,
+					contextCompany.getCompanyId(), search, types, null,
 					pagination.getStartPosition(), pagination.getEndPosition(),
 					null),
 				this::_toRole),
 			pagination,
 			_roleService.searchCount(
-				contextCompany.getCompanyId(), null, types, null));
+				contextCompany.getCompanyId(), search, types, null));
 	}
 
 	@Override
@@ -233,6 +225,7 @@ public class RoleResourceImpl extends BaseRoleResourceImpl {
 				description_i18n = LocalizedMapUtil.getI18nMap(
 					contextAcceptLanguage.isAcceptAllLanguages(),
 					role.getDescriptionMap());
+				externalReferenceCode = role.getName();
 				id = role.getRoleId();
 				name = role.getTitle(
 					contextAcceptLanguage.getPreferredLocale());

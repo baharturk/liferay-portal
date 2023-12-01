@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.website.service.test;
@@ -54,6 +45,7 @@ public class WebsiteLocalServiceTest {
 		_user = TestPropsValues.getUser();
 
 		List<ListType> listTypes = _listTypeLocalService.getListTypes(
+			_user.getCompanyId(),
 			"com.liferay.portal.kernel.model.Contact.website");
 
 		_listType = listTypes.get(0);
@@ -87,8 +79,8 @@ public class WebsiteLocalServiceTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		_website = _websiteLocalService.updateWebsite(
-			_website.getWebsiteId(), _website.getUrl(), _website.getTypeId(),
-			false);
+			_website.getWebsiteId(), _website.getUrl(),
+			_website.getListTypeId(), false);
 
 		Assert.assertFalse(_website.isPrimary());
 	}
@@ -101,7 +93,7 @@ public class WebsiteLocalServiceTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		_websiteLocalService.updateWebsite(
-			_website.getWebsiteId(), _INVALID_URL, _website.getTypeId(),
+			_website.getWebsiteId(), _INVALID_URL, _website.getListTypeId(),
 			_website.isPrimary());
 	}
 

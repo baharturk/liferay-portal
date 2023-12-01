@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.client.dto.v1_0;
@@ -122,27 +113,6 @@ public class MappedProduct implements Cloneable, Serializable {
 	}
 
 	protected Long id;
-
-	public Map<String, String> getOptions() {
-		return options;
-	}
-
-	public void setOptions(Map<String, String> options) {
-		this.options = options;
-	}
-
-	public void setOptions(
-		UnsafeSupplier<Map<String, String>, Exception> optionsUnsafeSupplier) {
-
-		try {
-			options = optionsUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected Map<String, String> options;
 
 	public Price getPrice() {
 		return price;
@@ -446,6 +416,27 @@ public class MappedProduct implements Cloneable, Serializable {
 	}
 
 	protected Long skuId;
+
+	public SkuOption[] getSkuOptions() {
+		return skuOptions;
+	}
+
+	public void setSkuOptions(SkuOption[] skuOptions) {
+		this.skuOptions = skuOptions;
+	}
+
+	public void setSkuOptions(
+		UnsafeSupplier<SkuOption[], Exception> skuOptionsUnsafeSupplier) {
+
+		try {
+			skuOptions = skuOptionsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected SkuOption[] skuOptions;
 
 	public String getThumbnail() {
 		return thumbnail;

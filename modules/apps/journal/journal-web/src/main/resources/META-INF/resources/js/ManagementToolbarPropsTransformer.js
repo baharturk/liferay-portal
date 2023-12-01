@@ -1,18 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {addParams, navigate, openSelectionModal} from 'frontend-js-web';
+import {
+	addParams,
+	navigate,
+	openCategorySelectionModal,
+	openSelectionModal,
+	openTagSelectionModal,
+} from 'frontend-js-web';
+
+import openDeleteArticleModal from './modals/openDeleteArticleModal';
+import openPublishArticlesModal from './modals/openPublishArticlesModal';
 
 export default function propsTransformer({
 	additionalProps: {
@@ -20,7 +20,9 @@ export default function propsTransformer({
 		exportTranslationURL,
 		moveArticlesAndFoldersURL,
 		openViewMoreStructuresURL,
+		selectCategoryURL,
 		selectEntityURL,
+		selectTagURL,
 		trashEnabled,
 		viewDDMStructureArticlesURL,
 	},
@@ -28,42 +30,33 @@ export default function propsTransformer({
 	...otherProps
 }) {
 	const deleteEntries = () => {
-		const searchContainer = Liferay.SearchContainer.get(
-			`${portletNamespace}articles`
-		);
-
-		const selectedItems = searchContainer.select
-			.getAllSelectedElements()
-			.size();
-
-		let message = Liferay.Language.get(
-			'are-you-sure-you-want-to-delete-the-selected-entry'
-		);
-
-		if (trashEnabled && selectedItems > 1) {
-			message = Liferay.Language.get(
-				'are-you-sure-you-want-to-move-the-selected-entries-to-the-recycle-bin'
-			);
-		}
-		else if (trashEnabled && selectedItems === 1) {
-			message = Liferay.Language.get(
-				'are-you-sure-you-want-to-move-the-selected-entry-to-the-recycle-bin'
-			);
-		}
-		else if (!trashEnabled && selectedItems > 1) {
-			message = Liferay.Language.get(
-				'are-you-sure-you-want-to-delete-the-selected-entries'
-			);
-		}
-
-		if (confirm(message)) {
+		if (trashEnabled) {
 			Liferay.fire(`${portletNamespace}editEntry`, {
-				action: trashEnabled
-					? '/journal/move_articles_and_folders_to_trash'
-					: '/journal/delete_articles_and_folders',
+				action: '/journal/move_articles_and_folders_to_trash',
 			});
+
+			return;
 		}
+
+		openDeleteArticleModal({
+			onDelete: () => {
+				Liferay.fire(`${portletNamespace}editEntry`, {
+					action: '/journal/delete_articles_and_folders',
+				});
+			},
+		});
 	};
+
+	const publishEntries = () => {
+		openPublishArticlesModal({
+			onPublish: () => {
+				Liferay.fire(`${portletNamespace}editEntry`, {
+					action: '/journal/publish_articles',
+				});
+			},
+		});
+	};
+
 	const expireEntries = () => {
 		Liferay.fire(`${portletNamespace}editEntry`, {
 			action: '/journal/expire_articles_and_folders',
@@ -73,10 +66,6 @@ export default function propsTransformer({
 	const exportTranslation = () => {
 		const url = new URL(exportTranslationURL);
 
-		const urlSearchParams = new URLSearchParams(url.search);
-
-		const paramName = `_${urlSearchParams.get('p_p_id')}_key`;
-
 		const searchContainer = Liferay.SearchContainer.get(
 			`${portletNamespace}articles`
 		);
@@ -85,32 +74,42 @@ export default function propsTransformer({
 			.getAllSelectedElements()
 			.get('value');
 
-		for (const key of keys) {
-			url.searchParams.append(paramName, key);
-		}
-
-		navigate(url.toString());
+		navigate(
+			addParams(
+				{
+					[`_${url.searchParams.get('p_p_id')}_key`]: keys.join(','),
+				},
+				exportTranslationURL
+			)
+		);
 	};
 
 	const moveEntries = () => {
-		let entrySelectorNodes = document.querySelectorAll('.entry-selector');
+		let entrySelectorNodes = document.querySelectorAll(
+			'input[type="checkbox"][name="' +
+				`${portletNamespace}rowIdsJournalArticle` +
+				'"]'
+		);
 
-		if (entrySelectorNodes.length === 0) {
+		if (!entrySelectorNodes.length) {
 			entrySelectorNodes = document.querySelectorAll(
 				'.card-page-item input[type="checkbox"]'
 			);
 		}
 
-		entrySelectorNodes.forEach((node) => {
-			if (node.checked) {
-				moveArticlesAndFoldersURL = addParams(
-					`${node.name}=${node.value}`,
-					moveArticlesAndFoldersURL
-				);
-			}
-		});
+		const articleIds = Array.from(entrySelectorNodes)
+			.filter((node) => node.checked)
+			.map((node) => node.value)
+			.join(',');
 
-		navigate(moveArticlesAndFoldersURL);
+		const url = new URL(moveArticlesAndFoldersURL);
+
+		url.searchParams.set(
+			`${portletNamespace}rowIdsJournalArticle`,
+			articleIds
+		);
+
+		navigate(url);
 	};
 
 	return {
@@ -130,21 +129,44 @@ export default function propsTransformer({
 			else if (action === 'moveEntries') {
 				moveEntries();
 			}
+			else if (action === 'publishEntriesToLive') {
+				publishEntries();
+			}
 		},
 		onFilterDropdownItemClick(event, {item}) {
-			if (item?.data?.action === 'openDDMStructuresSelector') {
+			if (item?.data?.action === 'openCategoriesSelector') {
+				openCategorySelectionModal({
+					portletNamespace,
+					redirectURL: item?.data?.redirectURL,
+					selectCategoryURL,
+				});
+			}
+			else if (item?.data?.action === 'openDDMStructuresSelector') {
 				openSelectionModal({
 					onSelect: (selectedItem) => {
-						navigate(
-							addParams(
-								`${portletNamespace}ddmStructureKey=${selectedItem.ddmstructurekey}`,
-								viewDDMStructureArticlesURL
-							)
-						);
+						if (selectedItem) {
+							const itemValue = JSON.parse(selectedItem.value);
+
+							navigate(
+								addParams(
+									{
+										[`${portletNamespace}ddmStructureId`]: itemValue.ddmstructureid,
+									},
+									viewDDMStructureArticlesURL
+								)
+							);
+						}
 					},
 					selectEventName: `${portletNamespace}selectDDMStructure`,
 					title: Liferay.Language.get('structures'),
 					url: selectEntityURL,
+				});
+			}
+			else if (item?.data?.action === 'openTagsSelector') {
+				openTagSelectionModal({
+					portletNamespace,
+					redirectURL: item?.data?.redirectURL,
+					selectTagURL,
 				});
 			}
 		},
@@ -163,7 +185,9 @@ export default function propsTransformer({
 
 						navigate(
 							addParams(
-								`${portletNamespace}ddmStructureKey=${selectedItem.ddmstructurekey}`,
+								{
+									[`${portletNamespace}ddmStructureId`]: selectedItem.ddmstructureid,
+								},
 								addArticleURL
 							)
 						);

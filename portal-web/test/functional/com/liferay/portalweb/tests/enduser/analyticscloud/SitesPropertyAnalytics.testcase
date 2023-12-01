@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property portal.release = "false";
 	property portal.upstream = "true";
 	property property.group = "analytics.cloud.profile";
@@ -29,11 +31,11 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 
@@ -42,16 +44,11 @@ definition {
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8330 | Test Summary: Assert Chart ticks for pages Visitor Behavior standardized"
 	@ignore = "true"
-	@priority = "5"
+	@priority = 5
 	test AssertChartTicksPagesVisitorBehaviorStandardized {
-		property portal.upstream = "quarantine";
 
 		// AC Refactor: data doesn't appear on time
 		// AC Refactor ticket: LRAC-8994
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
 
 		task ("View the site page as Test Test") {
 			ACUtils.navigateToSitePage(
@@ -66,7 +63,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to Pages tab in Sites dashboard") {
@@ -98,7 +95,7 @@ definition {
 
 			ACUtils.assertTimePattern(
 				format = "h tt",
-				time = "${time}");
+				time = ${time});
 		}
 
 		task ("Select the Last 90 days time period in site metrics chart") {
@@ -113,22 +110,23 @@ definition {
 				cardName = "Visitors Behavior");
 
 			ACUtils.assertDatePattern(
-				date = "${date}",
+				date = ${date},
 				format = "MMM d");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8329 | Test Summary: Assert Chart ticks for Site Metrics standardized"
-	@priority = "3"
+	@ignore = "true"
+	@priority = 3
 	test AssertChartTicksSiteMetricsStandardized {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
+
+		// AC Refactor: x-axis chart ticks does not appear with no data. Requires past data
+		// AC Refactor ticket: LRAC-13982
 
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Overview tab on Sites dashboard") {
@@ -139,69 +137,69 @@ definition {
 
 		task ("View the time period is Last 30 days in site metrics chart") {
 			ACTimeFilter.assertCurrentTimeFilterRange(
-				cardName = "${propertyName} Activities",
+				cardName = "${assignedPropertyName} Activities",
 				timeFilterRange = "Last 30 days");
 		}
 
 		task ("View the interval is D in site metrics chart") {
 			ACCards.viewSelectedInterval(
-				cardName = "${propertyName} Activities",
+				cardName = "${assignedPropertyName} Activities",
 				interval = "D");
 		}
 
 		task ("View the format of recharts xAxis ticks is MMM d") {
 			var date = ACCards.getAxisTick(
 				axis = "xAxis",
-				cardName = "${propertyName} Activities");
+				cardName = "${assignedPropertyName} Activities");
 
 			ACUtils.assertDatePattern(
-				date = "${date}",
+				date = ${date},
 				format = "MMM d");
 		}
 
 		task ("Select the W in interval selector") {
 			ACCards.selectInterval(
-				cardName = "${propertyName} Activities",
+				cardName = "${assignedPropertyName} Activities",
 				interval = "W");
 		}
 
 		task ("View the format of recharts xAxis ticks is MMM d - MMM d or MMM d - d") {
 			var date = ACCards.getAxisTick(
 				axis = "xAxis",
-				cardName = "${propertyName} Activities");
+				cardName = "${assignedPropertyName} Activities");
 
-			var dateLength = StringUtil.length("${date}");
+			var dateLength = StringUtil.length(${date});
 
-			if (("${dateLength}" == "9") || ("${dateLength}" == "10") || ("${dateLength}" == "11")) {
+			if ((${dateLength} == 9) || (${dateLength} == 10) || (${dateLength} == 11)) {
 				ACUtils.assertDatePattern(
-					date = "${date}",
+					date = ${date},
 					format = "MMM d - d");
 			}
 			else {
 				ACUtils.assertDatePattern(
-					date = "${date}",
+					date = ${date},
 					format = "MMM d - MMM d");
 			}
 		}
 
 		task ("Select the M in interval selector") {
 			ACCards.selectInterval(
-				cardName = "${propertyName} Activities",
+				cardName = "${assignedPropertyName} Activities",
 				interval = "M");
 		}
 
 		task ("View the format of recharts xAxis ticks is MMM") {
 			var date = ACCards.getAxisTick(
 				axis = "xAxis",
-				cardName = "${propertyName} Activities");
+				cardName = "${assignedPropertyName} Activities");
 
 			ACUtils.assertDatePattern(
-				date = "${date}",
+				date = ${date},
 				format = "MMM");
 		}
 
 		task ("Select the Last 24 hours time period in site metrics chart") {
-			ACTimeFilter.clickTimeFilterButton(cardName = "${propertyName} Activities");
+			ACTimeFilter.clickTimeFilterButton(cardName = "${assignedPropertyName} Activities");
 
 			ACTimeFilter.setLast24Hours();
 		}
@@ -209,23 +207,19 @@ definition {
 		task ("View the interval option buttons are disabled") {
 			for (var interval : list "D,W,M") {
 				AssertVisible(
-					key_text = "${interval}",
+					key_text = ${interval},
 					locator1 = "Button#ANY_DISABLED");
 			}
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8331 | Test Summary: Assert Site Metrics select Sessions/Visitor card tab"
-	@priority = "3"
+	@priority = 3
 	test AssertSiteMetricsSelectSessionsPerVisitorCardTab {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Overview tab on Sites dashboard") {
@@ -244,16 +238,12 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8332 | Test Summary: Assert Site Metrics select Visitors card tab"
-	@priority = "3"
+	@priority = 3
 	test AssertSiteMetricsSelectUniqueVisitorsCardTab {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Overview tab on Sites dashboard") {

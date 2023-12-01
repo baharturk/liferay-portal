@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.content.web.internal.importer.type;
 
-import com.liferay.commerce.account.configuration.CommerceAccountGroupServiceConfiguration;
-import com.liferay.commerce.account.constants.CommerceAccountConstants;
+import com.liferay.commerce.configuration.CommerceAccountGroupServiceConfiguration;
 import com.liferay.commerce.configuration.CommerceOrderImporterTypeConfiguration;
+import com.liferay.commerce.constants.CommerceConstants;
 import com.liferay.commerce.context.CommerceContextFactory;
 import com.liferay.commerce.exception.CommerceOrderImporterTypeException;
 import com.liferay.commerce.model.CommerceOrder;
@@ -26,6 +17,7 @@ import com.liferay.commerce.order.importer.item.CommerceOrderImporterItemImpl;
 import com.liferay.commerce.order.importer.type.CommerceOrderImporterType;
 import com.liferay.commerce.price.CommerceOrderPriceCalculation;
 import com.liferay.commerce.product.availability.CPAvailabilityChecker;
+import com.liferay.commerce.product.constants.CommerceChannelConstants;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CommerceChannel;
@@ -35,29 +27,34 @@ import com.liferay.commerce.product.util.CPInstanceHelper;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.frontend.data.set.provider.search.FDSPagination;
 import com.liferay.frontend.taglib.servlet.taglib.util.JSPRenderer;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
-import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.File;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.io.IOException;
 
+import java.math.BigDecimal;
+
 import java.nio.charset.Charset;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -81,7 +78,6 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.commerce.configuration.CommerceOrderImporterTypeConfiguration",
-	enabled = false, immediate = true,
 	property = "commerce.order.importer.type.key=" + CSVCommerceOrderImporterTypeImpl.KEY,
 	service = CommerceOrderImporterType.class
 )
@@ -112,7 +108,8 @@ public class CSVCommerceOrderImporterTypeImpl
 
 	@Override
 	public List<CommerceOrderImporterItem> getCommerceOrderImporterItems(
-			CommerceOrder commerceOrder, Object object)
+			CommerceOrder commerceOrder, FDSPagination fdsPagination,
+			Object object)
 		throws Exception {
 
 		if ((object == null) || !(object instanceof FileEntry)) {
@@ -123,13 +120,41 @@ public class CSVCommerceOrderImporterTypeImpl
 			_commerceChannelLocalService.getCommerceChannelByOrderGroupId(
 				commerceOrder.getGroupId());
 
+		_commerceOrderImporterItemImpls = _getCommerceOrderImporterItemImpls(
+			commerceOrder.getCompanyId(), commerceChannel.getGroupId(),
+			(FileEntry)object);
+
+		int start = 0;
+		int end = _commerceOrderImporterItemImpls.length;
+
+		if (fdsPagination != null) {
+			start = fdsPagination.getStartPosition();
+
+			if (fdsPagination.getEndPosition() < end) {
+				end = fdsPagination.getEndPosition();
+			}
+		}
+
 		return CommerceOrderImporterTypeUtil.getCommerceOrderImporterItems(
 			_commerceContextFactory, commerceOrder,
-			_getCommerceOrderImporterItemImpls(
-				commerceOrder.getCompanyId(), commerceChannel.getGroupId(),
-				(FileEntry)object),
+			Arrays.copyOfRange(_commerceOrderImporterItemImpls, start, end),
 			_commerceOrderItemService, _commerceOrderPriceCalculation,
 			_commerceOrderService, _userLocalService);
+	}
+
+	@Override
+	public int getCommerceOrderImporterItemsCount(Object object)
+		throws Exception {
+
+		if (_commerceOrderImporterItemImpls == null) {
+			CSVParser csvParser = _getCSVParser((FileEntry)object);
+
+			List<CSVRecord> csvRecords = csvParser.getRecords();
+
+			return csvRecords.size();
+		}
+
+		return _commerceOrderImporterItemImpls.length;
 	}
 
 	@Override
@@ -142,7 +167,7 @@ public class CSVCommerceOrderImporterTypeImpl
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.format(resourceBundle, "import-from-x", KEY);
+		return _language.format(resourceBundle, "import-from-x", KEY);
 	}
 
 	@Override
@@ -163,10 +188,10 @@ public class CSVCommerceOrderImporterTypeImpl
 					CommerceAccountGroupServiceConfiguration.class,
 					new GroupServiceSettingsLocator(
 						commerceChannel.getGroupId(),
-						CommerceAccountConstants.SERVICE_NAME));
+						CommerceConstants.SERVICE_NAME_COMMERCE_ACCOUNT));
 
 		if (commerceAccountGroupServiceConfiguration.commerceSiteType() ==
-				CommerceAccountConstants.SITE_TYPE_B2C) {
+				CommerceChannelConstants.SITE_TYPE_B2C) {
 
 			return false;
 		}
@@ -223,12 +248,12 @@ public class CSVCommerceOrderImporterTypeImpl
 
 		try {
 			return CSVParser.parse(
-				FileUtil.createTempFile(fileEntry.getContentStream()),
+				_file.createTempFile(fileEntry.getContentStream()),
 				Charset.defaultCharset(), csvFormat);
 		}
 		catch (IOException ioException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(ioException, ioException);
+				_log.debug(ioException);
 			}
 
 			throw new CommerceOrderImporterTypeException();
@@ -240,7 +265,8 @@ public class CSVCommerceOrderImporterTypeImpl
 		throws Exception {
 
 		String sku = GetterUtil.getString(csvRecord.get("sku"));
-		int quantity = GetterUtil.getInteger(csvRecord.get("quantity"));
+		BigDecimal quantity = BigDecimal.valueOf(
+			GetterUtil.getInteger(csvRecord.get("quantity")));
 
 		CPInstance cpInstance = null;
 
@@ -256,7 +282,7 @@ public class CSVCommerceOrderImporterTypeImpl
 		if (cpInstance == null) {
 			cpInstance =
 				_cpInstanceLocalService.fetchCPInstanceByExternalReferenceCode(
-					companyId, sku);
+					sku, companyId);
 		}
 
 		CommerceOrderImporterItemImpl commerceOrderImporterItemImpl =
@@ -285,7 +311,8 @@ public class CSVCommerceOrderImporterTypeImpl
 
 			if ((firstAvailableReplacementCPInstance != null) &&
 				!_cpAvailabilityChecker.check(
-					commerceChannelGroupId, cpInstance, quantity)) {
+					commerceChannelGroupId, cpInstance, StringPool.BLANK,
+					quantity)) {
 
 				commerceOrderImporterItemImpl.setReplacingSKU(
 					cpInstance.getSku());
@@ -305,11 +332,22 @@ public class CSVCommerceOrderImporterTypeImpl
 		}
 
 		commerceOrderImporterItemImpl.setJSON("[]");
-
 		commerceOrderImporterItemImpl.setQuantity(quantity);
+		commerceOrderImporterItemImpl.setUnitOfMeasureKey(StringPool.BLANK);
+
+		if (csvRecord.isMapped(_REQUESTED_DELIVERY_DATE_FIELD_NAME) &&
+			csvRecord.isSet(_REQUESTED_DELIVERY_DATE_FIELD_NAME)) {
+
+			commerceOrderImporterItemImpl.setRequestedDeliveryDateString(
+				GetterUtil.getString(
+					csvRecord.get(_REQUESTED_DELIVERY_DATE_FIELD_NAME)));
+		}
 
 		return commerceOrderImporterItemImpl;
 	}
+
+	private static final String _REQUESTED_DELIVERY_DATE_FIELD_NAME =
+		"requestedDeliveryDate";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CSVCommerceOrderImporterTypeImpl.class);
@@ -320,6 +358,7 @@ public class CSVCommerceOrderImporterTypeImpl
 	@Reference
 	private CommerceContextFactory _commerceContextFactory;
 
+	private CommerceOrderImporterItemImpl[] _commerceOrderImporterItemImpls;
 	private volatile CommerceOrderImporterTypeConfiguration
 		_commerceOrderImporterTypeConfiguration;
 
@@ -351,7 +390,13 @@ public class CSVCommerceOrderImporterTypeImpl
 	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
+	private File _file;
+
+	@Reference
 	private JSPRenderer _jspRenderer;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private UserLocalService _userLocalService;

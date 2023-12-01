@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -24,10 +15,11 @@ String name = (String)request.getAttribute("liferay-friendly-url:input:name");
 String value = (String)request.getAttribute("liferay-friendly-url:input:value");
 %>
 
-<c:if test='<%= !disabled && (boolean)request.getAttribute("liferay-friendly-url:input:showHistory") %>'>
+<c:if test='<%= (boolean)request.getAttribute("liferay-friendly-url:input:showHistory") %>'>
 	<liferay-friendly-url:history
 		className='<%= (String)request.getAttribute("liferay-friendly-url:input:className") %>'
 		classPK='<%= (long)request.getAttribute("liferay-friendly-url:input:classPK") %>'
+		disabled="<%= disabled %>"
 		elementId="<%= portletDisplay.getNamespace() + name %>"
 		localizable="<%= localizable %>"
 	/>
@@ -47,10 +39,11 @@ String value = (String)request.getAttribute("liferay-friendly-url:input:value");
 			<liferay-ui:input-localized
 				defaultLanguageId="<%= LocaleUtil.toLanguageId(themeDisplay.getSiteDefaultLocale()) %>"
 				disabled="<%= disabled %>"
+				helpMessage='<%= (String)request.getAttribute("liferay-friendly-url:input:helpMessage") %>'
 				ignoreRequestValue="<%= SessionErrors.isEmpty(request) %>"
 				inputAddon='<%= (String)request.getAttribute("liferay-friendly-url:input:inputAddon") %>'
 				name="<%= name %>"
-				xml="<%= HttpUtil.decodeURL(value) %>"
+				xml="<%= HttpComponentsUtil.decodeURL(value) %>"
 			/>
 		</c:when>
 		<c:otherwise>

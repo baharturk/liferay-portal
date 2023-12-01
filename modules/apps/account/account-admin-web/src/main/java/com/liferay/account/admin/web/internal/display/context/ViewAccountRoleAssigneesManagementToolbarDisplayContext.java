@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.admin.web.internal.display.context;
@@ -23,7 +14,6 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -31,7 +21,9 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -108,6 +100,33 @@ public class ViewAccountRoleAssigneesManagementToolbarDisplayContext
 		return CreationMenuBuilder.addPrimaryDropdownItem(
 			dropdownItem -> {
 				dropdownItem.putData("action", "selectAccountUsers");
+				dropdownItem.putData(
+					"assignAccountUsersURL",
+					PortletURLBuilder.createActionURL(
+						liferayPortletResponse
+					).setActionName(
+						"/account_admin/assign_account_role_users"
+					).setRedirect(
+						currentURLObj
+					).buildString());
+				dropdownItem.putData(
+					"selectAccountUsersURL",
+					PortletURLBuilder.createRenderURL(
+						liferayPortletResponse
+					).setMVCPath(
+						"/account_entries_admin/select_account_users.jsp"
+					).setParameter(
+						"accountEntryId",
+						ParamUtil.getString(
+							httpServletRequest, "accountEntryId")
+					).setParameter(
+						"accountRoleId",
+						ParamUtil.getString(httpServletRequest, "accountRoleId")
+					).setParameter(
+						"showFilter", Boolean.FALSE
+					).setWindowState(
+						LiferayWindowState.POP_UP
+					).buildString());
 				dropdownItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "assign-users"));
 			}
@@ -121,7 +140,7 @@ public class ViewAccountRoleAssigneesManagementToolbarDisplayContext
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			return liferayPortletResponse.createRenderURL();
@@ -129,26 +148,8 @@ public class ViewAccountRoleAssigneesManagementToolbarDisplayContext
 	}
 
 	@Override
-	public String getSearchActionURL() {
-		PortletURL searchActionURL = getPortletURL();
-
-		return searchActionURL.toString();
-	}
-
-	@Override
 	public Boolean isShowCreationMenu() {
 		return _hasAssignUsersPermission();
-	}
-
-	@Override
-	protected String getNavigation() {
-		return ParamUtil.getString(
-			liferayPortletRequest, getNavigationParam(), "all");
-	}
-
-	@Override
-	protected String[] getNavigationKeys() {
-		return new String[] {"all"};
 	}
 
 	@Override

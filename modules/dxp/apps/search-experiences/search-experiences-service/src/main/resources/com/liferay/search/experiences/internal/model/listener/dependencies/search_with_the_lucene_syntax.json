@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Enable searching using the Lucene syntax."
+		"en_US": "search-with-query-string-syntax-description"
 	},
 	"elementDefinition": {
 		"category": "match",
@@ -44,7 +44,7 @@
 									"locale": "${context.language_id}"
 								}
 							],
-							"label": "Fields",
+							"label": "fields",
 							"name": "fields",
 							"type": "fieldMappingList",
 							"typeOptions": {
@@ -52,7 +52,7 @@
 							}
 						},
 						{
-							"label": "Operator",
+							"label": "operator",
 							"name": "operator",
 							"type": "select",
 							"typeOptions": {
@@ -70,7 +70,7 @@
 						},
 						{
 							"defaultValue": 1,
-							"label": "Boost",
+							"label": "boost",
 							"name": "boost",
 							"type": "number",
 							"typeOptions": {
@@ -82,7 +82,8 @@
 			]
 		}
 	},
+	"externalReferenceCode": "SEARCH_WITH_QUERY_STRING_SYNTAX",
 	"title_i18n": {
-		"en_US": "Search with the Lucene Syntax"
+		"en_US": "search-with-query-string-syntax"
 	}
 }

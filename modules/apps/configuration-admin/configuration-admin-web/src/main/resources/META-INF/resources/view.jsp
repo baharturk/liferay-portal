@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -29,7 +20,7 @@ ConfigurationScopeDisplayContext configurationScopeDisplayContext = Configuratio
 	<portlet:param name="redirect" value="<%= redirectURL %>" />
 </portlet:renderURL>
 
-<div class="sticky-top" style="top: 56px;">
+<div class="sticky-top" style="top: var(--control-menu-container-height);">
 	<clay:management-toolbar
 		searchActionURL="<%= searchURL %>"
 		selectable="<%= false %>"
@@ -37,14 +28,18 @@ ConfigurationScopeDisplayContext configurationScopeDisplayContext = Configuratio
 	/>
 </div>
 
-<liferay-ui:success key='<%= ConfigurationAdminPortletKeys.SITE_SETTINGS + "requestProcessed" %>' message="site-was-added" />
+<liferay-ui:success key='<%= ConfigurationAdminPortletKeys.SITE_SETTINGS + "requestProcessed" %>'>
+	<liferay-ui:message key="site-was-successfully-added" />
+</liferay-ui:success>
 
 <clay:container-fluid
 	cssClass="container-view"
+	fullWidth='<%= FeatureFlagManagerUtil.isEnabled("LPS-184404") %>'
 >
 	<c:if test="<%= configurationCategorySectionDisplays.isEmpty() %>">
-		<liferay-ui:empty-result-message
-			message="no-configurations-were-found"
+		<liferay-frontend:empty-result-message
+			animationType="<%= EmptyResultMessageKeys.AnimationType.SEARCH %>"
+			title='<%= LanguageUtil.get(resourceBundle, "no-configurations-were-found") %>'
 		/>
 	</c:if>
 
@@ -55,9 +50,9 @@ ConfigurationScopeDisplayContext configurationScopeDisplayContext = Configuratio
 		%>
 
 			<li class="list-group-header">
-				<h3 class="list-group-header-title text-uppercase">
+				<p class="list-group-header-title text-uppercase">
 					<%= HtmlUtil.escape(configurationCategorySectionDisplay.getConfigurationCategorySectionLabel(locale)) %>
-				</h3>
+				</p>
 			</li>
 			<li class="list-group-card">
 				<ul class="list-group">

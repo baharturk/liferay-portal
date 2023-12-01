@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.exception.DuplicateCPTaxCategoryExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCPTaxCategoryException;
 import com.liferay.commerce.product.model.CPTaxCategory;
 import com.liferay.commerce.product.service.CPTaxCategoryLocalServiceUtil;
@@ -126,6 +118,10 @@ public class CPTaxCategoryPersistenceTest {
 
 		newCPTaxCategory.setMvccVersion(RandomTestUtil.nextLong());
 
+		newCPTaxCategory.setCtCollectionId(RandomTestUtil.nextLong());
+
+		newCPTaxCategory.setUuid(RandomTestUtil.randomString());
+
 		newCPTaxCategory.setExternalReferenceCode(
 			RandomTestUtil.randomString());
 
@@ -151,6 +147,11 @@ public class CPTaxCategoryPersistenceTest {
 		Assert.assertEquals(
 			existingCPTaxCategory.getMvccVersion(),
 			newCPTaxCategory.getMvccVersion());
+		Assert.assertEquals(
+			existingCPTaxCategory.getCtCollectionId(),
+			newCPTaxCategory.getCtCollectionId());
+		Assert.assertEquals(
+			existingCPTaxCategory.getUuid(), newCPTaxCategory.getUuid());
 		Assert.assertEquals(
 			existingCPTaxCategory.getExternalReferenceCode(),
 			newCPTaxCategory.getExternalReferenceCode());
@@ -178,6 +179,44 @@ public class CPTaxCategoryPersistenceTest {
 			newCPTaxCategory.getDescription());
 	}
 
+	@Test(expected = DuplicateCPTaxCategoryExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CPTaxCategory cpTaxCategory = addCPTaxCategory();
+
+		CPTaxCategory newCPTaxCategory = addCPTaxCategory();
+
+		newCPTaxCategory.setCompanyId(cpTaxCategory.getCompanyId());
+
+		newCPTaxCategory = _persistence.update(newCPTaxCategory);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCPTaxCategory);
+
+		newCPTaxCategory.setExternalReferenceCode(
+			cpTaxCategory.getExternalReferenceCode());
+
+		_persistence.update(newCPTaxCategory);
+	}
+
+	@Test
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
+
+		_persistence.countByUuid("null");
+
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
+	}
+
 	@Test
 	public void testCountByCompanyId() throws Exception {
 		_persistence.countByCompanyId(RandomTestUtil.nextLong());
@@ -186,12 +225,12 @@ public class CPTaxCategoryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -219,10 +258,11 @@ public class CPTaxCategoryPersistenceTest {
 
 	protected OrderByComparator<CPTaxCategory> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CPTaxCategory", "mvccVersion", true, "externalReferenceCode", true,
-			"CPTaxCategoryId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true, "name",
-			true, "description", true);
+			"CPTaxCategory", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "externalReferenceCode", true, "CPTaxCategoryId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"createDate", true, "modifiedDate", true, "name", true,
+			"description", true);
 	}
 
 	@Test
@@ -490,15 +530,15 @@ public class CPTaxCategoryPersistenceTest {
 
 	private void _assertOriginalValues(CPTaxCategory cpTaxCategory) {
 		Assert.assertEquals(
-			Long.valueOf(cpTaxCategory.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				cpTaxCategory, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			cpTaxCategory.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				cpTaxCategory, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(cpTaxCategory.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				cpTaxCategory, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CPTaxCategory addCPTaxCategory() throws Exception {
@@ -507,6 +547,10 @@ public class CPTaxCategoryPersistenceTest {
 		CPTaxCategory cpTaxCategory = _persistence.create(pk);
 
 		cpTaxCategory.setMvccVersion(RandomTestUtil.nextLong());
+
+		cpTaxCategory.setCtCollectionId(RandomTestUtil.nextLong());
+
+		cpTaxCategory.setUuid(RandomTestUtil.randomString());
 
 		cpTaxCategory.setExternalReferenceCode(RandomTestUtil.randomString());
 

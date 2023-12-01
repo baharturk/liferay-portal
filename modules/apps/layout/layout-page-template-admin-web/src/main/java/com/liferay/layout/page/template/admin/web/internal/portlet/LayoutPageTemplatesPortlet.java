@@ -1,29 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.portlet;
 
-import com.liferay.info.constants.InfoDisplayWebKeys;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.asset.display.page.service.AssetDisplayPageEntryService;
+import com.liferay.asset.kernel.service.AssetEntryService;
+import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
 import com.liferay.layout.page.template.admin.web.internal.configuration.LayoutPageTemplateAdminWebConfiguration;
 import com.liferay.layout.page.template.admin.web.internal.constants.LayoutPageTemplateAdminWebKeys;
+import com.liferay.layout.page.template.admin.web.internal.display.context.AssetDisplayPageUsagesDisplayContext;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -35,6 +30,7 @@ import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.staging.StagingGroupHelper;
 
@@ -58,12 +54,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jürgen Kappler
  */
 @Component(
-	configurationPid = "com.liferay.layout.page.template.admin.web.configuration.LayoutPageTemplateAdminWebConfiguration",
-	immediate = true,
+	configurationPid = "com.liferay.layout.page.template.admin.web.internal.configuration.LayoutPageTemplateAdminWebConfiguration",
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-layout-templates-admin",
-		"com.liferay.portlet.header-portlet-css=/css/main.css",
 		"com.liferay.portlet.icon=/icons/group_pages.png",
 		"com.liferay.portlet.preferences-owned-by-group=true",
 		"com.liferay.portlet.private-request-attributes=false",
@@ -76,7 +70,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.template-path=/META-INF/resources/",
 		"javax.portlet.init-param.view-template=/view.jsp",
 		"javax.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
-		"javax.portlet.resource-bundle=content.Language"
+		"javax.portlet.resource-bundle=content.Language",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -134,18 +129,31 @@ public class LayoutPageTemplatesPortlet extends MVCPortlet {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
 		renderRequest.setAttribute(
-			InfoDisplayWebKeys.INFO_ITEM_SERVICE_TRACKER,
-			_infoItemServiceTracker);
+			InfoItemServiceRegistry.class.getName(), _infoItemServiceRegistry);
+		renderRequest.setAttribute(
+			LayoutPageTemplateAdminWebKeys.
+				ASSET_DISPLAY_PAGE_USAGES_DISPLAY_CONTEXT,
+			new AssetDisplayPageUsagesDisplayContext(
+				_assetDisplayPageEntryService, _assetEntryService,
+				_portal.getHttpServletRequest(renderRequest),
+				_infoSearchClassMapperRegistry, _infoItemServiceRegistry,
+				_portal, renderRequest, renderResponse));
 		renderRequest.setAttribute(
 			LayoutPageTemplateAdminWebConfiguration.class.getName(),
 			_layoutPageTemplateAdminWebConfiguration);
 		renderRequest.setAttribute(
 			LayoutPageTemplateAdminWebKeys.ITEM_SELECTOR, _itemSelector);
+
+		if ((scopeGroup != null) && scopeGroup.isCompany()) {
+			renderResponse.setTitle(
+				_language.get(
+					themeDisplay.getLocale(), "widget-page-templates"));
+		}
 
 		super.doDispatch(renderRequest, renderResponse);
 	}
@@ -154,10 +162,22 @@ public class LayoutPageTemplatesPortlet extends MVCPortlet {
 		LayoutPageTemplatesPortlet.class);
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private AssetDisplayPageEntryService _assetDisplayPageEntryService;
+
+	@Reference
+	private AssetEntryService _assetEntryService;
+
+	@Reference
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
+
+	@Reference
+	private InfoSearchClassMapperRegistry _infoSearchClassMapperRegistry;
 
 	@Reference
 	private ItemSelector _itemSelector;
+
+	@Reference
+	private Language _language;
 
 	private volatile LayoutPageTemplateAdminWebConfiguration
 		_layoutPageTemplateAdminWebConfiguration;
@@ -168,6 +188,9 @@ public class LayoutPageTemplatesPortlet extends MVCPortlet {
 
 	@Reference
 	private LayoutPrototypeLocalService _layoutPrototypeLocalService;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private StagingGroupHelper _stagingGroupHelper;

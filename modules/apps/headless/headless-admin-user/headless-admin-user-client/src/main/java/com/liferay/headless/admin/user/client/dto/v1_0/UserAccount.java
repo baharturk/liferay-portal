@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.client.dto.v1_0;
@@ -141,6 +132,27 @@ public class UserAccount implements Cloneable, Serializable {
 	}
 
 	protected Date birthDate;
+
+	public String getCurrentPassword() {
+		return currentPassword;
+	}
+
+	public void setCurrentPassword(String currentPassword) {
+		this.currentPassword = currentPassword;
+	}
+
+	public void setCurrentPassword(
+		UnsafeSupplier<String, Exception> currentPasswordUnsafeSupplier) {
+
+		try {
+			currentPassword = currentPasswordUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String currentPassword;
 
 	public CustomField[] getCustomFields() {
 		return customFields;
@@ -392,6 +404,27 @@ public class UserAccount implements Cloneable, Serializable {
 
 	protected String image;
 
+	public Long getImageId() {
+		return imageId;
+	}
+
+	public void setImageId(Long imageId) {
+		this.imageId = imageId;
+	}
+
+	public void setImageId(
+		UnsafeSupplier<Long, Exception> imageIdUnsafeSupplier) {
+
+		try {
+			imageId = imageIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long imageId;
+
 	public String getJobTitle() {
 		return jobTitle;
 	}
@@ -433,6 +466,48 @@ public class UserAccount implements Cloneable, Serializable {
 	}
 
 	protected String[] keywords;
+
+	public String getLanguageDisplayName() {
+		return languageDisplayName;
+	}
+
+	public void setLanguageDisplayName(String languageDisplayName) {
+		this.languageDisplayName = languageDisplayName;
+	}
+
+	public void setLanguageDisplayName(
+		UnsafeSupplier<String, Exception> languageDisplayNameUnsafeSupplier) {
+
+		try {
+			languageDisplayName = languageDisplayNameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String languageDisplayName;
+
+	public String getLanguageId() {
+		return languageId;
+	}
+
+	public void setLanguageId(String languageId) {
+		this.languageId = languageId;
+	}
+
+	public void setLanguageId(
+		UnsafeSupplier<String, Exception> languageIdUnsafeSupplier) {
+
+		try {
+			languageId = languageIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String languageId;
 
 	public Date getLastLoginDate() {
 		return lastLoginDate;
@@ -495,6 +570,27 @@ public class UserAccount implements Cloneable, Serializable {
 	}
 
 	protected OrganizationBrief[] organizationBriefs;
+
+	public String getPassword() {
+		return password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public void setPassword(
+		UnsafeSupplier<String, Exception> passwordUnsafeSupplier) {
+
+		try {
+			password = passwordUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String password;
 
 	public String getProfileURL() {
 		return profileURL;
@@ -559,6 +655,35 @@ public class UserAccount implements Cloneable, Serializable {
 
 	protected SiteBrief[] siteBriefs;
 
+	public Status getStatus() {
+		return status;
+	}
+
+	public String getStatusAsString() {
+		if (status == null) {
+			return null;
+		}
+
+		return status.toString();
+	}
+
+	public void setStatus(Status status) {
+		this.status = status;
+	}
+
+	public void setStatus(
+		UnsafeSupplier<Status, Exception> statusUnsafeSupplier) {
+
+		try {
+			status = statusUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Status status;
+
 	public UserAccountContactInformation getUserAccountContactInformation() {
 		return userAccountContactInformation;
 	}
@@ -583,6 +708,28 @@ public class UserAccount implements Cloneable, Serializable {
 	}
 
 	protected UserAccountContactInformation userAccountContactInformation;
+
+	public UserGroupBrief[] getUserGroupBriefs() {
+		return userGroupBriefs;
+	}
+
+	public void setUserGroupBriefs(UserGroupBrief[] userGroupBriefs) {
+		this.userGroupBriefs = userGroupBriefs;
+	}
+
+	public void setUserGroupBriefs(
+		UnsafeSupplier<UserGroupBrief[], Exception>
+			userGroupBriefsUnsafeSupplier) {
+
+		try {
+			userGroupBriefs = userGroupBriefsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected UserGroupBrief[] userGroupBriefs;
 
 	@Override
 	public UserAccount clone() throws CloneNotSupportedException {
@@ -613,6 +760,39 @@ public class UserAccount implements Cloneable, Serializable {
 
 	public String toString() {
 		return UserAccountSerDes.toJSON(this);
+	}
+
+	public static enum Status {
+
+		ACTIVE("Active"), INACTIVE("Inactive");
+
+		public static Status create(String value) {
+			for (Status status : values()) {
+				if (Objects.equals(status.getValue(), value) ||
+					Objects.equals(status.name(), value)) {
+
+					return status;
+				}
+			}
+
+			return null;
+		}
+
+		public String getValue() {
+			return _value;
+		}
+
+		@Override
+		public String toString() {
+			return _value;
+		}
+
+		private Status(String value) {
+			_value = value;
+		}
+
+		private final String _value;
+
 	}
 
 }

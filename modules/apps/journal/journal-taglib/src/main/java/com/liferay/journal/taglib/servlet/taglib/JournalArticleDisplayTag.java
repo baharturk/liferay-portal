@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.taglib.servlet.taglib;
@@ -17,6 +8,8 @@ package com.liferay.journal.taglib.servlet.taglib;
 import com.liferay.journal.model.JournalArticleDisplay;
 import com.liferay.journal.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.taglib.util.IncludeTag;
+
+import javax.portlet.PortletURL;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.PageContext;
@@ -28,6 +21,10 @@ public class JournalArticleDisplayTag extends IncludeTag {
 
 	public JournalArticleDisplay getArticleDisplay() {
 		return _articleDisplay;
+	}
+
+	public PortletURL getPaginationURL() {
+		return _paginationURL;
 	}
 
 	public String getWrapperCssClass() {
@@ -59,6 +56,10 @@ public class JournalArticleDisplayTag extends IncludeTag {
 		setServletContext(ServletContextUtil.getServletContext());
 	}
 
+	public void setPaginationURL(PortletURL paginationURL) {
+		_paginationURL = paginationURL;
+	}
+
 	public void setShowTitle(boolean showTitle) {
 		_showTitle = showTitle;
 	}
@@ -73,6 +74,7 @@ public class JournalArticleDisplayTag extends IncludeTag {
 
 		_articleDisplay = null;
 		_dataAnalyticsTrackingEnabled = true;
+		_paginationURL = null;
 		_showTitle = false;
 		_wrapperCssClass = null;
 	}
@@ -90,6 +92,8 @@ public class JournalArticleDisplayTag extends IncludeTag {
 			"liferay-journal:journal-article:dataAnalyticsTrackingEnabled",
 			String.valueOf(_dataAnalyticsTrackingEnabled));
 		httpServletRequest.setAttribute(
+			"liferay-journal:journal-article:paginationURL", _paginationURL);
+		httpServletRequest.setAttribute(
 			"liferay-journal:journal-article:showTitle",
 			String.valueOf(_showTitle));
 		httpServletRequest.setAttribute(
@@ -101,6 +105,7 @@ public class JournalArticleDisplayTag extends IncludeTag {
 
 	private JournalArticleDisplay _articleDisplay;
 	private boolean _dataAnalyticsTrackingEnabled = true;
+	private PortletURL _paginationURL;
 	private boolean _showTitle;
 	private String _wrapperCssClass;
 

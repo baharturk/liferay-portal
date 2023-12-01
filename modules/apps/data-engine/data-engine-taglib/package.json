@@ -1,33 +1,29 @@
 {
 	"dependencies": {
-		"@clayui/button": "3.40.0",
-		"@clayui/data-provider": "3.40.0",
-		"@clayui/drop-down": "3.43.0",
-		"@clayui/form": "3.42.0",
-		"@clayui/icon": "3.40.0",
-		"@clayui/label": "3.40.0",
-		"@clayui/layout": "3.40.0",
-		"@clayui/link": "3.40.0",
-		"@clayui/list": "3.43.0",
-		"@clayui/loading-indicator": "3.40.0",
-		"@clayui/modal": "3.40.0",
-		"@clayui/multi-step-nav": "3.43.0",
-		"@clayui/navigation-bar": "3.43.0",
-		"@clayui/pagination-bar": "3.43.0",
-		"@clayui/sticker": "3.40.0",
-		"@clayui/table": "3.40.0",
+		"@clayui/alert": "3.106.1",
+		"@clayui/button": "3.107.0",
+		"@clayui/data-provider": "3.107.0",
+		"@clayui/drop-down": "3.107.1",
+		"@clayui/empty-state": "3.106.1",
+		"@clayui/form": "3.107.0",
+		"@clayui/icon": "3.106.1",
+		"@clayui/label": "3.106.1",
+		"@clayui/layout": "3.106.1",
+		"@clayui/loading-indicator": "3.106.1",
+		"@clayui/modal": "3.107.0",
+		"@clayui/panel": "3.107.0",
+		"@clayui/sticker": "3.106.1",
+		"@clayui/tooltip": "3.107.0",
 		"@liferay/frontend-js-react-web": "*",
+		"@liferay/frontend-js-state-web": "*",
 		"classnames": "2.3.1",
 		"data-engine-js-components-web": "*",
+		"dynamic-data-mapping-form-field-type": "*",
+		"frontend-js-components-web": "*",
 		"frontend-js-web": "*",
-		"lodash.omit": "^4.5.0",
-		"metal-jsx": "2.16.8",
-		"moment": "^2.24.0",
-		"prop-types": "15.7.2",
 		"react": "16.12.0",
 		"react-dnd": "11.1.1",
-		"react-dnd-html5-backend": "11.1.1",
-		"react-router-dom": "^5.0.1"
+		"react-dnd-html5-backend": "11.1.1"
 	},
 	"jest": {
 		"collectCoverageFrom": [
@@ -35,9 +31,6 @@
 		],
 		"setupFilesAfterEnv": [
 			"<rootDir>/jest-setup.config.js"
-		],
-		"snapshotSerializers": [
-			"metal-jest-serializer"
 		],
 		"testMatch": [
 			"<rootDir>/test/js/**/*.es.js"
@@ -57,5 +50,5 @@
 		"format": "liferay-npm-scripts fix",
 		"test": "liferay-npm-scripts test"
 	},
-	"version": "3.3.20"
+	"version": "3.4.24"
 }

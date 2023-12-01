@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -46,14 +37,14 @@ if (priceDisplayType.equals(CommercePricingConstants.TAX_INCLUDED_IN_PRICE)) {
 	totalOrderCommerceMoney = commerceOrderPrice.getTotalWithTaxAmount();
 }
 
-CommerceAccount commerceAccount = commerceOrderContentDisplayContext.getCommerceAccount();
+AccountEntry accountEntry = commerceOrderContentDisplayContext.getAccountEntry();
 
 if (commerceOrder != null) {
-	commerceAccount = commerceOrder.getCommerceAccount();
+	accountEntry = commerceOrder.getAccountEntry();
 }
 
-List<CommerceAddress> shippingAddresses = commerceOrderContentDisplayContext.getShippingCommerceAddresses(commerceAccount.getCommerceAccountId(), commerceAccount.getCompanyId());
-List<CommerceAddress> billingAddresses = commerceOrderContentDisplayContext.getBillingCommerceAddresses(commerceAccount.getCommerceAccountId(), commerceAccount.getCompanyId());
+List<CommerceAddress> shippingAddresses = commerceOrderContentDisplayContext.getShippingCommerceAddresses(accountEntry.getAccountEntryId());
+List<CommerceAddress> billingAddresses = commerceOrderContentDisplayContext.getBillingCommerceAddresses(accountEntry.getAccountEntryId());
 
 List<String> errorMessages = (List<String>)request.getAttribute(CommerceWebKeys.COMMERCE_ORDER_ERROR_MESSAGES);
 %>
@@ -157,8 +148,8 @@ List<String> errorMessages = (List<String>)request.getAttribute(CommerceWebKeys.
 		<div class="commerce-panel__content">
 			<div class="align-items-center row">
 				<div class="col-md-3">
-					<div class="commerce-order-title">
-						<%= HtmlUtil.escape(commerceAccount.getName()) %>
+					<div class="autofit-col-expand commerce-order-title">
+						<%= HtmlUtil.escape(accountEntry.getName()) %>
 					</div>
 				</div>
 
@@ -191,7 +182,7 @@ List<String> errorMessages = (List<String>)request.getAttribute(CommerceWebKeys.
 				<div class="col-md-3">
 					<dl class="commerce-list">
 						<dt><liferay-ui:message key="account-id" /></dt>
-						<dd><%= commerceAccount.getCommerceAccountId() %></dd>
+						<dd><%= accountEntry.getAccountEntryId() %></dd>
 					</dl>
 				</div>
 
@@ -255,40 +246,42 @@ List<String> errorMessages = (List<String>)request.getAttribute(CommerceWebKeys.
 				<div class="commerce-panel__content">
 					<div class="row">
 						<div class="col-md-12">
-							<c:choose>
-								<c:when test="<%= commerceOrderContentDisplayContext.hasModelPermission(commerceOrder, ActionKeys.UPDATE) %>">
-									<dl class="commerce-list">
-										<aui:select cssClass="commerce-input" inlineField="<%= true %>" label="" name="billingAddressId" showEmptyOption="<%= true %>" wrappedField="<%= false %>">
+							<c:if test="<%= commerceOrderContentDisplayContext.hasViewBillingAddressPermission(permissionChecker, accountEntry) %>">
+								<c:choose>
+									<c:when test="<%= commerceOrderContentDisplayContext.hasModelPermission(commerceOrder, ActionKeys.UPDATE) %>">
+										<dl class="commerce-list">
+											<aui:select cssClass="commerce-input" inlineField="<%= true %>" label="" name="billingAddressId" showEmptyOption="<%= true %>" wrappedField="<%= false %>">
 
-											<%
-											for (CommerceAddress commerceAddress : billingAddresses) {
-											%>
+												<%
+												for (CommerceAddress commerceAddress : billingAddresses) {
+												%>
 
-												<aui:option label="<%= HtmlUtil.escape(commerceAddress.getName()) %>" selected="<%= billingCommerceAddressId == commerceAddress.getCommerceAddressId() %>" value="<%= commerceAddress.getCommerceAddressId() %>" />
+													<aui:option label="<%= HtmlUtil.escape(commerceAddress.getName()) %>" selected="<%= billingCommerceAddressId == commerceAddress.getCommerceAddressId() %>" value="<%= commerceAddress.getCommerceAddressId() %>" />
 
-											<%
-											}
-											%>
+												<%
+												}
+												%>
 
-										</aui:select>
-									</dl>
-								</c:when>
-								<c:otherwise>
-									<c:if test="<%= billingCommerceAddress != null %>">
-										<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet1()) %></p>
+											</aui:select>
+										</dl>
+									</c:when>
+									<c:otherwise>
+										<c:if test="<%= billingCommerceAddress != null %>">
+											<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet1()) %></p>
 
-										<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet2()) %>">
-											<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet2()) %></p>
+											<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet2()) %>">
+												<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet2()) %></p>
+											</c:if>
+
+											<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet3()) %>">
+												<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet3()) %></p>
+											</c:if>
+
+											<p><%= HtmlUtil.escape(billingCommerceAddress.getCity() + StringPool.SPACE + billingCommerceAddress.getZip()) %></p>
 										</c:if>
-
-										<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet3()) %>">
-											<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet3()) %></p>
-										</c:if>
-
-										<p><%= HtmlUtil.escape(billingCommerceAddress.getCity() + StringPool.SPACE + billingCommerceAddress.getZip()) %></p>
-									</c:if>
-								</c:otherwise>
-							</c:choose>
+									</c:otherwise>
+								</c:choose>
+							</c:if>
 						</div>
 					</div>
 				</div>
@@ -394,11 +387,6 @@ List<String> errorMessages = (List<String>)request.getAttribute(CommerceWebKeys.
 		}
 		%>
 
-		<liferay-ui:icon
-			message="print"
-			url='<%= "javascript:window.print();" %>'
-		/>
-
 		<c:if test="<%= commerceOrderContentDisplayContext.hasModelPermission(commerceOrder, ActionKeys.DELETE) %>">
 			<portlet:actionURL name="/commerce_open_order_content/edit_commerce_order" var="deleteURL">
 				<portlet:param name="<%= Constants.CMD %>" value="<%= Constants.DELETE %>" />
@@ -425,6 +413,7 @@ List<String> errorMessages = (List<String>)request.getAttribute(CommerceWebKeys.
 			<liferay-ui:icon
 				icon="print"
 				message="print"
+				target="_blank"
 				url="<%= commerceOrderContentDisplayContext.getExportCommerceOrderReportURL() %>"
 			/>
 		</c:if>
@@ -443,8 +432,12 @@ List<String> errorMessages = (List<String>)request.getAttribute(CommerceWebKeys.
 
 		<liferay-commerce:order-transitions
 			commerceOrderId="<%= commerceOrder.getCommerceOrderId() %>"
-			cssClass="btn btn-fixed btn-lg btn-primary ml-3"
+			cssClass="btn btn-fixed btn-primary ml-3"
 		/>
+
+		<c:if test="<%= commerceOrderContentDisplayContext.isRequestQuoteButtonEnabled() %>">
+			<aui:button cssClass="btn-fixed btn-secondary ml-3 request-quote" displayType="secondary" id="requestQuote" small="<%= false %>" value='<%= LanguageUtil.get(request, "request-a-quote") %>' />
+		</c:if>
 	</div>
 </aui:form>
 
@@ -457,16 +450,14 @@ List<String> errorMessages = (List<String>)request.getAttribute(CommerceWebKeys.
 		contextParams.put("commerceOrderId", String.valueOf(commerceOrder.getCommerceOrderId()));
 		%>
 
-		<clay:data-set-display
+		<frontend-data-set:classic-display
 			contextParams="<%= contextParams %>"
-			dataProviderKey="<%= CommerceOrderDataSetConstants.COMMERCE_DATA_SET_KEY_PENDING_ORDER_ITEMS %>"
-			id="<%= CommerceOrderDataSetConstants.COMMERCE_DATA_SET_KEY_PENDING_ORDER_ITEMS %>"
+			dataProviderKey="<%= CommerceOrderFDSNames.PENDING_ORDER_ITEMS %>"
+			id="<%= CommerceOrderFDSNames.PENDING_ORDER_ITEMS %>"
 			itemsPerPage="<%= 10 %>"
-			namespace="<%= liferayPortletResponse.getNamespace() %>"
 			nestedItemsKey="orderItemId"
 			nestedItemsReferenceKey="orderItems"
-			pageNumber="<%= 1 %>"
-			portletURL="<%= commerceOrderContentDisplayContext.getPortletURL() %>"
+			propsTransformer="js/PendingOrderItemActionDropdownPropsTransformer"
 			style="stacked"
 		/>
 	</div>
@@ -536,7 +527,13 @@ List<String> errorMessages = (List<String>)request.getAttribute(CommerceWebKeys.
 
 <portlet:actionURL name="/commerce_open_order_content/edit_commerce_order" var="editCommerceOrderURL" />
 
+<%@ include file="/pending_commerce_orders/request_quote.jspf" %>
+
 <%@ include file="/pending_commerce_orders/transition.jspf" %>
+
+<liferay-frontend:component
+	module="js/view"
+/>
 
 <aui:script use="aui-base">
 	var orderTransition = A.one('#<portlet:namespace />orderTransition');

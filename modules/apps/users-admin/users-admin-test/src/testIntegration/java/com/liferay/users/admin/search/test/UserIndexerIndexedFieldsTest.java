@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.search.test;
@@ -22,12 +13,15 @@ import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Region;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -136,6 +130,26 @@ public class UserIndexerIndexedFieldsTest {
 	}
 
 	@Test
+	public void testLastLoginDate() throws Exception {
+		User user1 = addUser();
+
+		User user2 = userLocalService.updateLastLogin(user1.getUserId(), null);
+
+		String searchTerm = user2.getFirstName();
+
+		Document document = indexerFixture.searchOnlyOne(searchTerm);
+
+		indexedFieldsFixture.postProcessDocument(document);
+
+		Map<String, String> map = _getExpectedFieldValues(user2);
+
+		indexedFieldsFixture.populateDate(
+			"lastLoginDate", user2.getLastLoginDate(), map);
+
+		FieldValuesAssert.assertFieldValues(map, document, searchTerm);
+	}
+
+	@Test
 	public void testOrganizationIds() throws Exception {
 		Organization organization = addOrganization();
 
@@ -199,7 +213,8 @@ public class UserIndexerIndexedFieldsTest {
 
 	protected void setUpIndexedFieldsFixture() {
 		indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService, uidFactory, documentBuilderFactory);
+			resourcePermissionLocalService, searchEngineHelper, uidFactory,
+			documentBuilderFactory);
 	}
 
 	protected void setUpIndexerFixture() {
@@ -250,6 +265,12 @@ public class UserIndexerIndexedFieldsTest {
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 
 	@Inject
+	protected RoleLocalService roleLocalService;
+
+	@Inject
+	protected SearchEngineHelper searchEngineHelper;
+
+	@Inject
 	protected UIDFactory uidFactory;
 
 	@Inject
@@ -284,6 +305,8 @@ public class UserIndexerIndexedFieldsTest {
 		).put(
 			Field.STATUS, String.valueOf(user.getStatus())
 		).put(
+			Field.TYPE, String.valueOf(user.getType())
+		).put(
 			Field.USER_ID, String.valueOf(user.getUserId())
 		).put(
 			Field.USER_NAME, StringUtil.toLowerCase(user.getFullName())
@@ -315,6 +338,17 @@ public class UserIndexerIndexedFieldsTest {
 		).put(
 			"roleIds", _getStringValue(user.getRoleIds())
 		).put(
+			"roleNames",
+			() -> {
+				List<String> roleNames = new ArrayList<>();
+
+				for (Role role : roleLocalService.getRoles(user.getRoleIds())) {
+					roleNames.add(StringUtil.toLowerCase(role.getName()));
+				}
+
+				return _getStringValue(roleNames);
+			}
+		).put(
 			"screenName", user.getScreenName()
 		).put(
 			"screenName_sortable", StringUtil.toLowerCase(user.getScreenName())
@@ -322,6 +356,8 @@ public class UserIndexerIndexedFieldsTest {
 
 		indexedFieldsFixture.populateUID(user, map);
 
+		indexedFieldsFixture.populateDate(
+			Field.CREATE_DATE, user.getCreateDate(), map);
 		indexedFieldsFixture.populateDate(
 			Field.MODIFIED_DATE, user.getModifiedDate(), map);
 

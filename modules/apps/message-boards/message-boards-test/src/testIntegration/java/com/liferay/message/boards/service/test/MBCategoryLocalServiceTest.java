@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.test;
@@ -88,13 +79,12 @@ public class MBCategoryLocalServiceTest {
 
 		addMessage(MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID);
 
-		int categoriesAndThreadsCount =
+		Assert.assertEquals(
+			4,
 			MBCategoryLocalServiceUtil.getCategoriesAndThreadsCount(
 				_group.getGroupId(),
 				MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-				WorkflowConstants.STATUS_APPROVED);
-
-		Assert.assertEquals(4, categoriesAndThreadsCount);
+				WorkflowConstants.STATUS_APPROVED));
 	}
 
 	@Test
@@ -107,13 +97,12 @@ public class MBCategoryLocalServiceTest {
 
 		addCategory();
 
-		int categoriesAndThreadsCount =
+		Assert.assertEquals(
+			2,
 			MBCategoryLocalServiceUtil.getCategoriesAndThreadsCount(
 				_group.getGroupId(),
 				MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-				WorkflowConstants.STATUS_APPROVED);
-
-		Assert.assertEquals(2, categoriesAndThreadsCount);
+				WorkflowConstants.STATUS_APPROVED));
 	}
 
 	@Test
@@ -124,13 +113,12 @@ public class MBCategoryLocalServiceTest {
 
 		addMessage(MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID);
 
-		int categoriesAndThreadsCount =
+		Assert.assertEquals(
+			2,
 			MBCategoryLocalServiceUtil.getCategoriesAndThreadsCount(
 				_group.getGroupId(),
 				MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-				WorkflowConstants.STATUS_APPROVED);
-
-		Assert.assertEquals(2, categoriesAndThreadsCount);
+				WorkflowConstants.STATUS_APPROVED));
 	}
 
 	@Test
@@ -143,12 +131,11 @@ public class MBCategoryLocalServiceTest {
 
 		addCategory();
 
-		int categoriesAndThreadsCount =
+		Assert.assertEquals(
+			1,
 			MBCategoryLocalServiceUtil.getCategoriesAndThreadsCount(
 				_group.getGroupId(), category1.getCategoryId(),
-				WorkflowConstants.STATUS_APPROVED);
-
-		Assert.assertEquals(1, categoriesAndThreadsCount);
+				WorkflowConstants.STATUS_APPROVED));
 	}
 
 	@Test
@@ -400,24 +387,24 @@ public class MBCategoryLocalServiceTest {
 
 		expectedCategories.add(excludedCategory2);
 
-		List<MBCategory> categories = MBCategoryLocalServiceUtil.getCategories(
-			_group.getGroupId());
-
-		AssertUtils.assertEquals(expectedCategories, categories);
+		AssertUtils.assertEquals(
+			expectedCategories,
+			MBCategoryLocalServiceUtil.getCategories(_group.getGroupId()));
 
 		expectedCategories.remove(excludedCategory1);
 		expectedCategories.remove(excludedCategory2);
 
-		categories = MBCategoryLocalServiceUtil.getCategories(
-			_group.getGroupId(),
-			new long[] {
-				excludedCategory1.getCategoryId(),
-				excludedCategory2.getCategoryId()
-			},
-			new long[] {MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID},
-			WorkflowConstants.STATUS_ANY, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
-
-		AssertUtils.assertEquals(expectedCategories, categories);
+		AssertUtils.assertEquals(
+			expectedCategories,
+			MBCategoryLocalServiceUtil.getCategories(
+				_group.getGroupId(),
+				new long[] {
+					excludedCategory1.getCategoryId(),
+					excludedCategory2.getCategoryId()
+				},
+				new long[] {MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID},
+				WorkflowConstants.STATUS_ANY, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS));
 	}
 
 	@Test
@@ -431,19 +418,19 @@ public class MBCategoryLocalServiceTest {
 
 		expectedCategories.add(excludedCategory);
 
-		List<MBCategory> categories = MBCategoryLocalServiceUtil.getCategories(
-			_group.getGroupId());
-
-		AssertUtils.assertEquals(expectedCategories, categories);
+		AssertUtils.assertEquals(
+			expectedCategories,
+			MBCategoryLocalServiceUtil.getCategories(_group.getGroupId()));
 
 		expectedCategories.remove(excludedCategory);
 
-		categories = MBCategoryLocalServiceUtil.getCategories(
-			_group.getGroupId(), excludedCategory.getCategoryId(),
-			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-			WorkflowConstants.STATUS_ANY, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
-
-		AssertUtils.assertEquals(expectedCategories, categories);
+		AssertUtils.assertEquals(
+			expectedCategories,
+			MBCategoryLocalServiceUtil.getCategories(
+				_group.getGroupId(), excludedCategory.getCategoryId(),
+				MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
+				WorkflowConstants.STATUS_ANY, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS));
 	}
 
 	@Test
@@ -468,25 +455,25 @@ public class MBCategoryLocalServiceTest {
 			draftCategory.getUserId(), draftCategory.getCategoryId(),
 			WorkflowConstants.STATUS_DRAFT);
 
-		List<MBCategory> categories = MBCategoryLocalServiceUtil.getCategories(
-			_group.getGroupId(), WorkflowConstants.STATUS_APPROVED);
-
-		AssertUtils.assertEquals(expectedCategories, categories);
+		AssertUtils.assertEquals(
+			expectedCategories,
+			MBCategoryLocalServiceUtil.getCategories(
+				_group.getGroupId(), WorkflowConstants.STATUS_APPROVED));
 
 		expectedCategories.remove(excludedCategory1);
 		expectedCategories.remove(excludedCategory2);
 
-		categories = MBCategoryLocalServiceUtil.getCategories(
-			_group.getGroupId(),
-			new long[] {
-				excludedCategory1.getCategoryId(),
-				excludedCategory2.getCategoryId()
-			},
-			new long[] {MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID},
-			WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS);
-
-		AssertUtils.assertEquals(expectedCategories, categories);
+		AssertUtils.assertEquals(
+			expectedCategories,
+			MBCategoryLocalServiceUtil.getCategories(
+				_group.getGroupId(),
+				new long[] {
+					excludedCategory1.getCategoryId(),
+					excludedCategory2.getCategoryId()
+				},
+				new long[] {MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID},
+				WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS));
 	}
 
 	@Test
@@ -507,20 +494,20 @@ public class MBCategoryLocalServiceTest {
 			draftCategory.getUserId(), draftCategory.getCategoryId(),
 			WorkflowConstants.STATUS_DRAFT);
 
-		List<MBCategory> categories = MBCategoryLocalServiceUtil.getCategories(
-			_group.getGroupId(), WorkflowConstants.STATUS_APPROVED);
-
-		AssertUtils.assertEquals(expectedCategories, categories);
+		AssertUtils.assertEquals(
+			expectedCategories,
+			MBCategoryLocalServiceUtil.getCategories(
+				_group.getGroupId(), WorkflowConstants.STATUS_APPROVED));
 
 		expectedCategories.remove(excludedCategory);
 
-		categories = MBCategoryLocalServiceUtil.getCategories(
-			_group.getGroupId(), excludedCategory.getCategoryId(),
-			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-			WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS);
-
-		AssertUtils.assertEquals(expectedCategories, categories);
+		AssertUtils.assertEquals(
+			expectedCategories,
+			MBCategoryLocalServiceUtil.getCategories(
+				_group.getGroupId(), excludedCategory.getCategoryId(),
+				MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
+				WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS));
 	}
 
 	@Test
@@ -548,13 +535,11 @@ public class MBCategoryLocalServiceTest {
 	}
 
 	protected MBCategory addCategory(long parentCategoryId) throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		return MBCategoryServiceUtil.addCategory(
 			TestPropsValues.getUserId(), parentCategoryId,
-			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
+			RandomTestUtil.randomString(), StringPool.BLANK,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	protected MBMessage addMessage(long categoryId) throws Exception {

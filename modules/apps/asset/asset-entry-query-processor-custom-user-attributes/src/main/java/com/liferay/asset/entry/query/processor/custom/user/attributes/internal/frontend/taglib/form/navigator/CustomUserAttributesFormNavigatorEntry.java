@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.entry.query.processor.custom.user.attributes.internal.frontend.taglib.form.navigator;
@@ -17,18 +8,16 @@ package com.liferay.asset.entry.query.processor.custom.user.attributes.internal.
 import com.liferay.asset.publisher.constants.AssetPublisherConstants;
 import com.liferay.frontend.taglib.form.navigator.BaseJSPFormNavigatorEntry;
 import com.liferay.frontend.taglib.form.navigator.FormNavigatorEntry;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
 import java.util.Locale;
 import java.util.Objects;
-import java.util.ResourceBundle;
 
 import javax.portlet.PortletPreferences;
 
@@ -64,10 +53,12 @@ public class CustomUserAttributesFormNavigatorEntry
 
 	@Override
 	public String getLabel(Locale locale) {
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			"content.Language", locale, getClass());
+		return _language.get(locale, "custom-user-attributes");
+	}
 
-		return LanguageUtil.get(resourceBundle, "custom-user-attributes");
+	@Override
+	public ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	@Override
@@ -77,15 +68,6 @@ public class CustomUserAttributesFormNavigatorEntry
 		}
 
 		return false;
-	}
-
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.asset.entry.query.processor.custom.user.attributes)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
 	}
 
 	@Override
@@ -101,12 +83,12 @@ public class CustomUserAttributesFormNavigatorEntry
 
 		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
 
-		PortletPreferences portletSetup =
+		PortletPreferences portletPreferences =
 			themeDisplay.getStrictLayoutPortletSetup(
 				themeDisplay.getLayout(), portletDisplay.getPortletResource());
 
 		String selectionStyle = GetterUtil.getString(
-			portletSetup.getValue("selectionStyle", null), "dynamic");
+			portletPreferences.getValue("selectionStyle", null));
 
 		if (Objects.equals(selectionStyle, "dynamic")) {
 			return true;
@@ -114,5 +96,13 @@ public class CustomUserAttributesFormNavigatorEntry
 
 		return false;
 	}
+
+	@Reference
+	private Language _language;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.asset.entry.query.processor.custom.user.attributes)"
+	)
+	private ServletContext _servletContext;
 
 }

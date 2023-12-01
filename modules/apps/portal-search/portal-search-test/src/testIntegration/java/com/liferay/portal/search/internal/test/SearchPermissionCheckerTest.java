@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.test;
@@ -17,6 +8,7 @@ package com.liferay.portal.search.internal.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Organization;
@@ -37,18 +29,30 @@ import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUti
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.OrganizationTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.internal.test.util.BaseTestFilterVisitor;
 import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.segments.criteria.Criteria;
+import com.liferay.segments.criteria.CriteriaSerializer;
+import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
+import com.liferay.segments.model.SegmentsEntry;
+import com.liferay.segments.service.SegmentsEntryRoleLocalServiceUtil;
+import com.liferay.segments.test.util.SegmentsTestUtil;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -62,6 +66,8 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
+
+import org.springframework.mock.web.MockHttpServletRequest;
 
 /**
  * @author Preston Crary
@@ -125,6 +131,55 @@ public class SearchPermissionCheckerTest {
 		BooleanFilter booleanFilter = _getBooleanFilter(null);
 
 		Assert.assertFalse(booleanFilter.hasClauses());
+	}
+
+	@Test
+	public void testContributedRolesPermissionFilter() throws Exception {
+		try (ConfigurationTemporarySwapper configurationTemporarySwapper =
+				new ConfigurationTemporarySwapper(
+					_CLASS_NAME_SEGMENTS_CONFIGURATION,
+					HashMapDictionaryBuilder.<String, Object>put(
+						"roleSegmentationEnabled", true
+					).build())) {
+
+			_user = UserTestUtil.addUser();
+
+			PermissionThreadLocal.setPermissionChecker(
+				PermissionCheckerFactoryUtil.create(_user));
+
+			Criteria criteria = new Criteria();
+
+			_segmentsCriteriaContributor.contribute(
+				criteria,
+				String.format("(firstName eq '%s')", _user.getFirstName()),
+				Criteria.Conjunction.AND);
+
+			SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+				_group.getGroupId(), CriteriaSerializer.serialize(criteria),
+				User.class.getName());
+
+			_role = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+
+			SegmentsEntryRoleLocalServiceUtil.addSegmentsEntryRole(
+				segmentsEntry.getSegmentsEntryId(), _role.getRoleId(),
+				ServiceContextTestUtil.getServiceContext());
+
+			ServiceContext serviceContext =
+				ServiceContextTestUtil.getServiceContext();
+
+			MockHttpServletRequest mockHttpServletRequest =
+				new MockHttpServletRequest();
+
+			mockHttpServletRequest.setAttribute(WebKeys.USER, _user);
+
+			serviceContext.setRequest(mockHttpServletRequest);
+
+			ServiceContextThreadLocal.pushServiceContext(serviceContext);
+
+			_assertFieldValue(
+				new long[] {_group.getGroupId()}, Field.ROLE_ID,
+				String.valueOf(_role.getRoleId()));
+		}
 	}
 
 	@Test
@@ -293,6 +348,9 @@ public class SearchPermissionCheckerTest {
 			getClassName(), new BooleanFilter(), new SearchContext());
 	}
 
+	private static final String _CLASS_NAME_SEGMENTS_CONFIGURATION =
+		"com.liferay.segments.configuration.SegmentsConfiguration";
+
 	private BundleContext _bundleContext;
 
 	@DeleteAfterTestRun
@@ -308,6 +366,13 @@ public class SearchPermissionCheckerTest {
 	private Role _role;
 
 	private SearchPermissionChecker _searchPermissionChecker;
+
+	@Inject(
+		filter = "segments.criteria.contributor.key=user",
+		type = SegmentsCriteriaContributor.class
+	)
+	private SegmentsCriteriaContributor _segmentsCriteriaContributor;
+
 	private ServiceReference<SearchPermissionChecker> _serviceReference;
 
 	@DeleteAfterTestRun

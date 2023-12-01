@@ -1,35 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.portlet.container.upload.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -43,8 +33,6 @@ import com.liferay.upload.UniqueFileNameProvider;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
-import java.util.Map;
 
 import javax.portlet.Portlet;
 import javax.portlet.PortletRequest;
@@ -97,16 +85,12 @@ public class UploadPortletTest extends BasePortletContainerTestCase {
 
 				PortletURL portletURL = resourceResponse.createActionURL();
 
-				String queryString = HttpUtil.getQueryString(
-					portletURL.toString());
-
-				Map<String, String[]> parameterMap = HttpUtil.getParameterMap(
-					queryString);
-
-				String portalAuthenticationToken = MapUtil.getString(
-					parameterMap, "p_auth");
-
-				printWriter.write(portalAuthenticationToken);
+				printWriter.write(
+					MapUtil.getString(
+						HttpComponentsUtil.getParameterMap(
+							HttpComponentsUtil.getQueryString(
+								portletURL.toString())),
+						"p_auth"));
 			}
 
 		};
@@ -243,15 +227,11 @@ public class UploadPortletTest extends BasePortletContainerTestCase {
 
 		ThemeDisplay themeDisplay = ThemeDisplayFactory.create();
 
-		Company company = CompanyLocalServiceUtil.getCompany(
-			layout.getCompanyId());
-
-		themeDisplay.setCompany(company);
-
+		themeDisplay.setCompany(
+			CompanyLocalServiceUtil.getCompany(layout.getCompanyId()));
 		themeDisplay.setLayout(layout);
 		themeDisplay.setLayoutSet(layout.getLayoutSet());
 		themeDisplay.setPlid(layout.getPlid());
-
 		themeDisplay.setPortalURL(TestPropsValues.PORTAL_URL);
 		themeDisplay.setRequest(httpServletRequest);
 

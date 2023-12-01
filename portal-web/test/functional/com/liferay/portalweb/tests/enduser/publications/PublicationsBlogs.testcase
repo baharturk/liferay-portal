@@ -1,22 +1,23 @@
 @component-name = "portal-publications"
 definition {
 
+	property osgi.module.configuration.file.names = "com.liferay.change.tracking.configuration.CTSettingsConfiguration.config";
+	property osgi.module.configurations = "enabled=B\"true\"";
 	property portal.release = "true";
 	property portal.upstream = "true";
+	property testray.component.names = "Blogs";
 	property testray.main.component.name = "Publications";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
-
-		JSONPublications.enablePublications();
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -25,13 +26,15 @@ definition {
 	}
 
 	@description = "Assert we can publish the publication with blog with cover image."
-	@priority = "4"
+	@priority = 4
 	test PublishBlogsEntryWithCoverImage {
 		JSONPublications.addPublication(publicationName = "Publication Name");
 
 		JSONPublications.selectPublication(publicationName = "Publication Name");
 
-		BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
+		HeadlessSite.addSite(siteName = "Site Name");
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "site-name");
 
 		Blogs.addEntryWithUploadedCoverImage(
 			coverImageName = "Document_1",
@@ -47,17 +50,14 @@ definition {
 
 		PublicationsChanges.viewChanges(
 			changeCategory = "Blogs Entry",
-			changeSite = "Guest",
+			changeSite = "Site Name",
 			changeTitle = "Blogs Entry Title",
 			changeType = "Added",
-			changeUser = "Test Test",
-			showAllItems = "true");
+			changeUser = "Test Test");
 
-		JSONPublications.publishPublication(publicationName = "Publication Name");
+		Publications.publishPublication(publicationName = "Publication Name");
 
-		Publications.viewPublicationPublished(publicationName = "Publication Name");
-
-		BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "site-name");
 
 		BlogsNavigator.gotoEntryCP(entryTitle = "Blogs Entry Title");
 
@@ -71,27 +71,32 @@ definition {
 	}
 
 	@description = "Assert we can publish the publication with an edited blog."
-	@priority = "4"
+	@priority = 4
 	test PublishEditedBlogsEntry {
+		HeadlessSite.addSite(siteName = "Site Name");
+
 		JSONLayout.addPublicLayout(
-			groupName = "Guest",
+			groupName = "Site Name",
 			layoutName = "Blogs Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
-			groupName = "Guest",
+			column = 1,
+			groupName = "Site Name",
 			layoutName = "Blogs Page",
 			widgetName = "Blogs");
 
 		JSONBlog.addEntry(
 			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
+			entryTitle = "Blogs Entry Title",
+			groupName = "Site Name");
 
 		JSONPublications.addPublication(publicationName = "Publication Name");
 
 		JSONPublications.selectPublication(publicationName = "Publication Name");
 
-		Navigator.gotoPage(pageName = "Blogs Page");
+		Navigator.gotoSitePage(
+			pageName = "Blogs Page",
+			siteName = "Site Name");
 
 		Blogs.editEntryPG(
 			entryContent = "Blogs Entry Content",
@@ -103,17 +108,16 @@ definition {
 
 		PublicationsChanges.viewChanges(
 			changeCategory = "Blogs Entry",
-			changeSite = "Guest",
+			changeSite = "Site Name",
 			changeTitle = "Blogs Entry Title Edit",
 			changeType = "Modified",
-			changeUser = "Test Test",
-			showAllItems = "true");
+			changeUser = "Test Test");
 
-		JSONPublications.publishPublication(publicationName = "Publication Name");
+		Publications.publishPublication(publicationName = "Publication Name");
 
-		Publications.viewPublicationPublished(publicationName = "Publication Name");
-
-		Navigator.gotoPage(pageName = "Blogs Page");
+		Navigator.gotoSitePage(
+			pageName = "Blogs Page",
+			siteName = "Site Name");
 
 		BlogsNavigator.gotoEntryPG(
 			entryContent = "Blogs Entry Content Edit",

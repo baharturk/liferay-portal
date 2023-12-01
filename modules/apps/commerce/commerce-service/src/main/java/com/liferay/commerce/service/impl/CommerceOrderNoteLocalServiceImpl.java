@@ -1,34 +1,34 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.impl;
 
 import com.liferay.commerce.exception.CommerceOrderNoteContentException;
-import com.liferay.commerce.exception.DuplicateCommerceOrderNoteException;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderNote;
 import com.liferay.commerce.service.base.CommerceOrderNoteLocalServiceBaseImpl;
+import com.liferay.commerce.service.persistence.CommerceOrderPersistence;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.List;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Andrea Di Giorgi
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.model.CommerceOrderNote",
+	service = AopService.class
+)
 public class CommerceOrderNoteLocalServiceImpl
 	extends CommerceOrderNoteLocalServiceBaseImpl {
 
@@ -49,17 +49,14 @@ public class CommerceOrderNoteLocalServiceImpl
 		throws PortalException {
 
 		CommerceOrder commerceOrder =
-			commerceOrderLocalService.getCommerceOrder(commerceOrderId);
-		User user = userLocalService.getUser(serviceContext.getUserId());
+			_commerceOrderPersistence.findByPrimaryKey(commerceOrderId);
+		User user = _userLocalService.getUser(serviceContext.getUserId());
 
-		validate(content);
+		_validate(content);
 
 		if (Validator.isBlank(externalReferenceCode)) {
 			externalReferenceCode = null;
 		}
-
-		validateExternalReferenceCode(
-			externalReferenceCode, serviceContext.getCompanyId());
 
 		long commerceOrderNoteId = counterLocalService.increment();
 
@@ -96,8 +93,8 @@ public class CommerceOrderNoteLocalServiceImpl
 			commerceOrderNote = getCommerceOrderNote(commerceOrderNoteId);
 		}
 		else {
-			commerceOrderNote = commerceOrderNotePersistence.fetchByC_ERC(
-				serviceContext.getCompanyId(), externalReferenceCode);
+			commerceOrderNote = commerceOrderNotePersistence.fetchByERC_C(
+				externalReferenceCode, serviceContext.getCompanyId());
 		}
 
 		if (commerceOrderNote != null) {
@@ -125,8 +122,8 @@ public class CommerceOrderNoteLocalServiceImpl
 			return null;
 		}
 
-		return commerceOrderNotePersistence.fetchByC_ERC(
-			companyId, externalReferenceCode);
+		return commerceOrderNotePersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -135,6 +132,14 @@ public class CommerceOrderNoteLocalServiceImpl
 
 		return commerceOrderNotePersistence.findByC_R(
 			commerceOrderId, restricted);
+	}
+
+	@Override
+	public List<CommerceOrderNote> getCommerceOrderNotes(
+		long commerceOrderId, boolean restricted, int start, int end) {
+
+		return commerceOrderNotePersistence.findByC_R(
+			commerceOrderId, restricted, start, end);
 	}
 
 	@Override
@@ -177,7 +182,7 @@ public class CommerceOrderNoteLocalServiceImpl
 		CommerceOrderNote commerceOrderNote =
 			commerceOrderNotePersistence.findByPrimaryKey(commerceOrderNoteId);
 
-		validate(content);
+		_validate(content);
 
 		if (Validator.isNull(commerceOrderNote.getExternalReferenceCode())) {
 			if (Validator.isBlank(externalReferenceCode)) {
@@ -193,29 +198,16 @@ public class CommerceOrderNoteLocalServiceImpl
 		return commerceOrderNotePersistence.update(commerceOrderNote);
 	}
 
-	protected void validate(String content) throws PortalException {
+	private void _validate(String content) throws PortalException {
 		if (Validator.isNull(content)) {
 			throw new CommerceOrderNoteContentException();
 		}
 	}
 
-	protected void validateExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws PortalException {
+	@Reference
+	private CommerceOrderPersistence _commerceOrderPersistence;
 
-		if (Validator.isNull(externalReferenceCode)) {
-			return;
-		}
-
-		CommerceOrderNote commerceOrderNote =
-			commerceOrderNotePersistence.fetchByC_ERC(
-				companyId, externalReferenceCode);
-
-		if (commerceOrderNote != null) {
-			throw new DuplicateCommerceOrderNoteException(
-				"There is another commerce order note with external " +
-					"reference code " + externalReferenceCode);
-		}
-	}
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

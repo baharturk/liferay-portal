@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -94,10 +85,6 @@ JSONArray samlSloRequestInfosJSONArray = samlSloContextJSONObject.getJSONArray("
 </noscript>
 
 <aui:script use="aui-base,aui-io-request-deprecated,aui-template-deprecated">
-	var confirmLogout = function() {
-		return confirm('<liferay-ui:message key="leaving-this-window-might-leave-logout-unfinished" />');
-	};
-
 	var eventHandlers = [];
 
 	var detachHandlers = function() {
@@ -118,12 +105,16 @@ JSONArray samlSloRequestInfosJSONArray = samlSloContextJSONObject.getJSONArray("
 			Liferay.on(
 				'beforeNavigate',
 				function(event) {
-					if (!confirmLogout()) {
-						event.originalEvent.preventDefault();
-					}
-					else {
-						SAML.SLO.clearFinishTimeout();
-					}
+					Liferay.Util.openConfirmModal({
+						message: '<liferay-ui:message key="leaving-this-window-might-leave-logout-unfinished" />',
+						onConfirm: (isConfirmed) => {
+							if (isConfirmed) {
+								SAML.SLO.clearFinishTimeout();
+							} else {
+								event.originalEvent.preventDefault();
+							}
+						}
+					});
 				}
 			)
 		);
@@ -167,8 +158,8 @@ JSONArray samlSloRequestInfosJSONArray = samlSloContextJSONObject.getJSONArray("
 		'<tpl for="items">',
 			'<div class="saml-sp" id="samlSp{$i}">',
 				'<span class="portlet-msg-progress-label saml-sp-label">{name}</span>',
-				'<a class="hide saml-sp-retry" data-entityId="{entityId}" href="javascript:;"><%= UnicodeLanguageUtil.get(request, "retry") %></a>',
-				'<iframe class="hide-accessible" src="?cmd=logout&entityId={entityId}"></iframe>',
+				'<a class="hide saml-sp-retry" data-entityId="{entityId}" href="javascript:void(0);"><%= UnicodeLanguageUtil.get(request, "retry") %></a>',
+				'<iframe class="hide-accessible sr-only" src="?cmd=logout&entityId={entityId}"></iframe>',
 			'</div>',
 		'</tpl>'
 	);

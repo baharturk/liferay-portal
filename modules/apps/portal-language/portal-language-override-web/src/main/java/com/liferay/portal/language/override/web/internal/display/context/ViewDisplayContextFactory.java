@@ -1,34 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.language.override.web.internal.display.context;
 
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.dao.search.SearchPaginationUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
-import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -36,26 +27,30 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringParser;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TextFormatter;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.language.LanguageResources;
 import com.liferay.portal.language.override.constants.PLOActionKeys;
 import com.liferay.portal.language.override.model.PLOEntry;
 import com.liferay.portal.language.override.service.PLOEntryLocalService;
+import com.liferay.portal.language.override.web.internal.constants.PLOPortletKeys;
 import com.liferay.portal.language.override.web.internal.display.LanguageItemDisplay;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
@@ -79,13 +74,6 @@ public class ViewDisplayContextFactory {
 
 		ViewDisplayContext viewDisplayContext = new ViewDisplayContext();
 
-		Set<Locale> companyAvailableLocales =
-			LanguageUtil.getCompanyAvailableLocales(
-				_portal.getCompanyId(renderRequest));
-
-		viewDisplayContext.setAvailableLocales(
-			companyAvailableLocales.toArray(new Locale[0]));
-
 		viewDisplayContext.setDisplayStyle(
 			ParamUtil.getString(renderRequest, "displayStyle", "descriptive"));
 
@@ -97,58 +85,254 @@ public class ViewDisplayContextFactory {
 					PLOActionKeys.MANAGE_LANGUAGE_OVERRIDES));
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
-
-		viewDisplayContext.setSearchContainer(
-			_createSearchContainer(renderRequest, renderResponse));
 
 		String selectedLanguageId = ParamUtil.getString(
 			renderRequest, "selectedLanguageId",
 			LanguageUtil.getLanguageId(_portal.getLocale(renderRequest)));
 
+		viewDisplayContext.setSearchContainer(
+			_createSearchContainer(
+				renderRequest, renderResponse, selectedLanguageId));
 		viewDisplayContext.setSelectedLanguageId(selectedLanguageId);
-
 		viewDisplayContext.setTranslationLanguageDropdownItems(
 			_getTranslationLanguageDropdownItems(
 				_portal.getCurrentURL(renderRequest),
 				renderResponse.getNamespace(), selectedLanguageId,
-				companyAvailableLocales));
+				LanguageUtil.getCompanyAvailableLocales(
+					_portal.getCompanyId(renderRequest))));
 
 		return viewDisplayContext;
 	}
 
 	private SearchContainer<LanguageItemDisplay> _createSearchContainer(
-		RenderRequest renderRequest, RenderResponse renderResponse) {
+		RenderRequest renderRequest, RenderResponse renderResponse,
+		String selectedLanguageId) {
 
 		LiferayPortletRequest liferayPortletRequest =
 			_portal.getLiferayPortletRequest(renderRequest);
-		LiferayPortletResponse liferayPortletResponse =
-			_portal.getLiferayPortletResponse(renderResponse);
 
 		SearchContainer<LanguageItemDisplay> searchContainer =
 			new SearchContainer<>(
 				liferayPortletRequest,
 				PortletURLUtil.getCurrent(
-					liferayPortletRequest, liferayPortletResponse),
+					liferayPortletRequest,
+					_portal.getLiferayPortletResponse(renderResponse)),
 				Arrays.asList("key", "value"),
 				"no-language-entries-were-found");
 
 		searchContainer.setId("portalLanguageOverrideEntries");
+		searchContainer.setOrderByCol(
+			SearchOrderByUtil.getOrderByCol(
+				liferayPortletRequest, PLOPortletKeys.PORTAL_LANGUAGE_OVERRIDE,
+				"name"));
+		searchContainer.setOrderByType(
+			SearchOrderByUtil.getOrderByType(
+				liferayPortletRequest, PLOPortletKeys.PORTAL_LANGUAGE_OVERRIDE,
+				"asc"));
 
-		String orderByCol = ParamUtil.getString(
-			liferayPortletRequest, "orderByCol", "name");
+		List<LanguageItemDisplay> languageItemDisplays =
+			_getLanguageItemDisplays(
+				_portal.getCompanyId(renderRequest),
+				ParamUtil.getString(renderRequest, "navigation", "all"),
+				ParamUtil.getString(renderRequest, "keywords"),
+				selectedLanguageId);
 
-		searchContainer.setOrderByCol(orderByCol);
+		_sortLanguageItemDisplays(
+			languageItemDisplays, searchContainer.getOrderByType());
 
-		String orderByType = ParamUtil.getString(
-			liferayPortletRequest, "orderByType", "asc");
-
-		searchContainer.setOrderByType(orderByType);
-
-		_setResults(renderRequest, searchContainer);
+		searchContainer.setResultsAndTotal(languageItemDisplays);
 
 		return searchContainer;
+	}
+
+	private List<LanguageItemDisplay> _getAllLanguageItemDisplays(
+		Predicate<String> keyMatchPredicate,
+		Map<String, List<PLOEntry>> keyPLOEntriesMap, String selectedLanguageId,
+		Predicate<String> valueMatchPredicate) {
+
+		List<LanguageItemDisplay> languageItemDisplays = new ArrayList<>();
+
+		ResourceBundle resourceBundle = LanguageResources.getResourceBundle(
+			_toLocale(selectedLanguageId));
+
+		for (String key : resourceBundle.keySet()) {
+			String value = ResourceBundleUtil.getString(resourceBundle, key);
+
+			if (!keyMatchPredicate.test(key) &&
+				!valueMatchPredicate.test(value)) {
+
+				continue;
+			}
+
+			LanguageItemDisplay languageItemDisplay = new LanguageItemDisplay(
+				key, value);
+
+			if (keyPLOEntriesMap.containsKey(key)) {
+				languageItemDisplay.setOverride(true);
+
+				Set<String> overrideLanguageIds = new TreeSet<>();
+
+				for (PLOEntry ploEntry : keyPLOEntriesMap.get(key)) {
+					overrideLanguageIds.add(ploEntry.getLanguageId());
+
+					if (Objects.equals(
+							selectedLanguageId, ploEntry.getLanguageId())) {
+
+						languageItemDisplay.setOverrideSelectedLanguageId(true);
+					}
+				}
+
+				languageItemDisplay.setOverrideLanguageIdsString(
+					_getLanguageIdsString(
+						overrideLanguageIds, selectedLanguageId));
+			}
+
+			languageItemDisplays.add(languageItemDisplay);
+		}
+
+		return languageItemDisplays;
+	}
+
+	private Map<String, List<PLOEntry>> _getKeyPLOEntriesMap(long companyId) {
+		Map<String, List<PLOEntry>> keyPLOEntriesMap = new HashMap<>();
+
+		for (PLOEntry ploEntry :
+				_ploEntryLocalService.getPLOEntries(companyId)) {
+
+			List<PLOEntry> ploEntries = keyPLOEntriesMap.computeIfAbsent(
+				ploEntry.getKey(), key -> new ArrayList<>());
+
+			ploEntries.add(ploEntry);
+		}
+
+		return keyPLOEntriesMap;
+	}
+
+	private String _getLanguageIdsString(
+		Set<String> overrideLanguageIds, String selectedLanguageId) {
+
+		if (overrideLanguageIds.isEmpty()) {
+			return StringPool.BLANK;
+		}
+
+		StringBundler sb = new StringBundler(
+			(2 * overrideLanguageIds.size()) - 1);
+
+		Iterator<String> iterator = overrideLanguageIds.iterator();
+
+		while (iterator.hasNext()) {
+			String overrideLanguageId = iterator.next();
+
+			if (Objects.equals(selectedLanguageId, overrideLanguageId)) {
+				sb.append(
+					String.format("<strong>%s</strong>", overrideLanguageId));
+			}
+			else {
+				sb.append(overrideLanguageId);
+			}
+
+			if (iterator.hasNext()) {
+				sb.append(StringPool.COMMA_AND_SPACE);
+			}
+		}
+
+		return sb.toString();
+	}
+
+	private List<LanguageItemDisplay> _getLanguageItemDisplays(
+		long companyId, String filter, String keywords,
+		String selectedLanguageId) {
+
+		Predicate<String> keyMatchPredicate = _getPredicate(
+			keywords, _keyMatchPatternFunction);
+		Map<String, List<PLOEntry>> keyPLOEntriesMap = _getKeyPLOEntriesMap(
+			companyId);
+		Predicate<String> valueMatchPredicate = _getPredicate(
+			keywords, _valueMatchPatternFunction);
+
+		if (filter.equals("any-language")) {
+			return _getOverrideLanguageItemDisplays(
+				keyMatchPredicate, keyPLOEntriesMap, selectedLanguageId,
+				valueMatchPredicate, false);
+		}
+		else if (filter.equals("selected-language")) {
+			return _getOverrideLanguageItemDisplays(
+				keyMatchPredicate, keyPLOEntriesMap, selectedLanguageId,
+				valueMatchPredicate, true);
+		}
+
+		return _getAllLanguageItemDisplays(
+			keyMatchPredicate, keyPLOEntriesMap, selectedLanguageId,
+			valueMatchPredicate);
+	}
+
+	private List<LanguageItemDisplay> _getOverrideLanguageItemDisplays(
+		Predicate<String> keyMatchPredicate,
+		Map<String, List<PLOEntry>> keyPLOEntriesMap, String selectedLanguageId,
+		Predicate<String> valueMatchPredicate,
+		boolean limitToSelectedLanguage) {
+
+		List<LanguageItemDisplay> languageItemDisplays = new ArrayList<>();
+
+		Locale selectedLocale = _toLocale(selectedLanguageId);
+
+		for (Map.Entry<String, List<PLOEntry>> entry :
+				keyPLOEntriesMap.entrySet()) {
+
+			String key = entry.getKey();
+
+			String value = LanguageUtil.get(
+				selectedLocale, key, StringPool.BLANK);
+
+			if (keyMatchPredicate.test(key) ||
+				valueMatchPredicate.test(value)) {
+
+				LanguageItemDisplay languageItemDisplay =
+					new LanguageItemDisplay(key, value);
+
+				languageItemDisplay.setOverride(true);
+
+				Set<String> overrideLanguageIds = new TreeSet<>();
+
+				for (PLOEntry ploEntry : entry.getValue()) {
+					overrideLanguageIds.add(ploEntry.getLanguageId());
+
+					if (Objects.equals(
+							selectedLanguageId, ploEntry.getLanguageId())) {
+
+						languageItemDisplay.setOverrideSelectedLanguageId(true);
+					}
+				}
+
+				if (limitToSelectedLanguage &&
+					!languageItemDisplay.isOverrideSelectedLanguageId()) {
+
+					continue;
+				}
+
+				languageItemDisplay.setOverrideLanguageIdsString(
+					_getLanguageIdsString(
+						overrideLanguageIds, selectedLanguageId));
+
+				languageItemDisplays.add(languageItemDisplay);
+			}
+		}
+
+		return languageItemDisplays;
+	}
+
+	private Predicate<String> _getPredicate(
+		String keywords, Function<String, Pattern> patternFunction) {
+
+		if (Validator.isBlank(keywords)) {
+			return s -> true;
+		}
+
+		Pattern pattern = patternFunction.apply(keywords);
+
+		return pattern.asPredicate();
 	}
 
 	private List<DropdownItem> _getTranslationLanguageDropdownItems(
@@ -169,7 +353,7 @@ public class ViewDisplayContextFactory {
 					dropdownItem.setActive(
 						Objects.equals(selectedLanguageId, languageId));
 					dropdownItem.setHref(
-						HttpUtil.setParameter(
+						HttpComponentsUtil.setParameter(
 							currentURL, namespace + "selectedLanguageId",
 							languageId));
 					dropdownItem.setIcon(icon);
@@ -181,143 +365,36 @@ public class ViewDisplayContextFactory {
 		return dropdownItemList;
 	}
 
-	private void _setResults(
-		RenderRequest renderRequest,
-		SearchContainer<LanguageItemDisplay> searchContainer) {
-
-		List<LanguageItemDisplay> languageItemDisplays = new ArrayList<>();
-
-		List<PLOEntry> ploEntries = _ploEntryLocalService.getPLOEntries(
-			_portal.getCompanyId(renderRequest));
-
-		Stream<PLOEntry> ploEntryStream = ploEntries.stream();
-
-		Map<String, List<PLOEntry>> ploEntryMap = ploEntryStream.collect(
-			Collectors.groupingBy(PLOEntry::getKey));
-
-		Predicate<String> keyMatchPredicate = s -> true;
-		Predicate<String> valueMatchPredicate = s -> true;
-
-		if (searchContainer.isSearch()) {
-			String keywords = ParamUtil.getString(renderRequest, "keywords");
-
-			Pattern keyPattern = Pattern.compile(
-				".*" + StringParser.escapeRegex(keywords) + ".*",
-				Pattern.CASE_INSENSITIVE + Pattern.UNICODE_CASE);
-
-			keyMatchPredicate = keyPattern.asPredicate();
-
-			Pattern valuePattern = Pattern.compile(
-				".*\\b" + StringParser.escapeRegex(keywords) + ".*",
-				Pattern.CASE_INSENSITIVE + Pattern.UNICODE_CASE);
-
-			valueMatchPredicate = valuePattern.asPredicate();
-		}
-
-		String selectedLanguageId = ParamUtil.getString(
-			renderRequest, "selectedLanguageId");
-
-		Locale locale = LocaleUtil.fromLanguageId(
-			selectedLanguageId, true, true);
-
-		String filter = ParamUtil.getString(renderRequest, "navigation", "all");
-
-		if (filter.equals("override")) {
-			for (Map.Entry<String, List<PLOEntry>> entry :
-					ploEntryMap.entrySet()) {
-
-				String key = entry.getKey();
-
-				String value = LanguageUtil.get(locale, key, StringPool.BLANK);
-
-				if (keyMatchPredicate.test(key) ||
-					valueMatchPredicate.test(value)) {
-
-					LanguageItemDisplay languageItemDisplay =
-						new LanguageItemDisplay(key, value);
-
-					languageItemDisplay.setOverride(true);
-
-					for (PLOEntry ploEntry : entry.getValue()) {
-						languageItemDisplay.addOverrideLanguageId(
-							ploEntry.getLanguageId());
-
-						if (Objects.equals(
-								selectedLanguageId, ploEntry.getLanguageId())) {
-
-							languageItemDisplay.setOverrideSelectedLanguageId(
-								true);
-						}
-					}
-
-					languageItemDisplays.add(languageItemDisplay);
-				}
-			}
-		}
-		else {
-			ResourceBundle resourceBundle = LanguageResources.getResourceBundle(
-				locale);
-
-			for (String key : resourceBundle.keySet()) {
-				String value = ResourceBundleUtil.getString(
-					resourceBundle, key);
-
-				if (keyMatchPredicate.test(key) ||
-					valueMatchPredicate.test(value)) {
-
-					LanguageItemDisplay languageItemDisplay =
-						new LanguageItemDisplay(key, value);
-
-					if (ploEntryMap.containsKey(key)) {
-						languageItemDisplay.setOverride(true);
-
-						for (PLOEntry ploEntry : ploEntryMap.get(key)) {
-							languageItemDisplay.addOverrideLanguageId(
-								ploEntry.getLanguageId());
-
-							if (Objects.equals(
-									selectedLanguageId,
-									ploEntry.getLanguageId())) {
-
-								languageItemDisplay.
-									setOverrideSelectedLanguageId(true);
-							}
-						}
-					}
-
-					languageItemDisplays.add(languageItemDisplay);
-				}
-			}
-		}
-
-		searchContainer.setTotal(languageItemDisplays.size());
-
-		// Sorting
+	private void _sortLanguageItemDisplays(
+		List<LanguageItemDisplay> languageItemDisplays, String orderByType) {
 
 		Comparator<LanguageItemDisplay> comparator = Comparator.comparing(
 			LanguageItemDisplay::getKey);
 
-		if (Objects.equals(searchContainer.getOrderByType(), "desc")) {
+		if (Objects.equals(orderByType, "desc")) {
 			comparator = comparator.reversed();
 		}
 
 		languageItemDisplays.sort(comparator);
+	}
 
-		// Pagination
-
-		int[] startAndEnd = SearchPaginationUtil.calculateStartAndEnd(
-			searchContainer.getStart(), searchContainer.getEnd(),
-			searchContainer.getTotal());
-
-		searchContainer.setResults(
-			languageItemDisplays.subList(startAndEnd[0], startAndEnd[1]));
+	private Locale _toLocale(String languageId) {
+		return LocaleUtil.fromLanguageId(languageId, true, true);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ViewDisplayContextFactory.class);
 
+	private final Function<String, Pattern> _keyMatchPatternFunction =
+		s -> Pattern.compile(
+			".*" + StringParser.escapeRegex(s) + ".*",
+			Pattern.CASE_INSENSITIVE + Pattern.UNICODE_CASE);
 	private final PermissionCheckerFactory _permissionCheckerFactory;
 	private final PLOEntryLocalService _ploEntryLocalService;
 	private final Portal _portal;
+	private final Function<String, Pattern> _valueMatchPatternFunction =
+		s -> Pattern.compile(
+			".*\\b" + StringParser.escapeRegex(s) + ".*",
+			Pattern.CASE_INSENSITIVE + Pattern.UNICODE_CASE);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.servlet.taglib;
@@ -17,9 +8,9 @@ package com.liferay.frontend.taglib.clay.servlet.taglib;
 import com.liferay.frontend.taglib.clay.internal.servlet.taglib.BaseContainerTag;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.PaginationBarDelta;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.PaginationBarLabels;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
@@ -73,11 +64,10 @@ public class PaginationBarTag extends BaseContainerTag {
 				TagResourceBundleUtil.getResourceBundle(pageContext);
 
 			paginationBarLabels.setPaginationResults(
-				StringBundler.concat(
-					LanguageUtil.get(resourceBundle, "showing"), " {0} ",
-					StringUtil.toLowerCase(
-						LanguageUtil.get(resourceBundle, "to")),
-					" {1} ", LanguageUtil.get(resourceBundle, "of"), " {2}"));
+				LanguageUtil.format(
+					PortalUtil.getLocale(getRequest()),
+					"showing-x-to-x-of-x-entries",
+					new String[] {"{0}", "{1}", "{2}"}));
 
 			String perPageItems =
 				"{0} " + LanguageUtil.get(resourceBundle, "items");
@@ -175,7 +165,7 @@ public class PaginationBarTag extends BaseContainerTag {
 
 	@Override
 	protected String getHydratedModuleName() {
-		return "frontend-taglib-clay/PaginationBar";
+		return "{PaginationBar} from frontend-taglib-clay";
 	}
 
 	@Override
@@ -258,15 +248,39 @@ public class PaginationBarTag extends BaseContainerTag {
 		jspWriter.write(_totalItems.toString());
 		jspWriter.write(StringPool.SPACE);
 		jspWriter.write("</div><ul class=\"pagination pagination-root\">");
-		jspWriter.write("<li class=\"page-item disabled\">");
+		jspWriter.write("<li class=\"page-item\"");
 
-		ButtonTag buttonTag = new ButtonTag();
+		boolean firstPage = false;
 
-		buttonTag.setCssClass("page-link");
-		buttonTag.setDisplayType("unstyled");
-		buttonTag.setIcon("angle-left");
+		if (_activePage == 1) {
+			firstPage = true;
+		}
 
-		buttonTag.doTag(pageContext);
+		if (firstPage) {
+			jspWriter.write(" disabled\"");
+		}
+
+		jspWriter.write(">");
+
+		if (firstPage) {
+			jspWriter.write("<div class=\"page-link\">");
+
+			IconTag iconTag = new IconTag();
+
+			iconTag.setSymbol("angle-left");
+			iconTag.doTag(pageContext);
+
+			jspWriter.write("</div>");
+		}
+		else {
+			LinkTag linkTag = new LinkTag();
+
+			linkTag.setCssClass("page-link");
+			linkTag.setDisplayType("unstyled");
+			linkTag.setIcon("angle-left");
+
+			linkTag.doTag(pageContext);
+		}
 
 		jspWriter.write("</li>");
 
@@ -356,15 +370,40 @@ public class PaginationBarTag extends BaseContainerTag {
 			}
 		}
 
-		jspWriter.write("<li class=\"page-item\">");
+		jspWriter.write("<li class=\"page-item\"");
 
-		buttonTag = new ButtonTag();
+		boolean lastPage = false;
 
-		buttonTag.setCssClass("page-link");
-		buttonTag.setDisplayType("unstyled");
-		buttonTag.setIcon("angle-right");
+		if (_activePage == totalPages) {
+			lastPage = true;
+		}
 
-		buttonTag.doTag(pageContext);
+		if (lastPage) {
+			jspWriter.write(" disabled\"");
+		}
+
+		jspWriter.write(">");
+
+		if (lastPage) {
+			jspWriter.write("<div class=\"page-link\">");
+
+			IconTag iconTag = new IconTag();
+
+			iconTag.setSymbol("angle-right");
+
+			iconTag.doTag(pageContext);
+
+			jspWriter.write("</div>");
+		}
+		else {
+			LinkTag linkTag = new LinkTag();
+
+			linkTag.setCssClass("page-link");
+			linkTag.setDisplayType("unstyled");
+			linkTag.setIcon("angle-right");
+
+			linkTag.doTag(pageContext);
+		}
 
 		jspWriter.write("</li></ul>");
 
@@ -406,13 +445,13 @@ public class PaginationBarTag extends BaseContainerTag {
 
 		jspWriter.write("\">");
 
-		ButtonTag buttonTag = new ButtonTag();
+		LinkTag linkTag = new LinkTag();
 
-		buttonTag.setCssClass("page-link");
-		buttonTag.setDisplayType("unstyled");
-		buttonTag.setLabel(String.valueOf(item));
+		linkTag.setCssClass("page-link");
+		linkTag.setDisplayType("unstyled");
+		linkTag.setLabel(String.valueOf(item));
 
-		buttonTag.doTag(pageContext);
+		linkTag.doTag(pageContext);
 
 		jspWriter.write("</li>");
 	}

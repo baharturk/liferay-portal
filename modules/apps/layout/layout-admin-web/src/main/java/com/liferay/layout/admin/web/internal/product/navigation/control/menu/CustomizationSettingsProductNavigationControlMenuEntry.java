@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.product.navigation.control.menu;
@@ -36,15 +27,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Julio Camarero
  */
 @Component(
-	immediate = true,
 	property = {
 		"product.navigation.control.menu.category.key=" + ProductNavigationControlMenuCategoryKeys.TOOLS,
 		"product.navigation.control.menu.entry.order:Integer=400"
 	},
-	service = {
-		CustomizationSettingsProductNavigationControlMenuEntry.class,
-		ProductNavigationControlMenuEntry.class
-	}
+	service = ProductNavigationControlMenuEntry.class
 )
 public class CustomizationSettingsProductNavigationControlMenuEntry
 	extends BaseJSPProductNavigationControlMenuEntry
@@ -86,12 +73,8 @@ public class CustomizationSettingsProductNavigationControlMenuEntry
 	}
 
 	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.admin.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	private boolean _isCustomizableLayout(ThemeDisplay themeDisplay)
@@ -151,5 +134,8 @@ public class CustomizationSettingsProductNavigationControlMenuEntry
 
 	private static final String _SHOW =
 		CustomizationSettingsProductNavigationControlMenuEntry.class + "#_SHOW";
+
+	@Reference(target = "(osgi.web.symbolicname=com.liferay.layout.admin.web)")
+	private ServletContext _servletContext;
 
 }

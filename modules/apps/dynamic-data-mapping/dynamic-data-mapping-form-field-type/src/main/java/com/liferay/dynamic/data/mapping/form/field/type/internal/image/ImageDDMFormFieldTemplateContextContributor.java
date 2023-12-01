@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.image;
@@ -25,12 +16,14 @@ import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.item.selector.criteria.DownloadFileEntryItemSelectorReturnType;
 import com.liferay.item.selector.criteria.image.criterion.ImageItemSelectorCriterion;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
@@ -47,26 +40,21 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.portlet.PortletURL;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
 
 /**
  * @author Carlos Lancha
  */
 @Component(
-	immediate = true, property = "ddm.form.field.type.name=image",
-	service = {
-		DDMFormFieldTemplateContextContributor.class,
-		ImageDDMFormFieldTemplateContextContributor.class
-	}
+	property = "ddm.form.field.type.name=image",
+	service = DDMFormFieldTemplateContextContributor.class
 )
 public class ImageDDMFormFieldTemplateContextContributor
 	implements DDMFormFieldTemplateContextContributor {
@@ -106,6 +94,18 @@ public class ImageDDMFormFieldTemplateContextContributor
 		).build();
 	}
 
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_serviceTrackerList = ServiceTrackerListFactory.open(
+			bundleContext,
+			ImageDDMFormFieldItemSelectorCriterionContributor.class);
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerList.close();
+	}
+
 	protected String getValue(String value) {
 		try {
 			JSONObject valueJSONObject = _getValueJSONObject(value);
@@ -133,31 +133,11 @@ public class ImageDDMFormFieldTemplateContextContributor
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
 		return value;
-	}
-
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC
-	)
-	protected void setImageDDMFormFieldItemSelectorCriterionContributor(
-		ImageDDMFormFieldItemSelectorCriterionContributor
-			imageDDMFormFieldItemSelectorCriterionContributor) {
-
-		_imageDDMFormFieldItemSelectorCriterionContributors.add(
-			imageDDMFormFieldItemSelectorCriterionContributor);
-	}
-
-	protected void unsetImageDDMFormFieldItemSelectorCriterionContributor(
-		ImageDDMFormFieldItemSelectorCriterionContributor
-			imageDDMFormFieldItemSelectorCriterionContributor) {
-
-		_imageDDMFormFieldItemSelectorCriterionContributors.remove(
-			imageDDMFormFieldItemSelectorCriterionContributor);
 	}
 
 	private FileEntry _getFileEntry(JSONObject valueJSONObject) {
@@ -168,7 +148,7 @@ public class ImageDDMFormFieldTemplateContextContributor
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug("Unable to retrieve file entry ", portalException);
+				_log.debug("Unable to get file entry", portalException);
 			}
 
 			return null;
@@ -195,7 +175,7 @@ public class ImageDDMFormFieldTemplateContextContributor
 
 		for (ImageDDMFormFieldItemSelectorCriterionContributor
 				imageDDMFormFieldItemSelectorCriterionContributor :
-					_imageDDMFormFieldItemSelectorCriterionContributors) {
+					_serviceTrackerList) {
 
 			if (!imageDDMFormFieldItemSelectorCriterionContributor.isVisible(
 					ddmFormFieldRenderingContext)) {
@@ -208,13 +188,12 @@ public class ImageDDMFormFieldTemplateContextContributor
 					getItemSelectorCriterion(ddmFormFieldRenderingContext));
 		}
 
-		PortletURL itemSelectorURL = _itemSelector.getItemSelectorURL(
-			RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
-			ddmFormFieldRenderingContext.getPortletNamespace() +
-				"selectDocumentLibrary",
-			itemSelectorCriteria.toArray(new ItemSelectorCriterion[0]));
-
-		return itemSelectorURL.toString();
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
+				ddmFormFieldRenderingContext.getPortletNamespace() +
+					"selectDocumentLibrary",
+				itemSelectorCriteria.toArray(new ItemSelectorCriterion[0])));
 	}
 
 	private String _getMessage(Locale defaultLocale, String value) {
@@ -234,13 +213,13 @@ public class ImageDDMFormFieldTemplateContextContributor
 		FileEntry fileEntry = _getFileEntry(valueJSONObject);
 
 		if (fileEntry == null) {
-			return LanguageUtil.get(
+			return _language.get(
 				_getResourceBundle(defaultLocale),
 				"the-selected-image-was-deleted");
 		}
 
 		if (fileEntry.isInTrash()) {
-			return LanguageUtil.get(
+			return _language.get(
 				_getResourceBundle(defaultLocale),
 				"the-selected-image-was-moved-to-the-recycle-bin");
 		}
@@ -264,7 +243,7 @@ public class ImageDDMFormFieldTemplateContextContributor
 		}
 		catch (JSONException jsonException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException, jsonException);
+				_log.debug(jsonException);
 			}
 
 			return null;
@@ -280,10 +259,6 @@ public class ImageDDMFormFieldTemplateContextContributor
 	@Reference
 	private DLURLHelper _dlURLHelper;
 
-	private final List<ImageDDMFormFieldItemSelectorCriterionContributor>
-		_imageDDMFormFieldItemSelectorCriterionContributors =
-			new CopyOnWriteArrayList<>();
-
 	@Reference
 	private ItemSelector _itemSelector;
 
@@ -291,6 +266,12 @@ public class ImageDDMFormFieldTemplateContextContributor
 	private JSONFactory _jsonFactory;
 
 	@Reference
+	private Language _language;
+
+	@Reference
 	private Portal _portal;
+
+	private ServiceTrackerList
+		<ImageDDMFormFieldItemSelectorCriterionContributor> _serviceTrackerList;
 
 }

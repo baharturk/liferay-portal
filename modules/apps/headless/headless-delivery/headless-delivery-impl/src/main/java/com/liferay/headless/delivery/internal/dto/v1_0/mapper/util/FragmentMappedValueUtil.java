@@ -1,27 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.mapper.util;
 
-import com.liferay.headless.delivery.dto.v1_0.ClassFieldReference;
+import com.liferay.headless.delivery.dto.v1_0.ClassFieldsReference;
 import com.liferay.headless.delivery.dto.v1_0.ClassPKReference;
 import com.liferay.headless.delivery.dto.v1_0.ContextReference;
+import com.liferay.headless.delivery.dto.v1_0.Field;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -96,32 +90,7 @@ public class FragmentMappedValueUtil {
 		}
 
 		if (layoutJSONObject != null) {
-			final Layout layout;
-
-			try {
-				layout = LayoutLocalServiceUtil.getLayout(
-					layoutJSONObject.getLong("groupId"),
-					layoutJSONObject.getBoolean("privateLayout"),
-					layoutJSONObject.getLong("layoutId"));
-			}
-			catch (PortalException portalException) {
-				if (_log.isWarnEnabled()) {
-					_log.warn(
-						"Item reference could not be set since no layout " +
-							"could be obtained",
-						portalException);
-				}
-
-				return null;
-			}
-
-			return new ClassFieldReference() {
-				{
-					className = Layout.class.getName();
-					fieldName = "plid";
-					fieldValue = String.valueOf(layout.getPlid());
-				}
-			};
+			return toLayoutClassFieldsReference(layoutJSONObject);
 		}
 
 		if (Validator.isNotNull(mappedField)) {
@@ -136,6 +105,61 @@ public class FragmentMappedValueUtil {
 			{
 				className = _toItemClassName(jsonObject);
 				classPK = _toItemClassPK(jsonObject);
+			}
+		};
+	}
+
+	public static ClassFieldsReference toLayoutClassFieldsReference(
+		JSONObject layoutJSONObject) {
+
+		final Layout layout;
+
+		try {
+			layout = LayoutLocalServiceUtil.getLayout(
+				layoutJSONObject.getLong("groupId"),
+				layoutJSONObject.getBoolean("privateLayout"),
+				layoutJSONObject.getLong("layoutId"));
+		}
+		catch (PortalException portalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Item reference could not be set since no layout could " +
+						"be obtained",
+					portalException);
+			}
+
+			return null;
+		}
+
+		return new ClassFieldsReference() {
+			{
+				className = Layout.class.getName();
+
+				setFields(
+					() -> {
+						Field friendlyURLField = new Field();
+
+						friendlyURLField.setFieldName("friendlyURL");
+						friendlyURLField.setFieldValue(layout.getFriendlyURL());
+
+						Field privatePageField = new Field();
+
+						privatePageField.setFieldName("privatePage");
+						privatePageField.setFieldValue(
+							String.valueOf(layout.isPrivateLayout()));
+
+						Field siteKeyField = new Field();
+
+						Group group = GroupLocalServiceUtil.getGroup(
+							layout.getGroupId());
+
+						siteKeyField.setFieldName("siteKey");
+						siteKeyField.setFieldValue(group.getGroupKey());
+
+						return new Field[] {
+							friendlyURLField, privatePageField, siteKeyField
+						};
+					});
 			}
 		};
 	}

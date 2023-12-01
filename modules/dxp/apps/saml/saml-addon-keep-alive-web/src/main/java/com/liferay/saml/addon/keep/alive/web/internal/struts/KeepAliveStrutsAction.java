@@ -1,27 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.addon.keep.alive.web.internal.struts;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.ContentTypes;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -54,8 +45,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Mika Koivisto
  */
 @Component(
-	immediate = true, property = "path=/portal/saml/keep_alive",
-	service = StrutsAction.class
+	property = "path=/portal/saml/keep_alive", service = StrutsAction.class
 )
 public class KeepAliveStrutsAction implements StrutsAction {
 
@@ -98,7 +88,8 @@ public class KeepAliveStrutsAction implements StrutsAction {
 		List<String> keepAliveURLs = _getSPsKeepAliveURLs(httpServletRequest);
 
 		for (String keepAliveURL : keepAliveURLs) {
-			keepAliveURL = _http.addParameter(keepAliveURL, "r", randomString);
+			keepAliveURL = HttpComponentsUtil.addParameter(
+				keepAliveURL, "r", randomString);
 
 			printWriter.write("document.write('<img alt=\"\" src=\"");
 			printWriter.write(
@@ -127,8 +118,8 @@ public class KeepAliveStrutsAction implements StrutsAction {
 			HttpServletRequest httpServletRequest)
 		throws Exception {
 
-		String samlSsoSessionId = CookieKeys.getCookie(
-			httpServletRequest, SamlWebKeys.SAML_SSO_SESSION_ID);
+		String samlSsoSessionId = CookiesManagerUtil.getCookieValue(
+			SamlWebKeys.SAML_SSO_SESSION_ID, httpServletRequest);
 
 		SamlIdpSsoSession samlIdpSsoSession =
 			_samlIdpSsoSessionLocalService.fetchSamlIdpSso(samlSsoSessionId);
@@ -179,9 +170,6 @@ public class KeepAliveStrutsAction implements StrutsAction {
 
 	private static final String _BASE64_1X1_GIF =
 		"R0lGODdhAQABAIAAAP///////ywAAAAAAQABAAACAkQBADs=";
-
-	@Reference
-	private Http _http;
 
 	@Reference
 	private SamlIdpSpConnectionLocalService _samlIdpSpConnectionLocalService;

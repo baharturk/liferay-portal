@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.model;
@@ -21,6 +12,7 @@ import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
 
 import java.util.Date;
 import java.util.Locale;
@@ -41,8 +33,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface KaleoNodeModel
-	extends BaseModel<KaleoNode>, GroupedModel, LocalizedModel, MVCCModel,
-			ShardedModel {
+	extends BaseModel<KaleoNode>, CTModel<KaleoNode>, GroupedModel,
+			LocalizedModel, MVCCModel, ShardedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -55,6 +47,7 @@ public interface KaleoNodeModel
 	 *
 	 * @return the primary key of this kaleo node
 	 */
+	@Override
 	public long getPrimaryKey();
 
 	/**
@@ -62,6 +55,7 @@ public interface KaleoNodeModel
 	 *
 	 * @param primaryKey the primary key of this kaleo node
 	 */
+	@Override
 	public void setPrimaryKey(long primaryKey);
 
 	/**
@@ -79,6 +73,22 @@ public interface KaleoNodeModel
 	 */
 	@Override
 	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the ct collection ID of this kaleo node.
+	 *
+	 * @return the ct collection ID of this kaleo node
+	 */
+	@Override
+	public long getCtCollectionId();
+
+	/**
+	 * Sets the ct collection ID of this kaleo node.
+	 *
+	 * @param ctCollectionId the ct collection ID of this kaleo node
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId);
 
 	/**
 	 * Returns the kaleo node ID of this kaleo node.
@@ -451,5 +461,9 @@ public interface KaleoNodeModel
 
 	@Override
 	public KaleoNode cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

@@ -1,29 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.util;
 
 import com.liferay.calendar.model.CalendarBooking;
 import com.liferay.calendar.model.impl.CalendarBookingImpl;
-import com.liferay.calendar.model.impl.CalendarBookingModelImpl;
 import com.liferay.calendar.recurrence.Recurrence;
 import com.liferay.calendar.recurrence.RecurrenceSerializer;
 import com.liferay.calendar.recurrence.Weekday;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
-import com.liferay.portal.util.CalendarFactoryImpl;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -31,40 +21,21 @@ import java.util.List;
 import java.util.TimeZone;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import org.mockito.Mockito;
-
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
  * @author Adam Brandizzi
  */
-@PrepareForTest(
-	{
-		CalendarBooking.class, CalendarBookingImpl.class,
-		CalendarBookingModelImpl.class
-	}
-)
-@RunWith(PowerMockRunner.class)
-@SuppressStaticInitializationFor(
-	{
-		"com.liferay.calendar.model.CalendarBooking",
-		"com.liferay.calendar.model.impl.CalendarBookingImpl"
-	}
-)
 public class RecurrenceUtilTest {
 
-	@BeforeClass
-	public static void setUpClass() {
-		CalendarFactoryUtil calendarFactoryUtil = new CalendarFactoryUtil();
-
-		calendarFactoryUtil.setCalendarFactory(new CalendarFactoryImpl());
-	}
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Test
 	public void testGetLastCalendarBookingInstance() {
@@ -434,11 +405,9 @@ public class RecurrenceUtilTest {
 		CalendarBooking calendarBooking = Mockito.mock(
 			CalendarBookingImpl.class, Mockito.CALLS_REAL_METHODS);
 
+		calendarBooking.setStartTime(startTimeJCalendar.getTimeInMillis());
 		calendarBooking.setEndTime(
 			startTimeJCalendar.getTimeInMillis() + Time.HOUR);
-
-		calendarBooking.setStartTime(startTimeJCalendar.getTimeInMillis());
-
 		calendarBooking.setRecurrence(recurrence);
 
 		Mockito.doReturn(

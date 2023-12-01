@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.persistence.impl;
@@ -36,7 +27,6 @@ import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -52,7 +42,6 @@ import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -83,7 +72,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {DDMStorageLinkPersistence.class, BasePersistence.class})
+@Component(service = DDMStorageLinkPersistence.class)
 public class DDMStorageLinkPersistenceImpl
 	extends BasePersistenceImpl<DDMStorageLink>
 	implements DDMStorageLinkPersistence {
@@ -203,7 +192,7 @@ public class DDMStorageLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMStorageLink>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMStorageLink ddmStorageLink : list) {
@@ -595,7 +584,7 @@ public class DDMStorageLinkPersistenceImpl
 
 			finderArgs = new Object[] {uuid};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -760,7 +749,7 @@ public class DDMStorageLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMStorageLink>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMStorageLink ddmStorageLink : list) {
@@ -1185,7 +1174,7 @@ public class DDMStorageLinkPersistenceImpl
 
 			finderArgs = new Object[] {uuid, companyId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1305,21 +1294,21 @@ public class DDMStorageLinkPersistenceImpl
 	 */
 	@Override
 	public DDMStorageLink fetchByClassPK(long classPK, boolean useFinderCache) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMStorageLink.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {classPK};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByClassPK, finderArgs);
+				_finderPathFetchByClassPK, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			DDMStorageLink.class);
 
 		if (result instanceof DDMStorageLink) {
 			DDMStorageLink ddmStorageLink = (DDMStorageLink)result;
@@ -1327,6 +1316,14 @@ public class DDMStorageLinkPersistenceImpl
 			if (classPK != ddmStorageLink.getClassPK()) {
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						DDMStorageLink.class, ddmStorageLink.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -1417,7 +1414,7 @@ public class DDMStorageLinkPersistenceImpl
 
 			finderArgs = new Object[] {classPK};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1562,7 +1559,7 @@ public class DDMStorageLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMStorageLink>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMStorageLink ddmStorageLink : list) {
@@ -1932,7 +1929,7 @@ public class DDMStorageLinkPersistenceImpl
 
 			finderArgs = new Object[] {structureId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2081,7 +2078,7 @@ public class DDMStorageLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMStorageLink>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMStorageLink ddmStorageLink : list) {
@@ -2487,7 +2484,7 @@ public class DDMStorageLinkPersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMStorageLinkModelImpl</code>.
 	 * </p>
 	 *
-	 * @param structureVersionId the structure version ID
+	 * @param structureVersionIds the structure version IDs
 	 * @param start the lower bound of the range of ddm storage links
 	 * @param end the upper bound of the range of ddm storage links (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -2537,7 +2534,8 @@ public class DDMStorageLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMStorageLink>)finderCache.getResult(
-				_finderPathWithPaginationFindByStructureVersionId, finderArgs);
+				_finderPathWithPaginationFindByStructureVersionId, finderArgs,
+				this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMStorageLink ddmStorageLink : list) {
@@ -2554,45 +2552,35 @@ public class DDMStorageLinkPersistenceImpl
 		}
 
 		if (list == null) {
-			StringBundler sb = new StringBundler();
-
-			sb.append(_SQL_SELECT_DDMSTORAGELINK_WHERE);
-
-			if (structureVersionIds.length > 0) {
-				sb.append("(");
-
-				sb.append(
-					_FINDER_COLUMN_STRUCTUREVERSIONID_STRUCTUREVERSIONID_7);
-
-				sb.append(StringUtil.merge(structureVersionIds));
-
-				sb.append(")");
-
-				sb.append(")");
-			}
-
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DDMStorageLinkModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
 			try {
-				session = openSession();
+				if ((start == QueryUtil.ALL_POS) &&
+					(end == QueryUtil.ALL_POS) &&
+					(databaseInMaxParameters > 0) &&
+					(structureVersionIds.length > databaseInMaxParameters)) {
 
-				Query query = session.createQuery(sql);
+					list = new ArrayList<DDMStorageLink>();
 
-				list = (List<DDMStorageLink>)QueryUtil.list(
-					query, getDialect(), start, end);
+					long[][] structureVersionIdsPages =
+						(long[][])ArrayUtil.split(
+							structureVersionIds, databaseInMaxParameters);
+
+					for (long[] structureVersionIdsPage :
+							structureVersionIdsPages) {
+
+						list.addAll(
+							_findByStructureVersionId(
+								structureVersionIdsPage, start, end,
+								orderByComparator));
+					}
+
+					Collections.sort(list, orderByComparator);
+
+					list = Collections.unmodifiableList(list);
+				}
+				else {
+					list = _findByStructureVersionId(
+						structureVersionIds, start, end, orderByComparator);
+				}
 
 				cacheResult(list);
 
@@ -2605,9 +2593,61 @@ public class DDMStorageLinkPersistenceImpl
 			catch (Exception exception) {
 				throw processException(exception);
 			}
-			finally {
-				closeSession(session);
-			}
+		}
+
+		return list;
+	}
+
+	private List<DDMStorageLink> _findByStructureVersionId(
+		long[] structureVersionIds, int start, int end,
+		OrderByComparator<DDMStorageLink> orderByComparator) {
+
+		List<DDMStorageLink> list = null;
+
+		StringBundler sb = new StringBundler();
+
+		sb.append(_SQL_SELECT_DDMSTORAGELINK_WHERE);
+
+		if (structureVersionIds.length > 0) {
+			sb.append("(");
+
+			sb.append(_FINDER_COLUMN_STRUCTUREVERSIONID_STRUCTUREVERSIONID_7);
+
+			sb.append(StringUtil.merge(structureVersionIds));
+
+			sb.append(")");
+
+			sb.append(")");
+		}
+
+		sb.setStringAt(
+			removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
+
+		if (orderByComparator != null) {
+			appendOrderByComparator(
+				sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+		}
+		else {
+			sb.append(DDMStorageLinkModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			Query query = session.createQuery(sql);
+
+			list = (List<DDMStorageLink>)QueryUtil.list(
+				query, getDialect(), start, end);
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
 		}
 
 		return list;
@@ -2650,7 +2690,7 @@ public class DDMStorageLinkPersistenceImpl
 
 			finderArgs = new Object[] {structureVersionId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2716,40 +2756,33 @@ public class DDMStorageLinkPersistenceImpl
 			finderArgs = new Object[] {StringUtil.merge(structureVersionIds)};
 
 			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByStructureVersionId, finderArgs);
+				_finderPathWithPaginationCountByStructureVersionId, finderArgs,
+				this);
 		}
 
 		if (count == null) {
-			StringBundler sb = new StringBundler();
-
-			sb.append(_SQL_COUNT_DDMSTORAGELINK_WHERE);
-
-			if (structureVersionIds.length > 0) {
-				sb.append("(");
-
-				sb.append(
-					_FINDER_COLUMN_STRUCTUREVERSIONID_STRUCTUREVERSIONID_7);
-
-				sb.append(StringUtil.merge(structureVersionIds));
-
-				sb.append(")");
-
-				sb.append(")");
-			}
-
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
 			try {
-				session = openSession();
+				if ((databaseInMaxParameters > 0) &&
+					(structureVersionIds.length > databaseInMaxParameters)) {
 
-				Query query = session.createQuery(sql);
+					count = Long.valueOf(0);
 
-				count = (Long)query.uniqueResult();
+					long[][] structureVersionIdsPages =
+						(long[][])ArrayUtil.split(
+							structureVersionIds, databaseInMaxParameters);
+
+					for (long[] structureVersionIdsPage :
+							structureVersionIdsPages) {
+
+						count += Long.valueOf(
+							_countByStructureVersionId(
+								structureVersionIdsPage));
+					}
+				}
+				else {
+					count = Long.valueOf(
+						_countByStructureVersionId(structureVersionIds));
+				}
 
 				if (productionMode) {
 					finderCache.putResult(
@@ -2760,9 +2793,49 @@ public class DDMStorageLinkPersistenceImpl
 			catch (Exception exception) {
 				throw processException(exception);
 			}
-			finally {
-				closeSession(session);
-			}
+		}
+
+		return count.intValue();
+	}
+
+	private int _countByStructureVersionId(long[] structureVersionIds) {
+		Long count = null;
+
+		StringBundler sb = new StringBundler();
+
+		sb.append(_SQL_COUNT_DDMSTORAGELINK_WHERE);
+
+		if (structureVersionIds.length > 0) {
+			sb.append("(");
+
+			sb.append(_FINDER_COLUMN_STRUCTUREVERSIONID_STRUCTUREVERSIONID_7);
+
+			sb.append(StringUtil.merge(structureVersionIds));
+
+			sb.append(")");
+
+			sb.append(")");
+		}
+
+		sb.setStringAt(
+			removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
+
+		String sql = sb.toString();
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			Query query = session.createQuery(sql);
+
+			count = (Long)query.uniqueResult();
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
 		}
 
 		return count.intValue();
@@ -3129,7 +3202,9 @@ public class DDMStorageLinkPersistenceImpl
 	 */
 	@Override
 	public DDMStorageLink fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(DDMStorageLink.class)) {
+		if (ctPersistenceHelper.isProductionMode(
+				DDMStorageLink.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -3348,7 +3423,7 @@ public class DDMStorageLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMStorageLink>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3424,7 +3499,7 @@ public class DDMStorageLinkPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -3640,30 +3715,14 @@ public class DDMStorageLinkPersistenceImpl
 			new String[] {Long.class.getName()},
 			new String[] {"structureVersionId"}, false);
 
-		_setDDMStorageLinkUtilPersistence(this);
+		DDMStorageLinkUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setDDMStorageLinkUtilPersistence(null);
+		DDMStorageLinkUtil.setPersistence(null);
 
 		entityCache.removeCache(DDMStorageLinkImpl.class.getName());
-	}
-
-	private void _setDDMStorageLinkUtilPersistence(
-		DDMStorageLinkPersistence ddmStorageLinkPersistence) {
-
-		try {
-			Field field = DDMStorageLinkUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, ddmStorageLinkPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -3731,9 +3790,5 @@ public class DDMStorageLinkPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private DDMStorageLinkModelArgumentsResolver
-		_ddmStorageLinkModelArgumentsResolver;
 
 }

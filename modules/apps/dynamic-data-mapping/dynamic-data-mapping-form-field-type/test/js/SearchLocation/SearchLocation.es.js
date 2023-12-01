@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -44,12 +35,15 @@ const defaultConfig = {
 	onBlur: jest.fn(),
 	onChange: jest.fn(),
 	readOnly: false,
+	type: 'search_location',
 	visibleFields: ['address', 'city', 'country', 'postal-code', 'state'],
 };
 
-const hasAllFields = (getByLabelText, labels) => {
+const hasAllFields = (getAllByLabelText, labels) => {
 	Object.values(labels).forEach((label) => {
-		if (!getByLabelText(label)) {
+		const allByLabelText = getAllByLabelText(label);
+		expect(allByLabelText).toHaveLength(1);
+		if (!allByLabelText[1]) {
 			return false;
 		}
 	});
@@ -106,11 +100,13 @@ describe('Field Search Location', () => {
 	afterEach(cleanup);
 
 	it('must to be show search location fields', () => {
-		const {getByLabelText} = render(
+		const {getAllByLabelText} = render(
 			<SearchLocationWithProvider {...defaultConfig} />
 		);
 
-		expect(hasAllFields(getByLabelText, defaultConfig.labels)).toBe(true);
+		expect(hasAllFields(getAllByLabelText, defaultConfig.labels)).toBe(
+			true
+		);
 	});
 
 	it('must to be show search location fields in correct order', () => {
@@ -138,11 +134,13 @@ describe('Field Search Location', () => {
 		delete defaultConfig.labels.city;
 		defaultConfig.visibleFields.splice(1, 1);
 
-		const {getByLabelText} = render(
+		const {getAllByLabelText} = render(
 			<SearchLocationWithProvider {...defaultConfig} />
 		);
 
-		expect(hasAllFields(getByLabelText, defaultConfig.labels)).toBe(true);
+		expect(hasAllFields(getAllByLabelText, defaultConfig.labels)).toBe(
+			true
+		);
 	});
 
 	it('must to be show search location fields in correct order - remove field', () => {
@@ -169,11 +167,13 @@ describe('Field Search Location', () => {
 		defaultConfig.labels.city = 'City';
 		defaultConfig.visibleFields.splice(1, 0, 'city');
 
-		const {getByLabelText} = render(
+		const {getAllByLabelText} = render(
 			<SearchLocationWithProvider {...defaultConfig} />
 		);
 
-		expect(hasAllFields(getByLabelText, defaultConfig.labels)).toBe(true);
+		expect(hasAllFields(getAllByLabelText, defaultConfig.labels)).toBe(
+			true
+		);
 	});
 
 	it('must to be show search location fields in correct order - add field', () => {
@@ -230,11 +230,13 @@ describe('Field Search Location', () => {
 		delete defaultConfig.labels.city;
 		defaultConfig.visibleFields.splice(1, 1);
 
-		const {getByLabelText} = render(
+		const {getAllByLabelText} = render(
 			<SearchLocationWithProvider {...defaultConfig} />
 		);
 
-		expect(hasAllFields(getByLabelText, defaultConfig.labels)).toBe(true);
+		expect(hasAllFields(getAllByLabelText, defaultConfig.labels)).toBe(
+			true
+		);
 	});
 
 	it('must to be show search location fields in correct order - remove field - layout changed', () => {
@@ -261,11 +263,13 @@ describe('Field Search Location', () => {
 		defaultConfig.labels.city = 'City';
 		defaultConfig.visibleFields.splice(1, 0, 'city');
 
-		const {getByLabelText} = render(
+		const {getAllByLabelText} = render(
 			<SearchLocationWithProvider {...defaultConfig} />
 		);
 
-		expect(hasAllFields(getByLabelText, defaultConfig.labels)).toBe(true);
+		expect(hasAllFields(getAllByLabelText, defaultConfig.labels)).toBe(
+			true
+		);
 	});
 
 	it('must to be show search location fields in correct order - add field - layout changed', () => {
@@ -290,14 +294,17 @@ describe('Field Search Location', () => {
 	});
 
 	it('must to be append google dropdown places script', async () => {
-		const {getByLabelText} = await render(
+		const {getAllByLabelText} = await render(
 			<SearchLocationWithProvider {...defaultConfig} />
 		);
 
-		const searchLocationField = getByLabelText('Search Location');
-		const googlePlacesScriptElement = searchLocationField
-			.getElementsByTagName('script')
-			.item(0);
+		const searchLocationField = getAllByLabelText('Search Location');
+		expect(searchLocationField).toHaveLength(1);
+		const searchLocationFieldTagName = searchLocationField[0].getElementsByTagName(
+			'script'
+		);
+		expect(searchLocationFieldTagName).toHaveLength(1);
+		const googlePlacesScriptElement = searchLocationFieldTagName.item(0);
 
 		expect(!!googlePlacesScriptElement).toBe(true);
 	});

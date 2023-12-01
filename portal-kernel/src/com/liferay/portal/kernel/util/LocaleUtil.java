@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -221,21 +212,7 @@ public class LocaleUtil {
 		return StringUtil.equalsIgnoreCase(languageId1, languageId2);
 	}
 
-	private Locale _fromLanguageId(String languageId, boolean validate) {
-		return _fromLanguageId(languageId, validate, true);
-	}
-
-	private Locale _fromLanguageId(
-		String languageId, boolean validate, boolean useDefault) {
-
-		if (languageId == null) {
-			if (useDefault) {
-				return _getDefault();
-			}
-
-			return null;
-		}
-
+	private Locale _fromLanguageId(String languageId) {
 		Locale locale = _locales.get(languageId);
 
 		if (locale != null) {
@@ -279,19 +256,51 @@ public class LocaleUtil {
 			}
 		}
 
-		if (validate && !LanguageUtil.isAvailableLocale(locale)) {
-			locale = null;
+		_locales.put(languageId, locale);
 
-			if (_log.isWarnEnabled()) {
-				_log.warn(languageId + " is not a valid language id");
+		return locale;
+	}
+
+	private Locale _fromLanguageId(String languageId, boolean validate) {
+		return _fromLanguageId(languageId, validate, true);
+	}
+
+	private Locale _fromLanguageId(
+		String languageId, boolean validate, boolean useDefault) {
+
+		if (languageId == null) {
+			if (useDefault) {
+				return _getDefault();
 			}
-		}
-		else {
-			_locales.put(languageId, locale);
+
+			return null;
 		}
 
-		if ((locale == null) && useDefault) {
-			locale = _locale;
+		Locale locale = _fromLanguageId(languageId);
+
+		if (validate) {
+			boolean languageCode = false;
+
+			if ((languageId.indexOf(CharPool.UNDERLINE) < 0) &&
+				(languageId.indexOf(CharPool.MINUS) < 0)) {
+
+				languageCode = true;
+			}
+
+			if ((languageCode &&
+				 !LanguageUtil.isAvailableLanguageCode(languageId)) ||
+				(!languageCode && !LanguageUtil.isAvailableLocale(locale))) {
+
+				if (_log.isWarnEnabled()) {
+					_log.warn(languageId + " is not a valid language id");
+				}
+
+				if (useDefault) {
+					return _getDefault();
+				}
+
+				return null;
+			}
 		}
 
 		return locale;
@@ -327,13 +336,27 @@ public class LocaleUtil {
 		return _locale;
 	}
 
+	private String _getDisplayCountry(Locale displayLocale, Locale locale) {
+		String country = displayLocale.getDisplayCountry(locale);
+		String variant = displayLocale.getDisplayVariant(locale);
+
+		if (Validator.isNull(variant)) {
+			return country;
+		}
+
+		return StringUtil.merge(
+			new String[] {country, variant}, StringPool.COMMA_AND_SPACE);
+	}
+
 	private String _getDisplayName(
 		String language, String country, Locale locale,
 		Set<String> duplicateLanguages) {
 
 		String displayName = null;
 
-		if (duplicateLanguages.contains(locale.getLanguage())) {
+		if (duplicateLanguages.contains(locale.getLanguage()) &&
+			Validator.isNotNull(country)) {
+
 			displayName = StringUtil.appendParentheticalSuffix(
 				language, country);
 		}
@@ -371,16 +394,23 @@ public class LocaleUtil {
 			return displayLocale.getDisplayName(locale);
 		}
 
+		String country = _getDisplayCountry(displayLocale, locale);
+
+		if (Validator.isNull(country)) {
+			return displayName;
+		}
+
 		return StringBundler.concat(
-			displayName, " (", displayLocale.getDisplayCountry(locale), ")");
+			displayName, StringPool.SPACE, StringPool.OPEN_PARENTHESIS, country,
+			StringPool.CLOSE_PARENTHESIS);
 	}
 
 	private String _getLongDisplayName(
 		Locale locale, Set<String> duplicateLanguages) {
 
 		return _getDisplayName(
-			locale.getDisplayLanguage(locale), locale.getDisplayCountry(locale),
-			locale, duplicateLanguages);
+			locale.getDisplayLanguage(locale),
+			_getDisplayCountry(locale, locale), locale, duplicateLanguages);
 	}
 
 	private Locale _getMostRelevantLocale() {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -20,12 +11,15 @@ import React from 'react';
 import SaveTemplate from '../../../src/main/resources/META-INF/resources/js/SaveTemplate';
 import {SCHEMA_SELECTED_EVENT} from '../../../src/main/resources/META-INF/resources/js/constants';
 
-const INPUT_VALUE_TEST = 'test';
 const BASE_PROPS = {
+	evaluateForm: () => {},
+	formIsValid: true,
 	formSaveAsTemplateDataQuerySelector: 'form',
 	formSaveAsTemplateURL: 'https://formUrl.test',
 	portletNamespace: 'test',
+	type: 'import',
 };
+const INPUT_VALUE_TEST = 'test';
 
 function fireSchemaChangeEvent() {
 	Liferay.fire(SCHEMA_SELECTED_EVENT, {schema: 'something'});
@@ -46,7 +40,7 @@ describe('SaveTemplateModal', () => {
 		fetchMock.restore();
 	});
 
-	it('must render save template button', () => {
+	it('must render a save template button', () => {
 		const {getByText} = render(<SaveTemplate {...BASE_PROPS} />);
 
 		expect(
@@ -54,7 +48,7 @@ describe('SaveTemplateModal', () => {
 		).toBeInTheDocument();
 	});
 
-	it('must initially has button disabled', () => {
+	it('must initially have the button disabled', () => {
 		const {getByText} = render(<SaveTemplate {...BASE_PROPS} />);
 
 		expect(
@@ -62,7 +56,7 @@ describe('SaveTemplateModal', () => {
 		).toBeDisabled();
 	});
 
-	it('must enable button on Schema Change Event', () => {
+	it('must enable the button on Schema Change Event', () => {
 		const {getByText} = render(<SaveTemplate {...BASE_PROPS} />);
 
 		act(() => {
@@ -74,21 +68,47 @@ describe('SaveTemplateModal', () => {
 		).not.toBeDisabled();
 	});
 
-	it('must has button disabled if forceDisable property is true', () => {
+	it('must evaluate the form when the button is clicked', async () => {
+		const evaluate = jest.fn();
+
 		const {getByText} = render(
-			<SaveTemplate {...BASE_PROPS} forceDisable={true} />
+			<SaveTemplate {...BASE_PROPS} evaluateForm={evaluate} />
 		);
 
 		act(() => {
 			fireSchemaChangeEvent();
 		});
 
-		expect(
-			getByText(Liferay.Language.get('save-as-template'))
-		).toBeDisabled();
+		act(() => {
+			fireEvent.click(
+				getByText(Liferay.Language.get('save-as-template'))
+			);
+		});
+
+		expect(evaluate).toBeCalled();
 	});
 
-	it('must show modal when the button is clicked', async () => {
+	it('must not show modal when the button is clicked and the form has no errors', async () => {
+		const {getByText, queryByText} = render(
+			<SaveTemplate {...BASE_PROPS} formIsValid={false} />
+		);
+
+		act(() => {
+			fireSchemaChangeEvent();
+		});
+
+		act(() => {
+			fireEvent.click(
+				getByText(Liferay.Language.get('save-as-template'))
+			);
+		});
+
+		expect(
+			await queryByText(Liferay.Language.get('save'))
+		).not.toBeInTheDocument();
+	});
+
+	it('must show modal when the button is clicked and the form has no errors', async () => {
 		const {findByText, getByText} = render(
 			<SaveTemplate {...BASE_PROPS} />
 		);
@@ -109,7 +129,7 @@ describe('SaveTemplateModal', () => {
 	});
 
 	describe('modal', () => {
-		it('must has button disabled if no text input provided', async () => {
+		it('must have the button disabled if no text input provided', async () => {
 			const {findByText, getByText} = render(
 				<SaveTemplate {...BASE_PROPS} />
 			);
@@ -131,6 +151,7 @@ describe('SaveTemplateModal', () => {
 
 		it('must has button enabled if text input provided', async () => {
 			const testName = 'test';
+
 			const {findByText, getByPlaceholderText, getByText} = render(
 				<SaveTemplate {...BASE_PROPS} />
 			);

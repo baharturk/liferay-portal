@@ -1,26 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.string.StringPool;
+import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
@@ -33,7 +23,6 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -80,7 +69,7 @@ public class AddSegmentsExperienceMVCActionCommandTest {
 
 		_company = _companyLocalService.getCompany(_group.getCompanyId());
 
-		_layout = _addLayout();
+		_layout = LayoutTestUtil.addTypeContentLayout(_group);
 
 		ServiceContextThreadLocal.pushServiceContext(new ServiceContext());
 	}
@@ -126,29 +115,14 @@ public class AddSegmentsExperienceMVCActionCommandTest {
 			segmentsExperienceId, segmentsExperience.getSegmentsExperienceId());
 	}
 
-	private Layout _addLayout() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				TestPropsValues.getGroupId(), TestPropsValues.getUserId());
-
-		return _layoutLocalService.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			StringPool.BLANK, LayoutConstants.TYPE_CONTENT, false,
-			StringPool.BLANK, serviceContext);
-	}
-
 	private JSONObject _addSegmentsExperience(String name, long segmentsEntryId)
 		throws Exception {
-
-		MockLiferayPortletActionRequest mockActionRequest =
-			_getMockLiferayPortletActionRequest(name, segmentsEntryId);
 
 		return ReflectionTestUtil.invoke(
 			_mvcActionCommand, "addSegmentsExperience",
 			new Class<?>[] {ActionRequest.class, ActionResponse.class},
-			mockActionRequest, new MockActionResponse());
+			_getMockLiferayPortletActionRequest(name, segmentsEntryId),
+			new MockActionResponse());
 	}
 
 	private MockLiferayPortletActionRequest _getMockLiferayPortletActionRequest(
@@ -158,7 +132,11 @@ public class AddSegmentsExperienceMVCActionCommandTest {
 		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
 			new MockLiferayPortletActionRequest();
 
+		mockLiferayPortletActionRequest.addParameter(
+			"groupId", String.valueOf(_layout.getGroupId()));
 		mockLiferayPortletActionRequest.addParameter("name", name);
+		mockLiferayPortletActionRequest.addParameter(
+			"plid", String.valueOf(_layout.getPlid()));
 		mockLiferayPortletActionRequest.addParameter(
 			"segmentsEntryId", String.valueOf(segmentsEntryId));
 		mockLiferayPortletActionRequest.setAttribute(

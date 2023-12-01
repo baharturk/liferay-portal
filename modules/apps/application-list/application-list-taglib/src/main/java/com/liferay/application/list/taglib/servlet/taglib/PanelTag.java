@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.application.list.taglib.servlet.taglib;
@@ -19,6 +10,7 @@ import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.RootPanelCategory;
 import com.liferay.application.list.constants.ApplicationListWebKeys;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
 import java.util.List;
@@ -30,6 +22,17 @@ import javax.servlet.jsp.JspException;
  * @author Adolfo Pérez
  */
 public class PanelTag extends BasePanelTag {
+
+	@Override
+	public int doEndTag() throws JspException {
+		if (ListUtil.isEmpty(_getChildPanelCategories(getRequest()))) {
+			doClearTag();
+
+			return EVAL_PAGE;
+		}
+
+		return super.doEndTag();
+	}
 
 	@Override
 	public int doStartTag() throws JspException {
@@ -58,9 +61,16 @@ public class PanelTag extends BasePanelTag {
 
 	@Override
 	protected void setAttributes(HttpServletRequest httpServletRequest) {
-		if (_panelCategory == null) {
-			_panelCategory = RootPanelCategory.getInstance();
-		}
+		httpServletRequest.setAttribute(
+			"liferay-application-list:panel:childPanelCategories",
+			_getChildPanelCategories(httpServletRequest));
+		httpServletRequest.setAttribute(
+			"liferay-application-list:panel:panelCategory",
+			_getPanelCategory());
+	}
+
+	private List<PanelCategory> _getChildPanelCategories(
+		HttpServletRequest httpServletRequest) {
 
 		PanelCategoryRegistry panelCategoryRegistry =
 			(PanelCategoryRegistry)httpServletRequest.getAttribute(
@@ -70,17 +80,17 @@ public class PanelTag extends BasePanelTag {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		List<PanelCategory> childPanelCategories =
-			panelCategoryRegistry.getChildPanelCategories(
-				_panelCategory, themeDisplay.getPermissionChecker(),
-				getGroup());
+		return panelCategoryRegistry.getChildPanelCategories(
+			_getPanelCategory(), themeDisplay.getPermissionChecker(),
+			getGroup());
+	}
 
-		httpServletRequest.setAttribute(
-			"liferay-application-list:panel:childPanelCategories",
-			childPanelCategories);
+	private PanelCategory _getPanelCategory() {
+		if (_panelCategory == null) {
+			_panelCategory = RootPanelCategory.getInstance();
+		}
 
-		httpServletRequest.setAttribute(
-			"liferay-application-list:panel:panelCategory", _panelCategory);
+		return _panelCategory;
 	}
 
 	private PanelCategory _panelCategory;

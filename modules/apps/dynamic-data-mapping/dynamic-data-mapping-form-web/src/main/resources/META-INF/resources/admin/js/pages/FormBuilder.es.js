@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -27,6 +18,7 @@ import {
 	useFormState,
 } from 'data-engine-js-components-web';
 import {DragLayer, MultiPanelSidebar} from 'data-engine-taglib';
+import {sub} from 'frontend-js-web';
 import React, {
 	useCallback,
 	useContext,
@@ -50,7 +42,7 @@ import {createFormURL} from '../util/form.es';
 import {submitEmailContent} from '../util/submitEmailContent.es';
 import ErrorList from './ErrorList';
 
-export function FormBuilder() {
+export default function FormBuilder() {
 	const {
 		autocompleteUserURL,
 		portletNamespace,
@@ -85,9 +77,23 @@ export function FormBuilder() {
 
 		const pagesVisitor = new PagesVisitor(formSettingsContext.pages);
 
-		return pagesVisitor.mapFields((field) => {
-			if (field.valid) {
+		const alertElement = document.querySelector(
+			'.lfr-ddm__show-partial-results-alert'
+		);
+
+		return pagesVisitor.mapFields(({field}) => {
+			const showPartialResultsToRespondents = pagesVisitor.findField(
+				({fieldName}) => fieldName === 'showPartialResultsToRespondents'
+			)?.value;
+
+			if (field) {
 				return field;
+			}
+
+			if (showPartialResultsToRespondents === true) {
+				alertElement.classList.remove(
+					'lfr-ddm__show-partial-results-alert--hidden'
+				);
 			}
 
 			return {
@@ -106,14 +112,13 @@ export function FormBuilder() {
 
 	const [visibleFormSettings, setVisibleFormSettings] = useState(false);
 
+	const [session, setSession] = useState();
+
 	const dispatch = useForm();
 
 	const emailContentRef = useRef({
 		addresses: [],
-		message: Liferay.Util.sub(
-			Liferay.Language.get('please-fill-out-this-form-x'),
-			sharedFormURL
-		),
+		message: '',
 		subject: localizedName[themeDisplay.getLanguageId()],
 	});
 
@@ -137,24 +142,33 @@ export function FormBuilder() {
 	);
 
 	useEffect(() => {
-		const sessionLength = Liferay.Session
-			? Liferay.Session.get('sessionLength')
-			: 60000;
-
-		const interval = setInterval(() => {
+		const getSession = (attemps) => {
 			if (Liferay.Session) {
-				Liferay.Session.extend();
+				setSession(Liferay.Session);
 			}
-		}, sessionLength / 2);
+			else if (attemps > 0) {
+				setTimeout(() => {
+					getSession(--attemps);
+				}, 500);
+			}
+		};
 
-		return () => clearInterval(interval);
+		getSession(10);
 	}, []);
+
+	useEffect(() => {
+		if (session && !session.get('autoExtend')) {
+			Liferay.Session.set('autoExtend', true);
+
+			return () => Liferay.Session.set('autoExtend', false);
+		}
+	}, [session]);
 
 	/**
 	 * Opens the sidebar whenever a field is focused
 	 */
 	useEffect(() => {
-		const hasFocusedField = Object.keys(focusedField).length > 0;
+		const hasFocusedField = !!Object.keys(focusedField).length;
 
 		if (hasFocusedField) {
 			setSidebarState(({sidebarPanelId}) => ({
@@ -345,6 +359,11 @@ export function FormBuilder() {
 	const onShareClick = useCallback(async () => {
 		const url = await getFormUrl();
 
+		emailContentRef.current.message = sub(
+			Liferay.Language.get('please-fill-out-this-form-x'),
+			url
+		);
+
 		if (published) {
 			modalDispatch({
 				payload: {
@@ -353,6 +372,7 @@ export function FormBuilder() {
 							autocompleteUserURL={autocompleteUserURL}
 							emailContent={emailContentRef}
 							localizedName={localizedName}
+							portletNamespace={portletNamespace}
 							url={url}
 						/>
 					),
@@ -404,6 +424,18 @@ export function FormBuilder() {
 		if (!objectFields.length) {
 			addObjectFields(dispatch);
 		}
+
+		return () => {
+			const alerts = document.querySelector(
+				'.ddm-form-web__exception-container'
+			);
+
+			if (sidebarOpen && alerts) {
+				alerts.className = classNames(
+					'ddm-form-web__exception-container'
+				);
+			}
+		};
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
@@ -503,7 +535,7 @@ export function FormBuilder() {
 								)
 							}
 						>
-							{Liferay.Language.get('Save')}
+							{Liferay.Language.get('save')}
 						</ClayButton>
 
 						<ClayLink button displayType="link" href={redirectURL}>

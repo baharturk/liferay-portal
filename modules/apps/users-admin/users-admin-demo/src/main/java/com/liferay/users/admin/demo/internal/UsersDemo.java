@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.demo.internal;
@@ -41,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pei-Jung Lan
  */
-@Component(immediate = true, service = PortalInstanceLifecycleListener.class)
+@Component(service = PortalInstanceLifecycleListener.class)
 public class UsersDemo extends BasePortalInstanceLifecycleListener {
 
 	@Override
@@ -112,25 +103,21 @@ public class UsersDemo extends BasePortalInstanceLifecycleListener {
 		_siteRoleDemoDataCreator.delete();
 	}
 
-	@Reference(
-		target = "(javax.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT + ")",
-		unbind = "-"
-	)
-	protected void setJournalContentPortlet(Portlet portlet) {
-	}
-
-	@Reference(
-		target = "(javax.portlet.name=" + JournalPortletKeys.JOURNAL + ")",
-		unbind = "-"
-	)
-	protected void setJournalPortlet(Portlet portlet) {
-	}
-
 	@Reference
 	private BasicUserDemoDataCreator _basicUserDemoDataCreator;
 
 	@Reference
 	private CompanyAdminUserDemoDataCreator _companyAdminUserDemoDataCreator;
+
+	@Reference(
+		target = "(javax.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT + ")"
+	)
+	private Portlet _journalContentPortlet;
+
+	@Reference(
+		target = "(javax.portlet.name=" + JournalPortletKeys.JOURNAL + ")"
+	)
+	private Portlet _journalPortlet;
 
 	@Reference
 	private RoleLocalService _roleLocalService;

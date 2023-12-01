@@ -1,15 +1,8 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import PropTypes from 'prop-types';
 import React, {
 	useCallback,
 	useContext,
@@ -23,6 +16,7 @@ import ReactFlow, {
 	addEdge,
 	isEdge,
 } from 'react-flow-renderer';
+import {v4 as uuidv4} from 'uuid';
 
 import {DefinitionBuilderContext} from '../DefinitionBuilderContext';
 import {defaultLanguageId} from '../constants';
@@ -36,26 +30,32 @@ import {isIdDuplicated} from './components/sidebar/utils';
 import edgeTypes from './components/transitions/Edge';
 import FloatingConnectionLine from './components/transitions/FloatingConnectionLine';
 import getCollidingElements from './util/collisionDetection';
-
-let id = 2;
-const getId = () => `item_${id++}`;
+import populateAssignmentsData from './util/populateAssignmentsData';
+import populateNotificationsData from './util/populateNotificationsData';
 
 const deserializeUtil = new DeserializeUtil();
 
-export default function DiagramBuilder({version}) {
+export default function DiagramBuilder() {
 	const {
+		accountEntryId,
 		currentEditor,
-		definitionId,
-		definitionTitle,
+		definitionName,
 		deserialize,
 		elements,
+		functionActionExecutors,
 		selectedLanguageId,
 		setActive,
+		setBlockingErrors,
 		setDefinitionDescription,
-		setDefinitionId,
+		setDefinitionInfo,
+		setDefinitionName,
 		setDefinitionTitle,
+		setDefinitionTitleTranslations,
 		setDeserialize,
 		setElements,
+		setShowDefinitionInfo,
+		statuses,
+		version,
 	} = useContext(DefinitionBuilderContext);
 	const reactFlowWrapperRef = useRef(null);
 	const [collidingElements, setCollidingElements] = useState(null);
@@ -63,8 +63,20 @@ export default function DiagramBuilder({version}) {
 	const [reactFlowInstance, setReactFlowInstance] = useState(null);
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [selectedItemNewId, setSelectedItemNewId] = useState(null);
+	const [defaultPosition, setDefaultPosition] = useState(null);
 
 	const onConnect = (params) => {
+		if (
+			elements.filter(
+				(element) =>
+					isEdge(element) &&
+					element.source === params.source &&
+					element.target === params.target
+			).length
+		) {
+			return;
+		}
+
 		const defaultEdge = !elements.filter(
 			(element) =>
 				isEdge(element) &&
@@ -83,7 +95,7 @@ export default function DiagramBuilder({version}) {
 					),
 				},
 			},
-			id: getId(),
+			id: uuidv4(),
 			type: 'transition',
 		};
 
@@ -138,8 +150,8 @@ export default function DiagramBuilder({version}) {
 			});
 
 			if (
-				getCollidingElements(elements, elementRectangle, position)
-					.length === 0
+				!getCollidingElements(elements, elementRectangle, position)
+					.length
 			) {
 				event.preventDefault();
 
@@ -151,7 +163,7 @@ export default function DiagramBuilder({version}) {
 					data: {
 						newNode: true,
 					},
-					id: getId(),
+					id: uuidv4(),
 					position,
 					type,
 				};
@@ -164,7 +176,73 @@ export default function DiagramBuilder({version}) {
 	);
 
 	const onLoad = (reactFlowInstance) => {
+		reactFlowInstance.fitView({maxZoom: 1});
 		setReactFlowInstance(reactFlowInstance);
+	};
+
+	const onNodeDragStart = (event) => {
+		const elementRectangle = event.currentTarget.getBoundingClientRect();
+		const reactFlowBounds = reactFlowWrapperRef.current.getBoundingClientRect();
+
+		const position = reactFlowInstance.project({
+			x: elementRectangle.left - reactFlowBounds.left,
+			y: elementRectangle.top - reactFlowBounds.top,
+		});
+
+		setDefaultPosition(position);
+
+		setElementRectangle({
+			mouseXInRectangle: event.clientX - elementRectangle.left,
+			mouseYInRectangle: event.clientY - elementRectangle.top,
+			rectangleHeight: elementRectangle.height,
+			rectangleWidth: elementRectangle.width,
+		});
+	};
+
+	const onNodeDragStop = (event, node) => {
+		const reactFlowBounds = reactFlowWrapperRef.current.getBoundingClientRect();
+
+		const position = reactFlowInstance.project({
+			x:
+				event.clientX -
+				reactFlowBounds.left -
+				elementRectangle.mouseXInRectangle,
+			y:
+				event.clientY -
+				reactFlowBounds.top -
+				elementRectangle.mouseYInRectangle,
+		});
+
+		setElements((elements) =>
+			elements.map((element) => {
+				if (element.id === node.id) {
+					element = {
+						...element,
+						position,
+					};
+				}
+
+				return element;
+			})
+		);
+
+		const newElements = elements.filter(
+			(element) => element.id !== node.id
+		);
+
+		if (
+			getCollidingElements(newElements, elementRectangle, position).length
+		) {
+			setElements((elements) =>
+				elements.map((element) => {
+					if (element.id === node.id) {
+						element.position = defaultPosition;
+					}
+
+					return element;
+				})
+			);
+		}
 	};
 
 	useEffect(() => {
@@ -191,6 +269,8 @@ export default function DiagramBuilder({version}) {
 			);
 		}
 
+		setShowDefinitionInfo(false);
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selectedItem]);
 
@@ -212,6 +292,17 @@ export default function DiagramBuilder({version}) {
 
 						setSelectedItem(element);
 					}
+					else if (isEdge(element)) {
+						element = {
+							...element,
+							...(selectedItem.id === element.source && {
+								source: selectedItemNewId,
+							}),
+							...(selectedItem.id === element.target && {
+								target: selectedItemNewId,
+							}),
+						};
+					}
 
 					return element;
 				})
@@ -232,52 +323,86 @@ export default function DiagramBuilder({version}) {
 			const metadata = deserializeUtil.getMetadata();
 
 			setDefinitionDescription(metadata.description);
-			setDefinitionTitle(metadata.name);
+			setDefinitionName(metadata.name);
 
 			setElements(elements);
 
+			populateAssignmentsData(
+				accountEntryId,
+				elements,
+				setElements,
+				setBlockingErrors
+			);
+			populateNotificationsData(accountEntryId, elements, setElements);
+
 			setDeserialize(false);
 		}
-	}, [
-		currentEditor,
-		definitionTitle,
-		deserialize,
-		setDefinitionDescription,
-		setDefinitionTitle,
-		setDeserialize,
-		setElements,
-		version,
-	]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [currentEditor, deserialize, version]);
 
 	useEffect(() => {
-		if (version !== '0' && !deserialize) {
-			retrieveDefinitionRequest(definitionId)
+		if (definitionName && version !== 0 && !deserialize) {
+			retrieveDefinitionRequest(definitionName)
 				.then((response) => response.json())
-				.then(({active, content, description, name}) => {
-					setActive(active);
-					setDefinitionDescription(description);
-					setDefinitionId(name);
+				.then(
+					({
+						active,
+						content,
+						dateCreated,
+						dateModified,
+						description,
+						name,
+						title,
+						title_i18n,
+						version,
+					}) => {
+						setActive(active);
+						setDefinitionDescription(description);
+						setDefinitionInfo({
+							dateCreated,
+							dateModified,
+							totalModifications: version,
+						});
+						setDefinitionName(name);
+						setDefinitionTitle(title);
+						setDefinitionTitleTranslations(title_i18n);
 
-					deserializeUtil.updateXMLDefinition(content);
+						deserializeUtil.updateXMLDefinition(
+							encodeURIComponent(content)
+						);
 
-					const elements = deserializeUtil.getElements();
+						const elements = deserializeUtil.getElements();
 
-					setElements(elements);
-				});
+						setElements(elements);
+
+						populateAssignmentsData(
+							accountEntryId,
+							elements,
+							setElements
+						);
+						populateNotificationsData(
+							accountEntryId,
+							elements,
+							setElements
+						);
+					}
+				);
 		}
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [version]);
+	}, [definitionName, version]);
 
 	const contextProps = {
 		collidingElements,
 		elementRectangle,
+		functionActionExecutors,
 		selectedItem,
 		selectedItemNewId,
 		setCollidingElements,
 		setElementRectangle,
 		setSelectedItem,
 		setSelectedItemNewId,
+		statuses,
 	};
 
 	return (
@@ -296,6 +421,8 @@ export default function DiagramBuilder({version}) {
 						onDragOver={onDragOver}
 						onDrop={onDrop}
 						onLoad={onLoad}
+						onNodeDragStart={onNodeDragStart}
+						onNodeDragStop={onNodeDragStop}
 					/>
 
 					<Controls showInteractive={false} />
@@ -308,7 +435,3 @@ export default function DiagramBuilder({version}) {
 		</DiagramBuilderContextProvider>
 	);
 }
-
-DiagramBuilder.propTypes = {
-	version: PropTypes.string.isRequired,
-};

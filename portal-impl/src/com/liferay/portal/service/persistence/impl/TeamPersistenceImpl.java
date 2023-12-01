@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -59,7 +50,6 @@ import com.liferay.portal.model.impl.TeamModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -201,7 +191,7 @@ public class TeamPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Team>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Team team : list) {
@@ -588,7 +578,8 @@ public class TeamPersistenceImpl
 
 			finderArgs = new Object[] {uuid};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -710,21 +701,21 @@ public class TeamPersistenceImpl
 
 		uuid = Objects.toString(uuid, "");
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Team.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {uuid, groupId};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			Team.class);
 
 		if (result instanceof Team) {
 			Team team = (Team)result;
@@ -734,6 +725,14 @@ public class TeamPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						Team.class, team.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -843,7 +842,8 @@ public class TeamPersistenceImpl
 
 			finderArgs = new Object[] {uuid, groupId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1014,7 +1014,7 @@ public class TeamPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Team>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Team team : list) {
@@ -1433,7 +1433,8 @@ public class TeamPersistenceImpl
 
 			finderArgs = new Object[] {uuid, companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1595,7 +1596,7 @@ public class TeamPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Team>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Team team : list) {
@@ -1959,7 +1960,8 @@ public class TeamPersistenceImpl
 
 			finderArgs = new Object[] {companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2098,7 +2100,7 @@ public class TeamPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Team>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Team team : list) {
@@ -2784,7 +2786,8 @@ public class TeamPersistenceImpl
 
 			finderArgs = new Object[] {groupId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2939,21 +2942,21 @@ public class TeamPersistenceImpl
 	public Team fetchByG_N(long groupId, String name, boolean useFinderCache) {
 		name = Objects.toString(name, "");
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Team.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {groupId, name};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByG_N, finderArgs);
+				_finderPathFetchByG_N, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			Team.class);
 
 		if (result instanceof Team) {
 			Team team = (Team)result;
@@ -2963,6 +2966,14 @@ public class TeamPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						Team.class, team.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -3072,7 +3083,8 @@ public class TeamPersistenceImpl
 
 			finderArgs = new Object[] {groupId, name};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3511,7 +3523,7 @@ public class TeamPersistenceImpl
 	 */
 	@Override
 	public Team fetchByPrimaryKey(Serializable primaryKey) {
-		if (CTPersistenceHelperUtil.isProductionMode(Team.class)) {
+		if (CTPersistenceHelperUtil.isProductionMode(Team.class, primaryKey)) {
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -3725,7 +3737,7 @@ public class TeamPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Team>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3801,7 +3813,7 @@ public class TeamPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -3942,17 +3954,18 @@ public class TeamPersistenceImpl
 	 *
 	 * @param pk the primary key of the team
 	 * @param userPK the primary key of the user
+	 * @return <code>true</code> if an association between the team and the user was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addUser(long pk, long userPK) {
+	public boolean addUser(long pk, long userPK) {
 		Team team = fetchByPrimaryKey(pk);
 
 		if (team == null) {
-			teamToUserTableMapper.addTableMapping(
+			return teamToUserTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, userPK);
 		}
 		else {
-			teamToUserTableMapper.addTableMapping(
+			return teamToUserTableMapper.addTableMapping(
 				team.getCompanyId(), pk, userPK);
 		}
 	}
@@ -3962,17 +3975,18 @@ public class TeamPersistenceImpl
 	 *
 	 * @param pk the primary key of the team
 	 * @param user the user
+	 * @return <code>true</code> if an association between the team and the user was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addUser(long pk, com.liferay.portal.kernel.model.User user) {
+	public boolean addUser(long pk, com.liferay.portal.kernel.model.User user) {
 		Team team = fetchByPrimaryKey(pk);
 
 		if (team == null) {
-			teamToUserTableMapper.addTableMapping(
+			return teamToUserTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, user.getPrimaryKey());
 		}
 		else {
-			teamToUserTableMapper.addTableMapping(
+			return teamToUserTableMapper.addTableMapping(
 				team.getCompanyId(), pk, user.getPrimaryKey());
 		}
 	}
@@ -3982,9 +3996,10 @@ public class TeamPersistenceImpl
 	 *
 	 * @param pk the primary key of the team
 	 * @param userPKs the primary keys of the users
+	 * @return <code>true</code> if at least one association between the team and the users was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addUsers(long pk, long[] userPKs) {
+	public boolean addUsers(long pk, long[] userPKs) {
 		long companyId = 0;
 
 		Team team = fetchByPrimaryKey(pk);
@@ -3996,7 +4011,14 @@ public class TeamPersistenceImpl
 			companyId = team.getCompanyId();
 		}
 
-		teamToUserTableMapper.addTableMappings(companyId, pk, userPKs);
+		long[] addedKeys = teamToUserTableMapper.addTableMappings(
+			companyId, pk, userPKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -4004,12 +4026,13 @@ public class TeamPersistenceImpl
 	 *
 	 * @param pk the primary key of the team
 	 * @param users the users
+	 * @return <code>true</code> if at least one association between the team and the users was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addUsers(
+	public boolean addUsers(
 		long pk, List<com.liferay.portal.kernel.model.User> users) {
 
-		addUsers(
+		return addUsers(
 			pk,
 			ListUtil.toLongArray(
 				users, com.liferay.portal.kernel.model.User.USER_ID_ACCESSOR));
@@ -4250,17 +4273,18 @@ public class TeamPersistenceImpl
 	 *
 	 * @param pk the primary key of the team
 	 * @param userGroupPK the primary key of the user group
+	 * @return <code>true</code> if an association between the team and the user group was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addUserGroup(long pk, long userGroupPK) {
+	public boolean addUserGroup(long pk, long userGroupPK) {
 		Team team = fetchByPrimaryKey(pk);
 
 		if (team == null) {
-			teamToUserGroupTableMapper.addTableMapping(
+			return teamToUserGroupTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, userGroupPK);
 		}
 		else {
-			teamToUserGroupTableMapper.addTableMapping(
+			return teamToUserGroupTableMapper.addTableMapping(
 				team.getCompanyId(), pk, userGroupPK);
 		}
 	}
@@ -4270,20 +4294,21 @@ public class TeamPersistenceImpl
 	 *
 	 * @param pk the primary key of the team
 	 * @param userGroup the user group
+	 * @return <code>true</code> if an association between the team and the user group was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addUserGroup(
+	public boolean addUserGroup(
 		long pk, com.liferay.portal.kernel.model.UserGroup userGroup) {
 
 		Team team = fetchByPrimaryKey(pk);
 
 		if (team == null) {
-			teamToUserGroupTableMapper.addTableMapping(
+			return teamToUserGroupTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk,
 				userGroup.getPrimaryKey());
 		}
 		else {
-			teamToUserGroupTableMapper.addTableMapping(
+			return teamToUserGroupTableMapper.addTableMapping(
 				team.getCompanyId(), pk, userGroup.getPrimaryKey());
 		}
 	}
@@ -4293,9 +4318,10 @@ public class TeamPersistenceImpl
 	 *
 	 * @param pk the primary key of the team
 	 * @param userGroupPKs the primary keys of the user groups
+	 * @return <code>true</code> if at least one association between the team and the user groups was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addUserGroups(long pk, long[] userGroupPKs) {
+	public boolean addUserGroups(long pk, long[] userGroupPKs) {
 		long companyId = 0;
 
 		Team team = fetchByPrimaryKey(pk);
@@ -4307,8 +4333,14 @@ public class TeamPersistenceImpl
 			companyId = team.getCompanyId();
 		}
 
-		teamToUserGroupTableMapper.addTableMappings(
+		long[] addedKeys = teamToUserGroupTableMapper.addTableMappings(
 			companyId, pk, userGroupPKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -4316,12 +4348,13 @@ public class TeamPersistenceImpl
 	 *
 	 * @param pk the primary key of the team
 	 * @param userGroups the user groups
+	 * @return <code>true</code> if at least one association between the team and the user groups was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addUserGroups(
+	public boolean addUserGroups(
 		long pk, List<com.liferay.portal.kernel.model.UserGroup> userGroups) {
 
-		addUserGroups(
+		return addUserGroups(
 			pk,
 			ListUtil.toLongArray(
 				userGroups,
@@ -4669,29 +4702,16 @@ public class TeamPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"groupId", "name"}, false);
 
-		_setTeamUtilPersistence(this);
+		TeamUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setTeamUtilPersistence(null);
+		TeamUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(TeamImpl.class.getName());
 
 		TableMapperFactory.removeTableMapper("Users_Teams");
 		TableMapperFactory.removeTableMapper("UserGroups_Teams");
-	}
-
-	private void _setTeamUtilPersistence(TeamPersistence teamPersistence) {
-		try {
-			Field field = TeamUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, teamPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@BeanReference(type = UserPersistence.class)

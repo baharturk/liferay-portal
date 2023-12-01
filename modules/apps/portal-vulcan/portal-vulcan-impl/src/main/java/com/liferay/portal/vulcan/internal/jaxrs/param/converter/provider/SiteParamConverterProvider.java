@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.internal.jaxrs.param.converter.provider;
@@ -24,12 +15,16 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
 import javax.ws.rs.ext.Provider;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.cxf.jaxrs.utils.AnnotationUtils;
 
 /**
  * @author Javier Gamarra
@@ -120,12 +115,10 @@ public class SiteParamConverterProvider
 
 	private boolean _hasSiteIdAnnotation(Annotation[] annotations) {
 		for (Annotation annotation : annotations) {
-			String annotationString = annotation.toString();
-
-			if (annotationString.equals(
-					"@javax.ws.rs.PathParam(value=assetLibraryId)") ||
-				annotationString.equals(
-					"@javax.ws.rs.PathParam(value=siteId)")) {
+			if ((annotation.annotationType() == PathParam.class) &&
+				StringUtils.equalsAny(
+					AnnotationUtils.getAnnotationValue(annotation),
+					"assetLibraryId", "siteId")) {
 
 				return true;
 			}

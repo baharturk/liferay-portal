@@ -1,31 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.frontend.internal.order;
 
-import com.liferay.commerce.account.model.CommerceAccount;
 import com.liferay.commerce.frontend.internal.account.model.Order;
 import com.liferay.commerce.frontend.internal.account.model.OrderList;
 import com.liferay.commerce.model.CommerceOrder;
-import com.liferay.commerce.order.CommerceOrderHttpHelper;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceOrderService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
@@ -43,13 +32,12 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, service = CommerceOrderResource.class)
+@Component(service = CommerceOrderResource.class)
 public class CommerceOrderResource {
 
 	public OrderList getOrderList(
 			long groupId, String keywords, int page, int pageSize,
-			HttpServletRequest httpServletRequest,
-			CommerceAccount commerceAccount)
+			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
 		long companyId = _portal.getCompanyId(httpServletRequest);
@@ -99,16 +87,15 @@ public class CommerceOrderResource {
 		int end = page * pageSize;
 
 		List<CommerceOrder> userCommerceOrders =
-			_commerceOrderService.getUserPendingCommerceOrders(
+			_commerceOrderService.getUserCommerceOrders(
 				companyId, groupId, keywords, start, end);
 
 		for (CommerceOrder commerceOrder : userCommerceOrders) {
 			Date modifiedDate = commerceOrder.getModifiedDate();
 
-			String modifiedDateTimeDescription =
-				LanguageUtil.getTimeDescription(
-					httpServletRequest,
-					System.currentTimeMillis() - modifiedDate.getTime(), true);
+			String modifiedDateTimeDescription = _language.getTimeDescription(
+				httpServletRequest,
+				System.currentTimeMillis() - modifiedDate.getTime(), true);
 
 			orders.add(
 				new Order(
@@ -116,7 +103,7 @@ public class CommerceOrderResource {
 					commerceOrder.getCommerceAccountId(),
 					commerceOrder.getCommerceAccountName(),
 					commerceOrder.getPurchaseOrderNumber(),
-					LanguageUtil.format(
+					_language.format(
 						httpServletRequest, "x-ago",
 						modifiedDateTimeDescription),
 					WorkflowConstants.getStatusLabel(commerceOrder.getStatus()),
@@ -139,10 +126,10 @@ public class CommerceOrderResource {
 	private CommerceChannelLocalService _commerceChannelLocalService;
 
 	@Reference
-	private CommerceOrderHttpHelper _commerceOrderHttpHelper;
+	private CommerceOrderService _commerceOrderService;
 
 	@Reference
-	private CommerceOrderService _commerceOrderService;
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.web.internal.portlet.action;
 
-import com.liferay.commerce.price.list.constants.CommercePriceListPortletKeys;
+import com.liferay.commerce.price.list.exception.CommerceTierPriceEntryMinQuantityException;
 import com.liferay.commerce.price.list.exception.DuplicateCommerceTierPriceEntryException;
 import com.liferay.commerce.price.list.exception.NoSuchTierPriceEntryException;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
@@ -22,12 +13,12 @@ import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
 import com.liferay.commerce.price.list.service.CommercePriceEntryService;
 import com.liferay.commerce.price.list.service.CommerceTierPriceEntryService;
 import com.liferay.commerce.pricing.constants.CommercePricingPortletKeys;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
@@ -56,7 +47,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"javax.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICE_LIST,
 		"javax.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PROMOTION,
@@ -127,7 +117,9 @@ public class EditCommerceTierPriceEntryMVCActionCommand
 				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
 			}
 			else if (exception instanceof
-						DuplicateCommerceTierPriceEntryException) {
+						CommerceTierPriceEntryMinQuantityException ||
+					 exception instanceof
+						 DuplicateCommerceTierPriceEntryException) {
 
 				hideDefaultErrorMessage(actionRequest);
 				hideDefaultSuccessMessage(actionRequest);
@@ -136,6 +128,10 @@ public class EditCommerceTierPriceEntryMVCActionCommand
 
 				String redirect = getSaveAndContinueRedirect(
 					actionRequest, commerceTierPriceEntryId);
+
+				if (cmd.equals(Constants.ADD)) {
+					redirect = ParamUtil.getString(actionRequest, redirect);
+				}
 
 				sendRedirect(actionRequest, actionResponse, redirect);
 			}
@@ -151,7 +147,7 @@ public class EditCommerceTierPriceEntryMVCActionCommand
 
 		PortletURL portletURL = PortletURLBuilder.create(
 			_portal.getControlPanelPortletURL(
-				actionRequest, CommercePriceListPortletKeys.COMMERCE_PRICE_LIST,
+				actionRequest, CommercePricingPortletKeys.COMMERCE_PRICE_LIST,
 				PortletRequest.RENDER_PHASE)
 		).setMVCRenderCommandName(
 			"/commerce_price_list/edit_commerce_tier_price_entry"
@@ -194,7 +190,7 @@ public class EditCommerceTierPriceEntryMVCActionCommand
 			portletURL.setWindowState(LiferayWindowState.POP_UP);
 		}
 		catch (WindowStateException windowStateException) {
-			_log.error(windowStateException, windowStateException);
+			_log.error(windowStateException);
 		}
 
 		return portletURL.toString();
@@ -213,7 +209,8 @@ public class EditCommerceTierPriceEntryMVCActionCommand
 
 		BigDecimal price = (BigDecimal)ParamUtil.getNumber(
 			actionRequest, "price", BigDecimal.ZERO);
-		int minQuantity = ParamUtil.getInteger(actionRequest, "minQuantity");
+		BigDecimal minQuantity = (BigDecimal)ParamUtil.getNumber(
+			actionRequest, "minQuantity", BigDecimal.ZERO);
 		boolean overrideDiscount = ParamUtil.getBoolean(
 			actionRequest, "overrideDiscount");
 		BigDecimal discountLevel1 = (BigDecimal)ParamUtil.getNumber(

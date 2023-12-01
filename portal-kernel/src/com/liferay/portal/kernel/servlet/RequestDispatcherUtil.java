@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet;
@@ -31,7 +22,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class RequestDispatcherUtil {
 
-	public static ObjectValuePair<String, Long> getContentAndLastModifiedTime(
+	public static BufferCacheServletResponse getBufferCacheServletResponse(
 			RequestDispatcher requestDispatcher,
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse)
@@ -42,6 +33,12 @@ public class RequestDispatcherUtil {
 
 		requestDispatcher.include(
 			new HttpServletRequestWrapper(httpServletRequest) {
+
+				@Override
+				public String getContextPath() {
+					return (String)getAttribute(
+						RequestDispatcher.INCLUDE_CONTEXT_PATH);
+				}
 
 				@Override
 				public long getDateHeader(String name) {
@@ -81,8 +78,46 @@ public class RequestDispatcherUtil {
 					return HttpMethods.GET;
 				}
 
+				@Override
+				public String getPathInfo() {
+					return (String)getAttribute(
+						RequestDispatcher.INCLUDE_PATH_INFO);
+				}
+
+				@Override
+				public String getQueryString() {
+					return (String)getAttribute(
+						RequestDispatcher.INCLUDE_QUERY_STRING);
+				}
+
+				@Override
+				public String getRequestURI() {
+					return (String)getAttribute(
+						RequestDispatcher.INCLUDE_REQUEST_URI);
+				}
+
+				@Override
+				public String getServletPath() {
+					return (String)getAttribute(
+						RequestDispatcher.INCLUDE_SERVLET_PATH);
+				}
+
 			},
 			bufferCacheServletResponse);
+
+		return bufferCacheServletResponse;
+	}
+
+	public static ObjectValuePair<String, Long>
+			getContentAndLastModifiedTimeObjectValuePair(
+				RequestDispatcher requestDispatcher,
+				HttpServletRequest httpServletRequest,
+				HttpServletResponse httpServletResponse)
+		throws Exception {
+
+		BufferCacheServletResponse bufferCacheServletResponse =
+			getBufferCacheServletResponse(
+				requestDispatcher, httpServletRequest, httpServletResponse);
 
 		return new ObjectValuePair<>(
 			bufferCacheServletResponse.getString(),

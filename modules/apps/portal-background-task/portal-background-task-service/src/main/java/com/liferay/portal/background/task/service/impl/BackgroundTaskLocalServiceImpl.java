@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.background.task.service.impl;
@@ -18,6 +9,7 @@ import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.background.task.internal.BackgroundTaskImpl;
+import com.liferay.portal.background.task.internal.BackgroundTaskInExecutionUtil;
 import com.liferay.portal.background.task.internal.lock.helper.BackgroundTaskLockHelper;
 import com.liferay.portal.background.task.model.BackgroundTask;
 import com.liferay.portal.background.task.service.base.BackgroundTaskLocalServiceBaseImpl;
@@ -110,9 +102,8 @@ public class BackgroundTaskLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		return addBackgroundTask(
-			userId, groupId, name, null, taskExecutorClassName, taskContextMap,
-			serviceContext);
+		return _addBackgroundTask(
+			userId, groupId, name, null, taskExecutorClassName, taskContextMap);
 	}
 
 	@Override
@@ -123,9 +114,9 @@ public class BackgroundTaskLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		return addBackgroundTask(
+		return _addBackgroundTask(
 			userId, groupId, name, servletContextNames,
-			taskExecutorClass.getName(), taskContextMap, serviceContext);
+			taskExecutorClass.getName(), taskContextMap);
 	}
 
 	@Override
@@ -138,10 +129,10 @@ public class BackgroundTaskLocalServiceImpl
 		Folder folder = backgroundTask.addAttachmentsFolder();
 
 		PortletFileRepositoryUtil.addPortletFileEntry(
-			backgroundTask.getGroupId(), userId, BackgroundTask.class.getName(),
-			backgroundTask.getPrimaryKey(), PortletKeys.BACKGROUND_TASK,
-			folder.getFolderId(), file, fileName, ContentTypes.APPLICATION_ZIP,
-			false);
+			null, backgroundTask.getGroupId(), userId,
+			BackgroundTask.class.getName(), backgroundTask.getPrimaryKey(),
+			PortletKeys.BACKGROUND_TASK, folder.getFolderId(), file, fileName,
+			ContentTypes.APPLICATION_ZIP, false);
 	}
 
 	@Override
@@ -155,10 +146,10 @@ public class BackgroundTaskLocalServiceImpl
 		Folder folder = backgroundTask.addAttachmentsFolder();
 
 		PortletFileRepositoryUtil.addPortletFileEntry(
-			backgroundTask.getGroupId(), userId, BackgroundTask.class.getName(),
-			backgroundTask.getPrimaryKey(), PortletKeys.BACKGROUND_TASK,
-			folder.getFolderId(), inputStream, fileName,
-			ContentTypes.APPLICATION_ZIP, false);
+			null, backgroundTask.getGroupId(), userId,
+			BackgroundTask.class.getName(), backgroundTask.getPrimaryKey(),
+			PortletKeys.BACKGROUND_TASK, folder.getFolderId(), inputStream,
+			fileName, ContentTypes.APPLICATION_ZIP, false);
 	}
 
 	@Override
@@ -216,7 +207,7 @@ public class BackgroundTaskLocalServiceImpl
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -227,6 +218,7 @@ public class BackgroundTaskLocalServiceImpl
 				message.put(
 					BackgroundTaskConstants.BACKGROUND_TASK_ID,
 					backgroundTask.getBackgroundTaskId());
+				message.put("companyId", backgroundTask.getCompanyId());
 				message.put("name", backgroundTask.getName());
 				message.put("status", status);
 				message.put(
@@ -247,8 +239,10 @@ public class BackgroundTaskLocalServiceImpl
 			backgroundTaskPersistence.findByCompleted(false);
 
 		for (BackgroundTask backgroundTask : backgroundTasks) {
-			if (backgroundTask.getStatus() ==
-					BackgroundTaskConstants.STATUS_IN_PROGRESS) {
+			if ((backgroundTask.getStatus() ==
+					BackgroundTaskConstants.STATUS_IN_PROGRESS) &&
+				!BackgroundTaskInExecutionUtil.isInExecution(
+					backgroundTask.getBackgroundTaskId())) {
 
 				backgroundTask.setCompleted(true);
 				backgroundTask.setStatus(BackgroundTaskConstants.STATUS_FAILED);
@@ -655,6 +649,7 @@ public class BackgroundTaskLocalServiceImpl
 
 		message.put(
 			BackgroundTaskConstants.BACKGROUND_TASK_ID, backgroundTaskId);
+		message.put("companyId", backgroundTask.getCompanyId());
 
 		_messageBus.sendMessage(DestinationNames.BACKGROUND_TASK, message);
 	}
@@ -662,6 +657,19 @@ public class BackgroundTaskLocalServiceImpl
 	@Clusterable(onMaster = true)
 	@Override
 	public void triggerBackgroundTask(long backgroundTaskId) {
+		BackgroundTask backgroundTask =
+			backgroundTaskPersistence.fetchByPrimaryKey(backgroundTaskId);
+
+		if (backgroundTask == null) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"No background task found for background task ID " +
+						backgroundTaskId);
+			}
+
+			return;
+		}
+
 		if (_log.isDebugEnabled()) {
 			_log.debug(
 				"Attempting to trigger background task " + backgroundTaskId);
@@ -671,6 +679,7 @@ public class BackgroundTaskLocalServiceImpl
 
 		message.put(
 			BackgroundTaskConstants.BACKGROUND_TASK_ID, backgroundTaskId);
+		message.put("companyId", backgroundTask.getCompanyId());
 
 		_messageBus.sendMessage(DestinationNames.BACKGROUND_TASK, message);
 	}
@@ -680,11 +689,10 @@ public class BackgroundTaskLocalServiceImpl
 		_backgroundTaskLockHelper = new BackgroundTaskLockHelper(_lockManager);
 	}
 
-	protected BackgroundTask addBackgroundTask(
+	private BackgroundTask _addBackgroundTask(
 			long userId, long groupId, String name,
 			String[] servletContextNames, String taskExecutorClassName,
-			Map<String, Serializable> taskContextMap,
-			ServiceContext serviceContext)
+			Map<String, Serializable> taskContextMap)
 		throws PortalException {
 
 		User user = null;
@@ -725,7 +733,6 @@ public class BackgroundTaskLocalServiceImpl
 		_backgroundTaskThreadLocalManager.serializeThreadLocals(taskContextMap);
 
 		backgroundTask.setTaskContextMap(taskContextMap);
-
 		backgroundTask.setStatus(BackgroundTaskConstants.STATUS_NEW);
 
 		backgroundTask = backgroundTaskPersistence.update(backgroundTask);

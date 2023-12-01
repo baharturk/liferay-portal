@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import ClayLayout from '@clayui/layout';
 import ClaySticker from '@clayui/sticker';
-import {fetch} from 'frontend-js-web';
+import {fetch, sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useEffect, useState} from 'react';
 
@@ -78,7 +69,7 @@ const Collaborators = ({
 				<ClayLayout.ContentCol className="collaborators-owner">
 					<div
 						className="lfr-portal-tooltip"
-						data-title={Liferay.Util.sub(
+						data-title={sub(
 							Liferay.Language.get('x-is-the-owner'),
 							owner.fullName
 						)}
@@ -109,13 +100,13 @@ const Collaborators = ({
 									className="lfr-portal-tooltip"
 									data-title={
 										moreCollaboratorsCount === 1
-											? Liferay.Util.sub(
+											? sub(
 													Liferay.Language.get(
 														'x-more-collaborator'
 													),
 													moreCollaboratorsCount
 											  )
-											: Liferay.Util.sub(
+											: sub(
 													Liferay.Language.get(
 														'x-more-collaborators'
 													),

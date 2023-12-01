@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
@@ -36,17 +27,21 @@ public class ObjectFieldServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectField addCustomObjectField(
-			long listTypeDefinitionId, long objectDefinitionId,
-			String businessType, String dbType, boolean indexed,
-			boolean indexedAsKeyword, String indexedLanguageId,
-			java.util.Map<java.util.Locale, String> labelMap, String name,
-			boolean required)
+			String externalReferenceCode, long listTypeDefinitionId,
+			long objectDefinitionId, String businessType, String dbType,
+			boolean indexed, boolean indexedAsKeyword, String indexedLanguageId,
+			java.util.Map<java.util.Locale, String> labelMap, boolean localized,
+			String name, String readOnly, String readOnlyConditionExpression,
+			boolean required, boolean state,
+			java.util.List<com.liferay.object.model.ObjectFieldSetting>
+				objectFieldSettings)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectFieldService.addCustomObjectField(
-			listTypeDefinitionId, objectDefinitionId, businessType, dbType,
-			indexed, indexedAsKeyword, indexedLanguageId, labelMap, name,
-			required);
+			externalReferenceCode, listTypeDefinitionId, objectDefinitionId,
+			businessType, dbType, indexed, indexedAsKeyword, indexedLanguageId,
+			labelMap, localized, name, readOnly, readOnlyConditionExpression,
+			required, state, objectFieldSettings);
 	}
 
 	@Override
@@ -76,17 +71,22 @@ public class ObjectFieldServiceWrapper
 	}
 
 	@Override
-	public com.liferay.object.model.ObjectField updateCustomObjectField(
-			long objectFieldId, long listTypeDefinitionId, String businessType,
-			String dbType, boolean indexed, boolean indexedAsKeyword,
-			String indexedLanguageId,
-			java.util.Map<java.util.Locale, String> labelMap, String name,
-			boolean required)
+	public com.liferay.object.model.ObjectField updateObjectField(
+			String externalReferenceCode, long objectFieldId,
+			long listTypeDefinitionId, String businessType, String dbType,
+			boolean indexed, boolean indexedAsKeyword, String indexedLanguageId,
+			java.util.Map<java.util.Locale, String> labelMap, boolean localized,
+			String name, String readOnly, String readOnlyConditionExpression,
+			boolean required, boolean state,
+			java.util.List<com.liferay.object.model.ObjectFieldSetting>
+				objectFieldSettings)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _objectFieldService.updateCustomObjectField(
-			objectFieldId, listTypeDefinitionId, businessType, dbType, indexed,
-			indexedAsKeyword, indexedLanguageId, labelMap, name, required);
+		return _objectFieldService.updateObjectField(
+			externalReferenceCode, objectFieldId, listTypeDefinitionId,
+			businessType, dbType, indexed, indexedAsKeyword, indexedLanguageId,
+			labelMap, localized, name, readOnly, readOnlyConditionExpression,
+			required, state, objectFieldSettings);
 	}
 
 	@Override

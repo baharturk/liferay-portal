@@ -1,6 +1,7 @@
 @component-name = "portal-wcm"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Fragments";
@@ -13,7 +14,7 @@ definition {
 		}
 
 		task ("Add a site") {
-			JSONGroup.addGroup(groupName = "Test Site Name");
+			HeadlessSite.addSite(siteName = "Test Site Name");
 		}
 
 		task ("Add a content page") {
@@ -25,9 +26,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -36,8 +37,10 @@ definition {
 	}
 
 	@description = "This is a test for LPS-140820. The user could decrease the Number of Slides in Banner Slider."
-	@priority = "5"
+	@priority = 5
 	test DecreaseNumberOfSlides {
+		property portal.acceptance = "true";
+
 		task ("Add a Banner Slider fragment to a display page template for Web Content Article and Basic Web Content") {
 			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
 				contentType = "Web Content Article",
@@ -58,35 +61,35 @@ definition {
 			PageEditorMapping.mapEditableTextToField(
 				className = "slider",
 				field = "Title",
-				fragmentName = "Slider",
+				fragmentName = "Banner Slider",
 				id = "01-02-title");
 
 			PageEditorMapping.mapEditableTextToField(
 				className = "slider",
 				field = "Author Name",
-				fragmentName = "Slider",
+				fragmentName = "Banner Slider",
 				id = "01-03-subtitle");
 		}
 
 		task ("Change the Number of Slides to 2") {
-			PageEditor.gotoConfiguration(fragmentName = "Slider");
+			PageEditor.gotoConfiguration(fragmentName = "Banner Slider");
 
-			PageEditor.configureFragment(numberOfSlides = "2");
+			PageEditor.configureFragment(numberOfSlides = 2);
 		}
 
 		task ("Map the Content and Display Page URL fields to title and subtitle fields in the second slide") {
-			ContentPages.focusSlide(slideNumber = "2");
+			ContentPages.focusSlide(slideNumber = 2);
 
 			PageEditorMapping.mapEditableTextToField(
 				className = "slider",
 				field = "Content",
-				fragmentName = "Slider",
+				fragmentName = "Banner Slider",
 				id = "02-02-title");
 
 			PageEditorMapping.mapEditableTextToField(
 				className = "slider",
-				field = "Display Page URL",
-				fragmentName = "Slider",
+				field = "Default",
+				fragmentName = "Banner Slider",
 				id = "02-03-subtitle");
 		}
 
@@ -95,7 +98,7 @@ definition {
 				ariaLabel = "Focus slide 3",
 				locator1 = "Button#ANY_WITH_ARIA_LABEL");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("Add a web content and associate it to the display page template") {
@@ -120,11 +123,11 @@ definition {
 				entry = "Web Content Title",
 				menuItem = "View Content");
 
-			ControlMenu.viewHeaderTitle(headerTitle = "Display Page Name");
+			ControlMenu.viewHeaderTitle(headerTitle = "Web Content Title");
 
 			var baseURL = PropsUtil.get("portal.url");
 
-			ContentPages.focusSlide(slideNumber = "1");
+			ContentPages.focusSlide(slideNumber = 1);
 
 			ContentPages.viewFragmentText(
 				fragmentName = "slider",
@@ -136,7 +139,7 @@ definition {
 				id = "01-03-subtitle",
 				text = "Test Test");
 
-			ContentPages.focusSlide(slideNumber = "2");
+			ContentPages.focusSlide(slideNumber = 2);
 
 			ContentPages.viewFragmentText(
 				fragmentName = "slider",
@@ -157,8 +160,10 @@ definition {
 	}
 
 	@description = "This is a test for LPS-140820. The user could increase the Number of Slides in Banner Slider."
-	@priority = "5"
+	@priority = 5
 	test IncreaseNumberOfSlides {
+		property portal.acceptance = "true";
+
 		task ("Add a Banner Slider fragment to page") {
 			ContentPagesNavigator.openEditContentPage(
 				pageName = "Test Page Name",
@@ -186,7 +191,7 @@ definition {
 		task ("Change the Number of Slides to 4") {
 			PageEditor.gotoConfiguration(fragmentName = "Banner Slider");
 
-			PageEditor.configureFragment(numberOfSlides = "4");
+			PageEditor.configureFragment(numberOfSlides = 4);
 		}
 
 		task ("View inline texts of slides") {
@@ -202,7 +207,7 @@ definition {
 				fragmentName = "Banner Slider",
 				id = "01-03-subtitle");
 
-			ContentPages.focusSlide(slideNumber = "2");
+			ContentPages.focusSlide(slideNumber = 2);
 
 			PageEditor.viewFragmentEditableText(
 				className = "slider",
@@ -216,7 +221,7 @@ definition {
 				fragmentName = "Banner Slider",
 				id = "02-03-subtitle");
 
-			ContentPages.focusSlide(slideNumber = "3");
+			ContentPages.focusSlide(slideNumber = 3);
 
 			PageEditor.viewFragmentEditableText(
 				className = "slider",
@@ -230,7 +235,7 @@ definition {
 				fragmentName = "Banner Slider",
 				id = "03-03-subtitle");
 
-			ContentPages.focusSlide(slideNumber = "4");
+			ContentPages.focusSlide(slideNumber = 4);
 
 			PageEditor.viewFragmentEditableText(
 				className = "slider",
@@ -258,7 +263,7 @@ definition {
 				id = "04-03-subtitle",
 				text = "Eternals");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View inline texts of slides at view mode") {
@@ -266,7 +271,7 @@ definition {
 				pageName = "Test Page Name",
 				siteName = "Test Site Name");
 
-			ContentPages.focusSlide(slideNumber = "1");
+			ContentPages.focusSlide(slideNumber = 1);
 
 			ContentPages.viewFragmentText(
 				fragmentName = "slider",
@@ -278,7 +283,7 @@ definition {
 				id = "01-03-subtitle",
 				text = "Nets vs Warriors");
 
-			ContentPages.focusSlide(slideNumber = "2");
+			ContentPages.focusSlide(slideNumber = 2);
 
 			ContentPages.viewFragmentText(
 				fragmentName = "slider",
@@ -290,7 +295,7 @@ definition {
 				id = "02-03-subtitle",
 				text = "Slide 2 Subtitle");
 
-			ContentPages.focusSlide(slideNumber = "3");
+			ContentPages.focusSlide(slideNumber = 3);
 
 			ContentPages.viewFragmentText(
 				fragmentName = "slider",
@@ -302,7 +307,7 @@ definition {
 				id = "03-03-subtitle",
 				text = "Slide 3 Subtitle");
 
-			ContentPages.focusSlide(slideNumber = "4");
+			ContentPages.focusSlide(slideNumber = 4);
 
 			ContentPages.viewFragmentText(
 				fragmentName = "slider",

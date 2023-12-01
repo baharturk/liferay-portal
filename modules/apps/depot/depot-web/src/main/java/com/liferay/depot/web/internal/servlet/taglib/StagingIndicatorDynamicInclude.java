@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.servlet.taglib;
@@ -17,14 +8,14 @@ package com.liferay.depot.web.internal.servlet.taglib;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.depot.web.internal.constants.DepotPortletKeys;
+import com.liferay.depot.web.internal.util.StagingIndicatorUtil;
 import com.liferay.exportimport.kernel.staging.Staging;
 import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
@@ -34,8 +25,7 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
-import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.service.permission.PortletPermission;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -50,7 +40,6 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.template.react.renderer.ComponentDescriptor;
 import com.liferay.portal.template.react.renderer.ReactRenderer;
 import com.liferay.site.util.GroupURLProvider;
-import com.liferay.staging.constants.StagingProcessesPortletKeys;
 import com.liferay.taglib.util.HtmlTopTag;
 
 import java.io.IOException;
@@ -82,17 +71,12 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 		throws IOException {
 
 		try {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
+			if (StagingIndicatorUtil.isShowStagingIndicator(
+					httpServletRequest)) {
 
-			Group scopeGroup = themeDisplay.getScopeGroup();
-
-			if (scopeGroup.isDepot() && scopeGroup.isStaged() &&
-				_portletPermission.contains(
-					themeDisplay.getPermissionChecker(),
-					StagingProcessesPortletKeys.STAGING_PROCESSES,
-					ActionKeys.VIEW)) {
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)httpServletRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
 
 				_includeStagingIndicator(
 					httpServletRequest, httpServletResponse, themeDisplay);
@@ -103,7 +87,7 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 		}
 		catch (PortalException | PortletException exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 	}
@@ -115,7 +99,7 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 	}
 
 	private <T> JSONArray _createJSONArray(T... values) {
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		for (T value : values) {
 			jsonArray.put(value);
@@ -269,7 +253,7 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 			liveGroupURL = _getLiveGroupURL(scopeGroup, httpServletRequest);
 		}
 		catch (SystemException systemException) {
-			_log.error(systemException, systemException);
+			_log.error(systemException);
 		}
 
 		if (Validator.isNotNull(liveGroupURL) ||
@@ -399,6 +383,9 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 	private GroupURLProvider _groupURLProvider;
 
 	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
 	private Language _language;
 
 	@Reference
@@ -406,9 +393,6 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private PortletPermission _portletPermission;
 
 	@Reference
 	private ReactRenderer _reactRenderer;

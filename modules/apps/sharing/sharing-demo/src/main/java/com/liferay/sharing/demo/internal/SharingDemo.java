@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.demo.internal;
@@ -47,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alejandro Tardín
  */
-@Component(immediate = true, service = PortalInstanceLifecycleListener.class)
+@Component(service = PortalInstanceLifecycleListener.class)
 public class SharingDemo extends BasePortalInstanceLifecycleListener {
 
 	@Override
@@ -104,11 +95,6 @@ public class SharingDemo extends BasePortalInstanceLifecycleListener {
 		_rootFolderDemoDataCreator.delete();
 	}
 
-	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
-	protected void setModuleServiceLifecycle(
-		ModuleServiceLifecycle moduleServiceLifecycle) {
-	}
-
 	private Date _getExpirationDate(int daysFromNow) {
 		LocalDateTime localDateTime = LocalDateTime.now();
 
@@ -125,6 +111,9 @@ public class SharingDemo extends BasePortalInstanceLifecycleListener {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
+	private ModuleServiceLifecycle _moduleServiceLifecycle;
 
 	@Reference
 	private Portal _portal;

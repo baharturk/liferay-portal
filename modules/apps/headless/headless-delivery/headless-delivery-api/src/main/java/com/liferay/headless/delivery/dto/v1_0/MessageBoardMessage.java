@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.dto.v1_0;
@@ -436,6 +427,34 @@ public class MessageBoardMessage implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String friendlyUrlPath;
 
+	@Schema
+	public Boolean getHasCompanyMx() {
+		return hasCompanyMx;
+	}
+
+	public void setHasCompanyMx(Boolean hasCompanyMx) {
+		this.hasCompanyMx = hasCompanyMx;
+	}
+
+	@JsonIgnore
+	public void setHasCompanyMx(
+		UnsafeSupplier<Boolean, Exception> hasCompanyMxUnsafeSupplier) {
+
+		try {
+			hasCompanyMx = hasCompanyMxUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean hasCompanyMx;
+
 	@Schema(description = "The message's main title.")
 	public String getHeadline() {
 		return headline;
@@ -581,6 +600,34 @@ public class MessageBoardMessage implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long messageBoardThreadId;
+
+	@Schema
+	public Boolean getModified() {
+		return modified;
+	}
+
+	public void setModified(Boolean modified) {
+		this.modified = modified;
+	}
+
+	@JsonIgnore
+	public void setModified(
+		UnsafeSupplier<Boolean, Exception> modifiedUnsafeSupplier) {
+
+		try {
+			modified = modifiedUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean modified;
 
 	@Schema(description = "The number of the message's attachments.")
 	public Integer getNumberOfMessageBoardAttachments() {
@@ -1056,6 +1103,16 @@ public class MessageBoardMessage implements Serializable {
 			sb.append("\"");
 		}
 
+		if (hasCompanyMx != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"hasCompanyMx\": ");
+
+			sb.append(hasCompanyMx);
+		}
+
 		if (headline != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1122,6 +1179,16 @@ public class MessageBoardMessage implements Serializable {
 			sb.append("\"messageBoardThreadId\": ");
 
 			sb.append(messageBoardThreadId);
+		}
+
+		if (modified != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"modified\": ");
+
+			sb.append(modified);
 		}
 
 		if (numberOfMessageBoardAttachments != null) {
@@ -1364,5 +1431,7 @@ public class MessageBoardMessage implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

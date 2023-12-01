@@ -1,27 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.upgrade.v4_1_0;
 
-import com.liferay.commerce.account.model.CommerceAccount;
 import com.liferay.commerce.constants.CommerceAddressConstants;
-import com.liferay.commerce.internal.upgrade.base.BaseCommerceServiceUpgradeProcess;
-import com.liferay.commerce.model.impl.CommerceAddressImpl;
 import com.liferay.commerce.model.impl.CommerceAddressModelImpl;
 import com.liferay.portal.dao.orm.common.SQLTransformer;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.upgrade.UpgradeException;
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,8 +18,7 @@ import java.sql.ResultSet;
 /**
  * @author Alec Sloan
  */
-public class CommerceAddressUpgradeProcess
-	extends BaseCommerceServiceUpgradeProcess {
+public class CommerceAddressUpgradeProcess extends UpgradeProcess {
 
 	public CommerceAddressUpgradeProcess(
 		ClassNameLocalService classNameLocalService) {
@@ -49,9 +37,7 @@ public class CommerceAddressUpgradeProcess
 						"'defaultShippingAddressId'");
 		}
 
-		addColumn(
-			CommerceAddressImpl.class, CommerceAddressImpl.TABLE_NAME, "type_",
-			"INTEGER");
+		alterTableAddColumn("CommerceAddress", "type_", "INTEGER");
 
 		PreparedStatement preparedStatement = null;
 
@@ -80,7 +66,7 @@ public class CommerceAddressUpgradeProcess
 		throws Exception {
 
 		long commerceAccountClassNameId = _classNameLocalService.getClassNameId(
-			CommerceAccount.class);
+			"com.liferay.commerce.account.model.CommerceAccount");
 
 		PreparedStatement preparedStatement = null;
 

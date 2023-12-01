@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.internal.dto.v1_0.converter;
@@ -22,11 +13,11 @@ import com.liferay.commerce.discount.CommerceDiscountValue;
 import com.liferay.commerce.inventory.CPDefinitionInventoryEngine;
 import com.liferay.commerce.inventory.constants.CommerceInventoryAvailabilityConstants;
 import com.liferay.commerce.inventory.engine.CommerceInventoryEngine;
+import com.liferay.commerce.model.CPDefinitionInventory;
 import com.liferay.commerce.price.CommerceProductPrice;
 import com.liferay.commerce.price.CommerceProductPriceCalculation;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
-import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.permission.CommerceProductViewPermission;
@@ -35,7 +26,7 @@ import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.service.CProductLocalService;
 import com.liferay.commerce.product.util.CPInstanceHelper;
-import com.liferay.commerce.product.util.JsonHelper;
+import com.liferay.commerce.product.util.CPJSONUtil;
 import com.liferay.commerce.shop.by.diagram.model.CSDiagramEntry;
 import com.liferay.commerce.shop.by.diagram.service.CSDiagramEntryLocalService;
 import com.liferay.commerce.util.CommerceUtil;
@@ -43,12 +34,15 @@ import com.liferay.headless.commerce.core.util.LanguageUtils;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Availability;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.MappedProduct;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Price;
+import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.ProductConfiguration;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.ProductOption;
+import com.liferay.headless.commerce.delivery.catalog.internal.dto.v1_0.converter.constants.DTOConverterConstants;
+import com.liferay.headless.commerce.delivery.catalog.internal.util.v1_0.SkuOptionUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
-import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
@@ -58,10 +52,8 @@ import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
@@ -71,9 +63,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	property = "dto.class.name=com.liferay.commerce.shop.by.diagram.model.CSDiagramEntry",
-	service = {DTOConverter.class, MappedProductDTOConverter.class}
+	service = DTOConverter.class
 )
 public class MappedProductDTOConverter
 	implements DTOConverter<CSDiagramEntry, MappedProduct> {
@@ -136,10 +127,10 @@ public class MappedProductDTOConverter
 			{
 				actions = mappedProductDTOConverterContext.getActions();
 				id = csDiagramEntry.getCSDiagramEntryId();
-				options = _getOptions(cpInstance);
 				price = _getPrice(
 					commerceContext, cpInstance,
-					mappedProductDTOConverterContext.getLocale(), 1);
+					mappedProductDTOConverterContext.getLocale(),
+					BigDecimal.ONE, StringPool.BLANK);
 				quantity = csDiagramEntry.getQuantity();
 				sequence = csDiagramEntry.getSequence();
 
@@ -154,7 +145,7 @@ public class MappedProductDTOConverter
 							mappedProductDTOConverterContext.getCompanyId(),
 							cpInstance,
 							mappedProductDTOConverterContext.getLocale(),
-							cpInstance.getSku());
+							cpInstance.getSku(), StringPool.BLANK);
 					});
 				setFirstAvailableReplacementMappedProduct(
 					() -> {
@@ -282,7 +273,6 @@ public class MappedProductDTOConverter
 							mappedProductDTOConverterContext.
 								setReplacementCPInstanceId(
 									replacementCPInstance.getCPInstanceId());
-
 							mappedProductDTOConverterContext.
 								setReplacementCProductId(
 									cpInstance.getReplacementCProductId());
@@ -307,7 +297,7 @@ public class MappedProductDTOConverter
 							(cpInstance.getCPInstanceId() ==
 								csDiagramEntry.getCPInstanceId())) {
 
-							return LanguageUtil.format(
+							return _language.format(
 								mappedProductDTOConverterContext.getLocale(),
 								"x-has-been-replaced-by-x",
 								new String[] {
@@ -321,7 +311,7 @@ public class MappedProductDTOConverter
 				setSku(
 					() -> {
 						if (cpInstance == null) {
-							return null;
+							return csDiagramEntry.getSku();
 						}
 
 						return cpInstance.getSku();
@@ -341,6 +331,24 @@ public class MappedProductDTOConverter
 						}
 
 						return cpInstance.getCPInstanceId();
+					});
+				setSkuOptions(
+					() -> {
+						if (cpInstance == null) {
+							return null;
+						}
+
+						JSONArray jsonArray = CPJSONUtil.toJSONArray(
+							_cpDefinitionOptionRelLocalService.
+								getCPDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys(
+									cpInstance.getCPInstanceId()));
+
+						return SkuOptionUtil.getSkuOptions(
+							_cpInstanceHelper.getCPDefinitionOptionValueRelsMap(
+								cpInstance.getCPDefinitionId(),
+								jsonArray.toString()),
+							_cpInstanceLocalService,
+							mappedProductDTOConverterContext.getLocale());
 					});
 				setThumbnail(
 					() -> {
@@ -382,38 +390,37 @@ public class MappedProductDTOConverter
 
 	private Availability _getAvailability(
 			long commerceChannelGroupId, long companyId, CPInstance cpInstance,
-			Locale locale, String sku)
+			Locale locale, String sku, String unitOfMeasureKey)
 		throws Exception {
 
 		Availability availability = new Availability();
 
 		if (_cpDefinitionInventoryEngine.isDisplayAvailability(cpInstance)) {
-			String availabilityStatus =
-				_commerceInventoryEngine.getAvailabilityStatus(
-					cpInstance.getCompanyId(), commerceChannelGroupId,
-					_cpDefinitionInventoryEngine.getMinStockQuantity(
-						cpInstance),
-					cpInstance.getSku());
-
 			if (Objects.equals(
-					availabilityStatus,
+					_commerceInventoryEngine.getAvailabilityStatus(
+						cpInstance.getCompanyId(), cpInstance.getGroupId(),
+						commerceChannelGroupId,
+						_cpDefinitionInventoryEngine.getMinStockQuantity(
+							cpInstance),
+						cpInstance.getSku(), unitOfMeasureKey),
 					CommerceInventoryAvailabilityConstants.AVAILABLE)) {
 
-				availability.setLabel_i18n(
-					LanguageUtil.get(locale, "available"));
+				availability.setLabel_i18n(_language.get(locale, "available"));
 				availability.setLabel("available");
 			}
 			else {
 				availability.setLabel_i18n(
-					LanguageUtil.get(locale, "unavailable"));
+					_language.get(locale, "unavailable"));
 				availability.setLabel("unavailable");
 			}
 		}
 
 		if (_cpDefinitionInventoryEngine.isDisplayStockQuantity(cpInstance)) {
 			availability.setStockQuantity(
-				_commerceInventoryEngine.getStockQuantity(
-					companyId, commerceChannelGroupId, sku));
+				BigDecimalUtil.stripTrailingZeros(
+					_commerceInventoryEngine.getStockQuantity(
+						companyId, cpInstance.getGroupId(),
+						commerceChannelGroupId, sku, unitOfMeasureKey)));
 		}
 
 		return availability;
@@ -433,56 +440,9 @@ public class MappedProductDTOConverter
 		return formattedDiscountPercentages.toArray(new String[0]);
 	}
 
-	private Map<String, String> _getOptions(CPInstance cpInstance)
-		throws Exception {
-
-		if (cpInstance == null) {
-			return null;
-		}
-
-		Map<String, String> options = new HashMap<>();
-
-		Map<String, List<String>>
-			cpDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys =
-				_cpDefinitionOptionRelLocalService.
-					getCPDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys(
-						cpInstance.getCPInstanceId());
-
-		JSONArray keyValuesJSONArray = _jsonHelper.toJSONArray(
-			cpDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys);
-
-		Map<CPDefinitionOptionRel, List<CPDefinitionOptionValueRel>>
-			cpDefinitionOptionRelsMap =
-				_cpInstanceHelper.getCPDefinitionOptionRelsMap(
-					cpInstance.getCPDefinitionId(),
-					keyValuesJSONArray.toString());
-
-		for (Map.Entry<CPDefinitionOptionRel, List<CPDefinitionOptionValueRel>>
-				entry : cpDefinitionOptionRelsMap.entrySet()) {
-
-			CPDefinitionOptionRel cpDefinitionOptionRel = entry.getKey();
-
-			List<CPDefinitionOptionValueRel> cpDefinitionOptionValueRels =
-				entry.getValue();
-
-			for (CPDefinitionOptionValueRel cpDefinitionOptionValueRel :
-					cpDefinitionOptionValueRels) {
-
-				options.put(
-					String.valueOf(
-						cpDefinitionOptionRel.getCPDefinitionOptionRelId()),
-					String.valueOf(
-						cpDefinitionOptionValueRel.
-							getCPDefinitionOptionValueRelId()));
-			}
-		}
-
-		return options;
-	}
-
 	private Price _getPrice(
 			CommerceContext commerceContext, CPInstance cpInstance,
-			Locale locale, int quantity)
+			Locale locale, BigDecimal quantity, String unitOfMeasureKey)
 		throws Exception {
 
 		if (cpInstance == null) {
@@ -491,7 +451,8 @@ public class MappedProductDTOConverter
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
-				cpInstance.getCPInstanceId(), quantity, true, commerceContext);
+				cpInstance.getCPInstanceId(), quantity, true, unitOfMeasureKey,
+				commerceContext);
 
 		if (commerceProductPrice == null) {
 			return new Price();
@@ -570,9 +531,6 @@ public class MappedProductDTOConverter
 	private CommerceProductViewPermission _commerceProductViewPermission;
 
 	@Reference
-	private CompanyLocalService _companyLocalService;
-
-	@Reference
 	private CPDefinitionInventoryEngine _cpDefinitionInventoryEngine;
 
 	@Reference
@@ -598,12 +556,16 @@ public class MappedProductDTOConverter
 	private DTOConverterRegistry _dtoConverterRegistry;
 
 	@Reference
-	private JsonHelper _jsonHelper;
+	private Language _language;
 
-	@Reference
-	private ProductConfigurationDTOConverter _productConfigurationDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.delivery.catalog.internal.dto.v1_0.converter.ProductConfigurationDTOConverter)"
+	)
+	private DTOConverter<CPDefinitionInventory, ProductConfiguration>
+		_productConfigurationDTOConverter;
 
-	@Reference
-	private ProductOptionDTOConverter _productOptionDTOConverter;
+	@Reference(target = DTOConverterConstants.PRODUCT_OPTION_DTO_CONVERTER)
+	private DTOConverter<CPDefinitionOptionRel, ProductOption>
+		_productOptionDTOConverter;
 
 }

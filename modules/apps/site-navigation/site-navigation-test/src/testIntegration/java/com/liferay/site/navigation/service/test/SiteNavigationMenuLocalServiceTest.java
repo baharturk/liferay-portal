@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.service.test;
@@ -70,15 +61,13 @@ public class SiteNavigationMenuLocalServiceTest {
 
 	@Test
 	public void testAddAutoSiteNavigationMenu() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		SiteNavigationMenu siteNavigationMenu =
 			_siteNavigationMenuLocalService.addSiteNavigationMenu(
 				TestPropsValues.getUserId(), _group.getGroupId(),
 				RandomTestUtil.randomString(),
-				SiteNavigationConstants.TYPE_DEFAULT, false, serviceContext);
+				SiteNavigationConstants.TYPE_DEFAULT, false,
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
 
 		SiteNavigationMenu persistedSiteNavigationMenu =
 			_siteNavigationMenuPersistence.fetchByPrimaryKey(
@@ -99,14 +88,12 @@ public class SiteNavigationMenuLocalServiceTest {
 
 	@Test
 	public void testAddSiteNavigationMenu() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		SiteNavigationMenu siteNavigationMenu =
 			_siteNavigationMenuLocalService.addSiteNavigationMenu(
 				TestPropsValues.getUserId(), _group.getGroupId(),
-				RandomTestUtil.randomString(), serviceContext);
+				RandomTestUtil.randomString(),
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
 
 		SiteNavigationMenu persistedSiteNavigationMenu =
 			_siteNavigationMenuPersistence.fetchByPrimaryKey(
@@ -117,15 +104,13 @@ public class SiteNavigationMenuLocalServiceTest {
 
 	@Test
 	public void testAddSiteNavigationMenuByType() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		SiteNavigationMenu siteNavigationMenu =
 			_siteNavigationMenuLocalService.addSiteNavigationMenu(
 				TestPropsValues.getUserId(), _group.getGroupId(),
 				RandomTestUtil.randomString(),
-				SiteNavigationConstants.TYPE_DEFAULT, serviceContext);
+				SiteNavigationConstants.TYPE_DEFAULT,
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
 
 		SiteNavigationMenu persistedSiteNavigationMenu =
 			_siteNavigationMenuPersistence.fetchByPrimaryKey(
@@ -235,11 +220,9 @@ public class SiteNavigationMenuLocalServiceTest {
 		SiteNavigationMenuTestUtil.addSiteNavigationMenu(
 			_group, SiteNavigationConstants.TYPE_SECONDARY);
 
-		siteNavigationMenu =
+		Assert.assertNotNull(
 			_siteNavigationMenuLocalService.fetchSiteNavigationMenu(
-				_group.getGroupId(), SiteNavigationConstants.TYPE_SECONDARY);
-
-		Assert.assertNotNull(siteNavigationMenu);
+				_group.getGroupId(), SiteNavigationConstants.TYPE_SECONDARY));
 	}
 
 	@Test
@@ -253,11 +236,9 @@ public class SiteNavigationMenuLocalServiceTest {
 		SiteNavigationMenuTestUtil.addSiteNavigationMenu(
 			_group, SiteNavigationConstants.TYPE_SOCIAL);
 
-		siteNavigationMenu =
+		Assert.assertNotNull(
 			_siteNavigationMenuLocalService.fetchSiteNavigationMenu(
-				_group.getGroupId(), SiteNavigationConstants.TYPE_SOCIAL);
-
-		Assert.assertNotNull(siteNavigationMenu);
+				_group.getGroupId(), SiteNavigationConstants.TYPE_SOCIAL));
 	}
 
 	@Test

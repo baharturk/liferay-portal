@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import {ClayDropDownWithItems} from '@clayui/drop-down';
 import {ClayInput} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
-import ClayManagementToolbar, {
-	ClayResultsBar,
-} from '@clayui/management-toolbar';
+import {ManagementToolbar as FrontendManagementToolbar} from 'frontend-js-components-web';
 import React, {useState} from 'react';
 
-import {sub} from '../../../sxp_blueprint_admin/js/utils/language';
+import sub from '../../../sxp_blueprint_admin/js/utils/language/sub';
 
 const ManagementToolbar = ({
 	filterItems,
@@ -34,12 +26,15 @@ const ManagementToolbar = ({
 
 	return (
 		<>
-			<ClayManagementToolbar>
-				<ClayManagementToolbar.ItemList>
+			<FrontendManagementToolbar.Container>
+				<FrontendManagementToolbar.ItemList>
 					<ClayDropDownWithItems
 						items={filterItems}
 						trigger={
 							<ClayButton
+								aria-label={Liferay.Language.get(
+									'filter-and-order'
+								)}
 								className="nav-link"
 								disabled={loading}
 								displayType="unstyled"
@@ -64,8 +59,13 @@ const ManagementToolbar = ({
 						}
 					/>
 
-					<ClayManagementToolbar.Item>
+					<FrontendManagementToolbar.Item>
 						<ClayButton
+							aria-label={
+								sortOrder === 'asc'
+									? Liferay.Language.get('ascending')
+									: Liferay.Language.get('descending')
+							}
 							className="nav-link nav-link-monospaced"
 							disabled={loading}
 							displayType="unstyled"
@@ -77,10 +77,10 @@ const ManagementToolbar = ({
 								<ClayIcon symbol="order-list-down" />
 							)}
 						</ClayButton>
-					</ClayManagementToolbar.Item>
-				</ClayManagementToolbar.ItemList>
+					</FrontendManagementToolbar.Item>
+				</FrontendManagementToolbar.ItemList>
 
-				<ClayManagementToolbar.Search showMobile={searchMobile}>
+				<FrontendManagementToolbar.Search showMobile={searchMobile}>
 					<ClayInput.Group>
 						<ClayInput.GroupItem>
 							<ClayInput
@@ -104,6 +104,7 @@ const ManagementToolbar = ({
 
 							<ClayInput.GroupInsetItem after tag="span">
 								<ClayButtonWithIcon
+									aria-label={Liferay.Language.get('clear')}
 									className="navbar-breakpoint-d-none"
 									displayType="unstyled"
 									onClick={() => setSearchMobile(false)}
@@ -111,6 +112,7 @@ const ManagementToolbar = ({
 								/>
 
 								<ClayButtonWithIcon
+									aria-label={Liferay.Language.get('search')}
 									disabled={loading}
 									displayType="unstyled"
 									onClick={() => onSearch(searchInputValue)}
@@ -119,24 +121,25 @@ const ManagementToolbar = ({
 							</ClayInput.GroupInsetItem>
 						</ClayInput.GroupItem>
 					</ClayInput.Group>
-				</ClayManagementToolbar.Search>
+				</FrontendManagementToolbar.Search>
 
-				<ClayManagementToolbar.ItemList>
-					<ClayManagementToolbar.Item className="navbar-breakpoint-d-none">
+				<FrontendManagementToolbar.ItemList>
+					<FrontendManagementToolbar.Item className="navbar-breakpoint-d-none">
 						<ClayButton
+							aria-label={Liferay.Language.get('search')}
 							className="nav-link nav-link-monospaced"
 							displayType="unstyled"
 							onClick={() => setSearchMobile(true)}
 						>
 							<ClayIcon symbol="search" />
 						</ClayButton>
-					</ClayManagementToolbar.Item>
-				</ClayManagementToolbar.ItemList>
-			</ClayManagementToolbar>
+					</FrontendManagementToolbar.Item>
+				</FrontendManagementToolbar.ItemList>
+			</FrontendManagementToolbar.Container>
 
 			{!!searchValue && !loading && (
-				<ClayResultsBar>
-					<ClayResultsBar.Item>
+				<FrontendManagementToolbar.ResultsBar>
+					<FrontendManagementToolbar.ResultsBarItem>
 						<span className="component-text text-truncate-inline">
 							<span className="text-truncate">
 								{sub(
@@ -149,9 +152,9 @@ const ManagementToolbar = ({
 								)}
 							</span>
 						</span>
-					</ClayResultsBar.Item>
+					</FrontendManagementToolbar.ResultsBarItem>
 
-					<ClayResultsBar.Item>
+					<FrontendManagementToolbar.ResultsBarItem>
 						<ClayButton
 							className="component-link tbar-link"
 							displayType="unstyled"
@@ -162,8 +165,8 @@ const ManagementToolbar = ({
 						>
 							{Liferay.Language.get('clear')}
 						</ClayButton>
-					</ClayResultsBar.Item>
-				</ClayResultsBar>
+					</FrontendManagementToolbar.ResultsBarItem>
+				</FrontendManagementToolbar.ResultsBar>
 			)}
 		</>
 	);

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.availability;
@@ -17,13 +8,15 @@ package com.liferay.commerce.product.internal.availability;
 import com.liferay.commerce.inventory.CPDefinitionInventoryEngine;
 import com.liferay.commerce.inventory.CPDefinitionInventoryEngineRegistry;
 import com.liferay.commerce.inventory.engine.CommerceInventoryEngine;
-import com.liferay.commerce.inventory.service.CommerceInventoryBookedQuantityLocalService;
 import com.liferay.commerce.model.CPDefinitionInventory;
 import com.liferay.commerce.product.availability.CPAvailabilityChecker;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.service.CPDefinitionInventoryLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
+
+import java.math.BigDecimal;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,17 +24,17 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(
-	enabled = false, immediate = true, service = CPAvailabilityChecker.class
-)
+@Component(service = CPAvailabilityChecker.class)
 public class CPAvailabilityCheckerImpl implements CPAvailabilityChecker {
 
 	@Override
 	public boolean check(
-			long commerceChannelGroupId, CPInstance cpInstance, int quantity)
+			long commerceChannelGroupId, CPInstance cpInstance,
+			String unitOfMeasure, BigDecimal quantity)
 		throws PortalException {
 
-		if (isAvailable(commerceChannelGroupId, cpInstance, quantity) &&
+		if (isAvailable(
+				commerceChannelGroupId, cpInstance, unitOfMeasure, quantity) &&
 			isPurchasable(cpInstance)) {
 
 			return true;
@@ -52,7 +45,8 @@ public class CPAvailabilityCheckerImpl implements CPAvailabilityChecker {
 
 	@Override
 	public boolean isAvailable(
-			long commerceChannelGroupId, CPInstance cpInstance, int quantity)
+			long commerceChannelGroupId, CPInstance cpInstance,
+			String unitOfMeasure, BigDecimal quantity)
 		throws PortalException {
 
 		if (cpInstance == null) {
@@ -74,19 +68,20 @@ public class CPAvailabilityCheckerImpl implements CPAvailabilityChecker {
 			return true;
 		}
 
-		int stockQuantity;
+		BigDecimal stockQuantity = BigDecimal.ZERO;
 
 		if (commerceChannelGroupId > 0) {
 			stockQuantity = _commerceInventoryEngine.getStockQuantity(
-				cpInstance.getCompanyId(), commerceChannelGroupId,
-				cpInstance.getSku());
+				cpInstance.getCompanyId(), cpInstance.getGroupId(),
+				commerceChannelGroupId, cpInstance.getSku(), unitOfMeasure);
 		}
 		else {
 			stockQuantity = _commerceInventoryEngine.getStockQuantity(
-				cpInstance.getCompanyId(), cpInstance.getSku());
+				cpInstance.getCompanyId(), cpDefinition.getGroupId(),
+				cpInstance.getSku(), unitOfMeasure);
 		}
 
-		if (quantity > stockQuantity) {
+		if (BigDecimalUtil.gt(quantity, stockQuantity)) {
 			return false;
 		}
 
@@ -109,10 +104,6 @@ public class CPAvailabilityCheckerImpl implements CPAvailabilityChecker {
 
 		return true;
 	}
-
-	@Reference
-	private CommerceInventoryBookedQuantityLocalService
-		_commerceInventoryBookedQuantityLocalService;
 
 	@Reference
 	private CommerceInventoryEngine _commerceInventoryEngine;

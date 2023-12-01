@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.item.selector.web.internal;
@@ -20,7 +11,7 @@ import com.liferay.commerce.price.list.service.CommercePriceListService;
 import com.liferay.item.selector.ItemSelectorReturnType;
 import com.liferay.item.selector.ItemSelectorView;
 import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -47,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, immediate = true, service = ItemSelectorView.class)
+@Component(service = ItemSelectorView.class)
 public class CommercePriceListItemSelectorView
 	implements ItemSelectorView<CommercePriceListItemSelectorCriterion> {
 
@@ -72,7 +63,7 @@ public class CommercePriceListItemSelectorView
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, "price-lists");
+		return _language.get(resourceBundle, "price-lists");
 	}
 
 	@Override
@@ -82,6 +73,12 @@ public class CommercePriceListItemSelectorView
 				commercePriceListItemSelectorCriterion,
 			PortletURL portletURL, String itemSelectedEventName, boolean search)
 		throws IOException, ServletException {
+
+		ServletContext servletContext = getServletContext();
+
+		RequestDispatcher requestDispatcher =
+			servletContext.getRequestDispatcher(
+				"/price_list_item_selector.jsp");
 
 		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)servletRequest;
@@ -96,12 +93,6 @@ public class CommercePriceListItemSelectorView
 			WebKeys.PORTLET_DISPLAY_CONTEXT,
 			commercePriceListItemSelectorViewDisplayContext);
 
-		ServletContext servletContext = getServletContext();
-
-		RequestDispatcher requestDispatcher =
-			servletContext.getRequestDispatcher(
-				"/price_list_item_selector.jsp");
-
 		requestDispatcher.include(servletRequest, servletResponse);
 	}
 
@@ -111,6 +102,9 @@ public class CommercePriceListItemSelectorView
 
 	@Reference
 	private CommercePriceListService _commercePriceListService;
+
+	@Reference
+	private Language _language;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.commerce.item.selector.web)"

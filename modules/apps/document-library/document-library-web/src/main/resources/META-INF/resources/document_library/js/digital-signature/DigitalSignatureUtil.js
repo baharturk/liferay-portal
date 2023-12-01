@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {
@@ -19,6 +10,7 @@ import {
 	navigate,
 	objectToFormData,
 	openModal,
+	sub,
 } from 'frontend-js-web';
 
 const MAXIMUM_SELECTED_FILES = 10;
@@ -27,21 +19,21 @@ const translatedKeys = {
 	cancel: Liferay.Language.get('cancel'),
 	continue: Liferay.Language.get('continue'),
 	deselected: Liferay.Language.get('deselected'),
-	maximum_files_message: Liferay.Util.sub(
+	maximum_files_message: sub(
 		Liferay.Language.get('maximum-of-x-files-per-envelope'),
 		MAXIMUM_SELECTED_FILES
 	),
 };
 
 const _invalidFileExtensionContent = (invalidFileExtensions) =>
-	`${Liferay.Util.sub(
+	`${sub(
 		Liferay.Language.get(
 			'these-file-extensions-are-not-supported-by-docusign-and-have-been-x'
 		),
 		_translatedStrongKeys(translatedKeys.deselected)
 	)}
 
-	<p class="mt-2">${Liferay.Util.sub(
+	<p class="mt-2">${sub(
 		Liferay.Language.get('please-x-or-x-to-choose-new-documents'),
 		_translatedStrongKeys(translatedKeys.continue),
 		_translatedStrongKeys(translatedKeys.cancel)
@@ -58,7 +50,7 @@ const _invalidFileExtensionContent = (invalidFileExtensions) =>
 const _invalidFileCountContent = (
 	extendedMessage
 ) => `<div class="alert alert-warning">
-		${Liferay.Util.sub(
+		${sub(
 			Liferay.Language.get(
 				'you-have-exceeded-the-maximum-amount-of-x-files-allowed-per-envelope'
 			),
@@ -67,7 +59,7 @@ const _invalidFileCountContent = (
 
 		${
 			extendedMessage
-				? `<div class="mt-2">${Liferay.Util.sub(
+				? `<div class="mt-2">${sub(
 						Liferay.Language.get(
 							'please-x-or-x-to-remove-files-in-your-envelope'
 						),
@@ -82,9 +74,7 @@ const _composeBodyHTML = (crossedFileCountLimit, invalidFileExtensions) => {
 	let bodyHTML = '';
 
 	if (crossedFileCountLimit) {
-		bodyHTML += _invalidFileCountContent(
-			invalidFileExtensions.length === 0
-		);
+		bodyHTML += _invalidFileCountContent(!invalidFileExtensions.length);
 	}
 
 	if (invalidFileExtensions.length) {
@@ -136,13 +126,12 @@ const _showWarningModal = ({
 			},
 		],
 		status: 'warning',
-		title:
-			invalidFileExtensions.length === 0
-				? Liferay.Util.sub(
-						Liferay.Language.get('maximum-of-x-files-per-envelope'),
-						MAXIMUM_SELECTED_FILES
-				  )
-				: Liferay.Language.get('file-extensions-not-supported'),
+		title: !invalidFileExtensions.length
+			? sub(
+					Liferay.Language.get('maximum-of-x-files-per-envelope'),
+					MAXIMUM_SELECTED_FILES
+			  )
+			: Liferay.Language.get('file-extensions-not-supported'),
 	});
 
 export async function collectDigitalSignature(

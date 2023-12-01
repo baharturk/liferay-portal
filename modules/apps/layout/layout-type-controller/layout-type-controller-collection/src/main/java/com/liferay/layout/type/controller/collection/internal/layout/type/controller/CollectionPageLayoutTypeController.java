@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.type.controller.collection.internal.layout.type.controller;
 
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorWebKeys;
+import com.liferay.layout.manager.LayoutLockManager;
 import com.liferay.layout.type.controller.BaseLayoutTypeControllerImpl;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringPool;
@@ -33,7 +25,7 @@ import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.TransferHeadersHelperUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
@@ -52,7 +44,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Juergen Kappler
  */
 @Component(
-	immediate = true,
 	property = "layout.type=" + LayoutConstants.TYPE_COLLECTION,
 	service = LayoutTypeController.class
 )
@@ -104,14 +95,25 @@ public class CollectionPageLayoutTypeController
 			}
 		}
 
+		String redirect = StringPool.BLANK;
+
 		String layoutMode = ParamUtil.getString(
 			httpServletRequest, "p_l_mode", Constants.VIEW);
 
-		if (layoutMode.equals(Constants.EDIT) &&
-			!_hasUpdatePermissions(
-				themeDisplay.getPermissionChecker(), layout)) {
+		if (layoutMode.equals(Constants.EDIT)) {
+			if (!_hasUpdatePermissions(
+					themeDisplay.getPermissionChecker(), layout)) {
 
-			layoutMode = Constants.VIEW;
+				layoutMode = Constants.VIEW;
+			}
+			else if (!layout.isUnlocked(layoutMode, themeDisplay.getUserId())) {
+				redirect = _layoutLockManager.getLockedLayoutURL(
+					httpServletRequest);
+			}
+			else {
+				redirect = _getDraftLayoutFullURL(
+					httpServletRequest, layout, themeDisplay);
+			}
 		}
 
 		String page = getViewPage();
@@ -122,7 +124,7 @@ public class CollectionPageLayoutTypeController
 
 		RequestDispatcher requestDispatcher =
 			TransferHeadersHelperUtil.getTransferHeadersRequestDispatcher(
-				servletContext.getRequestDispatcher(page));
+				_servletContext.getRequestDispatcher(page));
 
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
@@ -135,36 +137,18 @@ public class CollectionPageLayoutTypeController
 			RequestDispatcher.INCLUDE_SERVLET_PATH);
 
 		try {
-			httpServletRequest.setAttribute(
-				ContentPageEditorWebKeys.CLASS_NAME, Layout.class.getName());
-			httpServletRequest.setAttribute(
-				ContentPageEditorWebKeys.CLASS_PK, layout.getPlid());
-
-			addAttributes(httpServletRequest);
-
-			Layout draftLayout = _layoutLocalService.fetchLayout(
-				_portal.getClassNameId(Layout.class), layout.getPlid());
-
-			if (layoutMode.equals(Constants.EDIT) && (draftLayout != null)) {
-				String layoutFullURL = _portal.getLayoutFullURL(
-					draftLayout, themeDisplay);
-
-				HttpServletRequest originalHttpServletRequest =
-					_portal.getOriginalServletRequest(httpServletRequest);
-
-				String backURL = originalHttpServletRequest.getParameter(
-					"p_l_back_url");
-
-				if (Validator.isNotNull(backURL)) {
-					layoutFullURL = _http.addParameter(
-						layoutFullURL, "p_l_back_url", backURL);
-				}
-
-				httpServletResponse.sendRedirect(
-					_http.addParameter(
-						layoutFullURL, "p_l_mode", Constants.EDIT));
+			if (Validator.isNotNull(redirect)) {
+				httpServletResponse.sendRedirect(redirect);
 			}
 			else {
+				httpServletRequest.setAttribute(
+					ContentPageEditorWebKeys.CLASS_NAME,
+					Layout.class.getName());
+				httpServletRequest.setAttribute(
+					ContentPageEditorWebKeys.CLASS_PK, layout.getPlid());
+
+				addAttributes(httpServletRequest);
+
 				requestDispatcher.include(httpServletRequest, servletResponse);
 			}
 		}
@@ -229,25 +213,14 @@ public class CollectionPageLayoutTypeController
 			httpServletResponse, unsyncStringWriter);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #createServletResponse(HttpServletResponse,
-	 *             UnsyncStringWriter)}
-	 */
-	@Deprecated
-	@Override
-	protected ServletResponse createServletResponse(
-		HttpServletResponse httpServletResponse,
-		com.liferay.portal.kernel.io.unsync.UnsyncStringWriter
-			unsyncStringWriter) {
-
-		return new PipingServletResponse(
-			httpServletResponse, unsyncStringWriter);
-	}
-
 	@Override
 	protected String getEditPage() {
 		return null;
+	}
+
+	@Override
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	@Override
@@ -255,30 +228,49 @@ public class CollectionPageLayoutTypeController
 		return _VIEW_PAGE;
 	}
 
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.collection)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		this.servletContext = servletContext;
+	private String _getDraftLayoutFullURL(
+			HttpServletRequest httpServletRequest, Layout layout,
+			ThemeDisplay themeDisplay)
+		throws Exception {
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		if (draftLayout == null) {
+			return StringPool.BLANK;
+		}
+
+		String layoutFullURL = _portal.getLayoutFullURL(
+			draftLayout, themeDisplay);
+
+		HttpServletRequest originalHttpServletRequest =
+			_portal.getOriginalServletRequest(httpServletRequest);
+
+		String backURL = originalHttpServletRequest.getParameter(
+			"p_l_back_url");
+
+		if (Validator.isNotNull(backURL)) {
+			layoutFullURL = HttpComponentsUtil.addParameters(
+				layoutFullURL, "p_l_back_url", backURL, "p_l_back_url_title",
+				draftLayout.getName(themeDisplay.getLocale()));
+		}
+
+		return HttpComponentsUtil.addParameter(
+			layoutFullURL, "p_l_mode", Constants.EDIT);
 	}
 
 	private boolean _hasUpdatePermissions(
 		PermissionChecker permissionChecker, Layout layout) {
 
 		try {
-			if (LayoutPermissionUtil.contains(
-					permissionChecker, layout, ActionKeys.UPDATE) ||
-				LayoutPermissionUtil.contains(
-					permissionChecker, layout,
-					ActionKeys.UPDATE_LAYOUT_CONTENT)) {
+			if (LayoutPermissionUtil.containsLayoutUpdatePermission(
+					permissionChecker, layout)) {
 
 				return true;
 			}
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -297,12 +289,17 @@ public class CollectionPageLayoutTypeController
 		CollectionPageLayoutTypeController.class);
 
 	@Reference
-	private Http _http;
-
-	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
+	private LayoutLockManager _layoutLockManager;
+
+	@Reference
 	private Portal _portal;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.collection)"
+	)
+	private ServletContext _servletContext;
 
 }

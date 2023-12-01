@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet.filters.virtualhost;
@@ -26,7 +17,7 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.struts.LastPath;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -106,7 +97,8 @@ public class VirtualHostFilter extends BasePortalFilter {
 		if (friendlyURL.startsWith(_PATH_DOCUMENTS) &&
 			WebServerServlet.hasFiles(httpServletRequest)) {
 
-			String path = HttpUtil.fixPath(httpServletRequest.getPathInfo());
+			String path = HttpComponentsUtil.fixPath(
+				httpServletRequest.getPathInfo());
 
 			String[] pathArray = StringUtil.split(path, CharPool.SLASH);
 
@@ -120,8 +112,7 @@ public class VirtualHostFilter extends BasePortalFilter {
 					// LPS-52675
 
 					if (_log.isDebugEnabled()) {
-						_log.debug(
-							noSuchLayoutException, noSuchLayoutException);
+						_log.debug(noSuchLayoutException);
 					}
 
 					return true;
@@ -165,7 +156,7 @@ public class VirtualHostFilter extends BasePortalFilter {
 			HttpServletResponse httpServletResponse, FilterChain filterChain)
 		throws Exception {
 
-		String originalFriendlyURL = HttpUtil.normalizePath(
+		String originalFriendlyURL = HttpComponentsUtil.normalizePath(
 			httpServletRequest.getRequestURI());
 
 		String friendlyURL = originalFriendlyURL;
@@ -261,6 +252,9 @@ public class VirtualHostFilter extends BasePortalFilter {
 				VirtualHostFilter.class.getName(), httpServletRequest,
 				httpServletResponse, filterChain);
 
+			WebServerServlet.sendMessageObjectEntryAttachmentDownload(
+				httpServletRequest, null);
+
 			return;
 		}
 
@@ -273,7 +267,8 @@ public class VirtualHostFilter extends BasePortalFilter {
 			String parameters = StringPool.BLANK;
 
 			if (!parameterMap.isEmpty()) {
-				parameters = HttpUtil.parameterMapToString(parameterMap);
+				parameters = HttpComponentsUtil.parameterMapToString(
+					parameterMap);
 			}
 
 			LastPath lastPath = new LastPath(
@@ -325,6 +320,22 @@ public class VirtualHostFilter extends BasePortalFilter {
 					if (Validator.isNotNull(homeURL)) {
 						friendlyURL = homeURL;
 					}
+
+					if (friendlyURL.equals(StringPool.SLASH)) {
+						if (layoutSet.isPrivateLayout()) {
+							if (group.isUser()) {
+								sb.append(_PRIVATE_USER_SERVLET_MAPPING);
+							}
+							else {
+								sb.append(_PRIVATE_GROUP_SERVLET_MAPPING);
+							}
+						}
+						else {
+							sb.append(_PUBLIC_GROUP_SERVLET_MAPPING);
+						}
+
+						sb.append(group.getFriendlyURL());
+					}
 				}
 				else {
 					if (layoutSet.isPrivateLayout()) {
@@ -361,7 +372,7 @@ public class VirtualHostFilter extends BasePortalFilter {
 			requestDispatcher.forward(httpServletRequest, httpServletResponse);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			processFilter(
 				VirtualHostFilter.class.getName(), httpServletRequest,

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.asset.model;
@@ -24,13 +15,13 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.trash.TrashHelper;
 import com.liferay.wiki.constants.WikiPortletKeys;
 import com.liferay.wiki.engine.WikiEngineRenderer;
 import com.liferay.wiki.exception.NoSuchPageException;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiPageLocalService;
-import com.liferay.wiki.service.WikiPageResourceLocalService;
 import com.liferay.wiki.web.internal.security.permission.resource.WikiPagePermission;
 
 import javax.portlet.PortletRequest;
@@ -51,7 +42,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true, property = "javax.portlet.name=" + WikiPortletKeys.WIKI,
+	property = "javax.portlet.name=" + WikiPortletKeys.WIKI,
 	service = AssetRendererFactory.class
 )
 public class WikiPageAssetRendererFactory
@@ -79,7 +70,7 @@ public class WikiPageAssetRendererFactory
 				}
 				catch (NoSuchPageException noSuchPageException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(noSuchPageException, noSuchPageException);
+						_log.debug(noSuchPageException);
 					}
 
 					page = _wikiPageLocalService.getPage(
@@ -96,7 +87,7 @@ public class WikiPageAssetRendererFactory
 		}
 
 		WikiPageAssetRenderer wikiPageAssetRenderer = new WikiPageAssetRenderer(
-			page, _wikiEngineRenderer, _trashHelper);
+			_htmlParser, _trashHelper, _wikiEngineRenderer, page);
 
 		wikiPageAssetRenderer.setAssetDisplayPageFriendlyURLProvider(
 			_assetDisplayPageFriendlyURLProvider);
@@ -135,7 +126,7 @@ public class WikiPageAssetRendererFactory
 		}
 		catch (WindowStateException windowStateException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(windowStateException, windowStateException);
+				_log.debug(windowStateException);
 			}
 		}
 
@@ -158,6 +149,9 @@ public class WikiPageAssetRendererFactory
 	private AssetDisplayPageFriendlyURLProvider
 		_assetDisplayPageFriendlyURLProvider;
 
+	@Reference
+	private HtmlParser _htmlParser;
+
 	@Reference(target = "(osgi.web.symbolicname=com.liferay.wiki.web)")
 	private ServletContext _servletContext;
 
@@ -169,8 +163,5 @@ public class WikiPageAssetRendererFactory
 
 	@Reference
 	private WikiPageLocalService _wikiPageLocalService;
-
-	@Reference
-	private WikiPageResourceLocalService _wikiPageResourceLocalService;
 
 }

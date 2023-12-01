@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.internal.search.spi.model.index.contributor;
@@ -22,16 +13,12 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Props;
-import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.search.batch.BatchIndexingActionable;
 import com.liferay.portal.search.batch.DynamicQueryBatchIndexingActionableFactory;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.index.contributor.helper.IndexerWriterMode;
 import com.liferay.portal.search.spi.model.index.contributor.helper.ModelIndexerWriterDocumentHelper;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -50,7 +37,6 @@ public class DLFileEntryModelIndexerWriterContributor
 		BatchIndexingActionable batchIndexingActionable,
 		ModelIndexerWriterDocumentHelper modelIndexerWriterDocumentHelper) {
 
-		batchIndexingActionable.setInterval(_dlFileIndexingInterval);
 		batchIndexingActionable.setPerformActionMethod(
 			(DLFileEntry dlFileEntry) -> batchIndexingActionable.addDocuments(
 				modelIndexerWriterDocumentHelper.getDocument(dlFileEntry)));
@@ -89,17 +75,13 @@ public class DLFileEntryModelIndexerWriterContributor
 			throw new SystemException(portalException);
 		}
 
-		if (!dlFileVersion.isApproved() && !dlFileEntry.isInTrash()) {
+		if (!dlFileEntry.isInTrash() && !dlFileVersion.isApproved() &&
+			!dlFileVersion.isExpired()) {
+
 			return IndexerWriterMode.SKIP;
 		}
 
 		return IndexerWriterMode.UPDATE;
-	}
-
-	@Activate
-	protected void activate() {
-		_dlFileIndexingInterval = GetterUtil.getInteger(
-			props.get(PropsKeys.DL_FILE_INDEXING_INTERVAL), 500);
 	}
 
 	@Reference
@@ -109,12 +91,7 @@ public class DLFileEntryModelIndexerWriterContributor
 	protected DynamicQueryBatchIndexingActionableFactory
 		dynamicQueryBatchIndexingActionableFactory;
 
-	@Reference
-	protected Props props;
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLFileEntryModelIndexerWriterContributor.class);
-
-	private int _dlFileIndexingInterval;
 
 }

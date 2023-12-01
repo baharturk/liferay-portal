@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.events.test;
@@ -17,16 +8,19 @@ package com.liferay.portal.events.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.portal.events.ServicePreAction;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
@@ -35,21 +29,27 @@ import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.util.PropsUtil;
 
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,32 +69,52 @@ public class ServicePreActionTest {
 	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
 		new LiferayIntegrationTestRule();
 
+	@BeforeClass
+	public static void setUpClass() throws Exception {
+		_company = CompanyTestUtil.addCompany();
+
+		_companyThreadLocalCompanyId = CompanyThreadLocal.getCompanyId();
+
+		CompanyThreadLocal.setCompanyId(_company.getCompanyId());
+	}
+
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+		CompanyThreadLocal.setCompanyId(_companyThreadLocalCompanyId);
+
+		UserTestUtil.setUser(
+			UserTestUtil.getAdminUser(_companyThreadLocalCompanyId));
+
+		CompanyLocalServiceUtil.deleteCompany(_company.getCompanyId());
+	}
+
 	@Before
 	public void setUp() throws Exception {
-		_group = GroupTestUtil.addGroup();
+		_group = GroupTestUtil.addGroupToCompany(_company.getCompanyId());
 
-		LayoutTestUtil.addLayout(_group);
+		LayoutTestUtil.addTypePortletLayout(_group);
 
-		LayoutTestUtil.addLayout(
+		LayoutTestUtil.addTypePortletLayout(
 			_group.getGroupId(), "Page not visible", false, null, false, true);
 
-		_request.setRequestURI(_portal.getPathMain() + "/portal/login");
-
-		_request.setAttribute(
+		_mockHttpServletRequest.setAttribute(WebKeys.COMPANY, _company);
+		_mockHttpServletRequest.setAttribute(
 			WebKeys.VIRTUAL_HOST_LAYOUT_SET, _group.getPublicLayoutSet());
+		_mockHttpServletRequest.setRequestURI(
+			_portal.getPathMain() + "/portal/login");
 	}
 
 	@Test
 	public void testHiddenLayoutsVirtualHostLayoutCompositeWithNonexistentLayout()
 		throws Exception {
 
-		_request.setRequestURI("/nonexistent_page");
+		_mockHttpServletRequest.setRequestURI("/nonexistent_page");
 
 		long plid = _getThemeDisplayPlid(true, false);
 
 		Object defaultLayoutComposite = ReflectionTestUtil.invoke(
 			_servicePreAction, "_getDefaultVirtualHostLayoutComposite",
-			new Class<?>[] {HttpServletRequest.class}, _request);
+			new Class<?>[] {HttpServletRequest.class}, _mockHttpServletRequest);
 
 		Object viewableLayoutComposite = ReflectionTestUtil.invoke(
 			_servicePreAction, "_getViewableLayoutComposite",
@@ -102,7 +122,8 @@ public class ServicePreActionTest {
 				HttpServletRequest.class, User.class, PermissionChecker.class,
 				Layout.class, List.class, boolean.class
 			},
-			_request, _user, _permissionCheckerFactory.create(_user),
+			_mockHttpServletRequest, _user,
+			_permissionCheckerFactory.create(_user),
 			_getLayout(defaultLayoutComposite),
 			_getLayouts(defaultLayoutComposite), false);
 
@@ -124,14 +145,16 @@ public class ServicePreActionTest {
 		Assert.assertNotEquals(
 			_group.getGroupId(), serviceContext.getScopeGroupId());
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)_request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_mockHttpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
 		Assert.assertNull(themeDisplay);
 
-		_servicePreAction.servicePre(_request, _response, false);
+		_servicePreAction.servicePre(
+			_mockHttpServletRequest, _mockHttpServletResponse, false);
 
-		themeDisplay = (ThemeDisplay)_request.getAttribute(
+		themeDisplay = (ThemeDisplay)_mockHttpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
 		Assert.assertNotNull(themeDisplay);
@@ -171,13 +194,17 @@ public class ServicePreActionTest {
 	public void testInitThemeDisplayPlidDefaultUserSitesLayoutComposite()
 		throws Exception {
 
-		boolean publicLayoutsAutoCreate =
-			PropsValues.LAYOUT_USER_PUBLIC_LAYOUTS_AUTO_CREATE;
-		boolean privateLayoutsAutoCreate =
-			PropsValues.LAYOUT_USER_PRIVATE_LAYOUTS_AUTO_CREATE;
+		boolean publicLayoutsAutoCreate = PrefsPropsUtil.getBoolean(
+			CompanyThreadLocal.getCompanyId(),
+			PropsKeys.LAYOUT_USER_PUBLIC_LAYOUTS_AUTO_CREATE);
+		boolean privateLayoutsAutoCreate = PrefsPropsUtil.getBoolean(
+			CompanyThreadLocal.getCompanyId(),
+			PropsKeys.LAYOUT_USER_PRIVATE_LAYOUTS_AUTO_CREATE);
 
-		PropsValues.LAYOUT_USER_PUBLIC_LAYOUTS_AUTO_CREATE = false;
-		PropsValues.LAYOUT_USER_PRIVATE_LAYOUTS_AUTO_CREATE = false;
+		PropsUtil.set(
+			PropsKeys.LAYOUT_USER_PUBLIC_LAYOUTS_AUTO_CREATE, "false");
+		PropsUtil.set(
+			PropsKeys.LAYOUT_USER_PRIVATE_LAYOUTS_AUTO_CREATE, "false");
 
 		try {
 			long plid = _getThemeDisplayPlid(false, true);
@@ -190,10 +217,12 @@ public class ServicePreActionTest {
 			Assert.assertEquals(layout.getPlid(), plid);
 		}
 		finally {
-			PropsValues.LAYOUT_USER_PUBLIC_LAYOUTS_AUTO_CREATE =
-				publicLayoutsAutoCreate;
-			PropsValues.LAYOUT_USER_PRIVATE_LAYOUTS_AUTO_CREATE =
-				privateLayoutsAutoCreate;
+			PropsUtil.set(
+				PropsKeys.LAYOUT_USER_PUBLIC_LAYOUTS_AUTO_CREATE,
+				GetterUtil.getString(publicLayoutsAutoCreate));
+			PropsUtil.set(
+				PropsKeys.LAYOUT_USER_PRIVATE_LAYOUTS_AUTO_CREATE,
+				GetterUtil.getString(privateLayoutsAutoCreate));
 
 			if (_user != null) {
 				_userLocalService.deleteUser(_user);
@@ -224,7 +253,8 @@ public class ServicePreActionTest {
 		Layout layout = _getLayout(
 			ReflectionTestUtil.invoke(
 				_servicePreAction, "_getDefaultVirtualHostLayoutComposite",
-				new Class<?>[] {HttpServletRequest.class}, _request));
+				new Class<?>[] {HttpServletRequest.class},
+				_mockHttpServletRequest));
 
 		Assert.assertEquals(layout.getPlid(), plid);
 	}
@@ -255,37 +285,54 @@ public class ServicePreActionTest {
 
 		try {
 			if (signedIn) {
-				_user = UserTestUtil.addUser();
+				_user = UserTestUtil.addUser(_company);
 			}
 			else {
-				_user = _portal.initUser(_request);
+				_user = _portal.initUser(_mockHttpServletRequest);
 			}
 
-			_request.setAttribute(WebKeys.USER, _user);
+			_mockHttpServletRequest.setAttribute(WebKeys.USER, _user);
 
-			_servicePreAction.run(_request, _response);
+			_servicePreAction.run(
+				_mockHttpServletRequest, _mockHttpServletResponse);
 		}
 		finally {
 			if (!hasGuestViewPermission) {
-				ResourceAction resourceAction =
-					_resourceActionLocalService.getResourceAction(
-						Layout.class.getName(), ActionKeys.VIEW);
+				Role role = _roleLocalService.getRole(
+					_group.getCompanyId(), RoleConstants.GUEST);
 
-				_resourcePermissionLocalService.addResourcePermissions(
-					Layout.class.getName(), RoleConstants.GUEST,
-					ResourceConstants.SCOPE_INDIVIDUAL,
-					resourceAction.getBitwiseValue());
+				for (Layout layout :
+						_layoutLocalService.getLayouts(_group.getCompanyId())) {
+
+					_resourcePermissionLocalService.setResourcePermissions(
+						layout.getCompanyId(), Layout.class.getName(),
+						ResourceConstants.SCOPE_INDIVIDUAL,
+						String.valueOf(layout.getPrimaryKey()),
+						role.getRoleId(), new String[] {ActionKeys.VIEW});
+				}
 			}
 		}
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)_request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_mockHttpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
 		return themeDisplay.getPlid();
 	}
 
+	private static Company _company;
+	private static long _companyThreadLocalCompanyId;
+
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private LayoutLocalService _layoutLocalService;
+
+	private final MockHttpServletRequest _mockHttpServletRequest =
+		new MockHttpServletRequest();
+	private final MockHttpServletResponse _mockHttpServletResponse =
+		new MockHttpServletResponse();
 
 	@Inject
 	private PermissionCheckerFactory _permissionCheckerFactory;
@@ -293,17 +340,11 @@ public class ServicePreActionTest {
 	@Inject
 	private Portal _portal;
 
-	private final MockHttpServletRequest _request =
-		new MockHttpServletRequest();
-
 	@Inject
 	private ResourceActionLocalService _resourceActionLocalService;
 
 	@Inject
 	private ResourcePermissionLocalService _resourcePermissionLocalService;
-
-	private final MockHttpServletResponse _response =
-		new MockHttpServletResponse();
 
 	@Inject
 	private RoleLocalService _roleLocalService;

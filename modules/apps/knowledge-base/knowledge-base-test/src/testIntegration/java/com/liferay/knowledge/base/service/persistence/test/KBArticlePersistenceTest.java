@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.service.persistence.test;
@@ -127,6 +118,8 @@ public class KBArticlePersistenceTest {
 
 		newKBArticle.setMvccVersion(RandomTestUtil.nextLong());
 
+		newKBArticle.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newKBArticle.setUuid(RandomTestUtil.randomString());
 
 		newKBArticle.setResourcePrimKey(RandomTestUtil.nextLong());
@@ -173,6 +166,12 @@ public class KBArticlePersistenceTest {
 
 		newKBArticle.setSourceURL(RandomTestUtil.randomString());
 
+		newKBArticle.setDisplayDate(RandomTestUtil.nextDate());
+
+		newKBArticle.setExpirationDate(RandomTestUtil.nextDate());
+
+		newKBArticle.setReviewDate(RandomTestUtil.nextDate());
+
 		newKBArticle.setLastPublishDate(RandomTestUtil.nextDate());
 
 		newKBArticle.setStatus(RandomTestUtil.nextInt());
@@ -190,6 +189,9 @@ public class KBArticlePersistenceTest {
 
 		Assert.assertEquals(
 			existingKBArticle.getMvccVersion(), newKBArticle.getMvccVersion());
+		Assert.assertEquals(
+			existingKBArticle.getCtCollectionId(),
+			newKBArticle.getCtCollectionId());
 		Assert.assertEquals(
 			existingKBArticle.getUuid(), newKBArticle.getUuid());
 		Assert.assertEquals(
@@ -244,6 +246,15 @@ public class KBArticlePersistenceTest {
 		Assert.assertEquals(existingKBArticle.isMain(), newKBArticle.isMain());
 		Assert.assertEquals(
 			existingKBArticle.getSourceURL(), newKBArticle.getSourceURL());
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingKBArticle.getDisplayDate()),
+			Time.getShortTimestamp(newKBArticle.getDisplayDate()));
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingKBArticle.getExpirationDate()),
+			Time.getShortTimestamp(newKBArticle.getExpirationDate()));
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingKBArticle.getReviewDate()),
+			Time.getShortTimestamp(newKBArticle.getReviewDate()));
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingKBArticle.getLastPublishDate()),
 			Time.getShortTimestamp(newKBArticle.getLastPublishDate()));
@@ -455,6 +466,14 @@ public class KBArticlePersistenceTest {
 		_persistence.countByP_S(
 			new long[] {RandomTestUtil.nextLong(), 0L},
 			RandomTestUtil.nextInt());
+	}
+
+	@Test
+	public void testCountByLtD_S() throws Exception {
+		_persistence.countByLtD_S(
+			RandomTestUtil.nextDate(), RandomTestUtil.nextInt());
+
+		_persistence.countByLtD_S(RandomTestUtil.nextDate(), 0);
 	}
 
 	@Test
@@ -685,6 +704,42 @@ public class KBArticlePersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_P_L_NotS() throws Exception {
+		_persistence.countByG_P_L_NotS(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
+			RandomTestUtil.randomBoolean(), RandomTestUtil.nextInt());
+
+		_persistence.countByG_P_L_NotS(
+			0L, 0L, RandomTestUtil.randomBoolean(), 0);
+	}
+
+	@Test
+	public void testCountByG_P_L_NotSArrayable() throws Exception {
+		_persistence.countByG_P_L_NotS(
+			RandomTestUtil.nextLong(),
+			new long[] {RandomTestUtil.nextLong(), 0L},
+			RandomTestUtil.randomBoolean(), RandomTestUtil.nextInt());
+	}
+
+	@Test
+	public void testCountByG_P_M_NotS() throws Exception {
+		_persistence.countByG_P_M_NotS(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
+			RandomTestUtil.randomBoolean(), RandomTestUtil.nextInt());
+
+		_persistence.countByG_P_M_NotS(
+			0L, 0L, RandomTestUtil.randomBoolean(), 0);
+	}
+
+	@Test
+	public void testCountByG_P_M_NotSArrayable() throws Exception {
+		_persistence.countByG_P_M_NotS(
+			RandomTestUtil.nextLong(),
+			new long[] {RandomTestUtil.nextLong(), 0L},
+			RandomTestUtil.randomBoolean(), RandomTestUtil.nextInt());
+	}
+
+	@Test
 	public void testCountByG_KBFI_UT_ST() throws Exception {
 		_persistence.countByG_KBFI_UT_ST(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "",
@@ -728,14 +783,15 @@ public class KBArticlePersistenceTest {
 
 	protected OrderByComparator<KBArticle> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"KBArticle", "mvccVersion", true, "uuid", true, "kbArticleId", true,
-			"resourcePrimKey", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "externalReferenceCode", true,
+			"KBArticle", "mvccVersion", true, "ctCollectionId", true, "uuid",
+			true, "kbArticleId", true, "resourcePrimKey", true, "groupId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "externalReferenceCode", true,
 			"rootResourcePrimKey", true, "parentResourceClassNameId", true,
 			"parentResourcePrimKey", true, "kbFolderId", true, "version", true,
 			"title", true, "urlTitle", true, "description", true, "priority",
 			true, "sections", true, "latest", true, "main", true, "sourceURL",
+			true, "displayDate", true, "expirationDate", true, "reviewDate",
 			true, "lastPublishDate", true, "status", true, "statusByUserId",
 			true, "statusByUserName", true, "statusDate", true);
 	}
@@ -1062,6 +1118,8 @@ public class KBArticlePersistenceTest {
 
 		kbArticle.setMvccVersion(RandomTestUtil.nextLong());
 
+		kbArticle.setCtCollectionId(RandomTestUtil.nextLong());
+
 		kbArticle.setUuid(RandomTestUtil.randomString());
 
 		kbArticle.setResourcePrimKey(RandomTestUtil.nextLong());
@@ -1107,6 +1165,12 @@ public class KBArticlePersistenceTest {
 		kbArticle.setMain(RandomTestUtil.randomBoolean());
 
 		kbArticle.setSourceURL(RandomTestUtil.randomString());
+
+		kbArticle.setDisplayDate(RandomTestUtil.nextDate());
+
+		kbArticle.setExpirationDate(RandomTestUtil.nextDate());
+
+		kbArticle.setReviewDate(RandomTestUtil.nextDate());
 
 		kbArticle.setLastPublishDate(RandomTestUtil.nextDate());
 

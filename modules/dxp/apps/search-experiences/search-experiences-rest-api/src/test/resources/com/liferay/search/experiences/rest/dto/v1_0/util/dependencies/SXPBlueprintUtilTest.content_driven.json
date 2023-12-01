@@ -60,7 +60,7 @@
 				"content_${context.language_id}": {
 					"fragment_offset": 10
 				},
-				"name{context.language_id}": {
+				"name_${context.language_id}": {
 					"fragment_offset": 10
 				},
 				"title_${context.language_id}": {
@@ -270,7 +270,7 @@
 												"must": [
 													{
 														"term": {
-															"defaultUser": false
+															"type": 1
 														}
 													}
 												]
@@ -1399,7 +1399,7 @@
 																"must": [
 																	{
 																		"term": {
-																			"defaultUser": false
+																			"type": 1
 																		}
 																	}
 																]

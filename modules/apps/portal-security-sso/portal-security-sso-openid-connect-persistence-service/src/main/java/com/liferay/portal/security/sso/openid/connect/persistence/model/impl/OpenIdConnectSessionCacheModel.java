@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.openid.connect.persistence.model.impl;
@@ -78,7 +69,7 @@ public class OpenIdConnectSessionCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(21);
+		StringBundler sb = new StringBundler(23);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -92,12 +83,14 @@ public class OpenIdConnectSessionCacheModel
 		sb.append(modifiedDate);
 		sb.append(", accessToken=");
 		sb.append(accessToken);
-		sb.append(", configurationPid=");
-		sb.append(configurationPid);
+		sb.append(", accessTokenExpirationDate=");
+		sb.append(accessTokenExpirationDate);
+		sb.append(", authServerWellKnownURI=");
+		sb.append(authServerWellKnownURI);
+		sb.append(", clientId=");
+		sb.append(clientId);
 		sb.append(", idToken=");
 		sb.append(idToken);
-		sb.append(", providerName=");
-		sb.append(providerName);
 		sb.append(", refreshToken=");
 		sb.append(refreshToken);
 		sb.append("}");
@@ -130,11 +123,27 @@ public class OpenIdConnectSessionCacheModel
 			openIdConnectSessionImpl.setAccessToken(accessToken);
 		}
 
-		if (configurationPid == null) {
-			openIdConnectSessionImpl.setConfigurationPid("");
+		if (accessTokenExpirationDate == Long.MIN_VALUE) {
+			openIdConnectSessionImpl.setAccessTokenExpirationDate(null);
 		}
 		else {
-			openIdConnectSessionImpl.setConfigurationPid(configurationPid);
+			openIdConnectSessionImpl.setAccessTokenExpirationDate(
+				new Date(accessTokenExpirationDate));
+		}
+
+		if (authServerWellKnownURI == null) {
+			openIdConnectSessionImpl.setAuthServerWellKnownURI("");
+		}
+		else {
+			openIdConnectSessionImpl.setAuthServerWellKnownURI(
+				authServerWellKnownURI);
+		}
+
+		if (clientId == null) {
+			openIdConnectSessionImpl.setClientId("");
+		}
+		else {
+			openIdConnectSessionImpl.setClientId(clientId);
 		}
 
 		if (idToken == null) {
@@ -142,13 +151,6 @@ public class OpenIdConnectSessionCacheModel
 		}
 		else {
 			openIdConnectSessionImpl.setIdToken(idToken);
-		}
-
-		if (providerName == null) {
-			openIdConnectSessionImpl.setProviderName("");
-		}
-		else {
-			openIdConnectSessionImpl.setProviderName(providerName);
 		}
 
 		if (refreshToken == null) {
@@ -174,9 +176,10 @@ public class OpenIdConnectSessionCacheModel
 		userId = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
 		accessToken = objectInput.readUTF();
-		configurationPid = objectInput.readUTF();
+		accessTokenExpirationDate = objectInput.readLong();
+		authServerWellKnownURI = objectInput.readUTF();
+		clientId = objectInput.readUTF();
 		idToken = objectInput.readUTF();
-		providerName = objectInput.readUTF();
 		refreshToken = objectInput.readUTF();
 	}
 
@@ -198,11 +201,20 @@ public class OpenIdConnectSessionCacheModel
 			objectOutput.writeUTF(accessToken);
 		}
 
-		if (configurationPid == null) {
+		objectOutput.writeLong(accessTokenExpirationDate);
+
+		if (authServerWellKnownURI == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
-			objectOutput.writeUTF(configurationPid);
+			objectOutput.writeUTF(authServerWellKnownURI);
+		}
+
+		if (clientId == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(clientId);
 		}
 
 		if (idToken == null) {
@@ -210,13 +222,6 @@ public class OpenIdConnectSessionCacheModel
 		}
 		else {
 			objectOutput.writeUTF(idToken);
-		}
-
-		if (providerName == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(providerName);
 		}
 
 		if (refreshToken == null) {
@@ -233,9 +238,10 @@ public class OpenIdConnectSessionCacheModel
 	public long userId;
 	public long modifiedDate;
 	public String accessToken;
-	public String configurationPid;
+	public long accessTokenExpirationDate;
+	public String authServerWellKnownURI;
+	public String clientId;
 	public String idToken;
-	public String providerName;
 	public String refreshToken;
 
 }

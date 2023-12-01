@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.model.impl;
@@ -34,22 +25,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.sharing.model.SharingEntry;
 import com.liferay.sharing.model.SharingEntryModel;
-import com.liferay.sharing.model.SharingEntrySoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -193,62 +180,6 @@ public class SharingEntryModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static SharingEntry toModel(SharingEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		SharingEntry model = new SharingEntryImpl();
-
-		model.setUuid(soapModel.getUuid());
-		model.setSharingEntryId(soapModel.getSharingEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setToUserId(soapModel.getToUserId());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setShareable(soapModel.isShareable());
-		model.setActionIds(soapModel.getActionIds());
-		model.setExpirationDate(soapModel.getExpirationDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<SharingEntry> toModels(SharingEntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<SharingEntry> models = new ArrayList<SharingEntry>(
-			soapModels.length);
-
-		for (SharingEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public SharingEntryModelImpl() {
 	}
 
@@ -325,117 +256,113 @@ public class SharingEntryModelImpl
 	public Map<String, Function<SharingEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<SharingEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, SharingEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			SharingEntry.class.getClassLoader(), SharingEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<SharingEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<SharingEntry> constructor =
-				(Constructor<SharingEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<SharingEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<SharingEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("uuid", SharingEntry::getUuid);
+			attributeGetterFunctions.put(
+				"sharingEntryId", SharingEntry::getSharingEntryId);
+			attributeGetterFunctions.put("groupId", SharingEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", SharingEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", SharingEntry::getUserId);
+			attributeGetterFunctions.put("userName", SharingEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", SharingEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", SharingEntry::getModifiedDate);
+			attributeGetterFunctions.put("toUserId", SharingEntry::getToUserId);
+			attributeGetterFunctions.put(
+				"classNameId", SharingEntry::getClassNameId);
+			attributeGetterFunctions.put("classPK", SharingEntry::getClassPK);
+			attributeGetterFunctions.put(
+				"shareable", SharingEntry::getShareable);
+			attributeGetterFunctions.put(
+				"actionIds", SharingEntry::getActionIds);
+			attributeGetterFunctions.put(
+				"expirationDate", SharingEntry::getExpirationDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<SharingEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<SharingEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<SharingEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<SharingEntry, Object>>();
-		Map<String, BiConsumer<SharingEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<SharingEntry, ?>>();
+		private static final Map<String, BiConsumer<SharingEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("uuid", SharingEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<SharingEntry, String>)SharingEntry::setUuid);
-		attributeGetterFunctions.put(
-			"sharingEntryId", SharingEntry::getSharingEntryId);
-		attributeSetterBiConsumers.put(
-			"sharingEntryId",
-			(BiConsumer<SharingEntry, Long>)SharingEntry::setSharingEntryId);
-		attributeGetterFunctions.put("groupId", SharingEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<SharingEntry, Long>)SharingEntry::setGroupId);
-		attributeGetterFunctions.put("companyId", SharingEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<SharingEntry, Long>)SharingEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", SharingEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<SharingEntry, Long>)SharingEntry::setUserId);
-		attributeGetterFunctions.put("userName", SharingEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<SharingEntry, String>)SharingEntry::setUserName);
-		attributeGetterFunctions.put("createDate", SharingEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<SharingEntry, Date>)SharingEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", SharingEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<SharingEntry, Date>)SharingEntry::setModifiedDate);
-		attributeGetterFunctions.put("toUserId", SharingEntry::getToUserId);
-		attributeSetterBiConsumers.put(
-			"toUserId",
-			(BiConsumer<SharingEntry, Long>)SharingEntry::setToUserId);
-		attributeGetterFunctions.put(
-			"classNameId", SharingEntry::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<SharingEntry, Long>)SharingEntry::setClassNameId);
-		attributeGetterFunctions.put("classPK", SharingEntry::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<SharingEntry, Long>)SharingEntry::setClassPK);
-		attributeGetterFunctions.put("shareable", SharingEntry::getShareable);
-		attributeSetterBiConsumers.put(
-			"shareable",
-			(BiConsumer<SharingEntry, Boolean>)SharingEntry::setShareable);
-		attributeGetterFunctions.put("actionIds", SharingEntry::getActionIds);
-		attributeSetterBiConsumers.put(
-			"actionIds",
-			(BiConsumer<SharingEntry, Long>)SharingEntry::setActionIds);
-		attributeGetterFunctions.put(
-			"expirationDate", SharingEntry::getExpirationDate);
-		attributeSetterBiConsumers.put(
-			"expirationDate",
-			(BiConsumer<SharingEntry, Date>)SharingEntry::setExpirationDate);
+		static {
+			Map<String, BiConsumer<SharingEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<SharingEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<SharingEntry, String>)SharingEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"sharingEntryId",
+				(BiConsumer<SharingEntry, Long>)
+					SharingEntry::setSharingEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<SharingEntry, Long>)SharingEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<SharingEntry, Long>)SharingEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<SharingEntry, Long>)SharingEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<SharingEntry, String>)SharingEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<SharingEntry, Date>)SharingEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<SharingEntry, Date>)SharingEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"toUserId",
+				(BiConsumer<SharingEntry, Long>)SharingEntry::setToUserId);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<SharingEntry, Long>)SharingEntry::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<SharingEntry, Long>)SharingEntry::setClassPK);
+			attributeSetterBiConsumers.put(
+				"shareable",
+				(BiConsumer<SharingEntry, Boolean>)SharingEntry::setShareable);
+			attributeSetterBiConsumers.put(
+				"actionIds",
+				(BiConsumer<SharingEntry, Long>)SharingEntry::setActionIds);
+			attributeSetterBiConsumers.put(
+				"expirationDate",
+				(BiConsumer<SharingEntry, Date>)
+					SharingEntry::setExpirationDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1101,41 +1028,12 @@ public class SharingEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<SharingEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<SharingEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<SharingEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((SharingEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, SharingEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					SharingEntry.class, ModelWrapper.class);
 
 	}
 
@@ -1158,8 +1056,9 @@ public class SharingEntryModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<SharingEntry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<SharingEntry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

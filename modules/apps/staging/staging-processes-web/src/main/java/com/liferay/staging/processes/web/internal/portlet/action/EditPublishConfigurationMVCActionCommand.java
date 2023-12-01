@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.staging.processes.web.internal.portlet.action;
@@ -64,7 +55,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Levente Hudák
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + StagingProcessesPortletKeys.STAGING_PROCESSES,
 		"mvc.command.name=/staging_processes/edit_publish_configuration"
@@ -119,36 +109,15 @@ public class EditPublishConfigurationMVCActionCommand
 						exception.getMessage());
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 			else {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 
 			SessionErrors.add(actionRequest, exception.getClass(), exception);
 		}
-	}
-
-	@Reference
-	protected void setExportImportConfigurationLocalService(
-		ExportImportConfigurationLocalService
-			exportImportConfigurationLocalService) {
-
-		_exportImportConfigurationLocalService =
-			exportImportConfigurationLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setExportImportConfigurationService(
-		ExportImportConfigurationService exportImportConfigurationService) {
-
-		_exportImportConfigurationService = exportImportConfigurationService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
 	}
 
 	protected void setLayoutIdMap(ActionRequest actionRequest) {
@@ -161,25 +130,12 @@ public class EditPublishConfigurationMVCActionCommand
 
 		String treeId = ParamUtil.getString(actionRequest, "treeId");
 
-		String openNodes = SessionTreeJSClicks.getOpenNodes(
-			httpServletRequest, treeId + "SelectedNode");
-
-		String selectedLayoutsJSON = _exportImportHelper.getSelectedLayoutsJSON(
-			groupId, privateLayout, openNodes);
-
-		actionRequest.setAttribute("layoutIdMap", selectedLayoutsJSON);
-	}
-
-	@Reference(unbind = "-")
-	protected void setTrashEntryService(TrashEntryService trashEntryService) {
-		_trashEntryService = trashEntryService;
-	}
-
-	protected void unsetExportImportConfigurationLocalService(
-		ExportImportConfigurationLocalService
-			exportImportConfigurationLocalService) {
-
-		_exportImportConfigurationLocalService = null;
+		actionRequest.setAttribute(
+			"layoutIdMap",
+			_exportImportHelper.getSelectedLayoutsJSON(
+				groupId, privateLayout,
+				SessionTreeJSClicks.getOpenNodes(
+					httpServletRequest, treeId + "SelectedNode")));
 	}
 
 	private void _deleteExportImportConfiguration(
@@ -314,13 +270,17 @@ public class EditPublishConfigurationMVCActionCommand
 	@Reference
 	private BackgroundTaskManager _backgroundTaskManager;
 
+	@Reference
 	private ExportImportConfigurationLocalService
 		_exportImportConfigurationLocalService;
+
+	@Reference
 	private ExportImportConfigurationService _exportImportConfigurationService;
 
 	@Reference
 	private ExportImportHelper _exportImportHelper;
 
+	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference
@@ -329,6 +289,7 @@ public class EditPublishConfigurationMVCActionCommand
 	@Reference
 	private Staging _staging;
 
+	@Reference
 	private TrashEntryService _trashEntryService;
 
 }

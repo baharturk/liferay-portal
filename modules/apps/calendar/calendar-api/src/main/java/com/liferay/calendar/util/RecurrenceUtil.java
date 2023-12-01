@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.util;
@@ -45,11 +36,20 @@ public class RecurrenceUtil {
 		CalendarBooking calendarBooking, long startTime, long endTime,
 		int maxSize) {
 
+		return expandCalendarBooking(
+			calendarBooking, startTime, endTime, calendarBooking.getTimeZone(),
+			maxSize);
+	}
+
+	public static List<CalendarBooking> expandCalendarBooking(
+		CalendarBooking calendarBooking, long startTime, long endTime,
+		TimeZone displayTimeZone, int maxSize) {
+
 		List<CalendarBooking> expandedCalendarBookings = new ArrayList<>();
 
 		try {
 			CalendarBookingIterator calendarBookingIterator =
-				new CalendarBookingIterator(calendarBooking);
+				new CalendarBookingIterator(calendarBooking, displayTimeZone);
 
 			while (calendarBookingIterator.hasNext()) {
 				CalendarBooking newCalendarBooking =
@@ -95,6 +95,32 @@ public class RecurrenceUtil {
 			List<CalendarBooking> expandedCalendarBooking =
 				expandCalendarBooking(
 					calendarBooking, startTime, endTime, maxSize);
+
+			expandedCalendarBookings.addAll(expandedCalendarBooking);
+		}
+
+		return expandedCalendarBookings;
+	}
+
+	public static List<CalendarBooking> expandCalendarBookings(
+		List<CalendarBooking> calendarBookings, long startTime, long endTime,
+		TimeZone displayTimeZone) {
+
+		return expandCalendarBookings(
+			calendarBookings, startTime, endTime, displayTimeZone, 0);
+	}
+
+	public static List<CalendarBooking> expandCalendarBookings(
+		List<CalendarBooking> calendarBookings, long startTime, long endTime,
+		TimeZone displayTimeZone, int maxSize) {
+
+		List<CalendarBooking> expandedCalendarBookings = new ArrayList<>();
+
+		for (CalendarBooking calendarBooking : calendarBookings) {
+			List<CalendarBooking> expandedCalendarBooking =
+				expandCalendarBooking(
+					calendarBooking, startTime, endTime, displayTimeZone,
+					maxSize);
 
 			expandedCalendarBookings.addAll(expandedCalendarBooking);
 		}
@@ -248,7 +274,6 @@ public class RecurrenceUtil {
 		}
 
 		recurrence.setPositionalWeekdays(newPositionalWeekdays);
-
 		recurrence.setTimeZone(timeZone);
 
 		Calendar untilJCalendar = recurrence.getUntilJCalendar();

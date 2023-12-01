@@ -1,45 +1,36 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-inline-editor-base',
 	(A) => {
-		var Lang = A.Lang;
+		const Lang = A.Lang;
 
-		var isNumber = Lang.isNumber;
-		var isString = Lang.isString;
+		const isNumber = Lang.isNumber;
+		const isString = Lang.isString;
 
-		var BODY_CONTENT = 'bodyContent';
+		const BODY_CONTENT = 'bodyContent';
 
-		var CSS_ERROR = 'alert alert-danger';
+		const CSS_ERROR = 'alert alert-danger';
 
-		var CSS_SUCCESS = 'alert alert-success';
+		const CSS_SUCCESS = 'alert alert-success';
 
-		var EDITOR = 'editor';
+		const EDITOR = 'editor';
 
-		var EDITOR_NAME = 'editorName';
+		const EDITOR_NAME = 'editorName';
 
-		var EDITOR_PREFIX = 'editorPrefix';
+		const EDITOR_PREFIX = 'editorPrefix';
 
-		var TPL_NOTICE =
+		const TPL_NOTICE =
 			'<div class="alert alert-success lfr-editable-notice">' +
 			'<span class="lfr-editable-notice-text yui3-widget-bd"></span>' +
-			'<a class="lfr-editable-notice-close yui3-widget-ft" href="javascript:;" tabindex="0"></a>' +
+			'<a class="lfr-editable-notice-close ml-3 yui3-widget-ft" href="javascript:void(0);" tabindex="0"></a>' +
 			'</div>';
 
 		function InlineEditorBase() {
-			var instance = this;
+			const instance = this;
 
 			instance.publish('saveFailure', {
 				defaultFn: instance._defSaveFailureFn,
@@ -97,25 +88,25 @@ AUI.add(
 
 		InlineEditorBase.prototype = {
 			_attachCloseListener() {
-				var instance = this;
+				const instance = this;
 
-				var notice = instance.getEditNotice();
+				const notice = instance.getEditNotice();
 
 				notice.footerNode.on('click', A.bind('hide', notice));
 			},
 
 			_closeNoticeFn() {
-				var instance = this;
+				const instance = this;
 
 				instance.getEditNotice().hide();
 			},
 
 			_defSaveFailureFn() {
-				var instance = this;
+				const instance = this;
 
 				instance.resetDirty();
 
-				var notice = instance.getEditNotice();
+				const notice = instance.getEditNotice();
 
 				instance._editNoticeNode.replaceClass(CSS_SUCCESS, CSS_ERROR);
 
@@ -130,15 +121,15 @@ AUI.add(
 			},
 
 			_defSaveSuccessFn(autosaved) {
-				var instance = this;
+				const instance = this;
 
 				instance.resetDirty();
 
-				var notice = instance.getEditNotice();
+				const notice = instance.getEditNotice();
 
 				instance._editNoticeNode.replaceClass(CSS_ERROR, CSS_SUCCESS);
 
-				var message = Liferay.Language.get(
+				let message = Liferay.Language.get(
 					'the-draft-was-saved-successfully-at-x'
 				);
 
@@ -158,7 +149,7 @@ AUI.add(
 			},
 
 			_saveFn(autosaved) {
-				var instance = this;
+				const instance = this;
 
 				if (instance.isContentDirty()) {
 					instance.save(autosaved);
@@ -166,9 +157,9 @@ AUI.add(
 			},
 
 			closeNotice(delay) {
-				var instance = this;
+				const instance = this;
 
-				var closeNoticeTask = instance._closeNoticeTask;
+				let closeNoticeTask = instance._closeNoticeTask;
 
 				if (!closeNoticeTask) {
 					closeNoticeTask = A.debounce(
@@ -189,7 +180,7 @@ AUI.add(
 			},
 
 			destructor() {
-				var instance = this;
+				const instance = this;
 
 				instance.getEditNotice().destroy();
 
@@ -203,16 +194,16 @@ AUI.add(
 			},
 
 			getEditNotice() {
-				var instance = this;
+				const instance = this;
 
-				var editNotice = instance._editNotice;
+				let editNotice = instance._editNotice;
 
 				if (!editNotice) {
-					var triggerNode = A.one(
+					const triggerNode = A.one(
 						instance.get(EDITOR_PREFIX) + instance.get(EDITOR_NAME)
 					);
 
-					var editNoticeNode = A.Node.create(TPL_NOTICE);
+					const editNoticeNode = A.Node.create(TPL_NOTICE);
 
 					editNotice = new A.OverlayBase({
 						contentBox: editNoticeNode,
@@ -231,13 +222,13 @@ AUI.add(
 			},
 
 			save(autosaved) {
-				var instance = this;
+				const instance = this;
 
-				var data = {
+				const data = {
 					content: instance.get(EDITOR).getData(),
 				};
 
-				var namespacedData = Liferay.Util.ns(
+				const namespacedData = Liferay.Util.ns(
 					instance.get('namespace'),
 					data
 				);
@@ -259,9 +250,9 @@ AUI.add(
 			},
 
 			startSaveTask() {
-				var instance = this;
+				const instance = this;
 
-				var saveTask = instance._saveTask;
+				let saveTask = instance._saveTask;
 
 				if (saveTask) {
 					saveTask.cancel();
@@ -281,9 +272,9 @@ AUI.add(
 			},
 
 			stopSaveTask() {
-				var instance = this;
+				const instance = this;
 
-				var saveTask = instance._saveTask;
+				const saveTask = instance._saveTask;
 
 				if (saveTask) {
 					saveTask.cancel();

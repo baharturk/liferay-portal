@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
@@ -44,7 +36,6 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import java.io.Serializable;
 
 import java.util.List;
-import java.util.Map;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -93,7 +84,7 @@ public interface FragmentEntryLinkLocalService
 			long fragmentEntryId, long segmentsExperienceId, long plid,
 			String css, String html, String js, String configuration,
 			String editableValues, String namespace, int position,
-			String rendererKey, ServiceContext serviceContext)
+			String rendererKey, int type, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -143,8 +134,16 @@ public interface FragmentEntryLinkLocalService
 
 	public void deleteFragmentEntryLinks(long groupId);
 
+	public void deleteFragmentEntryLinks(
+		long groupId, long plid, boolean deleted);
+
 	public void deleteFragmentEntryLinks(long[] fragmentEntryLinkIds)
 		throws PortalException;
+
+	public void deleteFragmentEntryLinksByFragmentEntryId(long fragmentEntryId);
+
+	public void deleteFragmentEntryLinksByFragmentEntryId(
+		long fragmentEntryId, boolean deleted);
 
 	public List<FragmentEntryLink>
 		deleteLayoutPageTemplateEntryFragmentEntryLinks(
@@ -338,11 +337,23 @@ public interface FragmentEntryLinkLocalService
 		long groupId, long classNameId, long classPK);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentEntryLink> getFragmentEntryLinks(
+		long companyId, String rendererKey);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentEntryLink> getFragmentEntryLinks(
+		long companyId, String[] rendererKeys);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinks(String rendererKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinksByFragmentEntryId(
 		long fragmentEntryId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentEntryLink> getFragmentEntryLinksByFragmentEntryId(
+		long fragmentEntryId, boolean deleted);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinksByPlid(
@@ -354,11 +365,19 @@ public interface FragmentEntryLinkLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinksBySegmentsExperienceId(
+		long groupId, long segmentsExperienceId, long plid, boolean deleted);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentEntryLink> getFragmentEntryLinksBySegmentsExperienceId(
 		long groupId, long segmentsExperienceId, long plid, String rendererKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinksBySegmentsExperienceId(
 		long groupId, long[] segmentsExperienceIds, long plid);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentEntryLink> getFragmentEntryLinksBySegmentsExperienceId(
+		long groupId, long[] segmentsExperienceIds, long plid, boolean deleted);
 
 	/**
 	 * Returns all the fragment entry links matching the UUID and company.
@@ -397,6 +416,10 @@ public interface FragmentEntryLinkLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getFragmentEntryLinksCountByFragmentEntryId(
 		long fragmentEntryId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getFragmentEntryLinksCountByFragmentEntryId(
+		long fragmentEntryId, boolean deleted);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getFragmentEntryLinksCountByPlid(long groupId, long plid);
@@ -441,6 +464,10 @@ public interface FragmentEntryLinkLocalService
 
 	public void updateClassedModel(long plid);
 
+	public FragmentEntryLink updateDeleted(
+			long fragmentEntryLinkId, boolean deleted)
+		throws PortalException;
+
 	/**
 	 * Updates the fragment entry link in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -463,7 +490,7 @@ public interface FragmentEntryLinkLocalService
 			long userId, long fragmentEntryLinkId,
 			long originalFragmentEntryLinkId, long fragmentEntryId, long plid,
 			String css, String html, String js, String configuration,
-			String editableValues, String namespace, int position,
+			String editableValues, String namespace, int position, int type,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -476,13 +503,8 @@ public interface FragmentEntryLinkLocalService
 			boolean updateClassedModel)
 		throws PortalException;
 
-	public void updateFragmentEntryLinks(
-			long userId, long groupId, long plid, long[] fragmentEntryIds,
-			String editableValues, ServiceContext serviceContext)
-		throws PortalException;
-
-	public void updateFragmentEntryLinks(
-			Map<Long, String> fragmentEntryLinksEditableValuesMap)
+	public void updateLatestChanges(
+			FragmentEntry fragmentEntry, FragmentEntryLink fragmentEntryLink)
 		throws PortalException;
 
 	public void updateLatestChanges(long fragmentEntryLinkId)

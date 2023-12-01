@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.punchout.resource.v1_0;
 
 import com.liferay.headless.commerce.punchout.dto.v1_0.PunchOutSession;
 import com.liferay.headless.commerce.punchout.dto.v1_0.User;
+import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
@@ -23,6 +15,7 @@ import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParserProvider;
+import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 
 import java.util.Collections;
@@ -50,10 +43,6 @@ import org.osgi.annotation.versioning.ProviderType;
 @Generated("")
 @ProviderType
 public interface PunchOutSessionResource {
-
-	public static Builder builder() {
-		return FactoryHolder.factory.create();
-	}
 
 	public PunchOutSession postPunchOutSessionRequest(
 			PunchOutSession punchOutSession)
@@ -96,6 +85,8 @@ public interface PunchOutSessionResource {
 
 	public void setRoleLocalService(RoleLocalService roleLocalService);
 
+	public void setSortParserProvider(SortParserProvider sortParserProvider);
+
 	public default Filter toFilter(String filterString) {
 		return toFilter(
 			filterString, Collections.<String, List<String>>emptyMap());
@@ -107,10 +98,8 @@ public interface PunchOutSessionResource {
 		return null;
 	}
 
-	public static class FactoryHolder {
-
-		public static volatile Factory factory;
-
+	public default Sort[] toSorts(String sortsString) {
+		return new Sort[0];
 	}
 
 	@ProviderType
@@ -127,6 +116,8 @@ public interface PunchOutSessionResource {
 			HttpServletResponse httpServletResponse);
 
 		public Builder preferredLocale(Locale preferredLocale);
+
+		public Builder uriInfo(UriInfo uriInfo);
 
 		public Builder user(com.liferay.portal.kernel.model.User user);
 

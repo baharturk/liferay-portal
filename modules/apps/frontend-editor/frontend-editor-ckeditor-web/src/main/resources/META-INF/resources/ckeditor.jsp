@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -54,7 +45,7 @@ if (Validator.isNotNull(onInitMethod)) {
 }
 
 String placeholder = GetterUtil.getString((String)request.getAttribute(CKEditorConstants.ATTRIBUTE_NAMESPACE + ":placeholder"));
-
+boolean required = GetterUtil.getBoolean((String)request.getAttribute(CKEditorConstants.ATTRIBUTE_NAMESPACE + ":required"));
 boolean skipEditorLoading = GetterUtil.getBoolean((String)request.getAttribute(CKEditorConstants.ATTRIBUTE_NAMESPACE + ":skipEditorLoading"));
 String toolbarSet = (String)request.getAttribute(CKEditorConstants.ATTRIBUTE_NAMESPACE + ":toolbarSet");
 
@@ -105,8 +96,12 @@ if (inlineEdit && Validator.isNotNull(inlineEditSaveURL)) {
 	var="editor"
 >
 	<c:if test="<%= Validator.isNotNull(placeholder) %>">
-		<label class="control-label" for="<%= name %>">
+		<label class="control-label" for="<%= HtmlUtil.escapeAttribute(name) %>">
 			<liferay-ui:message key="<%= placeholder %>" />
+
+			<c:if test="<%= required %>">
+				<span class="text-warning">*</span>
+			</c:if>
 		</label>
 	</c:if>
 
@@ -175,9 +170,13 @@ name = HtmlUtil.escapeJS(name);
 	});
 
 	var preventImageDropHandler = windowNode.on('drop', (event) => {
-		var validDropTarget = event.target.getDOMNode().isContentEditable;
+		var element = event.target.getDOMNode();
+		var validDropTarget =
+			element.isContentEditable || !!element.getAttribute('droppable');
 
-		if (!validDropTarget) {
+		var droppedFiles = event._event.dataTransfer.files || [];
+
+		if (!validDropTarget && droppedFiles.length > 0) {
 			event.preventDefault();
 			event.stopImmediatePropagation();
 		}
@@ -341,6 +340,14 @@ name = HtmlUtil.escapeJS(name);
 
 		if (ckEditor) {
 			var iframe = ckEditor.one('iframe');
+
+			if (iframe) {
+				iframe.attr(
+					'aria-labelledby',
+					'<%= namespace %>Aria ' +
+						iframe._node.attributes['aria-describedby'].value
+				);
+			}
 
 			addAUIClass(iframe);
 
@@ -611,7 +618,9 @@ name = HtmlUtil.escapeJS(name);
 
 										window['<%= name %>'].create();
 
-										window['<%= name %>'].setHTML(ckEditorContent);
+										CKEDITOR.instances['<%= name %>'].setData(
+											ckEditorContent
+										);
 
 										initialEditor =
 											CKEDITOR.instances['<%= name %>'].id;

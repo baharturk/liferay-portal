@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.internal.search.spi.model.index.contributor;
@@ -19,7 +10,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.search.localization.SearchLocalizationHelper;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
@@ -34,7 +25,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Lucas Marques
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.asset.kernel.model.AssetVocabulary",
 	service = ModelDocumentContributor.class
 )
@@ -59,9 +49,11 @@ public class AssetVocabularyModelDocumentContributor
 			document, Field.TITLE, siteDefaultLocale,
 			assetVocabulary.getTitleMap());
 
+		document.addNumber(
+			Field.VISIBILITY_TYPE, assetVocabulary.getVisibilityType());
 		document.addLocalizedKeyword(
 			"localized_title",
-			LocalizationUtil.populateLocalizationMap(
+			_localization.populateLocalizationMap(
 				assetVocabulary.getTitleMap(),
 				assetVocabulary.getDefaultLanguageId(),
 				assetVocabulary.getGroupId()),
@@ -76,6 +68,9 @@ public class AssetVocabularyModelDocumentContributor
 			throw new SystemException(portalException);
 		}
 	}
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

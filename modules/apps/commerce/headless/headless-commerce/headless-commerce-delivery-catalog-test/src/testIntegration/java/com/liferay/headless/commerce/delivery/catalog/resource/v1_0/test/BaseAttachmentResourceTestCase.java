@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.resource.v1_0.test;
@@ -28,6 +19,7 @@ import com.liferay.headless.commerce.delivery.catalog.client.pagination.Page;
 import com.liferay.headless.commerce.delivery.catalog.client.pagination.Pagination;
 import com.liferay.headless.commerce.delivery.catalog.client.resource.v1_0.AttachmentResource;
 import com.liferay.headless.commerce.delivery.catalog.client.serdes.v1_0.AttachmentSerDes;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -41,6 +33,7 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
@@ -49,24 +42,25 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 
-import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
@@ -207,7 +201,7 @@ public abstract class BaseAttachmentResourceTestCase {
 			attachmentResource.getChannelProductAttachmentsPage(
 				channelId, productId, null, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if ((irrelevantChannelId != null) && (irrelevantProductId != null)) {
 			Attachment irrelevantAttachment =
@@ -217,14 +211,16 @@ public abstract class BaseAttachmentResourceTestCase {
 
 			page = attachmentResource.getChannelProductAttachmentsPage(
 				irrelevantChannelId, irrelevantProductId, null,
-				Pagination.of(1, 2));
+				Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantAttachment),
-				(List<Attachment>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantAttachment, (List<Attachment>)page.getItems());
+			assertValid(
+				page,
+				testGetChannelProductAttachmentsPage_getExpectedActions(
+					irrelevantChannelId, irrelevantProductId));
 		}
 
 		Attachment attachment1 =
@@ -238,12 +234,24 @@ public abstract class BaseAttachmentResourceTestCase {
 		page = attachmentResource.getChannelProductAttachmentsPage(
 			channelId, productId, null, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(attachment1, attachment2),
-			(List<Attachment>)page.getItems());
-		assertValid(page);
+		assertContains(attachment1, (List<Attachment>)page.getItems());
+		assertContains(attachment2, (List<Attachment>)page.getItems());
+		assertValid(
+			page,
+			testGetChannelProductAttachmentsPage_getExpectedActions(
+				channelId, productId));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetChannelProductAttachmentsPage_getExpectedActions(
+				Long channelId, Long productId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -252,6 +260,12 @@ public abstract class BaseAttachmentResourceTestCase {
 
 		Long channelId = testGetChannelProductAttachmentsPage_getChannelId();
 		Long productId = testGetChannelProductAttachmentsPage_getProductId();
+
+		Page<Attachment> attachmentPage =
+			attachmentResource.getChannelProductAttachmentsPage(
+				channelId, productId, null, null);
+
+		int totalCount = GetterUtil.getInteger(attachmentPage.getTotalCount());
 
 		Attachment attachment1 =
 			testGetChannelProductAttachmentsPage_addAttachment(
@@ -267,17 +281,18 @@ public abstract class BaseAttachmentResourceTestCase {
 
 		Page<Attachment> page1 =
 			attachmentResource.getChannelProductAttachmentsPage(
-				channelId, productId, null, Pagination.of(1, 2));
+				channelId, productId, null, Pagination.of(1, totalCount + 2));
 
 		List<Attachment> attachments1 = (List<Attachment>)page1.getItems();
 
-		Assert.assertEquals(attachments1.toString(), 2, attachments1.size());
+		Assert.assertEquals(
+			attachments1.toString(), totalCount + 2, attachments1.size());
 
 		Page<Attachment> page2 =
 			attachmentResource.getChannelProductAttachmentsPage(
-				channelId, productId, null, Pagination.of(2, 2));
+				channelId, productId, null, Pagination.of(2, totalCount + 2));
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<Attachment> attachments2 = (List<Attachment>)page2.getItems();
 
@@ -285,11 +300,12 @@ public abstract class BaseAttachmentResourceTestCase {
 
 		Page<Attachment> page3 =
 			attachmentResource.getChannelProductAttachmentsPage(
-				channelId, productId, null, Pagination.of(1, 3));
+				channelId, productId, null,
+				Pagination.of(1, (int)totalCount + 3));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(attachment1, attachment2, attachment3),
-			(List<Attachment>)page3.getItems());
+		assertContains(attachment1, (List<Attachment>)page3.getItems());
+		assertContains(attachment2, (List<Attachment>)page3.getItems());
+		assertContains(attachment3, (List<Attachment>)page3.getItems());
 	}
 
 	protected Attachment testGetChannelProductAttachmentsPage_addAttachment(
@@ -338,7 +354,7 @@ public abstract class BaseAttachmentResourceTestCase {
 		Page<Attachment> page = attachmentResource.getChannelProductImagesPage(
 			channelId, productId, null, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if ((irrelevantChannelId != null) && (irrelevantProductId != null)) {
 			Attachment irrelevantAttachment =
@@ -348,14 +364,16 @@ public abstract class BaseAttachmentResourceTestCase {
 
 			page = attachmentResource.getChannelProductImagesPage(
 				irrelevantChannelId, irrelevantProductId, null,
-				Pagination.of(1, 2));
+				Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantAttachment),
-				(List<Attachment>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantAttachment, (List<Attachment>)page.getItems());
+			assertValid(
+				page,
+				testGetChannelProductImagesPage_getExpectedActions(
+					irrelevantChannelId, irrelevantProductId));
 		}
 
 		Attachment attachment1 = testGetChannelProductImagesPage_addAttachment(
@@ -367,12 +385,24 @@ public abstract class BaseAttachmentResourceTestCase {
 		page = attachmentResource.getChannelProductImagesPage(
 			channelId, productId, null, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(attachment1, attachment2),
-			(List<Attachment>)page.getItems());
-		assertValid(page);
+		assertContains(attachment1, (List<Attachment>)page.getItems());
+		assertContains(attachment2, (List<Attachment>)page.getItems());
+		assertValid(
+			page,
+			testGetChannelProductImagesPage_getExpectedActions(
+				channelId, productId));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetChannelProductImagesPage_getExpectedActions(
+				Long channelId, Long productId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -381,6 +411,12 @@ public abstract class BaseAttachmentResourceTestCase {
 
 		Long channelId = testGetChannelProductImagesPage_getChannelId();
 		Long productId = testGetChannelProductImagesPage_getProductId();
+
+		Page<Attachment> attachmentPage =
+			attachmentResource.getChannelProductImagesPage(
+				channelId, productId, null, null);
+
+		int totalCount = GetterUtil.getInteger(attachmentPage.getTotalCount());
 
 		Attachment attachment1 = testGetChannelProductImagesPage_addAttachment(
 			channelId, productId, randomAttachment());
@@ -392,27 +428,28 @@ public abstract class BaseAttachmentResourceTestCase {
 			channelId, productId, randomAttachment());
 
 		Page<Attachment> page1 = attachmentResource.getChannelProductImagesPage(
-			channelId, productId, null, Pagination.of(1, 2));
+			channelId, productId, null, Pagination.of(1, totalCount + 2));
 
 		List<Attachment> attachments1 = (List<Attachment>)page1.getItems();
 
-		Assert.assertEquals(attachments1.toString(), 2, attachments1.size());
+		Assert.assertEquals(
+			attachments1.toString(), totalCount + 2, attachments1.size());
 
 		Page<Attachment> page2 = attachmentResource.getChannelProductImagesPage(
-			channelId, productId, null, Pagination.of(2, 2));
+			channelId, productId, null, Pagination.of(2, totalCount + 2));
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<Attachment> attachments2 = (List<Attachment>)page2.getItems();
 
 		Assert.assertEquals(attachments2.toString(), 1, attachments2.size());
 
 		Page<Attachment> page3 = attachmentResource.getChannelProductImagesPage(
-			channelId, productId, null, Pagination.of(1, 3));
+			channelId, productId, null, Pagination.of(1, (int)totalCount + 3));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(attachment1, attachment2, attachment3),
-			(List<Attachment>)page3.getItems());
+		assertContains(attachment1, (List<Attachment>)page3.getItems());
+		assertContains(attachment2, (List<Attachment>)page3.getItems());
+		assertContains(attachment3, (List<Attachment>)page3.getItems());
 	}
 
 	protected Attachment testGetChannelProductImagesPage_addAttachment(
@@ -541,6 +578,14 @@ public abstract class BaseAttachmentResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("customFields", additionalAssertFieldName)) {
+				if (attachment.getCustomFields() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("displayDate", additionalAssertFieldName)) {
 				if (attachment.getDisplayDate() == null) {
 					valid = false;
@@ -551,6 +596,14 @@ public abstract class BaseAttachmentResourceTestCase {
 
 			if (Objects.equals("expirationDate", additionalAssertFieldName)) {
 				if (attachment.getExpirationDate() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("galleryEnabled", additionalAssertFieldName)) {
+				if (attachment.getGalleryEnabled() == null) {
 					valid = false;
 				}
 
@@ -589,6 +642,14 @@ public abstract class BaseAttachmentResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("tags", additionalAssertFieldName)) {
+				if (attachment.getTags() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("title", additionalAssertFieldName)) {
 				if (attachment.getTitle() == null) {
 					valid = false;
@@ -614,6 +675,13 @@ public abstract class BaseAttachmentResourceTestCase {
 	}
 
 	protected void assertValid(Page<Attachment> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Attachment> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Attachment> attachments = page.getItems();
@@ -628,6 +696,25 @@ public abstract class BaseAttachmentResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -707,6 +794,17 @@ public abstract class BaseAttachmentResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("customFields", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						attachment1.getCustomFields(),
+						attachment2.getCustomFields())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("displayDate", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						attachment1.getDisplayDate(),
@@ -722,6 +820,17 @@ public abstract class BaseAttachmentResourceTestCase {
 				if (!Objects.deepEquals(
 						attachment1.getExpirationDate(),
 						attachment2.getExpirationDate())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("galleryEnabled", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						attachment1.getGalleryEnabled(),
+						attachment2.getGalleryEnabled())) {
 
 					return false;
 				}
@@ -774,6 +883,16 @@ public abstract class BaseAttachmentResourceTestCase {
 			if (Objects.equals("src", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						attachment1.getSrc(), attachment2.getSrc())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("tags", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						attachment1.getTags(), attachment2.getTags())) {
 
 					return false;
 				}
@@ -838,14 +957,16 @@ public abstract class BaseAttachmentResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -862,6 +983,10 @@ public abstract class BaseAttachmentResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -871,18 +996,18 @@ public abstract class BaseAttachmentResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -899,11 +1024,54 @@ public abstract class BaseAttachmentResourceTestCase {
 		sb.append(" ");
 
 		if (entityFieldName.equals("attachment")) {
-			sb.append("'");
-			sb.append(String.valueOf(attachment.getAttachment()));
-			sb.append("'");
+			Object object = attachment.getAttachment();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
+		}
+
+		if (entityFieldName.equals("customFields")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
 		}
 
 		if (entityFieldName.equals("displayDate")) {
@@ -970,6 +1138,11 @@ public abstract class BaseAttachmentResourceTestCase {
 			return sb.toString();
 		}
 
+		if (entityFieldName.equals("galleryEnabled")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("id")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
@@ -986,29 +1159,112 @@ public abstract class BaseAttachmentResourceTestCase {
 		}
 
 		if (entityFieldName.equals("priority")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
-		}
-
-		if (entityFieldName.equals("src")) {
-			sb.append("'");
-			sb.append(String.valueOf(attachment.getSrc()));
-			sb.append("'");
+			sb.append(String.valueOf(attachment.getPriority()));
 
 			return sb.toString();
 		}
 
+		if (entityFieldName.equals("src")) {
+			Object object = attachment.getSrc();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("tags")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("title")) {
-			sb.append("'");
-			sb.append(String.valueOf(attachment.getTitle()));
-			sb.append("'");
+			Object object = attachment.getTitle();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("type")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(attachment.getType()));
+
+			return sb.toString();
 		}
 
 		throw new IllegalArgumentException(
@@ -1059,6 +1315,7 @@ public abstract class BaseAttachmentResourceTestCase {
 					RandomTestUtil.randomString());
 				displayDate = RandomTestUtil.nextDate();
 				expirationDate = RandomTestUtil.nextDate();
+				galleryEnabled = RandomTestUtil.randomBoolean();
 				id = RandomTestUtil.randomLong();
 				neverExpire = RandomTestUtil.randomBoolean();
 				priority = RandomTestUtil.randomDouble();
@@ -1083,6 +1340,115 @@ public abstract class BaseAttachmentResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1158,18 +1524,6 @@ public abstract class BaseAttachmentResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseAttachmentResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.service;
@@ -96,33 +87,6 @@ public interface LayoutPageTemplateEntryLocalService
 			LayoutPrototype layoutPrototype)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addLayoutPageTemplateEntry(long, long, long, long, long,
-	 String, int, long, boolean, long, long, long, int,
-	 ServiceContext)}
-	 */
-	@Deprecated
-	public LayoutPageTemplateEntry addLayoutPageTemplateEntry(
-			long userId, long groupId, long layoutPageTemplateCollectionId,
-			long classNameId, long classTypeId, String name, int type,
-			boolean defaultTemplate, long layoutPrototypeId,
-			long previewFileEntryId, long plid, int status,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addLayoutPageTemplateEntry(long, long, long, long, long,
-	 String, int, long, int, ServiceContext)}
-	 */
-	@Deprecated
-	public LayoutPageTemplateEntry addLayoutPageTemplateEntry(
-			long userId, long groupId, long layoutPageTemplateCollectionId,
-			long classNameId, long classTypeId, String name, int type,
-			int status, ServiceContext serviceContext)
-		throws PortalException;
-
 	public LayoutPageTemplateEntry addLayoutPageTemplateEntry(
 			long userId, long groupId, long layoutPageTemplateCollectionId,
 			long classNameId, long classTypeId, String name, int type,
@@ -137,17 +101,6 @@ public interface LayoutPageTemplateEntryLocalService
 			long masterLayoutPlid, int status, ServiceContext serviceContext)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addLayoutPageTemplateEntry(long, long, long, String, int,
-	 long, int, ServiceContext)}
-	 */
-	@Deprecated
-	public LayoutPageTemplateEntry addLayoutPageTemplateEntry(
-			long userId, long groupId, long layoutPageTemplateCollectionId,
-			String name, int type, int status, ServiceContext serviceContext)
-		throws PortalException;
-
 	public LayoutPageTemplateEntry addLayoutPageTemplateEntry(
 			long userId, long groupId, long layoutPageTemplateCollectionId,
 			String name, int type, long masterLayoutPlid, int status,
@@ -156,8 +109,9 @@ public interface LayoutPageTemplateEntryLocalService
 
 	public LayoutPageTemplateEntry copyLayoutPageTemplateEntry(
 			long userId, long groupId, long layoutPageTemplateCollectionId,
-			long layoutPageTemplateEntryId, ServiceContext serviceContext)
-		throws PortalException;
+			long sourceLayoutPageTemplateEntryId, boolean copyPermissions,
+			ServiceContext serviceContext)
+		throws Exception;
 
 	/**
 	 * Creates a new layout page template entry with the primary key. Does not add the layout page template entry to the database.
@@ -476,6 +430,10 @@ public interface LayoutPageTemplateEntryLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public String getUniqueLayoutPageTemplateEntryName(
+		long groupId, String name, int type);
+
 	/**
 	 * Updates the layout page template entry in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -498,18 +456,16 @@ public interface LayoutPageTemplateEntryLocalService
 		throws PortalException;
 
 	public LayoutPageTemplateEntry updateLayoutPageTemplateEntry(
+			long layoutPageTemplateEntryId, long classNameId, long classTypeId)
+		throws PortalException;
+
+	public LayoutPageTemplateEntry updateLayoutPageTemplateEntry(
 			long userId, long layoutPageTemplateEntryId, String name,
 			int status)
 		throws PortalException;
 
 	public LayoutPageTemplateEntry updateLayoutPageTemplateEntry(
 			long layoutPageTemplateEntryId, String name)
-		throws PortalException;
-
-	public LayoutPageTemplateEntry updateLayoutPageTemplateEntry(
-			long layoutPageTemplateEntryId, String name,
-			long[] fragmentEntryIds, String editableValues,
-			ServiceContext serviceContext)
 		throws PortalException;
 
 	public LayoutPageTemplateEntry updateStatus(

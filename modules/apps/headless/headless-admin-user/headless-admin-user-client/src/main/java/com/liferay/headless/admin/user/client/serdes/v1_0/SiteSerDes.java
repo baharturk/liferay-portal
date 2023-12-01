@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.client.serdes.v1_0;
@@ -22,7 +13,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 import javax.annotation.Generated;
 
@@ -110,6 +100,30 @@ public class SiteSerDes {
 			sb.append("\"description_i18n\": ");
 
 			sb.append(_toJSON(site.getDescription_i18n()));
+		}
+
+		if (site.getDescriptiveName() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"descriptiveName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(site.getDescriptiveName()));
+
+			sb.append("\"");
+		}
+
+		if (site.getDescriptiveName_i18n() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"descriptiveName_i18n\": ");
+
+			sb.append(_toJSON(site.getDescriptiveName_i18n()));
 		}
 
 		if (site.getFriendlyUrlPath() != null) {
@@ -267,6 +281,23 @@ public class SiteSerDes {
 				"description_i18n", String.valueOf(site.getDescription_i18n()));
 		}
 
+		if (site.getDescriptiveName() == null) {
+			map.put("descriptiveName", null);
+		}
+		else {
+			map.put(
+				"descriptiveName", String.valueOf(site.getDescriptiveName()));
+		}
+
+		if (site.getDescriptiveName_i18n() == null) {
+			map.put("descriptiveName_i18n", null);
+		}
+		else {
+			map.put(
+				"descriptiveName_i18n",
+				String.valueOf(site.getDescriptiveName_i18n()));
+		}
+
 		if (site.getFriendlyUrlPath() == null) {
 			map.put("friendlyUrlPath", null);
 		}
@@ -367,6 +398,19 @@ public class SiteSerDes {
 						(Map)SiteSerDes.toMap((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "descriptiveName")) {
+				if (jsonParserFieldValue != null) {
+					site.setDescriptiveName((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "descriptiveName_i18n")) {
+
+				if (jsonParserFieldValue != null) {
+					site.setDescriptiveName_i18n(
+						(Map)SiteSerDes.toMap((String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "friendlyUrlPath")) {
 				if (jsonParserFieldValue != null) {
 					site.setFriendlyUrlPath((String)jsonParserFieldValue);
@@ -406,14 +450,17 @@ public class SiteSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "sites")) {
 				if (jsonParserFieldValue != null) {
-					site.setSites(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> SiteSerDes.toDTO((String)object)
-						).toArray(
-							size -> new Site[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					Site[] sitesArray = new Site[jsonParserFieldValues.length];
+
+					for (int i = 0; i < sitesArray.length; i++) {
+						sitesArray[i] = SiteSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					site.setSites(sitesArray);
 				}
 			}
 		}

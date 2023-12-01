@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.portlet.action;
@@ -18,16 +9,16 @@ import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceReport;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceReportLocalService;
 import com.liferay.dynamic.data.mapping.util.DDMFormReportDataUtil;
-import com.liferay.petra.portlet.url.builder.ResourceURLBuilder;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -42,7 +33,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Carolina Barbosa
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM,
 		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
@@ -79,7 +69,7 @@ public class GetFormReportDataMVCResourceCommand
 						ddmFormInstanceReport)
 				).put(
 					"formReportRecordsFieldValuesURL",
-					_http.addParameter(
+					HttpComponentsUtil.addParameter(
 						ResourceURLBuilder.createResourceURL(
 							resourceResponse
 						).setResourceID(
@@ -107,14 +97,14 @@ public class GetFormReportDataMVCResourceCommand
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			JSONPortletResponseUtil.writeJSON(
 				resourceRequest, resourceResponse,
 				JSONUtil.put(
 					"errorMessage",
-					LanguageUtil.get(
+					_language.get(
 						_portal.getHttpServletRequest(resourceRequest),
 						"your-request-failed-to-complete")));
 		}
@@ -128,7 +118,7 @@ public class GetFormReportDataMVCResourceCommand
 		_ddmFormInstanceReportLocalService;
 
 	@Reference
-	private Http _http;
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.counter.test;
@@ -102,18 +93,6 @@ public class CounterLocalServiceTest {
 							objectName, "softEvictConnections", null, null);
 					}
 
-					// Tomcat
-
-					for (ObjectName objectName :
-							mBeanServer.queryNames(
-								null,
-								new ObjectName(
-									"TomcatJDBCPool:type=ConnectionPool," +
-										"name=*"))) {
-
-						mBeanServer.invoke(objectName, "purge", null, null);
-					}
-
 					return null;
 				}
 
@@ -143,14 +122,13 @@ public class CounterLocalServiceTest {
 
 		builder.setArguments(arguments);
 		builder.setBootstrapClassPath(
-			_prependClassPath(
-				portalProcessConfig.getBootstrapClassPath(),
-				LiferayIntegrationTestRule.class));
+			portalProcessConfig.getBootstrapClassPath());
 		builder.setReactClassLoader(PortalClassLoaderUtil.getClassLoader());
 		builder.setRuntimeClassPath(
 			_prependClassPath(
 				portalProcessConfig.getRuntimeClassPath(),
-				CounterLocalServiceTest.class));
+				CounterLocalServiceTest.class,
+				LiferayIntegrationTestRule.class));
 
 		ProcessConfig processConfig = builder.build();
 
@@ -189,19 +167,28 @@ public class CounterLocalServiceTest {
 		}
 	}
 
-	private String _prependClassPath(String baseClassPath, Class<?> clazz)
+	private String _prependClassPath(String baseClassPath, Class<?>... classes)
 		throws Exception {
 
-		ProtectionDomain protectionDomain = clazz.getProtectionDomain();
+		StringBundler sb = new StringBundler((classes.length * 2) + 1);
 
-		CodeSource codeSource = protectionDomain.getCodeSource();
+		for (Class<?> clazz : classes) {
+			ProtectionDomain protectionDomain = clazz.getProtectionDomain();
 
-		URL url = codeSource.getLocation();
+			CodeSource codeSource = protectionDomain.getCodeSource();
 
-		File file = new File(url.toURI());
+			URL url = codeSource.getLocation();
 
-		return StringBundler.concat(
-			file.getPath(), File.pathSeparator, baseClassPath);
+			File file = new File(url.toURI());
+
+			sb.append(file.getPath());
+
+			sb.append(File.pathSeparator);
+		}
+
+		sb.append(baseClassPath);
+
+		return sb.toString();
 	}
 
 	private static final String _COUNTER_NAME =
@@ -231,25 +218,13 @@ public class CounterLocalServiceTest {
 		public Long[] call() throws ProcessException {
 			System.setProperty(
 				PropsKeys.COUNTER_INCREMENT + "." + _counterName, "1");
-
 			System.setProperty("catalina.base", _catalinaBase);
-
-			// C3PO
-
-			System.setProperty("portal:jdbc.default.maxPoolSize", "1");
-			System.setProperty("portal:jdbc.default.minPoolSize", "0");
+			System.setProperty("portal:hibernate.hbm.jaxb.cache", "false");
 
 			// HikariCP
 
 			System.setProperty("portal:jdbc.default.maximumPoolSize", "1");
 			System.setProperty("portal:jdbc.default.minimumIdle", "0");
-
-			// Tomcat
-
-			System.setProperty("portal:jdbc.default.initialSize", "0");
-			System.setProperty("portal:jdbc.default.maxActive", "1");
-			System.setProperty("portal:jdbc.default.maxIdle", "0");
-			System.setProperty("portal:jdbc.default.minIdle", "0");
 
 			CacheKeyGeneratorUtil cacheKeyGeneratorUtil =
 				new CacheKeyGeneratorUtil();
@@ -260,7 +235,7 @@ public class CounterLocalServiceTest {
 			InitUtil.initWithSpring(
 				Arrays.asList(
 					"META-INF/base-spring.xml", "META-INF/counter-spring.xml"),
-				false, true);
+				false, false, null);
 
 			List<Long> ids = new ArrayList<>();
 

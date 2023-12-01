@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -25,12 +16,18 @@ import delegate from '../delegate/delegate.es';
 import navigate from '../util/navigate.es';
 
 const Modal = ({
+	bodyComponent,
 	bodyHTML,
 	buttons,
+	center,
+	className,
 	containerProps = {
 		className: 'cadmin',
 	},
+	contentComponent: ContentComponent,
 	customEvents,
+	disableAutoClose,
+	disableHeader,
 	footerCssClass,
 	headerCssClass,
 	headerHTML,
@@ -40,6 +37,7 @@ const Modal = ({
 	iframeProps = {},
 	onClose,
 	onOpen,
+	role = 'dialog',
 	size,
 	status,
 	title,
@@ -47,12 +45,23 @@ const Modal = ({
 	zIndex,
 }) => {
 	const [loading, setLoading] = useState(true);
-	const [visible, setVisible] = useState(true);
+
+	const {observer, onOpenChange, open} = useModal({
+		onClose: () => processClose(),
+	});
+
+	useEffect(() => {
+		onOpenChange(true);
+	}, [onOpenChange]);
 
 	const eventHandlersRef = useRef([]);
 
 	const processClose = useCallback(() => {
-		setVisible(false);
+		if (!open) {
+			return;
+		}
+
+		onOpenChange(false);
 
 		document.body.classList.remove('modal-open');
 
@@ -67,13 +76,24 @@ const Modal = ({
 		if (onClose) {
 			onClose();
 		}
-	}, [eventHandlersRef, onClose]);
-
-	const {observer} = useModal({
-		onClose: () => processClose(),
-	});
+	}, [eventHandlersRef, onClose, onOpenChange, open]);
 
 	const onButtonClick = ({formId, onClick, type}) => {
+		const submitForm = (form) => {
+			if (form.requestSubmit) {
+				form.requestSubmit();
+			}
+			else {
+				const accepted = form.dispatchEvent(
+					new Event('submit', {cancelable: true})
+				);
+
+				if (accepted) {
+					form.submit();
+				}
+			}
+		};
+
 		if (type === 'cancel') {
 			processClose();
 		}
@@ -96,11 +116,11 @@ const Modal = ({
 					const form = iframeDocument.getElementById(formId);
 
 					if (form) {
-						form.submit();
+						submitForm(form);
 					}
 				}
 				else if (forms.length >= 1) {
-					forms[0].submit();
+					submitForm(forms[0]);
 				}
 			}
 		}
@@ -110,24 +130,30 @@ const Modal = ({
 		}
 	};
 
-	const Body = ({html}) => {
+	const Body = ({component: BodyComponent, html}) => {
 		const bodyRef = useRef();
 
 		useEffect(() => {
-			const fragment = document
-				.createRange()
-				.createContextualFragment(html);
+			if (html) {
+				const fragment = document
+					.createRange()
+					.createContextualFragment(html);
 
-			bodyRef.current.innerHTML = '';
+				bodyRef.current.innerHTML = '';
 
-			bodyRef.current.appendChild(fragment);
+				bodyRef.current.appendChild(fragment);
+			}
 
 			if (onOpen) {
-				onOpen({container: fragment, processClose});
+				onOpen({container: bodyRef.current, processClose});
 			}
 		}, [html]);
 
-		return <div className="liferay-modal-body" ref={bodyRef}></div>;
+		return (
+			<div className="liferay-modal-body" ref={bodyRef}>
+				{BodyComponent && <BodyComponent closeModal={processClose} />}
+			</div>
+		);
 	};
 
 	useEffect(() => {
@@ -173,89 +199,151 @@ const Modal = ({
 
 	return (
 		<>
-			{visible && (
+			{open && (
 				<ClayModal
-					className="liferay-modal"
+					center={center}
+					className={classNames('liferay-modal', className)}
 					containerProps={{...containerProps}}
+					disableAutoClose={disableAutoClose}
 					id={id}
 					observer={observer}
+					role={role}
 					size={url && !size ? 'full-screen' : size}
 					status={status}
 					zIndex={zIndex}
 				>
-					<ClayModal.Header className={headerCssClass}>
-						{headerHTML ? (
-							<div
-								dangerouslySetInnerHTML={{
-									__html: headerHTML,
-								}}
-							></div>
-						) : (
-							title
-						)}
-					</ClayModal.Header>
-
-					<div
-						className={classNames('modal-body', {
-							'modal-body-iframe': url,
-						})}
-						style={{
-							height,
-						}}
-					>
-						{url ? (
-							<>
-								{loading && <ClayLoadingIndicator />}
-								<Iframe
-									iframeBodyCssClass={iframeBodyCssClass}
-									iframeProps={{
-										id: id && `${id}_iframe_`,
-										...iframeProps,
-									}}
-									onOpen={onOpen}
-									processClose={processClose}
-									title={title}
-									updateLoading={(loading) => {
-										setLoading(loading);
-									}}
-									url={url}
-								/>
-							</>
-						) : (
-							<>{bodyHTML && <Body html={bodyHTML} />}</>
-						)}
-					</div>
-
-					{buttons && (
-						<ClayModal.Footer
-							className={footerCssClass}
-							last={
-								<ClayButton.Group spaced>
-									{buttons.map((button, index) => (
-										<ClayButton
-											displayType={button.displayType}
-											id={button.id}
-											key={index}
-											onClick={() => {
-												onButtonClick(button);
+					{ContentComponent ? (
+						<ContentComponent closeModal={processClose} />
+					) : (
+						<>
+							{!disableHeader && (
+								<ClayModal.Header className={headerCssClass}>
+									{headerHTML ? (
+										<div
+											dangerouslySetInnerHTML={{
+												__html: headerHTML,
 											}}
-											type={
-												button.type === 'cancel'
-													? 'button'
-													: button.type
+										></div>
+									) : (
+										title
+									)}
+
+									{loading && (
+										<span className="sr-only">
+											- {Liferay.Language.get('loading')}
+										</span>
+									)}
+								</ClayModal.Header>
+							)}
+
+							<div
+								className={classNames('modal-body', {
+									'modal-body-iframe': url,
+								})}
+								style={{
+									height,
+								}}
+							>
+								{url && (
+									<>
+										{loading && <ClayLoadingIndicator />}
+
+										<StatusMessage loading={loading} />
+
+										<Iframe
+											iframeBodyCssClass={
+												iframeBodyCssClass
 											}
-										>
-											{button.label}
-										</ClayButton>
-									))}
-								</ClayButton.Group>
-							}
-						/>
+											iframeProps={{
+												id: id && `${id}_iframe_`,
+												...iframeProps,
+											}}
+											onOpen={onOpen}
+											processClose={processClose}
+											title={title}
+											updateLoading={(loading) => {
+												setLoading(loading);
+											}}
+											url={url}
+										/>
+									</>
+								)}
+
+								{bodyHTML && <Body html={bodyHTML} />}
+
+								{bodyComponent && (
+									<Body component={bodyComponent} />
+								)}
+							</div>
+
+							{buttons && (
+								<ClayModal.Footer
+									className={footerCssClass}
+									last={
+										<ClayButton.Group spaced>
+											{buttons.map(
+												(
+													{
+														displayType,
+														formId,
+														id,
+														label,
+														onClick,
+														type,
+														...otherProps
+													},
+													index
+												) => (
+													<ClayButton
+														displayType={
+															displayType
+														}
+														id={id}
+														key={index}
+														onClick={() => {
+															onButtonClick({
+																formId,
+																onClick,
+																type,
+															});
+														}}
+														type={
+															type === 'cancel'
+																? 'button'
+																: type
+														}
+														{...otherProps}
+													>
+														{label}
+													</ClayButton>
+												)
+											)}
+										</ClayButton.Group>
+									}
+								/>
+							)}
+						</>
 					)}
 				</ClayModal>
 			)}
 		</>
 	);
+};
+
+const StatusMessage = ({loading}) => {
+	const [showMessage, setShowMessage] = useState(true);
+
+	useEffect(() => {
+		if (!loading) {
+			setTimeout(() => setShowMessage(false), 1000);
+		}
+	}, [loading]);
+
+	return showMessage ? (
+		<span className="sr-only" role="status">
+			{!loading && Liferay.Language.get('loaded')}
+		</span>
+	) : null;
 };
 
 const openModal = (props) => {
@@ -356,6 +444,7 @@ const openSelectionModal = ({
 	onSelect,
 	selectEventName,
 	selectedData,
+	selectedDataCheckboxesDisabled = false,
 	size,
 	title,
 	url,
@@ -406,6 +495,9 @@ const openSelectionModal = ({
 						processCloseFn();
 					}
 				);
+			}
+			else {
+				processCloseFn();
 			}
 		}
 		else {
@@ -471,6 +563,31 @@ const openSelectionModal = ({
 						itemElement.classList.remove('disabled');
 					}
 				});
+
+				if (multiple) {
+					for (const row of iframeBody.querySelectorAll(
+						'.searchcontainer tr'
+					)) {
+						const itemId =
+							row.dataset.entityid || row.dataset.entityname;
+
+						if (selectedDataSet.has(itemId)) {
+							const checkbox = row.querySelector(
+								'input[type="checkbox"]'
+							);
+
+							if (!checkbox) {
+								continue;
+							}
+
+							checkbox.checked = true;
+
+							if (selectedDataCheckboxesDisabled) {
+								checkbox.disabled = true;
+							}
+						}
+					}
+				}
 			}
 
 			if (selectEventName) {
@@ -516,6 +633,8 @@ class Iframe extends React.Component {
 	constructor(props) {
 		super(props);
 
+		this.delegateHandlers = [];
+
 		this.iframeRef = React.createRef();
 
 		const iframeURL = new URL(props.url);
@@ -533,36 +652,56 @@ class Iframe extends React.Component {
 	}
 
 	componentWillUnmount() {
-		if (this.beforeScreenFlipHandler) {
-			Liferay.detach(this.beforeScreenFlipHandler);
+		if (this.spaNavigationHandlers) {
+			this.spaNavigationHandlers.forEach((handler) => {
+				Liferay.detach(handler);
+			});
 		}
 
-		if (this.delegateHandler) {
-			this.delegateHandler.dispose();
+		if (this.delegateHandlers.length) {
+			this.delegateHandlers.forEach(({dispose}) => dispose());
+			this.delegateHandlers = null;
 		}
 	}
 
 	onLoadHandler = () => {
 		const iframeWindow = this.iframeRef.current.contentWindow;
 
-		this.delegateHandler = delegate(
-			iframeWindow.document,
-			'click',
-			'.btn-cancel,.lfr-hide-dialog',
-			() => this.props.processClose()
+		this.delegateHandlers.push(
+			delegate(
+				iframeWindow.document,
+				'click',
+				'.btn-cancel,.lfr-hide-dialog',
+				() => this.props.processClose()
+			),
+			delegate(iframeWindow.document, 'keydown', 'body', (event) => {
+				if (event.key === 'Escape') {
+					this.props.processClose();
+				}
+			})
 		);
 
 		iframeWindow.document.body.classList.add(CSS_CLASS_IFRAME_BODY);
 
 		if (iframeWindow.Liferay.SPA) {
-			this.beforeScreenFlipHandler = iframeWindow.Liferay.on(
-				'beforeScreenFlip',
-				() => {
+			this.spaNavigationHandlers = [
+				iframeWindow.Liferay.on('beforeScreenFlip', () => {
 					iframeWindow.document.body.classList.add(
 						CSS_CLASS_IFRAME_BODY
 					);
-				}
-			);
+				}),
+			];
+
+			if (this.props.onOpen) {
+				this.spaNavigationHandlers.push(
+					iframeWindow.Liferay.on('screenFlip', () => {
+						this.props.onOpen({
+							iframeWindow,
+							processClose: this.props.processClose,
+						});
+					})
+				);
+			}
 		}
 
 		this.props.updateLoading(false);
@@ -599,10 +738,15 @@ Modal.propTypes = {
 	buttons: PropTypes.arrayOf(
 		PropTypes.shape({
 			displayType: PropTypes.oneOf([
+				'danger',
+				'info',
 				'link',
+				null,
 				'primary',
 				'secondary',
+				'success',
 				'unstyled',
+				'warning',
 			]),
 			formId: PropTypes.string,
 			id: PropTypes.string,
@@ -611,20 +755,25 @@ Modal.propTypes = {
 			type: PropTypes.oneOf(['cancel', 'submit']),
 		})
 	),
+	center: PropTypes.bool,
 	containerProps: PropTypes.object,
+	contentComponent: PropTypes.elementType,
 	customEvents: PropTypes.arrayOf(
 		PropTypes.shape({
 			name: PropTypes.string,
 			onEvent: PropTypes.func,
 		})
 	),
+	disableHeader: PropTypes.bool,
 	headerHTML: PropTypes.string,
 	height: PropTypes.string,
 	id: PropTypes.string,
 	iframeProps: PropTypes.object,
 	onClose: PropTypes.func,
 	onOpen: PropTypes.func,
+	role: PropTypes.string,
 	size: PropTypes.oneOf(['full-screen', 'lg', 'md', 'sm']),
+	status: PropTypes.string,
 	title: PropTypes.string,
 	url: PropTypes.string,
 };

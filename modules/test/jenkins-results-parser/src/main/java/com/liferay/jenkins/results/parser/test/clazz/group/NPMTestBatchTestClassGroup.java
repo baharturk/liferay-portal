@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz.group;
@@ -26,25 +17,17 @@ import java.io.IOException;
 
 import java.text.SimpleDateFormat;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang.StringEscapeUtils;
 
+import org.json.JSONObject;
+
 /**
  * @author Michael Hashimoto
  */
 public class NPMTestBatchTestClassGroup extends BatchTestClassGroup {
-
-	@Override
-	public int getAxisCount() {
-		if (!isStableTestSuiteBatch() && testRelevantIntegrationUnitOnly) {
-			return 0;
-		}
-
-		return super.getAxisCount();
-	}
 
 	@Override
 	public AxisTestClassGroup getAxisTestClassGroup(int axisId) {
@@ -61,27 +44,13 @@ public class NPMTestBatchTestClassGroup extends BatchTestClassGroup {
 		return TestClassGroupFactory.newAxisTestClassGroup(this);
 	}
 
-	public List<NPMTestClass> getNPMTestClasses() {
-		List<NPMTestClass> npmTestClasses = new ArrayList<>();
-
-		for (TestClass testClass : TestClassFactory.getTestClasses()) {
-			if (!(testClass instanceof NPMTestClass)) {
-				continue;
-			}
-
-			npmTestClasses.add((NPMTestClass)testClass);
-		}
-
-		return npmTestClasses;
-	}
-
 	public void writeTestCSVReportFile() throws Exception {
 		CSVReport csvReport = new CSVReport(
 			new CSVReport.Row(
 				"Module Name", "Class Name", "Method Name", "Ignored",
 				"File Path"));
 
-		for (NPMTestClass npmTestClass : getNPMTestClasses()) {
+		for (NPMTestClass npmTestClass : TestClassFactory.getNPMTestClasses()) {
 			File moduleTestClassFile = npmTestClass.getTestClassFile();
 
 			String moduleName = moduleTestClassFile.getName();
@@ -137,9 +106,19 @@ public class NPMTestBatchTestClassGroup extends BatchTestClassGroup {
 	}
 
 	protected NPMTestBatchTestClassGroup(
+		JSONObject jsonObject, PortalTestClassJob portalTestClassJob) {
+
+		super(jsonObject, portalTestClassJob);
+	}
+
+	protected NPMTestBatchTestClassGroup(
 		String batchName, PortalTestClassJob portalTestClassJob) {
 
 		super(batchName, portalTestClassJob);
+
+		if (ignore()) {
+			return;
+		}
 
 		List<File> moduleDirs;
 

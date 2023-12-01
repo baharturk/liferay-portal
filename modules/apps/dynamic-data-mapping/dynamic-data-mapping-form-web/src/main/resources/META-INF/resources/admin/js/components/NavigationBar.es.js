@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useEventListener} from '@liferay/frontend-js-react-web';
@@ -39,12 +30,18 @@ export function NavigationBar({history, location}) {
 
 	const onClick = useCallback(
 		(event) => {
-			if (event.target.type === 'button') {
+			if (
+				event.target.type === 'button' ||
+				event.target.tagName === 'SPAN'
+			) {
 				event.preventDefault();
 
-				const index = Number(
-					event.target.parentElement.dataset.navItemIndex
-				);
+				const target =
+					event.target.type === 'button'
+						? event.target
+						: event.target.parentElement;
+
+				const index = Number(target.parentElement.dataset.navItemIndex);
 
 				const path = NAV_ITEMS[index];
 
@@ -55,7 +52,7 @@ export function NavigationBar({history, location}) {
 					.querySelector('.forms-navigation-bar li > .active')
 					.classList.remove('active');
 
-				event.target.classList.add('active');
+				target.classList.add('active');
 
 				const method =
 					path === location.pathname ? history.replace : history.push;
@@ -74,7 +71,11 @@ export function NavigationBar({history, location}) {
 	);
 
 	useLayoutEffect(() => {
-		const index = NAV_ITEMS_REVERSE[location.pathname];
+		let index = NAV_ITEMS_REVERSE[location.pathname];
+
+		if (location.pathname === '/rules/editor') {
+			index = 1;
+		}
 
 		// This will mark the active element of the NavigationBar for the first
 		// time according to the pathname when the application is started.

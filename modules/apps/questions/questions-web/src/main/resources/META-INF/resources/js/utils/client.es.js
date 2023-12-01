@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {fetch} from 'frontend-js-web';
@@ -72,8 +63,12 @@ export const createCommentQuery = `
 			creator {
 				name
 			}
+			dateCreated
 			dateModified
+			friendlyUrlPath
+			hasCompanyMx
 			id
+			status
 		}
 	}
 `;
@@ -217,12 +212,14 @@ export const deleteMessageBoardThreadQuery = `
 export const getTagsOrderByDateCreatedQuery = `
 	query keywords(
 		$page: Int!
+		$filter: String
 		$pageSize: Int!
 		$search: String
 		$siteKey: String!
 	) {
 		keywords(
 			page: $page
+			filter: $filter
 			pageSize: $pageSize
 			search: $search
 			siteKey: $siteKey
@@ -307,6 +304,10 @@ export const getThreadQuery = `
 				id
 				image
 				name
+				userGroupBriefs {
+					id
+					name
+				}
 			}
 			creatorStatistics {
 				joinDate
@@ -320,9 +321,11 @@ export const getThreadQuery = `
 			friendlyUrlPath
 			headline
 			id
+			messageBoardRootMessageId
 			keywords
 			locked
 			messageBoardSection {
+				friendlyUrlPath
 				id
 				numberOfMessageBoardSections
 				parentMessageBoardSectionId
@@ -335,6 +338,15 @@ export const getThreadQuery = `
 			status
 			subscribed
 			viewCount
+			withValidAnswers: messageBoardMessages(filter: "showAsAnswer eq true") {
+				totalCount
+				items {
+				  id
+				  headline
+				  articleBody
+				  showAsAnswer
+				}
+			  }
 		}
 	}
 `;
@@ -345,6 +357,7 @@ export const getSectionByMessageQuery = `
 			friendlyUrlPath
 			messageBoardThread {
 				messageBoardSection {
+					friendlyUrlPath
 					id
 					title
 				}
@@ -402,11 +415,13 @@ export const getMessagesQuery = `
 					postsNumber
 					rank
 				}
+				dateCreated
 				dateModified
 				encodingFormat
 				friendlyUrlPath
+				hasCompanyMx
 				id
-				messageBoardMessages(flatten: true) {
+				messageBoardMessages(flatten: true, sort: "dateCreated:asc") {
 					items {
 						actions
 						articleBody
@@ -415,13 +430,18 @@ export const getMessagesQuery = `
 							image
 							name
 						}
+						dateCreated
 						dateModified
 						encodingFormat
+						friendlyUrlPath
+						hasCompanyMx
 						id
+						modified
 						showAsAnswer
 						status
 					}
 				}
+				modified
 				myRating {
 					ratingValue
 				}
@@ -444,14 +464,20 @@ export const hasListPermissionsQuery = `
 
 export const getSectionThreadsQuery = `
 	query messageBoardSectionMessageBoardThreads(
+		$filter: String
 		$messageBoardSectionId: Long!
 		$page: Int!
 		$pageSize: Int!
+		$search: String
+		$sort: String
 	) {
 		messageBoardSectionMessageBoardThreads(
+			filter: $filter
 			messageBoardSectionId: $messageBoardSectionId
 			page: $page
 			pageSize: $pageSize
+			search: $search
+			sort: $sort
 		) {
 			items {
 				aggregateRating {
@@ -464,7 +490,12 @@ export const getSectionThreadsQuery = `
 					id
 					image
 					name
+					userGroupBriefs {
+						id
+						name
+					}
 				}
+				dateCreated
 				dateModified
 				friendlyUrlPath
 				hasValidAnswer
@@ -473,6 +504,7 @@ export const getSectionThreadsQuery = `
 				keywords
 				locked
 				messageBoardSection {
+					friendlyUrlPath
 					numberOfMessageBoardSections
 					parentMessageBoardSectionId
 					title
@@ -491,12 +523,12 @@ export const getSectionThreadsQuery = `
 
 export const getThreadsQuery = `
 	query messageBoardThreads(
-		$filter: String!
+		$filter: String
 		$page: Int!
 		$pageSize: Int!
-		$search: String!
+		$search: String
 		$siteKey: String!
-		$sort: String!
+		$sort: String
 	) {
 		messageBoardThreads(
 			filter: $filter
@@ -518,7 +550,12 @@ export const getThreadsQuery = `
 					id
 					image
 					name
+					userGroupBriefs {
+						id
+						name
+					}
 				}
+				dateCreated
 				dateModified
 				friendlyUrlPath
 				hasValidAnswer
@@ -527,6 +564,7 @@ export const getThreadsQuery = `
 				keywords
 				locked
 				messageBoardSection {
+					friendlyUrlPath
 					numberOfMessageBoardSections
 					parentMessageBoardSectionId
 					title
@@ -578,6 +616,7 @@ export const getRankedThreadsQuery = `
 				keywords
 				locked
 				messageBoardSection {
+					friendlyUrlPath
 					numberOfMessageBoardSections
 					parentMessageBoardSectionId
 					title
@@ -600,12 +639,61 @@ export const getSectionsQuery = `
 			actions
 			items {
 				description
+				friendlyUrlPath
 				id
 				numberOfMessageBoardThreads
 				parentMessageBoardSectionId
 				subscribed
 				title
 			}
+		}
+	}
+`;
+
+export const getMessageBoardSectionByFriendlyUrlPathQuery = `
+	query messageBoardSectionByFriendlyUrlPath($friendlyUrlPath: String!, $siteKey: String!) {
+		messageBoardSectionByFriendlyUrlPath(
+			friendlyUrlPath: $friendlyUrlPath
+			siteKey: $siteKey
+		) {
+			actions
+			friendlyUrlPath
+			id
+			messageBoardSections(sort: "title:asc") {
+				actions
+				items {
+					id
+					description
+					friendlyUrlPath
+					numberOfMessageBoardSections
+					numberOfMessageBoardThreads
+					parentMessageBoardSectionId
+					subscribed
+					title
+				}
+			}
+			numberOfMessageBoardSections
+			parentMessageBoardSection {
+				friendlyUrlPath
+				id
+				messageBoardSections {
+					items {
+						id
+						friendlyUrlPath
+						numberOfMessageBoardSections
+						parentMessageBoardSectionId
+						subscribed
+						title
+					}
+				}
+				numberOfMessageBoardSections
+				parentMessageBoardSectionId
+				subscribed
+				title
+			}
+			parentMessageBoardSectionId
+			subscribed
+			title
 		}
 	}
 `;
@@ -637,9 +725,11 @@ export const getSectionBySectionTitleQuery = `
 				}
 				numberOfMessageBoardSections
 				parentMessageBoardSection {
+					friendlyUrlPath
 					id
 					messageBoardSections {
 						items {
+							friendlyUrlPath
 							id
 							numberOfMessageBoardSections
 							parentMessageBoardSectionId
@@ -679,6 +769,10 @@ export const getRelatedThreadsQuery = `
 					id
 					image
 					name
+					userGroupBriefs {
+						id
+						name
+					}
 				}
 				dateModified
 				friendlyUrlPath
@@ -686,6 +780,7 @@ export const getRelatedThreadsQuery = `
 				id
 				locked
 				messageBoardSection {
+					friendlyUrlPath
 					numberOfMessageBoardSections
 					parentMessageBoardSectionId
 					title
@@ -704,9 +799,11 @@ export const getSectionQuery = `
 	query messageBoardSection($messageBoardSectionId: Long!) {
 		messageBoardSection(messageBoardSectionId: $messageBoardSectionId) {
 			actions
+			friendlyUrlPath
 			id
 			messageBoardSections(sort: "title:asc") {
 				items {
+					friendlyUrlPath
 					id
 					numberOfMessageBoardSections
 					parentMessageBoardSectionId
@@ -732,14 +829,19 @@ export function getThread(friendlyUrlPath, siteKey) {
 	});
 }
 
-export function getMessages(messageBoardThreadId, page, pageSize) {
+export function getMessages(
+	messageBoardThreadId,
+	page,
+	pageSize,
+	sortBy = 'dateCreated:asc'
+) {
 	return clientNestedFields.request({
 		query: getMessagesQuery,
 		variables: {
 			messageBoardThreadId,
 			page,
 			pageSize,
-			sort: 'dateCreated:asc',
+			sort: sortBy,
 		},
 	});
 }
@@ -775,6 +877,7 @@ export const getUserActivityQuery = `
 					postsNumber
 					rank
 				}
+				dateCreated
 				dateModified
 				friendlyUrlPath
 				headline
@@ -782,11 +885,17 @@ export const getUserActivityQuery = `
 				keywords
 				messageBoardThread {
 					messageBoardSection {
+						friendlyUrlPath
 						id
 						title
 					}
 				}
 				numberOfMessageBoardMessages
+				parentMessageBoardMessage {
+					articleBody
+					headline
+				}
+				showAsAnswer
 			}
 			page
 			pageSize
@@ -938,6 +1047,7 @@ export const getSubscriptionsQuery = `
 						id
 						keywords
 						messageBoardSection {
+							friendlyUrlPath
 							id
 							numberOfMessageBoardSections
 							parentMessageBoardSectionId
@@ -946,6 +1056,7 @@ export const getSubscriptionsQuery = `
 						myRating {
 							ratingValue
 						}
+						showAsQuestion
 						subscribed
 						viewCount
 					}

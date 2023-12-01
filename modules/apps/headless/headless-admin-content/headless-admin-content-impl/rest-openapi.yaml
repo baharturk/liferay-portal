@@ -34,8 +34,7 @@ components:
                     readOnly: true
                     type: array
                 creator:
-                    allOf:
-                        - $ref: "../../headless-delivery/headless-delivery-impl/rest-openapi.yaml#Creator"
+                    $ref: "../../headless-delivery/headless-delivery-impl/rest-openapi.yaml#Creator"
                     description:
                         The Display Page Template's creator.
                     readOnly: true
@@ -176,8 +175,7 @@ components:
                     readOnly: true
                     type: number
                 status:
-                    allOf:
-                        - $ref: "#/components/schemas/Status"
+                    $ref: "#/components/schemas/Status"
                     # @review
                     description:
                         Represents the status of a resource
@@ -186,7 +184,7 @@ components:
 info:
     description:
         "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID
-        'com.liferay.headless.admin.content.client', and version '2.0.12'."
+        'com.liferay.headless.admin.content.client', and version '2.0.28'."
     license:
         name: "Apache 2.0"
         url: "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -207,6 +205,18 @@ paths:
                   schema:
                       format: int64
                       type: integer
+                - in: query
+                  name: fields
+                  schema:
+                      type: string
+                - in: query
+                  name: nestedFields
+                  schema:
+                      type: string
+                - in: query
+                  name: restrictFields
+                  schema:
+                      type: string
                 - in: query
                   name: page
                   schema:
@@ -249,6 +259,18 @@ paths:
                 - in: path
                   name: displayPageTemplateKey
                   required: true
+                  schema:
+                      type: string
+                - in: query
+                  name: fields
+                  schema:
+                      type: string
+                - in: query
+                  name: nestedFields
+                  schema:
+                      type: string
+                - in: query
+                  name: restrictFields
                   schema:
                       type: string
                 - in: header
@@ -314,9 +336,21 @@ paths:
                           type: string
                       type: array
                 - in: query
+                  name: fields
+                  schema:
+                      type: string
+                - in: query
                   name: flatten
                   schema:
                       type: boolean
+                - in: query
+                  name: nestedFields
+                  schema:
+                      type: string
+                - in: query
+                  name: restrictFields
+                  schema:
+                      type: string
                 - in: query
                   name: filter
                   schema:
@@ -429,6 +463,18 @@ paths:
                   schema:
                       format: double
                       type: number
+                - in: query
+                  name: fields
+                  schema:
+                      type: string
+                - in: query
+                  name: nestedFields
+                  schema:
+                      type: string
+                - in: query
+                  name: restrictFields
+                  schema:
+                      type: string
             responses:
                 200:
                     content:
@@ -452,6 +498,18 @@ paths:
                   schema:
                       format: int64
                       type: integer
+                - in: query
+                  name: fields
+                  schema:
+                      type: string
+                - in: query
+                  name: nestedFields
+                  schema:
+                      type: string
+                - in: query
+                  name: restrictFields
+                  schema:
+                      type: string
                 - in: header
                   name: Accept-Language
                   schema:

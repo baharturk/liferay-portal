@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.result.display.context;
@@ -53,6 +44,10 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 		return _creatorUserName;
 	}
 
+	public String getCreatorUserPortraitURLString() {
+		return _creatorUserPortraitURLString;
+	}
+
 	public List<SearchResultFieldDisplayContext>
 		getDocumentFormFieldDisplayContexts() {
 
@@ -91,12 +86,28 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 		return _modelResource;
 	}
 
+	public String getModifiedByUserName() {
+		return _modifiedByUserName;
+	}
+
+	public String getModifiedByUserPortraitURLString() {
+		return _modifiedByUserPortraitURLString;
+	}
+
+	public String getModifiedDateString() {
+		return _modifiedDateString;
+	}
+
 	public String getPathThemeImages() {
 		return _pathThemeImages;
 	}
 
 	public PortletURL getPortletURL() {
 		return _portletURL;
+	}
+
+	public String getPublishedDateString() {
+		return _publishedDateString;
 	}
 
 	public String getThumbnailURLString() {
@@ -131,6 +142,10 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 		return _creationDateVisible;
 	}
 
+	public boolean isCreatorUserPortraitVisible() {
+		return _creatorUserPortraitVisible;
+	}
+
 	public boolean isCreatorVisible() {
 		return _creatorVisible;
 	}
@@ -153,6 +168,22 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 
 	public boolean isModelResourceVisible() {
 		return _modelResourceVisible;
+	}
+
+	public boolean isModifiedByUserNameVisible() {
+		return _modifiedByUserNameVisible;
+	}
+
+	public boolean isModifiedByUserPortraitVisible() {
+		return _modifiedByUserPortraitVisible;
+	}
+
+	public boolean isModifiedDateVisible() {
+		return _modifiedDateVisible;
+	}
+
+	public boolean isPublishedDateVisible() {
+		return _publishedDateVisible;
 	}
 
 	public boolean isTemporarilyUnavailable() {
@@ -213,6 +244,18 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 
 	public void setCreatorUserName(String creatorUserName) {
 		_creatorUserName = creatorUserName;
+	}
+
+	public void setCreatorUserPortraitURLString(
+		String creatorUserPortraitURLString) {
+
+		_creatorUserPortraitURLString = creatorUserPortraitURLString;
+	}
+
+	public void setCreatorUserPortraitVisible(
+		boolean creatorUserPortraitVisible) {
+
+		_creatorUserPortraitVisible = creatorUserPortraitVisible;
 	}
 
 	public void setCreatorVisible(boolean writtenByVisible) {
@@ -280,12 +323,50 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 		_modelResourceVisible = modelResourceVisible;
 	}
 
+	public void setModifiedByUserName(String modifiedByUserName) {
+		_modifiedByUserName = modifiedByUserName;
+	}
+
+	public void setModifiedByUserNameVisible(
+		boolean modifiedByUserNameVisible) {
+
+		_modifiedByUserNameVisible = modifiedByUserNameVisible;
+	}
+
+	public void setModifiedByUserPortraitURLString(
+		String modifiedByUserPortraitURLString) {
+
+		_modifiedByUserPortraitURLString = modifiedByUserPortraitURLString;
+	}
+
+	public void setModifiedByUserPortraitVisible(
+		boolean modifiedByUserPortraitVisible) {
+
+		_modifiedByUserPortraitVisible = modifiedByUserPortraitVisible;
+	}
+
+	public void setModifiedDateString(String modifiedDateString) {
+		_modifiedDateString = modifiedDateString;
+	}
+
+	public void setModifiedDateVisible(boolean modifiedDateVisible) {
+		_modifiedDateVisible = modifiedDateVisible;
+	}
+
 	public void setPathThemeImages(String pathThemeImages) {
 		_pathThemeImages = pathThemeImages;
 	}
 
 	public void setPortletURL(PortletURL portletURL) {
 		_portletURL = portletURL;
+	}
+
+	public void setPublishedDateString(String publishedDateString) {
+		_publishedDateString = publishedDateString;
+	}
+
+	public void setPublishedDateVisible(boolean publishedDateVisible) {
+		_publishedDateVisible = publishedDateVisible;
 	}
 
 	public void setTemporarilyUnavailable(boolean temporarilyUnavailable) {
@@ -327,6 +408,8 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 	private String _creationDateString;
 	private boolean _creationDateVisible;
 	private String _creatorUserName;
+	private String _creatorUserPortraitURLString;
+	private boolean _creatorUserPortraitVisible;
 	private boolean _creatorVisible;
 	private List<SearchResultFieldDisplayContext>
 		_documentFormFieldDisplayContexts;
@@ -343,8 +426,16 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 	private boolean _localeReminderVisible;
 	private String _modelResource;
 	private boolean _modelResourceVisible;
+	private String _modifiedByUserName;
+	private boolean _modifiedByUserNameVisible;
+	private String _modifiedByUserPortraitURLString;
+	private boolean _modifiedByUserPortraitVisible;
+	private String _modifiedDateString;
+	private boolean _modifiedDateVisible;
 	private String _pathThemeImages;
 	private PortletURL _portletURL;
+	private String _publishedDateString;
+	private boolean _publishedDateVisible;
 	private boolean _temporarilyUnavailable;
 	private String _thumbnailURLString;
 	private boolean _thumbnailVisible;

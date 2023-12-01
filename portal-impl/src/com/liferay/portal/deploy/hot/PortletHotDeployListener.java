@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.deploy.hot;
@@ -182,7 +173,7 @@ public class PortletHotDeployListener extends BaseHotDeployListener {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		String servletContextName = servletContext.getServletContextName();
@@ -281,11 +272,11 @@ public class PortletHotDeployListener extends BaseHotDeployListener {
 		}
 
 		for (Portlet portlet : portlets) {
-			boolean ready = GetterUtil.getBoolean(
-				servletContext.getInitParameter("portlets-ready-by-default"),
-				true);
-
-			portlet.setReady(ready);
+			portlet.setReady(
+				GetterUtil.getBoolean(
+					servletContext.getInitParameter(
+						"portlets-ready-by-default"),
+					true));
 		}
 
 		DirectServletRegistryUtil.clearServlets();
@@ -445,17 +436,6 @@ public class PortletHotDeployListener extends BaseHotDeployListener {
 		}
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	protected void processPortletProperties(
-			String servletContextName, ClassLoader classLoader)
-		throws Exception {
-
-		_processPortletProperties(classLoader);
-	}
-
 	protected void unbindDataSource(String servletContextName) {
 		Boolean dataSourceBindState = _dataSourceBindStates.remove(
 			servletContextName);
@@ -478,7 +458,7 @@ public class PortletHotDeployListener extends BaseHotDeployListener {
 			}
 			catch (NamingException namingException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(namingException, namingException);
+					_log.debug(namingException);
 				}
 			}
 
@@ -489,7 +469,7 @@ public class PortletHotDeployListener extends BaseHotDeployListener {
 			}
 			catch (NamingException namingException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(namingException, namingException);
+					_log.debug(namingException);
 				}
 			}
 		}
@@ -536,19 +516,13 @@ public class PortletHotDeployListener extends BaseHotDeployListener {
 		}
 	}
 
-	private String[] _processPortletProperties(ClassLoader classLoader)
-		throws Exception {
+	private String[] _processPortletProperties(ClassLoader classLoader) {
+		Configuration portletPropertiesConfiguration =
+			ConfigurationFactoryUtil.getConfiguration(classLoader, "portlet");
 
-		Configuration portletPropertiesConfiguration = null;
-
-		try {
-			portletPropertiesConfiguration =
-				ConfigurationFactoryUtil.getConfiguration(
-					classLoader, "portlet");
-		}
-		catch (Exception exception) {
+		if (portletPropertiesConfiguration == null) {
 			if (_log.isDebugEnabled()) {
-				_log.debug("Unable to read portlet.properties", exception);
+				_log.debug("Unable to read portlet.properties");
 			}
 
 			return new String[0];

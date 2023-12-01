@@ -1,25 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayAlert from '@clayui/alert';
 import {ClayCheckbox} from '@clayui/form';
 import ClayTable from '@clayui/table';
+import {sub} from 'frontend-js-web';
 import React, {useEffect, useRef, useState} from 'react';
 
 import {
 	SCHEMA_SELECTED_EVENT,
 	TEMPLATE_SELECTED_EVENT,
-	TEMPLATE_SOILED,
+	TEMPLATE_SOILED_EVENT,
 } from './constants';
 import getFieldsFromSchema from './getFieldsFromSchema';
 
@@ -33,28 +26,33 @@ function FieldsTable({portletNamespace}) {
 			if (event.schema) {
 				const newFields = getFieldsFromSchema(event.schema);
 
-				setFields(newFields);
+				const formattedFields = [
+					...newFields.required,
+					...newFields.optional,
+				];
+
+				setFields(formattedFields);
+
 				if (!useTemplateMappingRef.current) {
-					setSelectedFields(newFields);
+					setSelectedFields(formattedFields);
 				}
 			}
 			else {
 				setFields([]);
+
 				if (!useTemplateMappingRef.current) {
 					setSelectedFields([]);
 				}
 			}
 		};
 
-		const handleTemplateUpdate = (event) => {
-			const {template} = event;
-
+		const handleTemplateUpdate = ({template}) => {
 			if (template) {
 				useTemplateMappingRef.current = true;
+
 				setSelectedFields(
-					Object.keys(template.mapping).map((fields) => ({
-						label: fields,
-						value: fields,
+					Object.keys(template.mappings).map((fields) => ({
+						name: fields,
 					}))
 				);
 			}
@@ -69,12 +67,12 @@ function FieldsTable({portletNamespace}) {
 
 		Liferay.on(SCHEMA_SELECTED_EVENT, handleSchemaUpdated);
 		Liferay.on(TEMPLATE_SELECTED_EVENT, handleTemplateUpdate);
-		Liferay.on(TEMPLATE_SOILED, handleTemplateSoiled);
+		Liferay.on(TEMPLATE_SOILED_EVENT, handleTemplateSoiled);
 
 		return () => {
 			Liferay.detach(SCHEMA_SELECTED_EVENT, handleSchemaUpdated);
 			Liferay.detach(TEMPLATE_SELECTED_EVENT, handleTemplateUpdate);
-			Liferay.detach(TEMPLATE_SOILED, handleTemplateSoiled);
+			Liferay.detach(TEMPLATE_SOILED_EVENT, handleTemplateSoiled);
 		};
 	}, []);
 
@@ -85,21 +83,32 @@ function FieldsTable({portletNamespace}) {
 	return (
 		<div className="card d-flex flex-column">
 			<h4 className="card-header py-3">
-				{Liferay.Language.get('entity-attributes')}
+				{Liferay.Language.get('fields')}
 			</h4>
 
+			<ClayAlert
+				className="m-3"
+				displayType="info"
+				title={`${Liferay.Language.get('info')}:`}
+				variant="inline"
+			>
+				{Liferay.Language.get(
+					'select-fields-to-include-in-the-exported-file'
+				)}
+			</ClayAlert>
+
 			<div className="card-body p-0">
-				<ClayTable borderless hover={false} responsive={false}>
+				<ClayTable hover={false} responsive={true}>
 					<ClayTable.Head>
 						<ClayTable.Row>
 							<ClayTable.Cell headingCell>
 								<ClayCheckbox
 									checked={
-										selectedFields.length > 0 &&
+										!!selectedFields.length &&
 										selectedFields.length === fields.length
 									}
 									indeterminate={
-										selectedFields.length > 0 &&
+										!!selectedFields.length &&
 										selectedFields.length < fields.length
 									}
 									onChange={() => {
@@ -125,32 +134,37 @@ function FieldsTable({portletNamespace}) {
 						</ClayTable.Row>
 					</ClayTable.Head>
 
-					<ClayTable.Body>
+					<ClayTable.Body id="fieldsTableBody">
 						{fields.map((field) => {
 							const included = selectedFields.some(
 								(selectedField) =>
-									selectedField.value === field.value
+									selectedField.name === field.name
 							);
 
 							return (
-								<ClayTable.Row key={field.label}>
+								<ClayTable.Row key={field.name}>
 									<ClayTable.Cell>
 										<ClayCheckbox
+											aria-label={sub(
+												Liferay.Language.get(
+													'select-x'
+												),
+												field.name
+											)}
 											checked={included}
-											id={`${portletNamespace}fieldName_${field.label}`}
+											id={`${portletNamespace}fieldName_${field.name}`}
 											name={`${portletNamespace}fieldName`}
 											onChange={() => {
-												if (useTemplateMappingRef) {
-													Liferay.fire(
-														TEMPLATE_SOILED
-													);
-												}
+												Liferay.fire(
+													TEMPLATE_SOILED_EVENT
+												);
+
 												if (included) {
 													setSelectedFields(
 														selectedFields.filter(
 															(selected) =>
-																selected.value !==
-																field.value
+																selected.name !==
+																field.name
 														)
 													);
 												}
@@ -161,15 +175,15 @@ function FieldsTable({portletNamespace}) {
 													]);
 												}
 											}}
-											value={field.value}
+											value={field.name}
 										/>
 									</ClayTable.Cell>
 
 									<ClayTable.Cell>
 										<label
-											htmlFor={`${portletNamespace}fieldName_${field.label}`}
+											htmlFor={`${portletNamespace}fieldName_${field.name}`}
 										>
-											{field.label}
+											{field.name}
 										</label>
 									</ClayTable.Cell>
 								</ClayTable.Row>

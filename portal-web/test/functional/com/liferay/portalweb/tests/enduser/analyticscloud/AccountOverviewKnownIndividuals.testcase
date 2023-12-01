@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property portal.release = "false";
 	property portal.upstream = "true";
 	property property.group = "analytics.cloud.profile";
@@ -17,11 +19,11 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 
@@ -30,7 +32,7 @@ definition {
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8688 | Test Summary: Assert the Account Overview Cards"
 	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test AssertAccountOverviewCards {
 
 		// TODO LRAC-8688 AssertAccountOverviewCards pending implementation
@@ -39,7 +41,7 @@ definition {
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8687 | Test Summary: Account overview known individuals show individuals"
 	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test AssertAccountOverviewKnownIndividuals {
 
 		// TODO LRAC-8687 AssertAccountOverviewKnownIndividuals pending implementation
@@ -48,7 +50,7 @@ definition {
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8686 | Test Summary: Account individuals list has pagination"
 	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test PaginateAccountIndividualsList {
 
 		// TODO LRAC-8686 PaginateAccountIndividualsList pending implementation

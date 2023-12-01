@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.model.impl;
 
 import com.liferay.commerce.notification.model.CommerceNotificationQueueEntry;
 import com.liferay.commerce.notification.model.CommerceNotificationQueueEntryModel;
-import com.liferay.commerce.notification.model.CommerceNotificationQueueEntrySoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -140,24 +127,6 @@ public class CommerceNotificationQueueEntryModelImpl
 	public static final String TX_MANAGER = "liferayTransactionManager";
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
@@ -201,79 +170,18 @@ public class CommerceNotificationQueueEntryModelImpl
 	public static final long PRIORITY_COLUMN_BITMASK = 64L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CommerceNotificationQueueEntry toModel(
-		CommerceNotificationQueueEntrySoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		CommerceNotificationQueueEntry model =
-			new CommerceNotificationQueueEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCommerceNotificationQueueEntryId(
-			soapModel.getCommerceNotificationQueueEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setCommerceNotificationTemplateId(
-			soapModel.getCommerceNotificationTemplateId());
-		model.setFrom(soapModel.getFrom());
-		model.setFromName(soapModel.getFromName());
-		model.setTo(soapModel.getTo());
-		model.setToName(soapModel.getToName());
-		model.setCc(soapModel.getCc());
-		model.setBcc(soapModel.getBcc());
-		model.setSubject(soapModel.getSubject());
-		model.setBody(soapModel.getBody());
-		model.setPriority(soapModel.getPriority());
-		model.setSent(soapModel.isSent());
-		model.setSentDate(soapModel.getSentDate());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CommerceNotificationQueueEntry> toModels(
-		CommerceNotificationQueueEntrySoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CommerceNotificationQueueEntry> models =
-			new ArrayList<CommerceNotificationQueueEntry>(soapModels.length);
-
-		for (CommerceNotificationQueueEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.notification.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.notification.model.CommerceNotificationQueueEntry"));
 
 	public CommerceNotificationQueueEntryModelImpl() {
 	}
@@ -353,203 +261,192 @@ public class CommerceNotificationQueueEntryModelImpl
 	public Map<String, Function<CommerceNotificationQueueEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CommerceNotificationQueueEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CommerceNotificationQueueEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CommerceNotificationQueueEntry.class.getClassLoader(),
-			CommerceNotificationQueueEntry.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<CommerceNotificationQueueEntry, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<CommerceNotificationQueueEntry> constructor =
-				(Constructor<CommerceNotificationQueueEntry>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<CommerceNotificationQueueEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String,
+						 Function<CommerceNotificationQueueEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CommerceNotificationQueueEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"commerceNotificationQueueEntryId",
+				CommerceNotificationQueueEntry::
+					getCommerceNotificationQueueEntryId);
+			attributeGetterFunctions.put(
+				"groupId", CommerceNotificationQueueEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", CommerceNotificationQueueEntry::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CommerceNotificationQueueEntry::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CommerceNotificationQueueEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CommerceNotificationQueueEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate",
+				CommerceNotificationQueueEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", CommerceNotificationQueueEntry::getClassNameId);
+			attributeGetterFunctions.put(
+				"classPK", CommerceNotificationQueueEntry::getClassPK);
+			attributeGetterFunctions.put(
+				"commerceNotificationTemplateId",
+				CommerceNotificationQueueEntry::
+					getCommerceNotificationTemplateId);
+			attributeGetterFunctions.put(
+				"from", CommerceNotificationQueueEntry::getFrom);
+			attributeGetterFunctions.put(
+				"fromName", CommerceNotificationQueueEntry::getFromName);
+			attributeGetterFunctions.put(
+				"to", CommerceNotificationQueueEntry::getTo);
+			attributeGetterFunctions.put(
+				"toName", CommerceNotificationQueueEntry::getToName);
+			attributeGetterFunctions.put(
+				"cc", CommerceNotificationQueueEntry::getCc);
+			attributeGetterFunctions.put(
+				"bcc", CommerceNotificationQueueEntry::getBcc);
+			attributeGetterFunctions.put(
+				"subject", CommerceNotificationQueueEntry::getSubject);
+			attributeGetterFunctions.put(
+				"body", CommerceNotificationQueueEntry::getBody);
+			attributeGetterFunctions.put(
+				"priority", CommerceNotificationQueueEntry::getPriority);
+			attributeGetterFunctions.put(
+				"sent", CommerceNotificationQueueEntry::getSent);
+			attributeGetterFunctions.put(
+				"sentDate", CommerceNotificationQueueEntry::getSentDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map
-		<String, Function<CommerceNotificationQueueEntry, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<CommerceNotificationQueueEntry, Object>>
-			_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CommerceNotificationQueueEntry, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String,
-					 Function<CommerceNotificationQueueEntry, Object>>();
-		Map<String, BiConsumer<CommerceNotificationQueueEntry, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<CommerceNotificationQueueEntry, ?>>();
+		private static final Map
+			<String, BiConsumer<CommerceNotificationQueueEntry, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", CommerceNotificationQueueEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CommerceNotificationQueueEntry, Long>)
-				CommerceNotificationQueueEntry::setMvccVersion);
-		attributeGetterFunctions.put(
-			"commerceNotificationQueueEntryId",
-			CommerceNotificationQueueEntry::
-				getCommerceNotificationQueueEntryId);
-		attributeSetterBiConsumers.put(
-			"commerceNotificationQueueEntryId",
-			(BiConsumer<CommerceNotificationQueueEntry, Long>)
-				CommerceNotificationQueueEntry::
-					setCommerceNotificationQueueEntryId);
-		attributeGetterFunctions.put(
-			"groupId", CommerceNotificationQueueEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<CommerceNotificationQueueEntry, Long>)
-				CommerceNotificationQueueEntry::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", CommerceNotificationQueueEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CommerceNotificationQueueEntry, Long>)
-				CommerceNotificationQueueEntry::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", CommerceNotificationQueueEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CommerceNotificationQueueEntry, Long>)
-				CommerceNotificationQueueEntry::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CommerceNotificationQueueEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CommerceNotificationQueueEntry, String>)
-				CommerceNotificationQueueEntry::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CommerceNotificationQueueEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CommerceNotificationQueueEntry, Date>)
-				CommerceNotificationQueueEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CommerceNotificationQueueEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CommerceNotificationQueueEntry, Date>)
-				CommerceNotificationQueueEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"classNameId", CommerceNotificationQueueEntry::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<CommerceNotificationQueueEntry, Long>)
-				CommerceNotificationQueueEntry::setClassNameId);
-		attributeGetterFunctions.put(
-			"classPK", CommerceNotificationQueueEntry::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<CommerceNotificationQueueEntry, Long>)
-				CommerceNotificationQueueEntry::setClassPK);
-		attributeGetterFunctions.put(
-			"commerceNotificationTemplateId",
-			CommerceNotificationQueueEntry::getCommerceNotificationTemplateId);
-		attributeSetterBiConsumers.put(
-			"commerceNotificationTemplateId",
-			(BiConsumer<CommerceNotificationQueueEntry, Long>)
-				CommerceNotificationQueueEntry::
-					setCommerceNotificationTemplateId);
-		attributeGetterFunctions.put(
-			"from", CommerceNotificationQueueEntry::getFrom);
-		attributeSetterBiConsumers.put(
-			"from",
-			(BiConsumer<CommerceNotificationQueueEntry, String>)
-				CommerceNotificationQueueEntry::setFrom);
-		attributeGetterFunctions.put(
-			"fromName", CommerceNotificationQueueEntry::getFromName);
-		attributeSetterBiConsumers.put(
-			"fromName",
-			(BiConsumer<CommerceNotificationQueueEntry, String>)
-				CommerceNotificationQueueEntry::setFromName);
-		attributeGetterFunctions.put(
-			"to", CommerceNotificationQueueEntry::getTo);
-		attributeSetterBiConsumers.put(
-			"to",
-			(BiConsumer<CommerceNotificationQueueEntry, String>)
-				CommerceNotificationQueueEntry::setTo);
-		attributeGetterFunctions.put(
-			"toName", CommerceNotificationQueueEntry::getToName);
-		attributeSetterBiConsumers.put(
-			"toName",
-			(BiConsumer<CommerceNotificationQueueEntry, String>)
-				CommerceNotificationQueueEntry::setToName);
-		attributeGetterFunctions.put(
-			"cc", CommerceNotificationQueueEntry::getCc);
-		attributeSetterBiConsumers.put(
-			"cc",
-			(BiConsumer<CommerceNotificationQueueEntry, String>)
-				CommerceNotificationQueueEntry::setCc);
-		attributeGetterFunctions.put(
-			"bcc", CommerceNotificationQueueEntry::getBcc);
-		attributeSetterBiConsumers.put(
-			"bcc",
-			(BiConsumer<CommerceNotificationQueueEntry, String>)
-				CommerceNotificationQueueEntry::setBcc);
-		attributeGetterFunctions.put(
-			"subject", CommerceNotificationQueueEntry::getSubject);
-		attributeSetterBiConsumers.put(
-			"subject",
-			(BiConsumer<CommerceNotificationQueueEntry, String>)
-				CommerceNotificationQueueEntry::setSubject);
-		attributeGetterFunctions.put(
-			"body", CommerceNotificationQueueEntry::getBody);
-		attributeSetterBiConsumers.put(
-			"body",
-			(BiConsumer<CommerceNotificationQueueEntry, String>)
-				CommerceNotificationQueueEntry::setBody);
-		attributeGetterFunctions.put(
-			"priority", CommerceNotificationQueueEntry::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<CommerceNotificationQueueEntry, Double>)
-				CommerceNotificationQueueEntry::setPriority);
-		attributeGetterFunctions.put(
-			"sent", CommerceNotificationQueueEntry::getSent);
-		attributeSetterBiConsumers.put(
-			"sent",
-			(BiConsumer<CommerceNotificationQueueEntry, Boolean>)
-				CommerceNotificationQueueEntry::setSent);
-		attributeGetterFunctions.put(
-			"sentDate", CommerceNotificationQueueEntry::getSentDate);
-		attributeSetterBiConsumers.put(
-			"sentDate",
-			(BiConsumer<CommerceNotificationQueueEntry, Date>)
-				CommerceNotificationQueueEntry::setSentDate);
+		static {
+			Map<String, BiConsumer<CommerceNotificationQueueEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String,
+						 BiConsumer<CommerceNotificationQueueEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CommerceNotificationQueueEntry, Long>)
+					CommerceNotificationQueueEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"commerceNotificationQueueEntryId",
+				(BiConsumer<CommerceNotificationQueueEntry, Long>)
+					CommerceNotificationQueueEntry::
+						setCommerceNotificationQueueEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CommerceNotificationQueueEntry, Long>)
+					CommerceNotificationQueueEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CommerceNotificationQueueEntry, Long>)
+					CommerceNotificationQueueEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CommerceNotificationQueueEntry, Long>)
+					CommerceNotificationQueueEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CommerceNotificationQueueEntry, String>)
+					CommerceNotificationQueueEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CommerceNotificationQueueEntry, Date>)
+					CommerceNotificationQueueEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CommerceNotificationQueueEntry, Date>)
+					CommerceNotificationQueueEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<CommerceNotificationQueueEntry, Long>)
+					CommerceNotificationQueueEntry::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<CommerceNotificationQueueEntry, Long>)
+					CommerceNotificationQueueEntry::setClassPK);
+			attributeSetterBiConsumers.put(
+				"commerceNotificationTemplateId",
+				(BiConsumer<CommerceNotificationQueueEntry, Long>)
+					CommerceNotificationQueueEntry::
+						setCommerceNotificationTemplateId);
+			attributeSetterBiConsumers.put(
+				"from",
+				(BiConsumer<CommerceNotificationQueueEntry, String>)
+					CommerceNotificationQueueEntry::setFrom);
+			attributeSetterBiConsumers.put(
+				"fromName",
+				(BiConsumer<CommerceNotificationQueueEntry, String>)
+					CommerceNotificationQueueEntry::setFromName);
+			attributeSetterBiConsumers.put(
+				"to",
+				(BiConsumer<CommerceNotificationQueueEntry, String>)
+					CommerceNotificationQueueEntry::setTo);
+			attributeSetterBiConsumers.put(
+				"toName",
+				(BiConsumer<CommerceNotificationQueueEntry, String>)
+					CommerceNotificationQueueEntry::setToName);
+			attributeSetterBiConsumers.put(
+				"cc",
+				(BiConsumer<CommerceNotificationQueueEntry, String>)
+					CommerceNotificationQueueEntry::setCc);
+			attributeSetterBiConsumers.put(
+				"bcc",
+				(BiConsumer<CommerceNotificationQueueEntry, String>)
+					CommerceNotificationQueueEntry::setBcc);
+			attributeSetterBiConsumers.put(
+				"subject",
+				(BiConsumer<CommerceNotificationQueueEntry, String>)
+					CommerceNotificationQueueEntry::setSubject);
+			attributeSetterBiConsumers.put(
+				"body",
+				(BiConsumer<CommerceNotificationQueueEntry, String>)
+					CommerceNotificationQueueEntry::setBody);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<CommerceNotificationQueueEntry, Double>)
+					CommerceNotificationQueueEntry::setPriority);
+			attributeSetterBiConsumers.put(
+				"sent",
+				(BiConsumer<CommerceNotificationQueueEntry, Boolean>)
+					CommerceNotificationQueueEntry::setSent);
+			attributeSetterBiConsumers.put(
+				"sentDate",
+				(BiConsumer<CommerceNotificationQueueEntry, Date>)
+					CommerceNotificationQueueEntry::setSentDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1238,7 +1135,7 @@ public class CommerceNotificationQueueEntryModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -1247,7 +1144,7 @@ public class CommerceNotificationQueueEntryModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -1446,45 +1343,14 @@ public class CommerceNotificationQueueEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CommerceNotificationQueueEntry, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CommerceNotificationQueueEntry, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CommerceNotificationQueueEntry, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(CommerceNotificationQueueEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, CommerceNotificationQueueEntry>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						CommerceNotificationQueueEntry.class,
+						ModelWrapper.class);
 
 	}
 
@@ -1516,7 +1382,8 @@ public class CommerceNotificationQueueEntryModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CommerceNotificationQueueEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

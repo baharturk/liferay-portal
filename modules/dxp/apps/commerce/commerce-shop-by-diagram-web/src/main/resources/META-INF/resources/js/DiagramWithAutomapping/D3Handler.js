@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {select as d3select} from 'd3';
@@ -65,16 +59,34 @@ class D3Handler extends DiagramZoomHandler {
 			this._pins ? this._pins.map((pin) => pin.sequence) : []
 		);
 
+		const imagePosition = this._image.node().getBoundingClientRect();
+
 		const labels = Array.from(
 			this._diagramWrapper.querySelectorAll(
 				this._pinsCSSSelectors.join(',')
 			)
 		).filter((text) => {
 			const pinSaved = sequences.has(text.textContent);
+
 			const isPin = this._isAdmin || pinSaved;
 
 			if (this._isAdmin || pinSaved) {
 				text.classList.add('pin');
+
+				const textPosition = text.getBoundingClientRect();
+
+				text.__data__ = {
+					distanceFromCenterX:
+						(textPosition.x +
+							textPosition.width / 2 -
+							(imagePosition.x + imagePosition.width / 2)) *
+						-1,
+					distanceFromCenterY:
+						(textPosition.y +
+							textPosition.height / 2 -
+							(imagePosition.y + imagePosition.height / 2)) *
+						-1,
+				};
 			}
 
 			if (pinSaved) {
@@ -100,36 +112,13 @@ class D3Handler extends DiagramZoomHandler {
 		}
 	}
 
-	updateZoom(scale) {
-		this._currentScale = scale;
-
-		this._animateZoom();
-	}
-
-	recenterOnPin(node) {
-		const {
-			height: imageHeight,
-			width: imageWidth,
-			x: imageX,
-			y: imageY,
-		} = this._image.node().getBoundingClientRect();
-
-		const k = this._currentScale;
-
-		const {
-			height: nodeHeight,
-			width: nodeWidth,
-			x: nodeX,
-			y: nodeY,
-		} = node.getBoundingClientRect();
-
-		const positionX = nodeX - imageX + nodeWidth / 2;
-		const positionY = nodeY - imageY + nodeHeight / 2;
-
-		const x = -positionX * k + imageWidth / 2;
-		const y = -positionY * k + imageHeight / 2;
-
-		return super._recenterViewport(x, y, 1000);
+	async recenterOnPin(node) {
+		return super._recenterViewport(
+			node.__data__.distanceFromCenterX,
+			node.__data__.distanceFromCenterY,
+			800,
+			1
+		);
 	}
 }
 

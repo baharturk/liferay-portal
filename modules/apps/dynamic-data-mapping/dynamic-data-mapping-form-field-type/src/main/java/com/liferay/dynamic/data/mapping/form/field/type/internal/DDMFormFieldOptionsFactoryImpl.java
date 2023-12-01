@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal;
@@ -38,7 +29,6 @@ import com.liferay.portal.kernel.util.WebKeys;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -48,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marcellus Tavares
  */
-@Component(immediate = true, service = DDMFormFieldOptionsFactory.class)
+@Component(service = DDMFormFieldOptionsFactory.class)
 public class DDMFormFieldOptionsFactoryImpl
 	implements DDMFormFieldOptionsFactory {
 
@@ -165,15 +155,15 @@ public class DDMFormFieldOptionsFactoryImpl
 					ddmFormField.getProperty("ddmDataProviderInstanceOutput"),
 					"Default-Output"));
 
-			Optional<List<KeyValuePair>> keyValuesPairsOptional =
-				ddmDataProviderResponse.getOutputOptional(
+			List<KeyValuePair> keyValuesPairs =
+				ddmDataProviderResponse.getOutput(
 					ddmDataProviderInstanceOutput, List.class);
 
-			if (!keyValuesPairsOptional.isPresent()) {
+			if (keyValuesPairs == null) {
 				return ddmFormFieldOptions;
 			}
 
-			for (KeyValuePair keyValuePair : keyValuesPairsOptional.get()) {
+			for (KeyValuePair keyValuePair : keyValuesPairs) {
 				ddmFormFieldOptions.addOptionLabel(
 					keyValuePair.getKey(),
 					ddmFormFieldRenderingContext.getLocale(),
@@ -182,7 +172,7 @@ public class DDMFormFieldOptionsFactoryImpl
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -212,7 +202,7 @@ public class DDMFormFieldOptionsFactoryImpl
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return value;

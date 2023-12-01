@@ -1,30 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.renderer;
 
 import com.liferay.fragment.constants.FragmentEntryLinkConstants;
 import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.info.form.InfoForm;
+import com.liferay.info.item.InfoItemReference;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 
 /**
  * @author Jorge Ferrer
@@ -33,46 +22,28 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 
 	public DefaultFragmentRendererContext(FragmentEntryLink fragmentEntryLink) {
 		_fragmentEntryLink = fragmentEntryLink;
+
+		_fragmentEntryElementId = "fragment-" + PortalUUIDUtil.generate();
 	}
 
 	@Override
-	public Optional<Object> getDisplayObjectOptional() {
-		return Optional.ofNullable(_displayObject);
-	}
-
-	@Override
-	public Optional<Map<String, Object>> getFieldValuesOptional() {
-		return Optional.ofNullable(_fieldValues);
+	public InfoItemReference getContextInfoItemReference() {
+		return _infoItemReference;
 	}
 
 	@Override
 	public String getFragmentElementId() {
-		StringBundler sb = new StringBundler(8);
-
-		sb.append("fragment-");
-		sb.append(_fragmentEntryLink.getFragmentEntryId());
-		sb.append("-");
-		sb.append(_fragmentEntryLink.getNamespace());
-
-		if (!ListUtil.isEmpty(_collectionStyledLayoutStructureItemIds)) {
-			sb.append("-");
-			sb.append(
-				ListUtil.toString(
-					_collectionStyledLayoutStructureItemIds, StringPool.BLANK,
-					StringPool.DASH));
-		}
-
-		if (_collectionElementIndex > -1) {
-			sb.append("-");
-			sb.append(_collectionElementIndex);
-		}
-
-		return sb.toString();
+		return _fragmentEntryElementId;
 	}
 
 	@Override
 	public FragmentEntryLink getFragmentEntryLink() {
 		return _fragmentEntryLink;
+	}
+
+	@Override
+	public InfoForm getInfoForm() {
+		return _infoForm;
 	}
 
 	@Override
@@ -111,27 +82,45 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 	}
 
 	@Override
+	public boolean isEditMode() {
+		if (Objects.equals(getMode(), FragmentEntryLinkConstants.EDIT)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean isIndexMode() {
+		if (Objects.equals(getMode(), FragmentEntryLinkConstants.INDEX)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
 	public boolean isUseCachedContent() {
 		return _useCachedContent;
 	}
 
-	public void setCollectionElementIndex(int collectionElementIndex) {
-		_collectionElementIndex = collectionElementIndex;
+	@Override
+	public boolean isViewMode() {
+		if (Objects.equals(getMode(), FragmentEntryLinkConstants.VIEW)) {
+			return true;
+		}
+
+		return false;
 	}
 
-	public void setCollectionStyledLayoutStructureItemIds(
-		List<String> collectionStyledLayoutStructureItemIds) {
+	public void setContextInfoItemReference(
+		InfoItemReference infoItemReference) {
 
-		_collectionStyledLayoutStructureItemIds =
-			collectionStyledLayoutStructureItemIds;
+		_infoItemReference = infoItemReference;
 	}
 
-	public void setDisplayObject(Object object) {
-		_displayObject = object;
-	}
-
-	public void setFieldValues(Map<String, Object> fieldValues) {
-		_fieldValues = fieldValues;
+	public void setInfoForm(InfoForm infoForm) {
+		_infoForm = infoForm;
 	}
 
 	public void setLocale(Locale locale) {
@@ -166,11 +155,10 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 		_useCachedContent = useCachedContent;
 	}
 
-	private int _collectionElementIndex = -1;
-	private List<String> _collectionStyledLayoutStructureItemIds;
-	private Object _displayObject;
-	private Map<String, Object> _fieldValues;
+	private final String _fragmentEntryElementId;
 	private final FragmentEntryLink _fragmentEntryLink;
+	private InfoForm _infoForm;
+	private InfoItemReference _infoItemReference;
 	private Locale _locale = LocaleUtil.getMostRelevantLocale();
 	private String _mode = FragmentEntryLinkConstants.VIEW;
 	private long _previewClassNameId;

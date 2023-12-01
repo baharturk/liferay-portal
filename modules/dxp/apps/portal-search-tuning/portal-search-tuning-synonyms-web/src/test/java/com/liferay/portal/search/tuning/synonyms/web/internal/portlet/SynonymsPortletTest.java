@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.portlet;
@@ -18,7 +9,7 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCCommandCache;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.search.index.IndexNameBuilder;
+import com.liferay.portal.search.engine.SearchEngineInformation;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.search.tuning.synonyms.web.internal.BaseSynonymsWebTestCase;
@@ -41,7 +32,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -55,10 +45,7 @@ public class SynonymsPortletTest extends BaseSynonymsWebTestCase {
 		LiferayUnitTestRule.INSTANCE;
 
 	@Before
-	@Override
 	public void setUp() throws Exception {
-		super.setUp();
-
 		setUpPortletPreferencesFactoryUtil();
 
 		_synonymsPortlet = new SynonymsPortlet();
@@ -66,8 +53,6 @@ public class SynonymsPortletTest extends BaseSynonymsWebTestCase {
 		ReflectionTestUtil.setFieldValue(
 			_synonymsPortlet, "_documentToSynonymSetTranslator",
 			_documentToSynonymSetTranslator);
-		ReflectionTestUtil.setFieldValue(
-			_synonymsPortlet, "_indexNameBuilder", _indexNameBuilder);
 		ReflectionTestUtil.setFieldValue(
 			_synonymsPortlet, "_language", _language);
 		ReflectionTestUtil.setFieldValue(_synonymsPortlet, "_portal", portal);
@@ -78,6 +63,9 @@ public class SynonymsPortletTest extends BaseSynonymsWebTestCase {
 			Mockito.mock(MVCCommandCache.class));
 		ReflectionTestUtil.setFieldValue(
 			_synonymsPortlet, "_searchEngineAdapter", searchEngineAdapter);
+		ReflectionTestUtil.setFieldValue(
+			_synonymsPortlet, "_searchEngineInformation",
+			_searchEngineInformation);
 		ReflectionTestUtil.setFieldValue(_synonymsPortlet, "_sorts", _sorts);
 		ReflectionTestUtil.setFieldValue(
 			_synonymsPortlet, "_synonymSetIndexNameBuilder",
@@ -111,7 +99,7 @@ public class SynonymsPortletTest extends BaseSynonymsWebTestCase {
 		).when(
 			config
 		).getResourceBundle(
-			Mockito.anyObject()
+			Mockito.any()
 		);
 
 		ReflectionTestUtil.setFieldValue(_synonymsPortlet, "config", config);
@@ -158,27 +146,18 @@ public class SynonymsPortletTest extends BaseSynonymsWebTestCase {
 		};
 	}
 
-	@Mock
-	private DocumentToSynonymSetTranslator _documentToSynonymSetTranslator;
-
-	@Mock
-	private IndexNameBuilder _indexNameBuilder;
-
-	@Mock
-	private Language _language;
-
-	@Mock
-	private Queries _queries;
-
-	@Mock
-	private RenderRequest _renderRequest;
-
-	@Mock
-	private RenderResponse _renderResponse;
-
-	@Mock
-	private Sorts _sorts;
-
+	private final DocumentToSynonymSetTranslator
+		_documentToSynonymSetTranslator = Mockito.mock(
+			DocumentToSynonymSetTranslator.class);
+	private final Language _language = Mockito.mock(Language.class);
+	private final Queries _queries = Mockito.mock(Queries.class);
+	private final RenderRequest _renderRequest = Mockito.mock(
+		RenderRequest.class);
+	private final RenderResponse _renderResponse = Mockito.mock(
+		RenderResponse.class);
+	private final SearchEngineInformation _searchEngineInformation =
+		Mockito.mock(SearchEngineInformation.class);
+	private final Sorts _sorts = Mockito.mock(Sorts.class);
 	private SynonymsPortlet _synonymsPortlet;
 
 }

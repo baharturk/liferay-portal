@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.web.internal.application.list;
@@ -37,7 +28,6 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.commerce.order.rule.configuration.COREntryConfiguration",
-	enabled = false, immediate = true,
 	property = {
 		"panel.app.order:Integer=150",
 		"panel.category.key=" + CommercePanelCategoryKeys.COMMERCE_ORDER_MANAGEMENT
@@ -45,6 +35,11 @@ import org.osgi.service.component.annotations.Reference;
 	service = PanelApp.class
 )
 public class COREntryPanelApp extends BasePanelApp {
+
+	@Override
+	public Portlet getPortlet() {
+		return _portlet;
+	}
 
 	@Override
 	public String getPortletId() {
@@ -58,15 +53,6 @@ public class COREntryPanelApp extends BasePanelApp {
 		return _corEntryConfiguration.enabled();
 	}
 
-	@Override
-	@Reference(
-		target = "(javax.portlet.name=" + COREntryPortletKeys.COR_ENTRY + ")",
-		unbind = "-"
-	)
-	public void setPortlet(Portlet portlet) {
-		super.setPortlet(portlet);
-	}
-
 	@Activate
 	@Modified
 	protected void activate(Map<String, Object> properties) {
@@ -75,5 +61,10 @@ public class COREntryPanelApp extends BasePanelApp {
 	}
 
 	private volatile COREntryConfiguration _corEntryConfiguration;
+
+	@Reference(
+		target = "(javax.portlet.name=" + COREntryPortletKeys.COR_ENTRY + ")"
+	)
+	private Portlet _portlet;
 
 }

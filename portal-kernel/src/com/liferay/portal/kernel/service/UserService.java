@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -89,10 +80,11 @@ public interface UserService extends BaseService {
 			boolean autoPassword, String password1, String password2,
 			boolean autoScreenName, String screenName, String emailAddress,
 			Locale locale, String firstName, String middleName, String lastName,
-			long prefixId, long suffixId, boolean male, int birthdayMonth,
-			int birthdayDay, int birthdayYear, String jobTitle,
-			List<Address> addresses, List<EmailAddress> emailAddresses,
-			List<Phone> phones, List<Website> websites, boolean sendEmail,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, List<Address> addresses,
+			List<EmailAddress> emailAddresses, List<Phone> phones,
+			List<Website> websites, boolean sendEmail,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -147,8 +139,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
@@ -171,11 +163,11 @@ public interface UserService extends BaseService {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
-			long[] roleIds, long[] userGroupIds, boolean sendEmail,
-			ServiceContext serviceContext)
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle, long[] groupIds,
+			long[] organizationIds, long[] roleIds, long[] userGroupIds,
+			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -201,8 +193,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
@@ -230,12 +222,12 @@ public interface UserService extends BaseService {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
-			long[] roleIds, long[] userGroupIds, List<Address> addresses,
-			List<EmailAddress> emailAddresses, List<Phone> phones,
-			List<Website> websites,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle, long[] groupIds,
+			long[] organizationIds, long[] roleIds, long[] userGroupIds,
+			List<Address> addresses, List<EmailAddress> emailAddresses,
+			List<Phone> phones, List<Website> websites,
 			List<AnnouncementsDelivery> announcementsDelivers,
 			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException;
@@ -265,8 +257,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
 	 for January)
@@ -295,11 +287,12 @@ public interface UserService extends BaseService {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, long facebookId, String openId, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			boolean sendEmail, ServiceContext serviceContext)
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, boolean sendEmail,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -327,8 +320,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
 	 for January)
@@ -362,12 +355,13 @@ public interface UserService extends BaseService {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, long facebookId, String openId, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			List<Address> addresses, List<EmailAddress> emailAddresses,
-			List<Phone> phones, List<Website> websites,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, List<Address> addresses,
+			List<EmailAddress> emailAddresses, List<Phone> phones,
+			List<Website> websites,
 			List<AnnouncementsDelivery> announcementsDelivers,
 			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException;
@@ -404,8 +398,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
@@ -428,11 +422,11 @@ public interface UserService extends BaseService {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
-			long[] roleIds, long[] userGroupIds, boolean sendEmail,
-			ServiceContext serviceContext)
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle, long[] groupIds,
+			long[] organizationIds, long[] roleIds, long[] userGroupIds,
+			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -458,8 +452,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
@@ -487,12 +481,12 @@ public interface UserService extends BaseService {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
-			long[] roleIds, long[] userGroupIds, List<Address> addresses,
-			List<EmailAddress> emailAddresses, List<Phone> phones,
-			List<Website> websites,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle, long[] groupIds,
+			long[] organizationIds, long[] roleIds, long[] userGroupIds,
+			List<Address> addresses, List<EmailAddress> emailAddresses,
+			List<Phone> phones, List<Website> websites,
 			List<AnnouncementsDelivery> announcementsDelivers,
 			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException;
@@ -522,8 +516,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
 	 for January)
@@ -552,11 +546,12 @@ public interface UserService extends BaseService {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, long facebookId, String openId, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			boolean sendEmail, ServiceContext serviceContext)
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, boolean sendEmail,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -584,8 +579,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
 	 for January)
@@ -620,12 +615,13 @@ public interface UserService extends BaseService {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, long facebookId, String openId, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			List<Address> addresses, List<EmailAddress> emailAddresses,
-			List<Phone> phones, List<Website> websites,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, List<Address> addresses,
+			List<EmailAddress> emailAddresses, List<Phone> phones,
+			List<Website> websites,
 			List<AnnouncementsDelivery> announcementsDelivers,
 			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException;
@@ -651,6 +647,11 @@ public interface UserService extends BaseService {
 	 * @param userId the primary key of the user
 	 */
 	public void deleteUser(long userId) throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public User fetchUserByExternalReferenceCode(
+			long companyId, String externalReferenceCode)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<User> getCompanyUsers(long companyId, int start, int end)
@@ -1097,6 +1098,7 @@ public interface UserService extends BaseService {
 	 * @param agreedToTermsOfUse whether the user has agree to the terms of use
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	public User updateAgreedToTermsOfUse(
 			long userId, boolean agreedToTermsOfUse)
 		throws PortalException;
@@ -1136,8 +1138,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
@@ -1156,9 +1158,10 @@ public interface UserService extends BaseService {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, boolean updateUserInformation, boolean sendEmail,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle,
+			boolean updateUserInformation, boolean sendEmail,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -1182,8 +1185,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
 	 for January)
@@ -1209,10 +1212,11 @@ public interface UserService extends BaseService {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, long facebookId, String openId, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, boolean updateUserInformation,
-			boolean sendEmail, ServiceContext serviceContext)
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, boolean updateUserInformation, boolean sendEmail,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -1259,6 +1263,7 @@ public interface UserService extends BaseService {
 	 password the next time they log in
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	public User updatePassword(
 			long userId, String password1, String password2,
 			boolean passwordReset)
@@ -1282,6 +1287,7 @@ public interface UserService extends BaseService {
 	 * @param answer the user's new password reset answer
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	public User updateReminderQuery(long userId, String question, String answer)
 		throws PortalException;
 
@@ -1333,8 +1339,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's new first name
 	 * @param middleName the user's new middle name
 	 * @param lastName the user's new last name
-	 * @param prefixId the user's new name prefix ID
-	 * @param suffixId the user's new name suffix ID
+	 * @param prefixListTypeId the user's new name prefix ID
+	 * @param suffixListTypeId the user's new name suffix ID
 	 * @param male whether user is male
 	 * @param birthdayMonth the user's new birthday month (0-based, meaning 0
 	 for January)
@@ -1369,11 +1375,11 @@ public interface UserService extends BaseService {
 			String screenName, String emailAddress, boolean hasPortrait,
 			byte[] portraitBytes, String languageId, String timeZoneId,
 			String greeting, String comments, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String smsSn, String facebookSn, String jabberSn, String skypeSn,
-			String twitterSn, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String smsSn, String facebookSn,
+			String jabberSn, String skypeSn, String twitterSn, String jobTitle,
+			long[] groupIds, long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
 			List<Address> addresses, List<EmailAddress> emailAddresses,
 			List<Phone> phones, List<Website> websites,
@@ -1405,8 +1411,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's new first name
 	 * @param middleName the user's new middle name
 	 * @param lastName the user's new last name
-	 * @param prefixId the user's new name prefix ID
-	 * @param suffixId the user's new name suffix ID
+	 * @param prefixListTypeId the user's new name prefix ID
+	 * @param suffixListTypeId the user's new name suffix ID
 	 * @param male whether user is male
 	 * @param birthdayMonth the user's new birthday month (0-based, meaning
 	 0 for January)
@@ -1450,9 +1456,9 @@ public interface UserService extends BaseService {
 			String openId, boolean hasPortrait, byte[] portraitBytes,
 			String languageId, String timeZoneId, String greeting,
 			String comments, String firstName, String middleName,
-			String lastName, long prefixId, long suffixId, boolean male,
-			int birthdayMonth, int birthdayDay, int birthdayYear, String smsSn,
-			String facebookSn, String jabberSn, String skypeSn,
+			String lastName, long prefixListTypeId, long suffixListTypeId,
+			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
+			String smsSn, String facebookSn, String jabberSn, String skypeSn,
 			String twitterSn, String jobTitle, long[] groupIds,
 			long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
@@ -1484,8 +1490,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's new first name
 	 * @param middleName the user's new middle name
 	 * @param lastName the user's new last name
-	 * @param prefixId the user's new name prefix ID
-	 * @param suffixId the user's new name suffix ID
+	 * @param prefixListTypeId the user's new name prefix ID
+	 * @param suffixListTypeId the user's new name suffix ID
 	 * @param male whether user is male
 	 * @param birthdayMonth the user's new birthday month (0-based, meaning
 	 0 for January)
@@ -1522,11 +1528,11 @@ public interface UserService extends BaseService {
 			String screenName, String emailAddress, long facebookId,
 			String openId, String languageId, String timeZoneId,
 			String greeting, String comments, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String smsSn, String facebookSn, String jabberSn, String skypeSn,
-			String twitterSn, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String smsSn, String facebookSn,
+			String jabberSn, String skypeSn, String twitterSn, String jobTitle,
+			long[] groupIds, long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
 			ServiceContext serviceContext)
 		throws PortalException;
@@ -1553,8 +1559,8 @@ public interface UserService extends BaseService {
 	 * @param firstName the user's new first name
 	 * @param middleName the user's new middle name
 	 * @param lastName the user's new last name
-	 * @param prefixId the user's new name prefix ID
-	 * @param suffixId the user's new name suffix ID
+	 * @param prefixListTypeId the user's new name prefix ID
+	 * @param suffixListTypeId the user's new name suffix ID
 	 * @param male whether user is male
 	 * @param birthdayMonth the user's new birthday month (0-based, meaning 0
 	 for January)
@@ -1583,10 +1589,11 @@ public interface UserService extends BaseService {
 			String reminderQueryQuestion, String reminderQueryAnswer,
 			String screenName, String emailAddress, String languageId,
 			String timeZoneId, String greeting, String comments,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String smsSn, String facebookSn, String jabberSn,
-			String skypeSn, String twitterSn, String jobTitle, long[] groupIds,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear, String smsSn,
+			String facebookSn, String jabberSn, String skypeSn,
+			String twitterSn, String jobTitle, long[] groupIds,
 			long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
 			ServiceContext serviceContext)

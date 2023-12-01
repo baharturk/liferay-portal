@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.contributor.message.boards;
@@ -21,6 +12,7 @@ import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.search.similar.results.web.internal.builder.AssetTypeUtil;
 import com.liferay.portal.search.similar.results.web.internal.helper.HttpHelper;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
@@ -51,7 +43,7 @@ public class MessageBoardsSimilarResultsContributor
 		RouteBuilder routeBuilder, RouteHelper routeHelper) {
 
 		String[] parameters = _httpHelper.getFriendlyURLParameters(
-			routeHelper.getURLString());
+			HttpComponentsUtil.decodePath(routeHelper.getURLString()));
 
 		SearchStringUtil.requireEquals("message_boards", parameters[0]);
 
@@ -84,32 +76,6 @@ public class MessageBoardsSimilarResultsContributor
 		).uid(
 			Field.getUID(className, String.valueOf(classPK))
 		);
-	}
-
-	@Reference(unbind = "-")
-	public void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		_assetEntryLocalService = assetEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	public void setHttpHelper(HttpHelper httpHelper) {
-		_httpHelper = httpHelper;
-	}
-
-	@Reference(unbind = "-")
-	public void setMbCategoryLocalService(
-		MBCategoryLocalService mbCategoryLocalService) {
-
-		_mbCategoryLocalService = mbCategoryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	public void setMbMessageLocalService(
-		MBMessageLocalService mbMessageLocalService) {
-
-		_mbMessageLocalService = mbMessageLocalService;
 	}
 
 	@Override
@@ -174,9 +140,16 @@ public class MessageBoardsSimilarResultsContributor
 		routeBuilder.addAttribute(name, value);
 	}
 
+	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
 	private HttpHelper _httpHelper;
+
+	@Reference
 	private MBCategoryLocalService _mbCategoryLocalService;
+
+	@Reference
 	private MBMessageLocalService _mbMessageLocalService;
 
 }

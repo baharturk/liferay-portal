@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.portlet.action;
@@ -42,24 +33,24 @@ import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
 import com.liferay.document.library.kernel.service.DLTrashService;
 import com.liferay.document.library.kernel.util.DLUtil;
-import com.liferay.document.library.kernel.util.DLValidator;
+import com.liferay.document.library.util.DLFileEntryTypeUtil;
 import com.liferay.document.library.web.internal.exception.FileEntryExpirationDateException;
 import com.liferay.document.library.web.internal.exception.FileEntryReviewDateException;
 import com.liferay.document.library.web.internal.exception.FileNameExtensionException;
 import com.liferay.document.library.web.internal.settings.DLPortletInstanceSettings;
 import com.liferay.dynamic.data.mapping.exception.StorageFieldRequiredException;
 import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
-import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
-import com.liferay.dynamic.data.mapping.service.DDMStructureLinkLocalService;
-import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.util.DDMBeanTranslator;
 import com.liferay.dynamic.data.mapping.validator.DDMFormValuesValidationException;
+import com.liferay.friendly.url.model.FriendlyURLEntry;
+import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
@@ -79,8 +70,10 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.repository.capabilities.TrashCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.service.permission.ModelPermissionsFactory;
@@ -96,8 +89,10 @@ import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.upload.UploadRequestSizeException;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
@@ -228,10 +223,15 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 				String sourceFileName = uploadPortletRequest.getFileName(
 					"file");
 
-				try {
+				ServiceContext serviceContext = _createServiceContext(
+					uploadPortletRequest);
+
+				try (AutoCloseable autoCloseable = _pushServiceContext(
+						serviceContext)) {
+
 					fileEntry = _updateFileEntry(
 						portletConfig, actionRequest, actionResponse,
-						uploadPortletRequest);
+						uploadPortletRequest, serviceContext);
 				}
 				catch (PortalException portalException) {
 					if (!cmd.equals(Constants.ADD_DYNAMIC) &&
@@ -316,17 +316,18 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 					if (Validator.isNotNull(redirect)) {
 						if (cmd.equals(Constants.ADD) && (fileEntry != null)) {
-							String portletResource = _http.getParameter(
-								redirect, "portletResource", false);
+							String portletResource =
+								HttpComponentsUtil.getParameter(
+									redirect, "portletResource", false);
 
 							String namespace = _portal.getPortletNamespace(
 								portletResource);
 
 							if (Validator.isNotNull(portletResource)) {
-								redirect = _http.addParameter(
+								redirect = HttpComponentsUtil.addParameter(
 									redirect, namespace + "className",
 									DLFileEntry.class.getName());
-								redirect = _http.addParameter(
+								redirect = HttpComponentsUtil.addParameter(
 									redirect, namespace + "classPK",
 									fileEntry.getFileEntryId());
 							}
@@ -340,11 +341,10 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			String portletResource = ParamUtil.getString(
 				actionRequest, "portletResource");
 
-			if (Validator.isNotNull(portletResource)) {
-				hideDefaultSuccessMessage(actionRequest);
+			if (Validator.isNotNull(portletResource) ||
+				cmd.equals(Constants.ADD_DYNAMIC)) {
 
-				MultiSessionMessages.add(
-					actionRequest, portletResource + "requestProcessed");
+				hideDefaultSuccessMessage(actionRequest);
 			}
 		}
 		catch (Exception exception) {
@@ -398,7 +398,7 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 				reviewDate, serviceContext);
 		}
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		for (KeyValuePair validFileNameKVP : validFileNameKVPs) {
 			jsonArray.put(
@@ -467,8 +467,8 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 			FileEntry fileEntry = _dlAppService.addFileEntry(
 				null, repositoryId, folderId, uniqueFileName,
-				tempFileEntry.getMimeType(), uniqueFileTitle, description,
-				changeLog, tempFileEntry.getContentStream(),
+				tempFileEntry.getMimeType(), uniqueFileTitle, StringPool.BLANK,
+				description, changeLog, tempFileEntry.getContentStream(),
 				tempFileEntry.getSize(), expirationDate, reviewDate,
 				serviceContext);
 
@@ -482,6 +482,10 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 		catch (Exception exception) {
 			String errorMessage = _getAddMultipleFileEntriesErrorMessage(
 				portletConfig, actionRequest, exception);
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(errorMessage, exception);
+			}
 
 			invalidFileNameKVPs.add(
 				new KeyValuePair(selectedFileName, errorMessage));
@@ -525,6 +529,44 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			JSONPortletResponseUtil.writeJSON(
 				actionRequest, actionResponse, jsonObject);
 		}
+	}
+
+	private void _addUrlTitleChangedMessage(
+		ActionRequest actionRequest, String originalUrlTitle,
+		long fileEntryId) {
+
+		FriendlyURLEntry friendlyURLEntry =
+			_friendlyURLEntryLocalService.fetchMainFriendlyURLEntry(
+				_classNameLocalService.getClassNameId(FileEntry.class),
+				fileEntryId);
+
+		if (friendlyURLEntry == null) {
+			return;
+		}
+
+		String currentUrlTitle = friendlyURLEntry.getUrlTitle();
+
+		if (Validator.isNull(originalUrlTitle) ||
+			currentUrlTitle.equals(
+				_friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(
+					originalUrlTitle))) {
+
+			return;
+		}
+
+		HttpServletRequest httpServletRequest = _portal.getHttpServletRequest(
+			actionRequest);
+
+		SessionMessages.add(
+			httpServletRequest, "friendlyURLChanged_requestProcessedWarning",
+			_language.format(
+				httpServletRequest,
+				"the-friendly-url-x-was-changed-to-x-to-ensure-uniqueness",
+				new Object[] {
+					"<strong>" + HtmlUtil.escapeURL(originalUrlTitle) +
+						"</strong>",
+					"<strong>" + currentUrlTitle + "</strong>"
+				}));
 	}
 
 	private void _cancelFileEntriesCheckOut(ActionRequest actionRequest)
@@ -602,11 +644,19 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
+		ServiceContext serviceContext = ServiceContextFactory.getInstance(
+			DLFileEntry.class.getName(), httpServletRequest);
+
+		_setUpDDMFormValues(serviceContext);
+
+		serviceContext.setAttribute(
+			"updateAutoTags",
+			ParamUtil.getBoolean(httpServletRequest, "updateAutoTags"));
+
 		String cmd = ParamUtil.getString(httpServletRequest, Constants.CMD);
 
 		if (!cmd.equals(Constants.ADD_DYNAMIC)) {
-			return ServiceContextFactory.getInstance(
-				DLFileEntry.class.getName(), httpServletRequest);
+			return serviceContext;
 		}
 
 		ThemeDisplay themeDisplay =
@@ -619,12 +669,8 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 		if (layout.isPublicLayout() ||
 			(layout.isTypeControlPanel() && !group.hasPrivateLayouts())) {
 
-			return ServiceContextFactory.getInstance(
-				DLFileEntry.class.getName(), httpServletRequest);
+			return serviceContext;
 		}
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			DLFileEntry.class.getName(), httpServletRequest);
 
 		ModelPermissions modelPermissions =
 			serviceContext.getModelPermissions();
@@ -690,7 +736,7 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 		long folderId = ParamUtil.getLong(actionRequest, "folderId");
 		String fileName = ParamUtil.getString(actionRequest, "fileName");
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
 		try {
 			_dlAppService.deleteTempFileEntry(
@@ -701,7 +747,7 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			String errorMessage = _language.get(
@@ -800,12 +846,13 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 				"please-enter-a-file-with-a-valid-file-name");
 		}
 		else if (exception instanceof FileSizeException) {
+			FileSizeException fileSizeException = (FileSizeException)exception;
+
 			errorMessage = _language.format(
 				themeDisplay.getLocale(),
 				"please-enter-a-file-with-a-valid-file-size-no-larger-than-x",
 				_language.formatStorageSize(
-					_dlValidator.getMaxAllowableSize(),
-					themeDisplay.getLocale()));
+					fileSizeException.getMaxSize(), themeDisplay.getLocale()));
 		}
 		else if (exception instanceof InvalidFileEntryTypeException) {
 			errorMessage = _language.get(
@@ -980,6 +1027,10 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			String cmd, Exception exception)
 		throws Exception {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(exception);
+		}
+
 		if (exception instanceof AssetCategoryException ||
 			exception instanceof AssetTagException) {
 
@@ -1004,7 +1055,9 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 				!cmd.equals(Constants.ADD_MULTIPLE) &&
 				!cmd.equals(Constants.ADD_TEMP)) {
 
-				if (exception instanceof AntivirusScannerException) {
+				if (exception instanceof AntivirusScannerException ||
+					exception instanceof FileSizeException) {
+
 					SessionErrors.add(
 						actionRequest, exception.getClass(), exception);
 				}
@@ -1033,9 +1086,15 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 				JSONPortletResponseUtil.writeJSON(
 					actionRequest, actionResponse, jsonObject);
+
+				if (cmd.equals(Constants.ADD_DYNAMIC)) {
+					hideDefaultErrorMessage(actionRequest);
+				}
 			}
 
-			if (exception instanceof AntivirusScannerException) {
+			if (exception instanceof AntivirusScannerException ||
+				exception instanceof FileSizeException) {
+
 				SessionErrors.add(
 					actionRequest, exception.getClass(), exception);
 			}
@@ -1065,8 +1124,34 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 				"mvcPath", "/document_library/error.jsp");
 		}
 		else {
+			SessionErrors.add(actionRequest, exception.getClass());
+
+			if (cmd.equals(Constants.ADD_DYNAMIC)) {
+				JSONObject jsonObject;
+
+				if (exception instanceof PortalException) {
+					jsonObject = _multipleUploadResponseHandler.onFailure(
+						actionRequest, (PortalException)exception);
+				}
+				else {
+					jsonObject = _multipleUploadResponseHandler.onFailure(
+						actionRequest, new PortalException(exception));
+				}
+
+				JSONPortletResponseUtil.writeJSON(
+					actionRequest, actionResponse, jsonObject);
+
+				hideDefaultErrorMessage(actionRequest);
+			}
+
 			throw exception;
 		}
+	}
+
+	private AutoCloseable _pushServiceContext(ServiceContext serviceContext) {
+		ServiceContextThreadLocal.pushServiceContext(serviceContext);
+
+		return ServiceContextThreadLocal::popServiceContext;
 	}
 
 	private void _restoreTrashEntries(ActionRequest actionRequest)
@@ -1105,7 +1190,9 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 		DLFileEntryType dlFileEntryType =
 			_dlFileEntryTypeLocalService.getDLFileEntryType(fileEntryTypeId);
 
-		for (DDMStructure ddmStructure : dlFileEntryType.getDDMStructures()) {
+		for (DDMStructure ddmStructure :
+				DLFileEntryTypeUtil.getDDMStructures(dlFileEntryType)) {
+
 			String className =
 				com.liferay.dynamic.data.mapping.kernel.DDMFormValues.class.
 					getName();
@@ -1113,7 +1200,7 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			DDMFormValues ddmFormValues = _ddmFormValuesFactory.create(
 				_getDDMStructureHttpServletRequest(
 					serviceContext.getRequest(), ddmStructure.getStructureId()),
-				_ddmBeanTranslator.translate(ddmStructure.getDDMForm()));
+				ddmStructure.getDDMForm());
 
 			serviceContext.setAttribute(
 				className + StringPool.POUND + ddmStructure.getStructureId(),
@@ -1124,7 +1211,8 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 	private FileEntry _updateFileEntry(
 			PortletConfig portletConfig, ActionRequest actionRequest,
 			ActionResponse actionResponse,
-			UploadPortletRequest uploadPortletRequest)
+			UploadPortletRequest uploadPortletRequest,
+			ServiceContext serviceContext)
 		throws IOException, PortalException {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -1142,6 +1230,9 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			uploadPortletRequest, "fileName",
 			uploadPortletRequest.getFileName("file"));
 		String title = ParamUtil.getString(uploadPortletRequest, "title");
+
+		String urlTitle = ParamUtil.getString(uploadPortletRequest, "urlTitle");
+
 		String description = ParamUtil.getString(
 			uploadPortletRequest, "description");
 		String changeLog = ParamUtil.getString(
@@ -1220,11 +1311,6 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			Date reviewDate = _getReviewDate(
 				uploadPortletRequest, addDynamic, user.getTimeZone());
 
-			ServiceContext serviceContext = _createServiceContext(
-				uploadPortletRequest);
-
-			_setUpDDMFormValues(serviceContext);
-
 			FileEntry fileEntry = null;
 
 			if (cmd.equals(Constants.ADD)) {
@@ -1238,7 +1324,7 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 				fileEntry = _dlAppService.addFileEntry(
 					null, repositoryId, folderId, sourceFileName, contentType,
-					title, description, changeLog, inputStream, size,
+					title, urlTitle, description, changeLog, inputStream, size,
 					expirationDate, reviewDate, serviceContext);
 			}
 			else if (cmd.equals(Constants.ADD_DYNAMIC)) {
@@ -1255,8 +1341,9 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 				fileEntry = _dlAppService.addFileEntry(
 					null, repositoryId, folderId, uniqueFileName, contentType,
-					uniqueFileTitle, description, changeLog, inputStream, size,
-					expirationDate, reviewDate, serviceContext);
+					uniqueFileTitle, StringPool.BLANK, description, changeLog,
+					inputStream, size, expirationDate, reviewDate,
+					serviceContext);
 
 				JSONObject jsonObject = JSONUtil.put(
 					"fileEntryId", fileEntry.getFileEntryId());
@@ -1275,9 +1362,9 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 					fileEntry = _dlAppService.updateFileEntryAndCheckIn(
 						fileEntryId, sourceFileName, contentType, title,
-						description, changeLog, dlVersionNumberIncrease,
-						inputStream, size, expirationDate, reviewDate,
-						serviceContext);
+						urlTitle, description, changeLog,
+						dlVersionNumberIncrease, inputStream, size,
+						expirationDate, reviewDate, serviceContext);
 				}
 				else {
 
@@ -1285,9 +1372,9 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 
 					fileEntry = _dlAppService.updateFileEntry(
 						fileEntryId, sourceFileName, contentType, title,
-						description, changeLog, dlVersionNumberIncrease,
-						inputStream, size, expirationDate, reviewDate,
-						serviceContext);
+						urlTitle, description, changeLog,
+						dlVersionNumberIncrease, inputStream, size,
+						expirationDate, reviewDate, serviceContext);
 				}
 			}
 
@@ -1301,6 +1388,11 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 			if (Validator.isNotNull(portletResource)) {
 				MultiSessionMessages.add(
 					actionRequest, portletResource + "requestProcessed");
+			}
+
+			if (Validator.isNotNull(urlTitle)) {
+				_addUrlTitleChangedMessage(
+					actionRequest, urlTitle, fileEntry.getFileEntryId());
 			}
 
 			return fileEntry;
@@ -1329,16 +1421,13 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 		_assetDisplayPageEntryFormProcessor;
 
 	@Reference
+	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
 	private DDMBeanTranslator _ddmBeanTranslator;
 
 	@Reference
 	private DDMFormValuesFactory _ddmFormValuesFactory;
-
-	@Reference
-	private DDMStructureLinkLocalService _ddmStructureLinkLocalService;
-
-	@Reference
-	private DDMStructureLocalService _ddmStructureLocalService;
 
 	@Reference
 	private DLAppService _dlAppService;
@@ -1352,10 +1441,13 @@ public class EditFileEntryMVCActionCommand extends BaseMVCActionCommand {
 	private DLTrashService _dlTrashService;
 
 	@Reference
-	private DLValidator _dlValidator;
+	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;
 
 	@Reference
-	private Http _http;
+	private FriendlyURLNormalizer _friendlyURLNormalizer;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Language _language;

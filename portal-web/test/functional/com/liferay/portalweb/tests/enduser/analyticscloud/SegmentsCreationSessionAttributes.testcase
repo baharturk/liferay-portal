@@ -1,11 +1,11 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
-	property analytics.cloud.enabled = "true";
-	property minimum.slave.ram = "24";
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property portal.release = "false";
 	property portal.upstream = "true";
-	property slave.label = "slave-1";
+	property property.group = "analytics.cloud.profile";
 	property testray.main.component.name = "Analytics Cloud";
 
 	setUp {
@@ -27,30 +27,27 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			JSONGroup.deleteGroupByName(groupName = "Site Name");
 		}
 
-		JSONUser.tearDownNonAdminUsers();
-
 		ACUtils.tearDownAC();
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9204 | Test Summary: Add segment using a session property 'Device'"
-	@ignore = "true"
-	@priority = "4"
+	@priority = 4
 	test CanCreateSessionAttributeUsingDevice {
 		property portal.upstream = "quarantine";
 
-		// AC Refactor: timing issue for total members and membership card
-		// AC Refactor ticket: LRAC-9264
+		// AC Quarantine Reason: Segment membership takes long time to load
+		// AC refactor ticket: LRAC-10769
 
 		task ("Connect the DXP to Analytics Cloud") {
 			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
@@ -69,7 +66,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 		}
 
 		// Total Members data is taking too much time to appear
@@ -79,7 +76,7 @@ definition {
 
 			ACSegments.createDynamicSegment();
 
-			ACSegments.nameSegment(segmentName = "New Segment Test");
+			ACUtils.setItemName(itemName = "New Segment Test");
 		}
 
 		task ("Add a Device Brand field") {
@@ -115,17 +112,16 @@ definition {
 			// Takes too much time to the card data appear
 
 			ACSegments.viewSegmentMembershipLegendNumbers(
-				anonymousNumber = "0",
-				knownNumber = "1",
-				totalNumber = "1");
+				anonymousNumber = 0,
+				knownNumber = 1,
+				totalNumber = 1);
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9208 | Test Summary: Add segment using a session property 'Referrer URL'"
 	@ignore = "true"
-	@priority = "4"
+	@priority = 4
 	test CanCreateSessionAttributeUsingReferrerURL {
-		property portal.upstream = "quarantine";
 
 		// AC Refactor: timing issue for Referrer URL with page sync
 		// AC Refactor ticket: LRAC-9272
@@ -137,12 +133,12 @@ definition {
 		}
 
 		task ("Add a new user in DXP") {
-			for (var name : list "${usernameList}") {
+			for (var name : list ${usernameList}) {
 				JSONUser.addUser(
 					userEmailAddress = "${name}@liferay.com",
-					userFirstName = "${name}",
-					userLastName = "${name}",
-					userScreenName = "${name}");
+					userFirstName = ${name},
+					userLastName = ${name},
+					userScreenName = ${name});
 			}
 		}
 
@@ -173,7 +169,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 		}
 
 		task ("Add a new dynamic segment") {
@@ -181,7 +177,7 @@ definition {
 
 			ACSegments.createDynamicSegment();
 
-			ACSegments.nameSegment(segmentName = "Dynamic Segment Test");
+			ACUtils.setItemName(itemName = "Dynamic Segment Test");
 		}
 
 		task ("Add an URL criteria from Session Attributes") {
@@ -191,10 +187,10 @@ definition {
 
 			ACSegments.selectOperator(operator = "is");
 
-			ACSegments.editTextCriterion(textInput = "${myURL}");
+			ACSegments.editTextCriterion(textInput = ${myURL});
 
 			ACSegments.editWebBehaviorCriterion(
-				indexField = "1",
+				indexField = 1,
 				timeOption = "ever");
 		}
 
@@ -226,8 +222,12 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9211 | Test Summary: Add segment using a session property 'URL'"
-	@priority = "4"
+	@priority = 4
 	test CanCreateSessionAttributeUsingURL {
+		property portal.upstream = "quarantine";
+
+		// AC Quarantine Reason: Segment membership takes long time to load LRAC-10769
+
 		task ("Connect the DXP to Analytics Cloud") {
 			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud();
 		}
@@ -263,7 +263,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 		}
 
 		task ("Add a new dynamic segment") {
@@ -271,7 +271,7 @@ definition {
 
 			ACSegments.createDynamicSegment();
 
-			ACSegments.nameSegment(segmentName = "Dynamic Segment Test");
+			ACUtils.setItemName(itemName = "Dynamic Segment Test");
 		}
 
 		task ("Add an URL criteria from Session Attributes") {
@@ -281,10 +281,10 @@ definition {
 
 			ACSegments.selectOperator(operator = "is");
 
-			ACSegments.editTextCriterion(textInput = "${myURL}");
+			ACSegments.editTextCriterion(textInput = ${myURL});
 
 			ACSegments.editWebBehaviorCriterion(
-				indexField = "1",
+				indexField = 1,
 				timeOption = "ever");
 		}
 
@@ -312,7 +312,7 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9213 | Test Summary: Show 'duplicate' and 'delete' options in a list for every segment criteria"
-	@priority = "4"
+	@priority = 4
 	test SegmentCriteriaOptionsContainsDuplicateAndDelete {
 		task ("Connect the DXP to Analytics Cloud") {
 			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud();
@@ -321,7 +321,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 		}
 
 		task ("Add a new dynamic segment") {
@@ -329,7 +329,7 @@ definition {
 
 			ACSegments.createDynamicSegment();
 
-			ACSegments.nameSegment(segmentName = "Dynamic Segment Test");
+			ACUtils.setItemName(itemName = "Dynamic Segment Test");
 		}
 
 		task ("Add criterias from differents attributes") {
@@ -337,15 +337,15 @@ definition {
 
 			ACSegments.addSegmentField(segmentField = "URL");
 
-			ACSegments.goToSidebarAttributes(criterion = "Account Attributes");
+			ACSegments.goToSidebarAttributes(criterion = "Individual Attributes");
 
-			ACSegments.addSegmentField(segmentField = "accountName");
+			ACSegments.addSegmentField(segmentField = "additionalName");
 		}
 
 		task ("Assert that Duplicate and Delete are present in the criterias options") {
 			Click(
 				criteriaName = "URL",
-				index = "1",
+				index = 1,
 				locator1 = "ACSegments#CRITERIA_ELLIPSIS");
 
 			MenuItem.viewPresent(menuItem = "Duplicate");
@@ -353,8 +353,8 @@ definition {
 			MenuItem.viewPresent(menuItem = "Delete");
 
 			Click(
-				criteriaName = "accountName",
-				index = "1",
+				criteriaName = "additionalName",
+				index = 1,
 				locator1 = "ACSegments#CRITERIA_ELLIPSIS");
 
 			MenuItem.viewPresent(menuItem = "Duplicate");

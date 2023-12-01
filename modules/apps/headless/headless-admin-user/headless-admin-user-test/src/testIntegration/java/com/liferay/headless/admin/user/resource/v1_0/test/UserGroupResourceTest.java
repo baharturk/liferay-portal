@@ -1,28 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.headless.admin.user.client.dto.v1_0.UserGroup;
+import com.liferay.headless.admin.user.client.pagination.Page;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.test.rule.Inject;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assert;
@@ -32,6 +26,7 @@ import org.junit.runner.RunWith;
 /**
  * @author Javier Gamarra
  */
+@DataGuard(scope = DataGuard.Scope.METHOD)
 @RunWith(Arquillian.class)
 public class UserGroupResourceTest extends BaseUserGroupResourceTestCase {
 
@@ -59,6 +54,31 @@ public class UserGroupResourceTest extends BaseUserGroupResourceTestCase {
 
 	@Override
 	@Test
+	public void testGetUserUserGroups() throws Exception {
+		Long userAccountId = testGetUserUserGroups_getUserAccountId();
+
+		Page<UserGroup> page = userGroupResource.getUserUserGroups(
+			userAccountId);
+
+		Assert.assertEquals(0, page.getTotalCount());
+
+		UserGroup userGroup1 = testGetUserUserGroups_addUserGroup(
+			userAccountId, randomUserGroup());
+		UserGroup userGroup2 = testGetUserUserGroups_addUserGroup(
+			userAccountId, randomUserGroup());
+
+		page = userGroupResource.getUserUserGroups(userAccountId);
+
+		Assert.assertEquals(2, page.getTotalCount());
+
+		assertEqualsIgnoringOrder(
+			Arrays.asList(userGroup1, userGroup2),
+			(List<UserGroup>)page.getItems());
+		assertValid(page);
+	}
+
+	@Override
+	@Test
 	public void testPostUserGroupUsers() throws Exception {
 		UserGroup userGroup = _postUserGroup();
 
@@ -81,7 +101,20 @@ public class UserGroupResourceTest extends BaseUserGroupResourceTestCase {
 	}
 
 	@Override
+	protected String[] getIgnoredEntityFieldNames() {
+		return new String[] {"description"};
+	}
+
+	@Override
 	protected UserGroup testDeleteUserGroup_addUserGroup() throws Exception {
+		return _postUserGroup();
+	}
+
+	@Override
+	protected UserGroup
+			testDeleteUserGroupByExternalReferenceCode_addUserGroup()
+		throws Exception {
+
 		return _postUserGroup();
 	}
 
@@ -98,12 +131,53 @@ public class UserGroupResourceTest extends BaseUserGroupResourceTestCase {
 	}
 
 	@Override
+	protected UserGroup testGetUserGroupByExternalReferenceCode_addUserGroup()
+		throws Exception {
+
+		return _postUserGroup();
+	}
+
+	@Override
+	protected UserGroup testGetUserGroupsPage_addUserGroup(UserGroup userGroup)
+		throws Exception {
+
+		return _postUserGroup(userGroup);
+	}
+
+	@Override
+	protected UserGroup testGetUserUserGroups_addUserGroup(
+			Long userAccountId, UserGroup userGroup)
+		throws Exception {
+
+		userGroup = _postUserGroup(userGroup);
+
+		userGroupResource.postUserGroupUsers(
+			userGroup.getId(), new Long[] {userAccountId});
+
+		return userGroup;
+	}
+
+	@Override
+	protected Long testGetUserUserGroups_getUserAccountId() throws Exception {
+		User user = UserTestUtil.addUser();
+
+		return user.getUserId();
+	}
+
+	@Override
 	protected UserGroup testGraphQLUserGroup_addUserGroup() throws Exception {
 		return _postUserGroup();
 	}
 
 	@Override
 	protected UserGroup testPatchUserGroup_addUserGroup() throws Exception {
+		return _postUserGroup();
+	}
+
+	@Override
+	protected UserGroup testPatchUserGroupByExternalReferenceCode_addUserGroup()
+		throws Exception {
+
 		return _postUserGroup();
 	}
 
@@ -121,6 +195,13 @@ public class UserGroupResourceTest extends BaseUserGroupResourceTestCase {
 
 	@Override
 	protected UserGroup testPutUserGroup_addUserGroup() throws Exception {
+		return _postUserGroup();
+	}
+
+	@Override
+	protected UserGroup testPutUserGroupByExternalReferenceCode_addUserGroup()
+		throws Exception {
+
 		return _postUserGroup();
 	}
 

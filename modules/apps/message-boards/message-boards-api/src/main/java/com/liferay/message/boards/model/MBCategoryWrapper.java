@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.model;
@@ -59,6 +50,7 @@ public class MBCategoryWrapper
 		attributes.put("name", getName());
 		attributes.put("description", getDescription());
 		attributes.put("displayStyle", getDisplayStyle());
+		attributes.put("friendlyURL", getFriendlyURL());
 		attributes.put("lastPublishDate", getLastPublishDate());
 		attributes.put("status", getStatus());
 		attributes.put("statusByUserId", getStatusByUserId());
@@ -152,6 +144,12 @@ public class MBCategoryWrapper
 
 		if (displayStyle != null) {
 			setDisplayStyle(displayStyle);
+		}
+
+		String friendlyURL = (String)attributes.get("friendlyURL");
+
+		if (friendlyURL != null) {
+			setFriendlyURL(friendlyURL);
 		}
 
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
@@ -282,6 +280,16 @@ public class MBCategoryWrapper
 	@Override
 	public String getDisplayStyle() {
 		return model.getDisplayStyle();
+	}
+
+	/**
+	 * Returns the friendly url of this message boards category.
+	 *
+	 * @return the friendly url of this message boards category
+	 */
+	@Override
+	public String getFriendlyURL() {
+		return model.getFriendlyURL();
 	}
 
 	/**
@@ -432,18 +440,6 @@ public class MBCategoryWrapper
 	}
 
 	/**
-	 * Returns the trash entry created when this message boards category was moved to the Recycle Bin. The trash entry may belong to one of the ancestors of this message boards category.
-	 *
-	 * @return the trash entry created when this message boards category was moved to the Recycle Bin
-	 */
-	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getTrashEntry();
-	}
-
-	/**
 	 * Returns the class primary key of the trash entry for this message boards category.
 	 *
 	 * @return the class primary key of the trash entry for this message boards category
@@ -451,18 +447,6 @@ public class MBCategoryWrapper
 	@Override
 	public long getTrashEntryClassPK() {
 		return model.getTrashEntryClassPK();
-	}
-
-	/**
-	 * Returns the trash handler for this message boards category.
-	 *
-	 * @return the trash handler for this message boards category
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return model.getTrashHandler();
 	}
 
 	/**
@@ -576,26 +560,6 @@ public class MBCategoryWrapper
 	}
 
 	/**
-	 * Returns <code>true</code> if the parent of this message boards category is in the Recycle Bin.
-	 *
-	 * @return <code>true</code> if the parent of this message boards category is in the Recycle Bin; <code>false</code> otherwise
-	 */
-	@Override
-	public boolean isInTrashContainer() {
-		return model.isInTrashContainer();
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		return model.isInTrashExplicitly();
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		return model.isInTrashImplicitly();
-	}
-
-	/**
 	 * Returns <code>true</code> if this message boards category is pending.
 	 *
 	 * @return <code>true</code> if this message boards category is pending; <code>false</code> otherwise
@@ -693,6 +657,16 @@ public class MBCategoryWrapper
 	@Override
 	public void setDisplayStyle(String displayStyle) {
 		model.setDisplayStyle(displayStyle);
+	}
+
+	/**
+	 * Sets the friendly url of this message boards category.
+	 *
+	 * @param friendlyURL the friendly url of this message boards category
+	 */
+	@Override
+	public void setFriendlyURL(String friendlyURL) {
+		model.setFriendlyURL(friendlyURL);
 	}
 
 	/**
@@ -863,6 +837,11 @@ public class MBCategoryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

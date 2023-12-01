@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.index;
@@ -17,15 +8,18 @@ package com.liferay.portal.search.elasticsearch7.internal.index;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchClientResolver;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionFixture;
 import com.liferay.portal.search.elasticsearch7.internal.util.ResourceUtil;
+import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.test.util.AssertUtils;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Arrays;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -71,6 +65,11 @@ public class ElasticsearchIndexInformationTest {
 			_elasticsearchConnectionFixture);
 	}
 
+	@After
+	public void tearDown() {
+		_companyIndexFactoryFixture.tearDown();
+	}
+
 	@Test
 	public void testGetCompanyIndexName() throws Exception {
 		_companyIndexFactoryFixture.createIndices();
@@ -86,12 +85,11 @@ public class ElasticsearchIndexInformationTest {
 	public void testGetFieldMappings() throws Exception {
 		_companyIndexFactoryFixture.createIndices();
 
-		String fieldMappings = _elasticsearchIndexInformation.getFieldMappings(
-			_companyIndexFactoryFixture.getIndexName());
-
 		AssertUtils.assertEquals(
 			"", _loadJSONObject(testName.getMethodName()),
-			_jsonFactory.createJSONObject(fieldMappings));
+			_jsonFactory.createJSONObject(
+				_elasticsearchIndexInformation.getFieldMappings(
+					_companyIndexFactoryFixture.getIndexName())));
 	}
 
 	@Test
@@ -106,10 +104,6 @@ public class ElasticsearchIndexInformationTest {
 	@Rule
 	public TestName testName = new TestName();
 
-	private static String _getIndexNameBuilder(long companyId) {
-		return "test-" + companyId;
-	}
-
 	private CompanyIndexFactoryFixture _createCompanyIndexFactoryFixture(
 		ElasticsearchClientResolver elasticsearchClientResolver) {
 
@@ -120,13 +114,21 @@ public class ElasticsearchIndexInformationTest {
 	private ElasticsearchIndexInformation _createElasticsearchIndexInformation(
 		ElasticsearchClientResolver elasticsearchClientResolver) {
 
-		return new ElasticsearchIndexInformation() {
-			{
-				setElasticsearchClientResolver(elasticsearchClientResolver);
-				setIndexNameBuilder(
-					ElasticsearchIndexInformationTest::_getIndexNameBuilder);
-			}
-		};
+		ElasticsearchIndexInformation elasticsearchIndexInformation =
+			new ElasticsearchIndexInformation();
+
+		ReflectionTestUtil.setFieldValue(
+			elasticsearchIndexInformation, "_elasticsearchClientResolver",
+			elasticsearchClientResolver);
+		ReflectionTestUtil.setFieldValue(
+			elasticsearchIndexInformation, "_indexNameBuilder",
+			(IndexNameBuilder)companyId -> _getIndexNameBuilder(companyId));
+
+		return elasticsearchIndexInformation;
+	}
+
+	private String _getIndexNameBuilder(long companyId) {
+		return "test-" + companyId;
 	}
 
 	private JSONObject _loadJSONObject(String suffix) throws Exception {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model.impl;
@@ -77,12 +68,14 @@ public class ObjectFieldCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(43);
+		StringBundler sb = new StringBundler(55);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", objectFieldId=");
 		sb.append(objectFieldId);
 		sb.append(", companyId=");
@@ -115,12 +108,22 @@ public class ObjectFieldCacheModel
 		sb.append(indexedLanguageId);
 		sb.append(", label=");
 		sb.append(label);
+		sb.append(", localized=");
+		sb.append(localized);
 		sb.append(", name=");
 		sb.append(name);
+		sb.append(", readOnly=");
+		sb.append(readOnly);
+		sb.append(", readOnlyConditionExpression=");
+		sb.append(readOnlyConditionExpression);
 		sb.append(", relationshipType=");
 		sb.append(relationshipType);
 		sb.append(", required=");
 		sb.append(required);
+		sb.append(", state=");
+		sb.append(state);
+		sb.append(", system=");
+		sb.append(system);
 		sb.append("}");
 
 		return sb.toString();
@@ -137,6 +140,13 @@ public class ObjectFieldCacheModel
 		}
 		else {
 			objectFieldImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectFieldImpl.setExternalReferenceCode("");
+		}
+		else {
+			objectFieldImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		objectFieldImpl.setObjectFieldId(objectFieldId);
@@ -212,11 +222,28 @@ public class ObjectFieldCacheModel
 			objectFieldImpl.setLabel(label);
 		}
 
+		objectFieldImpl.setLocalized(localized);
+
 		if (name == null) {
 			objectFieldImpl.setName("");
 		}
 		else {
 			objectFieldImpl.setName(name);
+		}
+
+		if (readOnly == null) {
+			objectFieldImpl.setReadOnly("");
+		}
+		else {
+			objectFieldImpl.setReadOnly(readOnly);
+		}
+
+		if (readOnlyConditionExpression == null) {
+			objectFieldImpl.setReadOnlyConditionExpression("");
+		}
+		else {
+			objectFieldImpl.setReadOnlyConditionExpression(
+				readOnlyConditionExpression);
 		}
 
 		if (relationshipType == null) {
@@ -227,6 +254,8 @@ public class ObjectFieldCacheModel
 		}
 
 		objectFieldImpl.setRequired(required);
+		objectFieldImpl.setState(state);
+		objectFieldImpl.setSystem(system);
 
 		objectFieldImpl.resetOriginalValues();
 
@@ -234,9 +263,12 @@ public class ObjectFieldCacheModel
 	}
 
 	@Override
-	public void readExternal(ObjectInput objectInput) throws IOException {
+	public void readExternal(ObjectInput objectInput)
+		throws ClassNotFoundException, IOException {
+
 		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		objectFieldId = objectInput.readLong();
 
@@ -260,10 +292,18 @@ public class ObjectFieldCacheModel
 		indexedAsKeyword = objectInput.readBoolean();
 		indexedLanguageId = objectInput.readUTF();
 		label = objectInput.readUTF();
+
+		localized = objectInput.readBoolean();
 		name = objectInput.readUTF();
+		readOnly = objectInput.readUTF();
+		readOnlyConditionExpression = (String)objectInput.readObject();
 		relationshipType = objectInput.readUTF();
 
 		required = objectInput.readBoolean();
+
+		state = objectInput.readBoolean();
+
+		system = objectInput.readBoolean();
 	}
 
 	@Override
@@ -275,6 +315,13 @@ public class ObjectFieldCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(objectFieldId);
@@ -343,11 +390,27 @@ public class ObjectFieldCacheModel
 			objectOutput.writeUTF(label);
 		}
 
+		objectOutput.writeBoolean(localized);
+
 		if (name == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(name);
+		}
+
+		if (readOnly == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(readOnly);
+		}
+
+		if (readOnlyConditionExpression == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(readOnlyConditionExpression);
 		}
 
 		if (relationshipType == null) {
@@ -358,10 +421,15 @@ public class ObjectFieldCacheModel
 		}
 
 		objectOutput.writeBoolean(required);
+
+		objectOutput.writeBoolean(state);
+
+		objectOutput.writeBoolean(system);
 	}
 
 	public long mvccVersion;
 	public String uuid;
+	public String externalReferenceCode;
 	public long objectFieldId;
 	public long companyId;
 	public long userId;
@@ -378,8 +446,13 @@ public class ObjectFieldCacheModel
 	public boolean indexedAsKeyword;
 	public String indexedLanguageId;
 	public String label;
+	public boolean localized;
 	public String name;
+	public String readOnly;
+	public String readOnlyConditionExpression;
 	public String relationshipType;
 	public boolean required;
+	public boolean state;
+	public boolean system;
 
 }

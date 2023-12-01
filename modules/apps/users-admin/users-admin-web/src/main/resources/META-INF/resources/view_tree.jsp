@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -90,6 +81,7 @@ if (organization != null) {
 			filterDropdownItems="<%= viewTreeManagementToolbarDisplayContext.getFilterDropdownItems() %>"
 			filterLabelItems="<%= viewTreeManagementToolbarDisplayContext.getFilterLabelItems() %>"
 			itemsTotal="<%= searchContainer.getTotal() %>"
+			orderDropdownItems="<%= viewTreeManagementToolbarDisplayContext.getFilterDropdownItems() %>"
 			propsTransformer="js/ViewTreeManagementToolbarPropsTransformer"
 			searchActionURL="<%= viewTreeManagementToolbarDisplayContext.getSearchActionURL() %>"
 			searchContainerId="organizationUsers"
@@ -103,7 +95,6 @@ if (organization != null) {
 		/>
 
 		<aui:form cssClass="container-fluid container-fluid-max-xl" method="post" name="fm" onSubmit='<%= "event.preventDefault(); " + liferayPortletResponse.getNamespace() + "search();" %>'>
-			<aui:input name="<%= Constants.CMD %>" type="hidden" />
 			<aui:input name="toolbarItem" type="hidden" value="<%= toolbarItem %>" />
 			<aui:input name="redirect" type="hidden" value="<%= viewTreeManagementToolbarDisplayContext.getPortletURL().toString() %>" />
 			<aui:input name="onErrorRedirect" type="hidden" value="<%= currentURL %>" />
@@ -128,11 +119,8 @@ if (organization != null) {
 
 			<c:if test="<%= (portletName.equals(UsersAdminPortletKeys.USERS_ADMIN) && usersListView.equals(UserConstants.LIST_VIEW_TREE)) || portletName.equals(UsersAdminPortletKeys.MY_ORGANIZATIONS) %>">
 				<div id="breadcrumb">
-					<liferay-ui:breadcrumb
-						showCurrentGroup="<%= false %>"
-						showGuestGroup="<%= false %>"
-						showLayout="<%= false %>"
-						showPortletBreadcrumb="<%= true %>"
+					<liferay-site-navigation:breadcrumb
+						breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, true, true) %>"
 					/>
 				</div>
 			</c:if>
@@ -149,11 +137,14 @@ if (organization != null) {
 
 					<%
 					Organization curOrganization = null;
+					OrganizationActionDropdownItems organizationActionDropdownItems = null;
 					Map<String, Object> rowData = new HashMap<String, Object>();
 					User user2 = null;
 
 					if (result instanceof Organization) {
 						curOrganization = (Organization)result;
+
+						organizationActionDropdownItems = new OrganizationActionDropdownItems(curOrganization, renderRequest, renderResponse);
 
 						rowData.put("actions", StringUtil.merge(viewTreeManagementToolbarDisplayContext.getAvailableActions(curOrganization)));
 					}
@@ -183,80 +174,3 @@ if (organization != null) {
 		/>
 	</c:otherwise>
 </c:choose>
-
-<aui:script>
-	function <portlet:namespace />delete(organizationsRedirect) {
-		<portlet:namespace />deleteOrganizations(organizationsRedirect);
-	}
-
-	<portlet:namespace />doDeleteOrganizations = function (
-		organizationIds,
-		organizationsRedirect
-	) {
-		var form = document.<portlet:namespace />fm;
-
-		if (organizationsRedirect) {
-			Liferay.Util.setFormValues(form, {
-				redirect: organizationsRedirect,
-			});
-		}
-
-		Liferay.Util.postForm(form, {
-			data: {
-				deleteOrganizationIds: organizationIds,
-				deleteUserIds: Liferay.Util.listCheckedExcept(
-					form,
-					'<portlet:namespace />allRowIds',
-					'<portlet:namespace />rowIdsUser'
-				),
-			},
-			url:
-				'<portlet:actionURL name="/users_admin/delete_organizations_and_users" />',
-		});
-	};
-
-	<portlet:actionURL name="/users_admin/edit_organization_assignments" var="removeOrganizationsAndUsersURL">
-		<portlet:param name="assignmentsRedirect" value="<%= currentURL %>" />
-		<portlet:param name="organizationId" value="<%= String.valueOf(organizationId) %>" />
-	</portlet:actionURL>
-
-	function <portlet:namespace />removeOrganizationsAndUsers() {
-		var form = document.<portlet:namespace />fm;
-
-		Liferay.Util.postForm(form, {
-			data: {
-				removeOrganizationIds: Liferay.Util.listCheckedExcept(
-					form,
-					'<portlet:namespace />allRowIds',
-					'<portlet:namespace />rowIdsOrganization'
-				),
-				removeUserIds: Liferay.Util.listCheckedExcept(
-					form,
-					'<portlet:namespace />allRowIds',
-					'<portlet:namespace />rowIdsUser'
-				),
-			},
-			url: '<%= removeOrganizationsAndUsersURL.toString() %>',
-		});
-	}
-
-	var selectUsers = function (organizationId) {
-		<portlet:namespace />openSelectUsersDialog(organizationId);
-	};
-
-	var ACTIONS = {
-		selectUsers: selectUsers,
-	};
-
-	Liferay.componentReady('viewTreeManagementToolbar').then(
-		(managementToolbar) => {
-			managementToolbar.on('creationMenuItemClicked', (event) => {
-				var itemData = event.data.item.data;
-
-				if (itemData && itemData.action && ACTIONS[itemData.action]) {
-					ACTIONS[itemData.action](itemData.organizationId);
-				}
-			});
-		}
-	);
-</aui:script>

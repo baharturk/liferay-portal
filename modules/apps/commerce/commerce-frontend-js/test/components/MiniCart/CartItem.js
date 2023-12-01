@@ -1,18 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '../../utils/polyfills';
+import '../../tests_utilities/polyfills';
 
 import '@testing-library/jest-dom/extend-expect';
 import {act, cleanup, fireEvent, render, wait} from '@testing-library/react';
@@ -25,8 +16,8 @@ import {
 	REMOVAL_ERRORS_TIMEOUT,
 	REMOVAL_TIMEOUT,
 } from '../../../src/main/resources/META-INF/resources/components/mini_cart/util/constants';
-import * as MiniCartUtils from '../../../src/main/resources/META-INF/resources/components/mini_cart/util/index';
-import {UPDATE_AFTER} from '../../../src/main/resources/META-INF/resources/components/quantity_selector/utils';
+import * as MiniCarttests_utilities from '../../../src/main/resources/META-INF/resources/components/mini_cart/util/index';
+import {UPDATE_AFTER} from '../../../src/main/resources/META-INF/resources/components/quantity_selector/tests_utilities';
 import {PRODUCT_REMOVED_FROM_CART} from '../../../src/main/resources/META-INF/resources/utilities/eventsDefinitions';
 
 describe('MiniCart Item', () => {
@@ -107,7 +98,7 @@ describe('MiniCart Item', () => {
 			.fn()
 			.mockReturnValue(Promise.resolve());
 
-		jest.spyOn(MiniCartUtils, 'parseOptions');
+		jest.spyOn(MiniCarttests_utilities, 'parseOptions');
 
 		window.Liferay = {
 			Language: {
@@ -179,8 +170,10 @@ describe('MiniCart Item', () => {
 				</MiniCartContext.Provider>
 			);
 
-			expect(MiniCartUtils.parseOptions).toHaveBeenCalledTimes(1);
-			expect(MiniCartUtils.parseOptions).toHaveBeenCalledWith(
+			expect(MiniCarttests_utilities.parseOptions).toHaveBeenCalledTimes(
+				1
+			);
+			expect(MiniCarttests_utilities.parseOptions).toHaveBeenCalledWith(
 				BASE_PROPS.item.options
 			);
 		});
@@ -236,7 +229,7 @@ describe('MiniCart Item', () => {
 	describe('by data flow', () => {
 		describe('if the parsed options string is non-empty', () => {
 			it('adds the "options" class name to the ItemInfoView wrapper div', () => {
-				MiniCartUtils.parseOptions.mockReturnValue('24, L');
+				MiniCarttests_utilities.parseOptions.mockReturnValue('24, L');
 
 				const {container} = render(
 					<MiniCartContext.Provider value={BASE_CONTEXT_MOCK}>

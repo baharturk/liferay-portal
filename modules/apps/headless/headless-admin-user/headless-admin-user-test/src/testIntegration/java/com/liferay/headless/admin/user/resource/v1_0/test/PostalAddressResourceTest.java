@@ -1,19 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.resource.v1_0.test;
 
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.constants.AccountListTypeConstants;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.headless.admin.user.client.dto.v1_0.PostalAddress;
 import com.liferay.portal.kernel.model.Address;
@@ -28,7 +23,12 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.OrganizationTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.SynchronousMailTestRule;
 
 import java.util.List;
@@ -61,7 +61,9 @@ public class PostalAddressResourceTest
 
 	@Override
 	protected String[] getAdditionalAssertFieldNames() {
-		return new String[] {"postalCode", "primary", "streetAddressLine1"};
+		return new String[] {
+			"name", "postalCode", "primary", "streetAddressLine1"
+		};
 	}
 
 	@Override
@@ -69,11 +71,40 @@ public class PostalAddressResourceTest
 		return new PostalAddress() {
 			{
 				addressLocality = RandomTestUtil.randomString();
+				name = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				postalCode = RandomTestUtil.randomString();
 				primary = false;
 				streetAddressLine1 = RandomTestUtil.randomString();
 			}
 		};
+	}
+
+	@Override
+	protected PostalAddress testGetAccountPostalAddressesPage_addPostalAddress(
+			Long accountId, PostalAddress postalAddress)
+		throws Exception {
+
+		return _addPostalAddress(
+			postalAddress, AccountEntry.class.getName(), accountId,
+			AccountListTypeConstants.ACCOUNT_ENTRY_ADDRESS);
+	}
+
+	@Override
+	protected Long testGetAccountPostalAddressesPage_getAccountId()
+		throws Exception {
+
+		AccountEntry accountEntry = _addAccountEntry();
+
+		return accountEntry.getAccountEntryId();
+	}
+
+	@Override
+	protected Long testGetAccountPostalAddressesPage_getIrrelevantAccountId()
+		throws Exception {
+
+		AccountEntry accountEntry = _addAccountEntry();
+
+		return accountEntry.getAccountEntryId();
 	}
 
 	@Override
@@ -127,6 +158,16 @@ public class PostalAddressResourceTest
 		return testGetPostalAddress_addPostalAddress();
 	}
 
+	private AccountEntry _addAccountEntry() throws Exception {
+		return _accountEntryLocalService.addAccountEntry(
+			TestPropsValues.getUserId(),
+			AccountConstants.PARENT_ACCOUNT_ENTRY_ID_DEFAULT,
+			RandomTestUtil.randomString(), null, new String[0], null, null,
+			null, AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
+			WorkflowConstants.STATUS_APPROVED,
+			ServiceContextTestUtil.getServiceContext());
+	}
+
 	private PostalAddress _addPostalAddress(
 			PostalAddress postalAddress, String className, long classPK,
 			String listTypeId)
@@ -134,17 +175,18 @@ public class PostalAddressResourceTest
 
 		return _toPostalAddress(
 			AddressLocalServiceUtil.addAddress(
-				_user.getUserId(), className, classPK,
+				null, _user.getUserId(), className, classPK, null, null,
 				postalAddress.getStreetAddressLine1(),
 				postalAddress.getStreetAddressLine2(),
 				postalAddress.getStreetAddressLine3(),
 				postalAddress.getAddressLocality(),
 				postalAddress.getPostalCode(), 0, 0, _getListTypeId(listTypeId),
-				false, postalAddress.getPrimary(), new ServiceContext()));
+				false, postalAddress.getPrimary(), null, new ServiceContext()));
 	}
 
 	private long _getListTypeId(String listTypeId) {
-		List<ListType> listTypes = ListTypeServiceUtil.getListTypes(listTypeId);
+		List<ListType> listTypes = ListTypeServiceUtil.getListTypes(
+			_user.getCompanyId(), listTypeId);
 
 		ListType listType = listTypes.get(0);
 
@@ -156,12 +198,16 @@ public class PostalAddressResourceTest
 			{
 				addressLocality = address.getCity();
 				id = address.getAddressId();
+				name = address.getName();
 				postalCode = address.getZip();
 				primary = address.isPrimary();
 				streetAddressLine1 = address.getStreet1();
 			}
 		};
 	}
+
+	@Inject
+	private AccountEntryLocalService _accountEntryLocalService;
 
 	@DeleteAfterTestRun
 	private Organization _organization;

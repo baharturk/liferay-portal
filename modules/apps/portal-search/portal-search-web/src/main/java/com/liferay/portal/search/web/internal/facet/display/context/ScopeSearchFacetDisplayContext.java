@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.facet.display.context;
@@ -21,7 +12,11 @@ import java.util.List;
 /**
  * @author André de Oliveira
  */
-public class ScopeSearchFacetDisplayContext {
+public class ScopeSearchFacetDisplayContext implements FacetDisplayContext {
+
+	public List<BucketDisplayContext> getBucketDisplayContexts() {
+		return _bucketDisplayContexts;
+	}
 
 	public long getDisplayStyleGroupId() {
 		return _displayStyleGroupId;
@@ -49,16 +44,18 @@ public class ScopeSearchFacetDisplayContext {
 		return _siteFacetPortletInstanceConfiguration;
 	}
 
-	public List<ScopeSearchFacetTermDisplayContext> getTermDisplayContexts() {
-		return _scopeSearchFacetTermDisplayContexts;
-	}
-
 	public boolean isNothingSelected() {
 		return _nothingSelected;
 	}
 
 	public boolean isRenderNothing() {
 		return _renderNothing;
+	}
+
+	public void setBucketDisplayContexts(
+		List<BucketDisplayContext> bucketDisplayContexts) {
+
+		_bucketDisplayContexts = bucketDisplayContexts;
 	}
 
 	public void setDisplayStyleGroupId(long displayStyleGroupId) {
@@ -99,14 +96,7 @@ public class ScopeSearchFacetDisplayContext {
 			siteFacetPortletInstanceConfiguration;
 	}
 
-	public void setTermDisplayContexts(
-		List<ScopeSearchFacetTermDisplayContext>
-			scopeSearchFacetTermDisplayContexts) {
-
-		_scopeSearchFacetTermDisplayContexts =
-			scopeSearchFacetTermDisplayContexts;
-	}
-
+	private List<BucketDisplayContext> _bucketDisplayContexts;
 	private long _displayStyleGroupId;
 	private boolean _nothingSelected;
 	private String _paginationStartParameterName;
@@ -114,8 +104,6 @@ public class ScopeSearchFacetDisplayContext {
 	private String _parameterValue;
 	private List<String> _parameterValues;
 	private boolean _renderNothing;
-	private List<ScopeSearchFacetTermDisplayContext>
-		_scopeSearchFacetTermDisplayContexts;
 	private SiteFacetPortletInstanceConfiguration
 		_siteFacetPortletInstanceConfiguration;
 

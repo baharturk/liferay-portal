@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.service;
@@ -321,24 +312,9 @@ public interface BlogsEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BlogsEntry fetchBlogsEntry(long entryId);
 
-	/**
-	 * Returns the blogs entry with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the blogs entry's external reference code
-	 * @return the matching blogs entry, or <code>null</code> if a matching blogs entry could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BlogsEntry fetchBlogsEntryByExternalReferenceCode(
-		long groupId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchBlogsEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public BlogsEntry fetchBlogsEntryByReferenceCode(
-		long groupId, String externalReferenceCode);
+		String externalReferenceCode, long groupId);
 
 	/**
 	 * Returns the blogs entry matching the UUID and group.
@@ -415,17 +391,9 @@ public interface BlogsEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BlogsEntry getBlogsEntry(long entryId) throws PortalException;
 
-	/**
-	 * Returns the blogs entry with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the blogs entry's external reference code
-	 * @return the matching blogs entry
-	 * @throws PortalException if a matching blogs entry could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BlogsEntry getBlogsEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**

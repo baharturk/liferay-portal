@@ -1,28 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.menu.item.display.page.internal.type;
 
 import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
+import com.liferay.asset.display.page.util.AssetDisplayPageUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.frontend.taglib.servlet.taglib.util.JSPRenderer;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemReference;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.criteria.InfoItemItemSelectorReturnType;
 import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
 import com.liferay.layout.display.page.LayoutDisplayPageMultiSelectionProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -32,6 +25,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ClassedModel;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -44,17 +38,15 @@ import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.site.navigation.constants.SiteNavigationWebKeys;
-import com.liferay.site.navigation.menu.item.display.page.internal.configuration.FFDisplayPageSiteNavigationMenuItemConfigurationUtil;
-import com.liferay.site.navigation.menu.item.display.page.internal.constants.SiteNavigationMenuItemTypeDisplayPageWebKeys;
+import com.liferay.site.navigation.menu.item.display.page.internal.display.context.DisplayPageTypeSiteNavigationMenuTypeDisplayContext;
 import com.liferay.site.navigation.model.SiteNavigationMenuItem;
 import com.liferay.site.navigation.type.SiteNavigationMenuItemType;
+import com.liferay.site.navigation.type.SiteNavigationMenuItemTypeContext;
 
 import java.io.IOException;
 
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.portlet.PortletURL;
 import javax.portlet.RenderRequest;
@@ -123,7 +115,7 @@ public class DisplayPageTypeSiteNavigationMenuItemType
 			return true;
 		}
 		catch (RuntimeException runtimeException) {
-			_log.error(runtimeException, runtimeException);
+			_log.error(runtimeException);
 		}
 
 		return false;
@@ -131,25 +123,14 @@ public class DisplayPageTypeSiteNavigationMenuItemType
 
 	@Override
 	public String getAddTitle(Locale locale) {
-		if (!FFDisplayPageSiteNavigationMenuItemConfigurationUtil.
-				multipleSelectionEnabled()) {
-
-			return LanguageUtil.format(
-				locale, "select-x", _displayPageTypeContext.getLabel(locale));
-		}
-
 		String label = _displayPageTypeContext.getLabel(locale);
 
-		Optional<LayoutDisplayPageMultiSelectionProvider<?>>
-			layoutDisplayPageMultiSelectionProviderOptional =
+		LayoutDisplayPageMultiSelectionProvider<?>
+			layoutDisplayPageMultiSelectionProvider =
 				_displayPageTypeContext.
-					getLayoutDisplayPageMultiSelectionProviderOptional();
+					getLayoutDisplayPageMultiSelectionProvider();
 
-		if (layoutDisplayPageMultiSelectionProviderOptional.isPresent()) {
-			LayoutDisplayPageMultiSelectionProvider<?>
-				layoutDisplayPageMultiSelectionProvider =
-					layoutDisplayPageMultiSelectionProviderOptional.get();
-
+		if (layoutDisplayPageMultiSelectionProvider != null) {
 			label = layoutDisplayPageMultiSelectionProvider.getPluralLabel(
 				locale);
 		}
@@ -199,16 +180,12 @@ public class DisplayPageTypeSiteNavigationMenuItemType
 			_displayPageTypeContext.getClassName());
 		itemSelectorCriterion.setMultiSelection(isMultiSelection());
 
-		PortletURL infoItemSelectorURL = _itemSelector.getItemSelectorURL(
-			RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
-			renderResponse.getNamespace() + "selectItem",
-			itemSelectorCriterion);
-
-		if (infoItemSelectorURL == null) {
-			return StringPool.BLANK;
-		}
-
-		return infoItemSelectorURL.toString();
+		return PortletURLBuilder.create(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
+				renderResponse.getNamespace() + "selectItem",
+				itemSelectorCriterion)
+		).buildString();
 	}
 
 	@Override
@@ -247,16 +224,28 @@ public class DisplayPageTypeSiteNavigationMenuItemType
 
 		String friendlyURL =
 			_assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-				_displayPageTypeContext.getClassName(),
-				GetterUtil.getLong(
-					typeSettingsUnicodeProperties.get("classPK")),
+				new InfoItemReference(
+					_displayPageTypeContext.getClassName(),
+					new ClassPKInfoItemIdentifier(
+						GetterUtil.getLong(
+							typeSettingsUnicodeProperties.get("classPK")))),
 				themeDisplay);
 
 		if (Validator.isNotNull(friendlyURL)) {
 			return friendlyURL;
 		}
 
-		return themeDisplay.getURLCurrent() + StringPool.POUND;
+		return StringPool.BLANK;
+	}
+
+	@Override
+	public String getStatusIcon(SiteNavigationMenuItem siteNavigationMenuItem) {
+		if (!_hasAssetDisplayPage(siteNavigationMenuItem)) {
+			return "warning-full";
+		}
+
+		return SiteNavigationMenuItemType.super.getStatusIcon(
+			siteNavigationMenuItem);
 	}
 
 	@Override
@@ -305,9 +294,7 @@ public class DisplayPageTypeSiteNavigationMenuItemType
 			defaultTitle = layoutDisplayPageObjectProvider.getTitle(locale);
 		}
 
-		if (!FFDisplayPageSiteNavigationMenuItemConfigurationUtil.
-				multipleSelectionEnabled() ||
-			!GetterUtil.getBoolean(
+		if (!GetterUtil.getBoolean(
 				typeSettingsUnicodeProperties.get("useCustomName"))) {
 
 			return defaultTitle;
@@ -382,8 +369,19 @@ public class DisplayPageTypeSiteNavigationMenuItemType
 	}
 
 	@Override
+	public boolean isAvailable(
+		SiteNavigationMenuItemTypeContext siteNavigationMenuItemTypeContext) {
+
+		return _displayPageTypeContext.isAvailable();
+	}
+
+	@Override
 	public boolean isBrowsable(SiteNavigationMenuItem siteNavigationMenuItem) {
-		return true;
+		if (_hasAssetDisplayPage(siteNavigationMenuItem)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
@@ -393,29 +391,16 @@ public class DisplayPageTypeSiteNavigationMenuItemType
 
 	@Override
 	public boolean isMultiSelection() {
-		if (!FFDisplayPageSiteNavigationMenuItemConfigurationUtil.
-				multipleSelectionEnabled()) {
-
-			return false;
-		}
-
-		Optional<LayoutDisplayPageMultiSelectionProvider<?>>
-			layoutDisplayPageMultiSelectionProviderOptional =
+		LayoutDisplayPageMultiSelectionProvider<?>
+			layoutDisplayPageMultiSelectionProvider =
 				_displayPageTypeContext.
-					getLayoutDisplayPageMultiSelectionProviderOptional();
+					getLayoutDisplayPageMultiSelectionProvider();
 
-		if (layoutDisplayPageMultiSelectionProviderOptional.isPresent()) {
+		if (layoutDisplayPageMultiSelectionProvider != null) {
 			return true;
 		}
 
 		return false;
-	}
-
-	@Override
-	public void renderAddPage(
-			HttpServletRequest httpServletRequest,
-			HttpServletResponse httpServletResponse)
-		throws IOException {
 	}
 
 	@Override
@@ -426,19 +411,31 @@ public class DisplayPageTypeSiteNavigationMenuItemType
 		throws IOException {
 
 		httpServletRequest.setAttribute(
-			SiteNavigationMenuItemTypeDisplayPageWebKeys.
-				DISPLAY_PAGE_TYPE_CONTEXT,
-			_displayPageTypeContext);
-		httpServletRequest.setAttribute(
-			SiteNavigationMenuItemTypeDisplayPageWebKeys.ITEM_SELECTOR,
-			_itemSelector);
-		httpServletRequest.setAttribute(
-			SiteNavigationWebKeys.SITE_NAVIGATION_MENU_ITEM,
-			siteNavigationMenuItem);
+			DisplayPageTypeSiteNavigationMenuTypeDisplayContext.class.getName(),
+			new DisplayPageTypeSiteNavigationMenuTypeDisplayContext(
+				_displayPageTypeContext, httpServletRequest, _itemSelector,
+				siteNavigationMenuItem));
 
 		_jspRenderer.renderJSP(
 			_servletContext, httpServletRequest, httpServletResponse,
 			"/edit_display_page_type.jsp");
+	}
+
+	private boolean _hasAssetDisplayPage(
+		SiteNavigationMenuItem siteNavigationMenuItem) {
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			UnicodePropertiesBuilder.fastLoad(
+				siteNavigationMenuItem.getTypeSettings()
+			).build();
+
+		return AssetDisplayPageUtil.hasAssetDisplayPage(
+			siteNavigationMenuItem.getGroupId(),
+			GetterUtil.getLong(
+				typeSettingsUnicodeProperties.get("classNameId")),
+			GetterUtil.getLong(typeSettingsUnicodeProperties.get("classPK")),
+			GetterUtil.getLong(
+				typeSettingsUnicodeProperties.get("classTypeId")));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

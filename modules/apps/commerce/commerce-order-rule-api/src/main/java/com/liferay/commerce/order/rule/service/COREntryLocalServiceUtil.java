@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.service;
@@ -235,29 +226,24 @@ public class COREntryLocalServiceUtil {
 		return getService().fetchCOREntry(COREntryId);
 	}
 
-	/**
-	 * Returns the cor entry with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cor entry's external reference code
-	 * @return the matching cor entry, or <code>null</code> if a matching cor entry could not be found
-	 */
 	public static COREntry fetchCOREntryByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
 		return getService().fetchCOREntryByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCOREntryByExternalReferenceCode(long, String)}
+	 * Returns the cor entry with the matching UUID and company.
+	 *
+	 * @param uuid the cor entry's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching cor entry, or <code>null</code> if a matching cor entry could not be found
 	 */
-	@Deprecated
-	public static COREntry fetchCOREntryByReferenceCode(
-		long companyId, String externalReferenceCode) {
+	public static COREntry fetchCOREntryByUuidAndCompanyId(
+		String uuid, long companyId) {
 
-		return getService().fetchCOREntryByReferenceCode(
-			companyId, externalReferenceCode);
+		return getService().fetchCOREntryByUuidAndCompanyId(uuid, companyId);
 	}
 
 	public static List<COREntry>
@@ -405,20 +391,35 @@ public class COREntryLocalServiceUtil {
 		return getService().getCOREntry(COREntryId);
 	}
 
-	/**
-	 * Returns the cor entry with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cor entry's external reference code
-	 * @return the matching cor entry
-	 * @throws PortalException if a matching cor entry could not be found
-	 */
 	public static COREntry getCOREntryByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getCOREntryByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the cor entry with the matching UUID and company.
+	 *
+	 * @param uuid the cor entry's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching cor entry
+	 * @throws PortalException if a matching cor entry could not be found
+	 */
+	public static COREntry getCOREntryByUuidAndCompanyId(
+			String uuid, long companyId)
+		throws PortalException {
+
+		return getService().getCOREntryByUuidAndCompanyId(uuid, companyId);
+	}
+
+	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return getService().getExportActionableDynamicQuery(portletDataContext);
 	}
 
 	public static
@@ -444,6 +445,10 @@ public class COREntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getPersistedModel(primaryKeyObj);
+	}
+
+	public static List<COREntry> getUnqualifiedCOREntries(long companyId) {
+		return getService().getUnqualifiedCOREntries(companyId);
 	}
 
 	/**
@@ -486,6 +491,14 @@ public class COREntryLocalServiceUtil {
 			externalReferenceCode, corEntryId);
 	}
 
+	public static COREntry updateCOREntryTypeSettings(
+			long corEntryId, String typeSettings)
+		throws PortalException {
+
+		return getService().updateCOREntryTypeSettings(
+			corEntryId, typeSettings);
+	}
+
 	public static COREntry updateStatus(
 			long userId, long corEntryId, int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -497,6 +510,10 @@ public class COREntryLocalServiceUtil {
 
 	public static COREntryLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(COREntryLocalService service) {
+		_service = service;
 	}
 
 	private static volatile COREntryLocalService _service;

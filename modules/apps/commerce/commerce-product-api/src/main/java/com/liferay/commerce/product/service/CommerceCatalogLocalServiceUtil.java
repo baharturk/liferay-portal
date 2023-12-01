@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
@@ -62,14 +53,14 @@ public class CommerceCatalogLocalServiceUtil {
 	}
 
 	public static CommerceCatalog addCommerceCatalog(
-			String externalReferenceCode, String name,
+			String externalReferenceCode, long accountEntryId, String name,
 			String commerceCurrencyCode, String catalogDefaultLanguageId,
 			boolean system,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCommerceCatalog(
-			externalReferenceCode, name, commerceCurrencyCode,
+			externalReferenceCode, accountEntryId, name, commerceCurrencyCode,
 			catalogDefaultLanguageId, system, serviceContext);
 	}
 
@@ -259,18 +250,11 @@ public class CommerceCatalogLocalServiceUtil {
 		return getService().fetchCommerceCatalog(commerceCatalogId);
 	}
 
-	/**
-	 * Returns the commerce catalog with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce catalog's external reference code
-	 * @return the matching commerce catalog, or <code>null</code> if a matching commerce catalog could not be found
-	 */
 	public static CommerceCatalog fetchCommerceCatalogByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
 		return getService().fetchCommerceCatalogByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	public static CommerceCatalog fetchCommerceCatalogByGroupId(long groupId) {
@@ -278,14 +262,17 @@ public class CommerceCatalogLocalServiceUtil {
 	}
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceCatalogByExternalReferenceCode(long, String)}
+	 * Returns the commerce catalog with the matching UUID and company.
+	 *
+	 * @param uuid the commerce catalog's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce catalog, or <code>null</code> if a matching commerce catalog could not be found
 	 */
-	@Deprecated
-	public static CommerceCatalog fetchCommerceCatalogByReferenceCode(
-		long companyId, String externalReferenceCode) {
+	public static CommerceCatalog fetchCommerceCatalogByUuidAndCompanyId(
+		String uuid, long companyId) {
 
-		return getService().fetchCommerceCatalogByReferenceCode(
-			companyId, externalReferenceCode);
+		return getService().fetchCommerceCatalogByUuidAndCompanyId(
+			uuid, companyId);
 	}
 
 	public static CommerceCatalog forceDeleteCommerceCatalog(
@@ -314,20 +301,28 @@ public class CommerceCatalogLocalServiceUtil {
 		return getService().getCommerceCatalog(commerceCatalogId);
 	}
 
-	/**
-	 * Returns the commerce catalog with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce catalog's external reference code
-	 * @return the matching commerce catalog
-	 * @throws PortalException if a matching commerce catalog could not be found
-	 */
 	public static CommerceCatalog getCommerceCatalogByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getCommerceCatalogByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the commerce catalog with the matching UUID and company.
+	 *
+	 * @param uuid the commerce catalog's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce catalog
+	 * @throws PortalException if a matching commerce catalog could not be found
+	 */
+	public static CommerceCatalog getCommerceCatalogByUuidAndCompanyId(
+			String uuid, long companyId)
+		throws PortalException {
+
+		return getService().getCommerceCatalogByUuidAndCompanyId(
+			uuid, companyId);
 	}
 
 	public static com.liferay.portal.kernel.model.Group getCommerceCatalogGroup(
@@ -360,6 +355,12 @@ public class CommerceCatalogLocalServiceUtil {
 		return getService().getCommerceCatalogs(companyId, system);
 	}
 
+	public static List<CommerceCatalog> getCommerceCatalogsByAccountEntryId(
+		long accountEntryId) {
+
+		return getService().getCommerceCatalogsByAccountEntryId(accountEntryId);
+	}
+
 	/**
 	 * Returns the number of commerce catalogs.
 	 *
@@ -367,6 +368,14 @@ public class CommerceCatalogLocalServiceUtil {
 	 */
 	public static int getCommerceCatalogsCount() {
 		return getService().getCommerceCatalogsCount();
+	}
+
+	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return getService().getExportActionableDynamicQuery(portletDataContext);
 	}
 
 	public static
@@ -432,12 +441,12 @@ public class CommerceCatalogLocalServiceUtil {
 	}
 
 	public static CommerceCatalog updateCommerceCatalog(
-			long commerceCatalogId, String name, String commerceCurrencyCode,
-			String catalogDefaultLanguageId)
+			long commerceCatalogId, long accountEntryId, String name,
+			String commerceCurrencyCode, String catalogDefaultLanguageId)
 		throws PortalException {
 
 		return getService().updateCommerceCatalog(
-			commerceCatalogId, name, commerceCurrencyCode,
+			commerceCatalogId, accountEntryId, name, commerceCurrencyCode,
 			catalogDefaultLanguageId);
 	}
 
@@ -451,6 +460,10 @@ public class CommerceCatalogLocalServiceUtil {
 
 	public static CommerceCatalogLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(CommerceCatalogLocalService service) {
+		_service = service;
 	}
 
 	private static volatile CommerceCatalogLocalService _service;

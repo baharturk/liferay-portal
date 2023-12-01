@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.upgrade.v2_6_0;
 
-import com.liferay.fragment.internal.upgrade.v2_6_0.util.FragmentEntryVersionTable;
 import com.liferay.fragment.model.FragmentEntryVersion;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
@@ -29,8 +19,6 @@ public class FragmentEntryVersionUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		runSQL(FragmentEntryVersionTable.TABLE_SQL_CREATE);
-
 		_insertIntoFragmentEntryVersion();
 
 		_upgradeFragmentEntryVersionCounter();

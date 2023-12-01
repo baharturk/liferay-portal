@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {
@@ -19,63 +10,167 @@ import {
 	PARSE_FILE_CHUNK_SIZE,
 } from './constants';
 
-export function extractFieldsFromCSV(content, fieldSeparator = ',') {
-	if (content.indexOf('\n') > -1) {
-		const splitLines = content.split('\n');
+export function parseCSV(content, separator, enclosingCharacter) {
+	const formattedRows = [];
+	let quote = false;
+	let row = 0;
+	let col = 0;
+	let c = 0;
 
-		const firstNoEmptyLine = splitLines.find((line) => line.length > 0);
+	for (c; c < content.length; c++) {
+		const cc = content[c];
+		const nc = content[c + 1];
+		formattedRows[row] = formattedRows[row] || [];
+		formattedRows[row][col] = formattedRows[row][col] || '';
+		if (cc === enclosingCharacter && quote && nc === enclosingCharacter) {
+			formattedRows[row][col] += cc;
+			++c;
+			continue;
+		}
+		if (cc === enclosingCharacter) {
+			quote = !quote;
+			continue;
+		}
+		if (cc === separator && !quote) {
+			++col;
+			continue;
+		}
+		if (cc === '\r' && nc === '\n' && !quote) {
+			++row;
+			col = 0;
+			++c;
+			continue;
+		}
+		if (cc === '\n' && !quote) {
+			++row;
+			col = 0;
+			continue;
+		}
+		if (cc === '\r' && !quote) {
+			++row;
+			col = 0;
+			continue;
+		}
 
-		return firstNoEmptyLine.split(fieldSeparator);
+		formattedRows[row][col] += cc;
 	}
+
+	return formattedRows;
+}
+
+export function getItemDetails(itemData, headers) {
+	return itemData.reduce(
+		(data, value, index) => ({
+			...data,
+			[headers[index]]: value,
+		}),
+		{}
+	);
+}
+
+export function addColumnsNamesToCSVData(itemsData, headers) {
+	return itemsData.map((itemData) => getItemDetails(itemData, headers));
+}
+
+export function extractFieldsFromCSV(
+	content,
+	{CSVContainsHeaders, CSVEnclosingCharacter, CSVSeparator}
+) {
+	const rawFileContent = parseCSV(
+		content,
+		CSVSeparator,
+		CSVEnclosingCharacter
+	);
+
+	if (!rawFileContent) {
+		return;
+	}
+
+	let items;
+	let schema;
+	let fileContent;
+
+	if (CSVContainsHeaders) {
+		[schema, ...items] = rawFileContent;
+
+		const formattedSchema = Array.from(new Set(schema));
+
+		fileContent = addColumnsNamesToCSVData(items, formattedSchema);
+	}
+	else {
+		schema = new Array(rawFileContent[0].length)
+			.fill()
+			.map((_, index) => index);
+
+		fileContent = addColumnsNamesToCSVData(rawFileContent, schema);
+	}
+
+	return {
+		fileContent,
+		schema,
+	};
 }
 
 export function extractFieldsFromJSONL(content) {
-	let contentToParse;
+	const fileContent = [];
+	const rows = content.split(/\r?\n/);
 
-	if (content.indexOf('\n') > -1) {
-		const splitLines = content.split('\n');
-
-		contentToParse = splitLines.find((line) => line.length > 0);
-	}
-	else {
-		contentToParse = content;
-	}
-
-	try {
-		const data = JSON.parse(contentToParse);
-
-		return Object.keys(data);
-	}
-	catch (error) {
-		console.error(error);
-
+	if (!rows?.length) {
 		return;
 	}
+
+	for (const row of rows) {
+		try {
+			fileContent.push(JSON.parse(row));
+		}
+		catch (error) {
+			break;
+		}
+	}
+
+	const schema = Object.keys(fileContent[0]);
+
+	return {
+		fileContent,
+		schema,
+	};
 }
 
 export function extractFieldsFromJSON(content) {
 	const jsonArray = content.split('');
 	let parsedJSON;
 
-	jsonArray.shift();
-
-	for (let index = 0; index < jsonArray.length - 1; index++) {
+	for (let index = jsonArray.length - 1; index >= 0; index--) {
 		if (jsonArray[index] === '}') {
-			const partialJson = jsonArray.slice(0, index + 1).join('');
+			const partialJson = jsonArray.slice(0, index + 1).join('') + ']';
 
 			try {
 				parsedJSON = JSON.parse(partialJson);
 
-				return Object.keys(parsedJSON);
+				break;
 			}
 			catch (error) {
 				console.error(error);
 			}
 		}
 	}
+
+	const schema = Object.keys(parsedJSON[0]);
+
+	return {
+		fileContent: parsedJSON,
+		schema,
+	};
 }
 
-function parseInChunk({chunkParser, file, onComplete, onError, options}) {
+function parseInChunk({
+	chunkParser,
+	extension,
+	file,
+	onComplete,
+	onError,
+	options,
+}) {
 	let abort = false;
 	const fileSize = file.size;
 	let offset = 0;
@@ -96,10 +191,17 @@ function parseInChunk({chunkParser, file, onComplete, onError, options}) {
 
 		offset += event.target.result.length;
 
-		const fields = chunkParser(event.target.result, options);
+		const parsedData = chunkParser(event.target.result, options);
 
-		if (fields) {
-			return onComplete(fields);
+		if (
+			parsedData?.fileContent?.length &&
+			parsedData?.fileContent?.length
+		) {
+			return onComplete({
+				extension,
+				fileContent: parsedData.fileContent,
+				schema: parsedData.schema,
+			});
 		}
 		else if (offset >= fileSize) {
 			return onError();
@@ -121,11 +223,16 @@ const parseOperators = {
 	[JSONL_FORMAT]: extractFieldsFromJSONL,
 };
 
-export default function parseFile({file, onComplete, onError, options}) {
-	const extension = file.name.substring(file.name.lastIndexOf('.') + 1);
-
-	return parseInChunk({
+export default function parseFile({
+	extension,
+	file,
+	onComplete,
+	onError,
+	options,
+}) {
+	parseInChunk({
 		chunkParser: parseOperators[extension],
+		extension,
 		file,
 		onComplete,
 		onError,

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
@@ -48,12 +39,16 @@ public class ObjectViewLocalServiceUtil {
 	public static ObjectView addObjectView(
 			long userId, long objectDefinitionId, boolean defaultObjectView,
 			Map<java.util.Locale, String> nameMap,
-			List<com.liferay.object.model.ObjectViewColumn> objectViewColumns)
+			List<com.liferay.object.model.ObjectViewColumn> objectViewColumns,
+			List<com.liferay.object.model.ObjectViewFilterColumn>
+				objectViewFilterColumns,
+			List<com.liferay.object.model.ObjectViewSortColumn>
+				objectViewSortColumns)
 		throws PortalException {
 
 		return getService().addObjectView(
 			userId, objectDefinitionId, defaultObjectView, nameMap,
-			objectViewColumns);
+			objectViewColumns, objectViewFilterColumns, objectViewSortColumns);
 	}
 
 	/**
@@ -119,6 +114,12 @@ public class ObjectViewLocalServiceUtil {
 	 */
 	public static ObjectView deleteObjectView(ObjectView objectView) {
 		return getService().deleteObjectView(objectView);
+	}
+
+	public static void deleteObjectViews(long objectDefinitionId)
+		throws PortalException {
+
+		getService().deleteObjectViews(objectDefinitionId);
 	}
 
 	/**
@@ -216,6 +217,10 @@ public class ObjectViewLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
+	public static ObjectView fetchDefaultObjectView(long objectDefinitionId) {
+		return getService().fetchDefaultObjectView(objectDefinitionId);
+	}
+
 	public static ObjectView fetchObjectView(long objectViewId) {
 		return getService().fetchObjectView(objectViewId);
 	}
@@ -297,6 +302,10 @@ public class ObjectViewLocalServiceUtil {
 		return getService().getObjectViews(start, end);
 	}
 
+	public static List<ObjectView> getObjectViews(long objectDefinitionId) {
+		return getService().getObjectViews(objectDefinitionId);
+	}
+
 	/**
 	 * Returns the number of object views.
 	 *
@@ -324,14 +333,25 @@ public class ObjectViewLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
+	public static void unassociateObjectField(
+		com.liferay.object.model.ObjectField objectField) {
+
+		getService().unassociateObjectField(objectField);
+	}
+
 	public static ObjectView updateObjectView(
 			long objectViewId, boolean defaultObjectView,
 			Map<java.util.Locale, String> nameMap,
-			List<com.liferay.object.model.ObjectViewColumn> objectViewColumns)
+			List<com.liferay.object.model.ObjectViewColumn> objectViewColumns,
+			List<com.liferay.object.model.ObjectViewFilterColumn>
+				objectViewFilterColumns,
+			List<com.liferay.object.model.ObjectViewSortColumn>
+				objectViewSortColumns)
 		throws PortalException {
 
 		return getService().updateObjectView(
-			objectViewId, defaultObjectView, nameMap, objectViewColumns);
+			objectViewId, defaultObjectView, nameMap, objectViewColumns,
+			objectViewFilterColumns, objectViewSortColumns);
 	}
 
 	/**
@@ -350,6 +370,10 @@ public class ObjectViewLocalServiceUtil {
 
 	public static ObjectViewLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(ObjectViewLocalService service) {
+		_service = service;
 	}
 
 	private static volatile ObjectViewLocalService _service;

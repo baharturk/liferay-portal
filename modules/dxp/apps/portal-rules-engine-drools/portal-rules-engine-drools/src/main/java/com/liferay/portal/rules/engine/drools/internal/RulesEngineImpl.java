@@ -1,24 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.rules.engine.drools.internal;
 
-import com.liferay.portal.kernel.messaging.MessageBus;
-import com.liferay.portal.kernel.messaging.proxy.ProxyMessageListener;
 import com.liferay.portal.kernel.resource.ResourceRetriever;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.rules.engine.Fact;
@@ -28,7 +16,6 @@ import com.liferay.portal.rules.engine.RulesEngine;
 import com.liferay.portal.rules.engine.RulesEngineException;
 import com.liferay.portal.rules.engine.RulesLanguage;
 import com.liferay.portal.rules.engine.RulesResourceRetriever;
-import com.liferay.portal.rules.engine.constants.RulesEngineConstants;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,13 +46,10 @@ import org.drools.runtime.rule.QueryResultsRow;
 
 import org.mvel2.MVELRuntime;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Michael C. Han
@@ -73,9 +57,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  */
 @Component(
-	immediate = true,
 	property = {
-		"proxy.bean=false", "rules.engine.default.language=DRL",
+		"rules.engine.default.language=DRL",
 		"rules.engine.language.mapping.DROOLS_BRL=BRL",
 		"rules.engine.language.mapping.DROOLS_CHANGE_SET=CHANGE_SET",
 		"rules.engine.language.mapping.DROOLS_DECISION_TABLE=DTABLE",
@@ -86,7 +69,7 @@ import org.osgi.service.component.annotations.Reference;
 		"rules.engine.language.mapping.DROOLS_RULE_LANGUAGE=DRL",
 		"rules.engine.language.mapping.DROOLS_XML_LANGUAGE=XDRL"
 	},
-	service = {RulesEngine.class, RulesEngineImpl.class}
+	service = RulesEngine.class
 )
 public class RulesEngineImpl implements RulesEngine {
 
@@ -174,10 +157,9 @@ public class RulesEngineImpl implements RulesEngine {
 	public void setRulesLanguageMapping(Map<String, String> rulesLanguageMap) {
 		for (Map.Entry<String, String> entry : rulesLanguageMap.entrySet()) {
 			RulesLanguage rulesLanguage = RulesLanguage.valueOf(entry.getKey());
-			ResourceType resourceType = ResourceType.getResourceType(
-				entry.getValue());
 
-			_resourceTypeMap.put(rulesLanguage, resourceType);
+			_resourceTypeMap.put(
+				rulesLanguage, ResourceType.getResourceType(entry.getValue()));
 		}
 	}
 
@@ -196,36 +178,15 @@ public class RulesEngineImpl implements RulesEngine {
 		Dictionary<String, Object> properties =
 			componentContext.getProperties();
 
-		String defaultRulesLanguage = GetterUtil.getString(
-			properties.get("rules.engine.default.language"));
-
-		setDefaultRulesLanguage(defaultRulesLanguage);
+		setDefaultRulesLanguage(
+			GetterUtil.getString(
+				properties.get("rules.engine.default.language")));
 
 		setRulesLanguageMapping(_getRulesLanguageMap(properties));
-
-		ProxyMessageListener proxyMessageListener = new ProxyMessageListener();
-
-		proxyMessageListener.setManager(this);
-		proxyMessageListener.setMessageBus(_messageBus);
-
-		Dictionary<String, Object> proxyMessageListenerProperties =
-			HashMapDictionaryBuilder.<String, Object>put(
-				"destination.name", RulesEngineConstants.DESTINATION_NAME
-			).build();
-
-		BundleContext bundleContext = componentContext.getBundleContext();
-
-		_serviceRegistration = bundleContext.registerService(
-			ProxyMessageListener.class, proxyMessageListener,
-			proxyMessageListenerProperties);
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		if (_serviceRegistration != null) {
-			_serviceRegistration.unregister();
-		}
-
 		_defaultResourceType = null;
 
 		_resourceTypeMap = null;
@@ -417,12 +378,7 @@ public class RulesEngineImpl implements RulesEngine {
 	private ResourceType _defaultResourceType;
 	private final Map<String, KnowledgeBase> _knowledgeBaseMap =
 		new ConcurrentHashMap<>();
-
-	@Reference
-	private MessageBus _messageBus;
-
 	private Map<RulesLanguage, ResourceType> _resourceTypeMap =
 		new ConcurrentHashMap<>();
-	private ServiceRegistration<ProxyMessageListener> _serviceRegistration;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.web.internal.webdav;
@@ -24,12 +15,12 @@ import com.liferay.dynamic.data.mapping.webdav.DDMWebDAV;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.webdav.BaseWebDAVStorageImpl;
 import com.liferay.portal.kernel.webdav.Resource;
 import com.liferay.portal.kernel.webdav.WebDAVException;
 import com.liferay.portal.kernel.webdav.WebDAVRequest;
 import com.liferay.portal.kernel.webdav.WebDAVStorage;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.webdav.BaseWebDAVStorageImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +32,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Juan Fernández
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS,
 		"webdav.storage.token=dynamic_data_lists"
@@ -103,25 +93,6 @@ public class DDLWebDAVStorageImpl extends BaseWebDAVStorageImpl {
 			_portal.getClassNameId(DDLRecordSet.class));
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDMStructureLocalService(
-		DDMStructureLocalService ddmStructureLocalService) {
-
-		_ddmStructureLocalService = ddmStructureLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMTemplateLocalService(
-		DDMTemplateLocalService ddmTemplateLocalService) {
-
-		_ddmTemplateLocalService = ddmTemplateLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMWebDav(DDMWebDAV ddmWebDAV) {
-		_ddmWebDAV = ddmWebDAV;
-	}
-
 	private List<Resource> _getFolders(WebDAVRequest webDAVRequest)
 		throws Exception {
 
@@ -174,8 +145,13 @@ public class DDLWebDAVStorageImpl extends BaseWebDAVStorageImpl {
 		return resources;
 	}
 
+	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;
+
+	@Reference
 	private DDMTemplateLocalService _ddmTemplateLocalService;
+
+	@Reference
 	private DDMWebDAV _ddmWebDAV;
 
 	@Reference

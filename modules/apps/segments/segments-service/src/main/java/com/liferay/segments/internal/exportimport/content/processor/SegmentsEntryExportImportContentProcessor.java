@@ -1,24 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.internal.exportimport.content.processor;
 
+import com.liferay.expando.kernel.model.ExpandoColumn;
+import com.liferay.expando.kernel.model.adapter.StagedExpandoColumn;
+import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
 import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.StagedModel;
-import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.model.adapter.util.ModelAdapterUtil;
 import com.liferay.portal.odata.filter.Filter;
 import com.liferay.portal.odata.filter.FilterParser;
 import com.liferay.portal.odata.filter.FilterParserProvider;
@@ -34,6 +29,8 @@ import com.liferay.segments.internal.odata.filter.expression.ImportExpressionVis
 import com.liferay.segments.model.SegmentsEntry;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,10 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = "model.class.name=com.liferay.segments.model.SegmentsEntry",
-	service = {
-		ExportImportContentProcessor.class,
-		SegmentsEntryExportImportContentProcessor.class
-	}
+	service = ExportImportContentProcessor.class
 )
 public class SegmentsEntryExportImportContentProcessor
 	implements ExportImportContentProcessor<String> {
@@ -60,8 +54,10 @@ public class SegmentsEntryExportImportContentProcessor
 
 		Criteria criteria = CriteriaSerializer.deserialize(content);
 
-		return _replaceExportCriteriaReferences(
+		content = _replaceExportCriteriaReferences(
 			portletDataContext, stagedModel, criteria);
+
+		return _replaceExportExpandoColumnReferences(content);
 	}
 
 	@Override
@@ -69,6 +65,9 @@ public class SegmentsEntryExportImportContentProcessor
 			PortletDataContext portletDataContext, StagedModel stagedModel,
 			String content)
 		throws Exception {
+
+		content = _replaceImportExpandoColumnReferences(
+			portletDataContext.getCompanyId(), content);
 
 		Criteria criteria = CriteriaSerializer.deserialize(content);
 
@@ -120,6 +119,91 @@ public class SegmentsEntryExportImportContentProcessor
 		return CriteriaSerializer.serialize(criteria);
 	}
 
+	private String _replaceExportExpandoColumnReferences(String content) {
+		Matcher matcher = _exportCustomFieldPattern.matcher(content);
+
+		StringBuffer sb = null;
+
+		while (matcher.find()) {
+			if (sb == null) {
+				sb = new StringBuffer(content.length());
+			}
+
+			String expandoColumnId = matcher.group(1);
+
+			ExpandoColumn expandoColumn =
+				_expandoColumnLocalService.fetchExpandoColumn(
+					GetterUtil.getLong(expandoColumnId));
+
+			if (expandoColumn == null) {
+				continue;
+			}
+
+			StagedExpandoColumn stagedExpandoColumn = ModelAdapterUtil.adapt(
+				expandoColumn, ExpandoColumn.class, StagedExpandoColumn.class);
+
+			String uuid = stagedExpandoColumn.getUuid();
+
+			matcher.appendReplacement(
+				sb,
+				Matcher.quoteReplacement(
+					"customField\\/_" + uuid.replaceAll(" ", "_")));
+		}
+
+		if (sb != null) {
+			matcher.appendTail(sb);
+
+			content = sb.toString();
+		}
+
+		return content;
+	}
+
+	private String _replaceImportExpandoColumnReferences(
+		long companyId, String content) {
+
+		Matcher matcher = _importCustomFieldPattern.matcher(content);
+
+		StringBuffer sb = null;
+
+		while (matcher.find()) {
+			if (sb == null) {
+				sb = new StringBuffer(content.length());
+			}
+
+			String className = matcher.group(1);
+			String name = matcher.group(3);
+			String tableName = matcher.group(2);
+
+			ExpandoColumn expandoColumn = _expandoColumnLocalService.getColumn(
+				companyId, className, tableName, name);
+
+			if (expandoColumn == null) {
+				expandoColumn = _expandoColumnLocalService.getColumn(
+					companyId, className, tableName, name.replaceAll("_", " "));
+			}
+
+			if (expandoColumn == null) {
+				continue;
+			}
+
+			String fieldName =
+				_entityModelFieldMapper.getExpandoColumnEntityFieldName(
+					expandoColumn);
+
+			matcher.appendReplacement(
+				sb, Matcher.quoteReplacement("customField\\/" + fieldName));
+		}
+
+		if (sb != null) {
+			matcher.appendTail(sb);
+
+			content = sb.toString();
+		}
+
+		return content;
+	}
+
 	private String _replaceImportSegmentsEntryReferences(
 			PortletDataContext portletDataContext, StagedModel stagedModel,
 			Criteria criteria)
@@ -166,14 +250,19 @@ public class SegmentsEntryExportImportContentProcessor
 		return CriteriaSerializer.serialize(importCriteria);
 	}
 
+	private static final Pattern _exportCustomFieldPattern = Pattern.compile(
+		"customField\\\\/_(\\d+)_[^ ]+");
+	private static final Pattern _importCustomFieldPattern = Pattern.compile(
+		"customField\\\\/_([\\w\\.]+)#([\\w]+)#([^ ]+)");
+
 	@Reference
 	private EntityModelFieldMapper _entityModelFieldMapper;
 
 	@Reference
-	private FilterParserProvider _filterParserProvider;
+	private ExpandoColumnLocalService _expandoColumnLocalService;
 
 	@Reference
-	private GroupLocalService _groupLocalService;
+	private FilterParserProvider _filterParserProvider;
 
 	@Reference
 	private SegmentsCriteriaContributorRegistry

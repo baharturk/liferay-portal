@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.report;
@@ -25,7 +16,7 @@ import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -33,13 +24,13 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,7 +39,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcos Martins
  */
 @Component(
-	immediate = true,
 	property = {
 		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.COLOR,
 		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.DATE,
@@ -61,6 +51,13 @@ import org.osgi.service.component.annotations.Reference;
 public class TextDDMFormFieldTypeReportProcessor
 	implements DDMFormFieldTypeReportProcessor {
 
+	public TextDDMFormFieldTypeReportProcessor() {
+	}
+
+	public TextDDMFormFieldTypeReportProcessor(JSONFactory jsonFactory) {
+		this.jsonFactory = jsonFactory;
+	}
+
 	@Override
 	public JSONObject process(
 			DDMFormFieldValue ddmFormFieldValue, JSONObject fieldJSONObject,
@@ -69,7 +66,7 @@ public class TextDDMFormFieldTypeReportProcessor
 
 		boolean nullValue = Validator.isNull(getValue(ddmFormFieldValue));
 		int totalEntries = fieldJSONObject.getInt("totalEntries");
-		JSONArray valuesJSONArray = JSONFactoryUtil.createJSONArray();
+		JSONArray valuesJSONArray = jsonFactory.createJSONArray();
 
 		if (ddmFormInstanceReportEvent.equals(
 				DDMFormInstanceReportConstants.EVENT_ADD_RECORD_VERSION)) {
@@ -121,48 +118,46 @@ public class TextDDMFormFieldTypeReportProcessor
 					new Sort(Field.MODIFIED_DATE, Sort.LONG_TYPE, true));
 
 			List<DDMFormInstanceRecord> ddmFormInstanceRecords =
-				baseModelSearchResult.getBaseModels();
+				ListUtil.filter(
+					baseModelSearchResult.getBaseModels(),
+					currentDDMFormInstanceRecord -> {
+						long ddmFormInstanceRecordId =
+							currentDDMFormInstanceRecord.
+								getFormInstanceRecordId();
 
-			Stream<DDMFormInstanceRecord> stream =
-				ddmFormInstanceRecords.stream();
+						return ddmFormInstanceRecordId != formInstanceRecordId;
+					});
 
-			stream.filter(
-				currentDDMFormInstanceRecord ->
-					currentDDMFormInstanceRecord.getFormInstanceRecordId() !=
-						formInstanceRecordId
-			).limit(
-				_VALUES_MAX_LENGTH
-			).forEach(
-				currentDDMFormInstanceRecord -> {
-					try {
-						DDMFormValues ddmFormValues =
-							currentDDMFormInstanceRecord.getDDMFormValues();
+			for (int i = 0; i < _VALUES_MAX_LENGTH; i++) {
+				DDMFormInstanceRecord currentDDMFormInstanceRecord =
+					ddmFormInstanceRecords.get(i);
 
-						Map<String, List<DDMFormFieldValue>>
-							ddmFormFieldValuesMap =
-								ddmFormValues.getDDMFormFieldValuesMap(true);
+				try {
+					DDMFormValues ddmFormValues =
+						currentDDMFormInstanceRecord.getDDMFormValues();
 
-						List<DDMFormFieldValue> ddmFormFieldValues =
-							ddmFormFieldValuesMap.get(
-								ddmFormFieldValue.getName());
+					Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
+						ddmFormValues.getDDMFormFieldValuesMap(true);
 
-						ddmFormFieldValues.forEach(
-							currentDDMFormFieldValue -> valuesJSONArray.put(
-								JSONUtil.put(
-									"formInstanceRecordId",
-									currentDDMFormInstanceRecord.
-										getFormInstanceRecordId()
-								).put(
-									"value", getValue(currentDDMFormFieldValue)
-								)));
-					}
-					catch (PortalException portalException) {
-						if (_log.isWarnEnabled()) {
-							_log.warn(portalException, portalException);
-						}
+					List<DDMFormFieldValue> ddmFormFieldValues =
+						ddmFormFieldValuesMap.get(ddmFormFieldValue.getName());
+
+					ddmFormFieldValues.forEach(
+						currentDDMFormFieldValue -> valuesJSONArray.put(
+							JSONUtil.put(
+								"formInstanceRecordId",
+								currentDDMFormInstanceRecord.
+									getFormInstanceRecordId()
+							).put(
+								"value", getValue(currentDDMFormFieldValue)
+							)));
+				}
+				catch (PortalException portalException) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(portalException);
 					}
 				}
-			);
+			}
 
 			if (!nullValue) {
 				totalEntries--;
@@ -187,6 +182,9 @@ public class TextDDMFormFieldTypeReportProcessor
 	@Reference
 	protected DDMFormInstanceRecordLocalService
 		ddmFormInstanceRecordLocalService;
+
+	@Reference
+	protected JSONFactory jsonFactory;
 
 	private static final int _VALUES_MAX_LENGTH = 5;
 

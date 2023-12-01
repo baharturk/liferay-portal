@@ -1,27 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.internal.blueprint.parameter;
 
+import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.asset.kernel.service.AssetTagLocalService;
+import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
+import com.liferay.expando.kernel.service.ExpandoValueLocalService;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
@@ -30,16 +23,20 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.search.experiences.blueprint.parameter.SXPParameter;
 import com.liferay.search.experiences.blueprint.parameter.contributor.SXPParameterContributorDefinition;
 import com.liferay.search.experiences.blueprint.parameter.contributor.SXPParameterContributorDefinitionProvider;
+import com.liferay.search.experiences.configuration.SemanticSearchConfigurationProvider;
 import com.liferay.search.experiences.internal.blueprint.parameter.contributor.ContextSXPParameterContributor;
 import com.liferay.search.experiences.internal.blueprint.parameter.contributor.IpstackSXPParameterContributor;
+import com.liferay.search.experiences.internal.blueprint.parameter.contributor.MLSXPParameterContributor;
 import com.liferay.search.experiences.internal.blueprint.parameter.contributor.OpenWeatherMapSXPParameterContributor;
 import com.liferay.search.experiences.internal.blueprint.parameter.contributor.SXPParameterContributor;
 import com.liferay.search.experiences.internal.blueprint.parameter.contributor.TimeSXPParameterContributor;
 import com.liferay.search.experiences.internal.blueprint.parameter.contributor.UserSXPParameterContributor;
+import com.liferay.search.experiences.ml.embedding.text.TextEmbeddingRetriever;
 import com.liferay.search.experiences.rest.dto.v1_0.Configuration;
 import com.liferay.search.experiences.rest.dto.v1_0.Parameter;
 import com.liferay.search.experiences.rest.dto.v1_0.ParameterConfiguration;
@@ -59,6 +56,7 @@ import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
@@ -73,7 +71,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Petteri Karttunen
  */
 @Component(
-	enabled = false, immediate = true,
+	enabled = false,
 	service = {
 		SXPParameterContributorDefinitionProvider.class,
 		SXPParameterDataCreator.class
@@ -107,7 +105,7 @@ public class SXPParameterDataCreator
 
 	@Override
 	public List<SXPParameterContributorDefinition>
-		getSXPParameterContributorDefinitions(long companyId) {
+		getSXPParameterContributorDefinitions(long companyId, Locale locale) {
 
 		if (ArrayUtil.isEmpty(_sxpParameterContributors)) {
 			return Collections.emptyList();
@@ -121,7 +119,7 @@ public class SXPParameterDataCreator
 
 			sxpParameterContributorDefinitions.addAll(
 				sxpParameterContributor.getSXPParameterContributorDefinitions(
-					companyId));
+					companyId, locale));
 		}
 
 		return sxpParameterContributorDefinitions;
@@ -132,10 +130,15 @@ public class SXPParameterDataCreator
 		_sxpParameterContributors = new SXPParameterContributor[] {
 			new ContextSXPParameterContributor(_groupLocalService, _language),
 			new IpstackSXPParameterContributor(_configurationProvider),
+			new MLSXPParameterContributor(
+				_language, _semanticSearchConfigurationProvider,
+				_textEmbeddingRetriever),
 			new OpenWeatherMapSXPParameterContributor(_configurationProvider),
 			new TimeSXPParameterContributor(),
 			new UserSXPParameterContributor(
-				_language, _roleLocalService, _segmentsEntryRetriever,
+				_assetCategoryLocalService, _assetTagLocalService,
+				_expandoColumnLocalService, _expandoValueLocalService,
+				_groupLocalService, _language, _portal, _segmentsEntryRetriever,
 				_userGroupGroupRoleLocalService, _userGroupLocalService,
 				_userGroupRoleLocalService, _userLocalService)
 		};
@@ -152,17 +155,14 @@ public class SXPParameterDataCreator
 
 		String keywords = GetterUtil.getString(searchContext.getKeywords());
 
-		_add(
-			new StringSXPParameter("keywords.raw", true, keywords),
-			sxpParameters);
-
 		if ((StringUtil.count(keywords, CharPool.QUOTE) % 2) != 0) {
 			keywords = StringUtil.replace(
 				keywords, CharPool.QUOTE, StringPool.BLANK);
 		}
 
 		keywords = keywords.replaceAll("/", "&#8725;");
-		keywords = keywords.replaceAll("\"", "\\\\\"");
+		keywords = keywords.replaceAll("\"", "&#34;");
+		keywords = keywords.replaceAll("\\$", "&#36;");
 		keywords = keywords.replaceAll("\\[", "&#91;");
 		keywords = keywords.replaceAll("\\\\", "&#92;");
 		keywords = keywords.replaceAll("\\]", "&#93;");
@@ -257,7 +257,8 @@ public class SXPParameterDataCreator
 				sxpParameterContributorDefinitions =
 					sxpParameterContributor.
 						getSXPParameterContributorDefinitions(
-							searchContext.getCompanyId());
+							searchContext.getCompanyId(),
+							searchContext.getLocale());
 
 			if (ListUtil.isNotEmpty(sxpParameterContributorDefinitions)) {
 				for (SXPParameterContributorDefinition
@@ -696,7 +697,19 @@ public class SXPParameterDataCreator
 	}
 
 	@Reference
+	private AssetCategoryLocalService _assetCategoryLocalService;
+
+	@Reference
+	private AssetTagLocalService _assetTagLocalService;
+
+	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private ExpandoColumnLocalService _expandoColumnLocalService;
+
+	@Reference
+	private ExpandoValueLocalService _expandoValueLocalService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
@@ -705,15 +718,19 @@ public class SXPParameterDataCreator
 	private Language _language;
 
 	@Reference
-	private LayoutLocalService _layoutLocalService;
-
-	@Reference
-	private RoleLocalService _roleLocalService;
+	private Portal _portal;
 
 	@Reference
 	private SegmentsEntryRetriever _segmentsEntryRetriever;
 
+	@Reference
+	private SemanticSearchConfigurationProvider
+		_semanticSearchConfigurationProvider;
+
 	private SXPParameterContributor[] _sxpParameterContributors;
+
+	@Reference
+	private TextEmbeddingRetriever _textEmbeddingRetriever;
 
 	@Reference
 	private UserGroupGroupRoleLocalService _userGroupGroupRoleLocalService;

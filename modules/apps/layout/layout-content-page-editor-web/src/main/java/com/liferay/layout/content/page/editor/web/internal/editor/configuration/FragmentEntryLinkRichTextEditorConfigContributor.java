@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.editor.configuration;
@@ -29,7 +20,7 @@ import com.liferay.portal.kernel.editor.configuration.EditorConfigContributor;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Validator;
@@ -78,8 +69,6 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 		).put(
 			"documentBrowseLinkUrl", itemSelectorURL.toString()
 		).put(
-			"enterMode", 2
-		).put(
 			"extraPlugins", getExtraPluginsLists()
 		).put(
 			"filebrowserImageBrowseLinkUrl", imageSelectorURL.toString()
@@ -90,14 +79,14 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 		).put(
 			"skin", "moono-lisa"
 		).put(
-			"spritemap", themeDisplay.getPathThemeImages() + "/clay/icons.svg"
+			"spritemap", themeDisplay.getPathThemeSpritemap()
 		).put(
 			"toolbars", _getToolbarsJSONObject(themeDisplay.getLocale())
 		);
 	}
 
 	protected String getExtraPluginsLists() {
-		return "ae_autolink,ae_dragresize,ae_addimages,ae_imagealignment," +
+		return "autolink,ae_dragresize,ae_addimages,ae_imagealignment," +
 			"ae_placeholder,ae_selectionregion,ae_tableresize," +
 				"ae_tabletools,ae_uicore,itemselector,media,adaptivemedia";
 	}
@@ -128,13 +117,12 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 
 		layoutItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
 			new URLItemSelectorReturnType());
-		layoutItemSelectorCriterion.setShowHiddenPages(true);
 
 		return layoutItemSelectorCriterion;
 	}
 
 	protected String getRemovePluginsLists() {
-		return "contextmenu,elementspath,floatingspace,image,link,liststyle," +
+		return "contextmenu,elementspath,floatingspace,image,liststyle," +
 			"magicline,resize,tabletools,toolbar,ae_embed";
 	}
 
@@ -174,22 +162,22 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 	private JSONArray _getStyleFormatsJSONArray(Locale locale) {
 		return JSONUtil.putAll(
 			_getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "small"), "span", "small",
+				_language.get(locale, "small"), "span", "small",
 				_CKEDITOR_STYLE_INLINE),
 			_getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "lead"), "span", "lead",
+				_language.get(locale, "lead"), "span", "lead",
 				_CKEDITOR_STYLE_INLINE),
 			_getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "1"), "h1", null,
+				_language.format(locale, "heading-x", "1"), "h1", null,
 				_CKEDITOR_STYLE_BLOCK),
 			_getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "2"), "h2", null,
+				_language.format(locale, "heading-x", "2"), "h2", null,
 				_CKEDITOR_STYLE_BLOCK),
 			_getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "3"), "h3", null,
+				_language.format(locale, "heading-x", "3"), "h3", null,
 				_CKEDITOR_STYLE_BLOCK),
 			_getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "4"), "h4", null,
+				_language.format(locale, "heading-x", "4"), "h4", null,
 				_CKEDITOR_STYLE_BLOCK));
 	}
 
@@ -306,5 +294,8 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 
 	@Reference
 	private ItemSelector _itemSelector;
+
+	@Reference
+	private Language _language;
 
 }

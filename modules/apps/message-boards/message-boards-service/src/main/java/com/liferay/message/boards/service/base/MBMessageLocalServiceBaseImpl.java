@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.base;
@@ -48,6 +39,8 @@ import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -63,8 +56,6 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -273,47 +264,20 @@ public abstract class MBMessageLocalServiceBaseImpl
 		return mbMessagePersistence.fetchByUUID_G(uuid, groupId);
 	}
 
-	/**
-	 * Returns the message-boards message with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the message-boards message's external reference code
-	 * @return the matching message-boards message, or <code>null</code> if a matching message-boards message could not be found
-	 */
 	@Override
 	public MBMessage fetchMBMessageByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
-		return mbMessagePersistence.fetchByG_ERC(
-			groupId, externalReferenceCode);
+		return mbMessagePersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchMBMessageByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public MBMessage fetchMBMessageByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return fetchMBMessageByExternalReferenceCode(
-			groupId, externalReferenceCode);
-	}
-
-	/**
-	 * Returns the message-boards message with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the message-boards message's external reference code
-	 * @return the matching message-boards message
-	 * @throws PortalException if a matching message-boards message could not be found
-	 */
 	@Override
 	public MBMessage getMBMessageByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException {
 
-		return mbMessagePersistence.findByG_ERC(groupId, externalReferenceCode);
+		return mbMessagePersistence.findByERC_G(externalReferenceCode, groupId);
 	}
 
 	/**
@@ -538,6 +502,11 @@ public abstract class MBMessageLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement MBMessageLocalServiceImpl#deleteMBMessage(MBMessage) to avoid orphaned data");
+		}
+
 		return mbMessageLocalService.deleteMBMessage((MBMessage)persistedModel);
 	}
 
@@ -648,7 +617,7 @@ public abstract class MBMessageLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		MBMessageLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -663,7 +632,7 @@ public abstract class MBMessageLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		mbMessageLocalService = (MBMessageLocalService)aopProxy;
 
-		_setLocalServiceUtilService(mbMessageLocalService);
+		MBMessageLocalServiceUtil.setService(mbMessageLocalService);
 	}
 
 	/**
@@ -722,22 +691,6 @@ public abstract class MBMessageLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		MBMessageLocalService mbMessageLocalService) {
-
-		try {
-			Field field = MBMessageLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, mbMessageLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	protected MBMessageLocalService mbMessageLocalService;
 
 	@Reference
@@ -749,5 +702,8 @@ public abstract class MBMessageLocalServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		MBMessageLocalServiceBaseImpl.class);
 
 }

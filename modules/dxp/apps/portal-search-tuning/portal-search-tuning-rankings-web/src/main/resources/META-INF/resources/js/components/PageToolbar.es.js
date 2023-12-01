@@ -1,17 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import ClayLink from '@clayui/link';
-import ClayManagementToolbar from '@clayui/management-toolbar';
+import {ManagementToolbar} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {Component} from 'react';
 
@@ -40,12 +34,12 @@ class PageToolbar extends Component {
 		} = this.props;
 
 		return (
-			<ClayManagementToolbar
+			<ManagementToolbar.Container
 				aria-label={Liferay.Language.get('save')}
 				className="page-toolbar-root"
 			>
-				<ClayManagementToolbar.ItemList>
-					<ClayManagementToolbar.Item>
+				<ManagementToolbar.ItemList>
+					<ManagementToolbar.Item>
 						<label
 							className="toggle-switch"
 							htmlFor="active-switch-input"
@@ -68,15 +62,13 @@ class PageToolbar extends Component {
 									: Liferay.Language.get('active')}
 							</span>
 						</label>
-					</ClayManagementToolbar.Item>
-				</ClayManagementToolbar.ItemList>
+					</ManagementToolbar.Item>
+				</ManagementToolbar.ItemList>
 
-				<ClayManagementToolbar.ItemList
-					expand
-				></ClayManagementToolbar.ItemList>
+				<ManagementToolbar.ItemList expand></ManagementToolbar.ItemList>
 
-				<ClayManagementToolbar.ItemList>
-					<ClayManagementToolbar.Item>
+				<ManagementToolbar.ItemList>
+					<ManagementToolbar.Item>
 						<ClayLink
 							displayType="secondary"
 							href={onCancel}
@@ -84,10 +76,10 @@ class PageToolbar extends Component {
 						>
 							{Liferay.Language.get('cancel')}
 						</ClayLink>
-					</ClayManagementToolbar.Item>
+					</ManagementToolbar.Item>
 
 					{onSaveAsDraft && (
-						<ClayManagementToolbar.Item>
+						<ManagementToolbar.Item>
 							<ClayButton
 								displayType="secondary"
 								onClick={onSaveAsDraft}
@@ -95,10 +87,10 @@ class PageToolbar extends Component {
 							>
 								{Liferay.Language.get('save-as-draft')}
 							</ClayButton>
-						</ClayManagementToolbar.Item>
+						</ManagementToolbar.Item>
 					)}
 
-					<ClayManagementToolbar.Item>
+					<ManagementToolbar.Item>
 						<ClayButton
 							disabled={submitDisabled}
 							onClick={onPublish}
@@ -107,9 +99,9 @@ class PageToolbar extends Component {
 						>
 							{Liferay.Language.get('save')}
 						</ClayButton>
-					</ClayManagementToolbar.Item>
-				</ClayManagementToolbar.ItemList>
-			</ClayManagementToolbar>
+					</ManagementToolbar.Item>
+				</ManagementToolbar.ItemList>
+			</ManagementToolbar.Container>
 		);
 	}
 }

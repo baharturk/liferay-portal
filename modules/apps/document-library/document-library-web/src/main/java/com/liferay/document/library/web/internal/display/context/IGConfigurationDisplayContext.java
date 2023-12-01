@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
@@ -145,7 +136,6 @@ public class IGConfigurationDisplayContext {
 
 		folderItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
 			new FolderItemSelectorReturnType());
-
 		folderItemSelectorCriterion.setFolderId(getRootFolderId());
 		folderItemSelectorCriterion.setIgnoreRootFolder(true);
 		folderItemSelectorCriterion.setRepositoryId(getSelectedRepositoryId());
@@ -154,12 +144,19 @@ public class IGConfigurationDisplayContext {
 			getSelectedRepositoryId());
 		folderItemSelectorCriterion.setShowGroupSelector(true);
 
+		long groupId = getSelectedRepositoryId();
+
+		Repository repository = _repositoryLocalService.fetchRepository(
+			getSelectedRepositoryId());
+
+		if (repository != null) {
+			groupId = repository.getGroupId();
+		}
+
 		return _itemSelector.getItemSelectorURL(
 			RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
 			GroupLocalServiceUtil.getGroup(
-				GetterUtil.getLong(
-					getSelectedRepositoryId(),
-					_themeDisplay.getScopeGroupId())),
+				GetterUtil.getLong(groupId, _themeDisplay.getScopeGroupId())),
 			_themeDisplay.getScopeGroupId(), getItemSelectedEventName(),
 			folderItemSelectorCriterion);
 	}
@@ -185,6 +182,10 @@ public class IGConfigurationDisplayContext {
 			return _dlAppLocalService.getFolder(_folderId);
 		}
 		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
 			_folderNotFound = true;
 
 			return null;
@@ -286,7 +287,7 @@ public class IGConfigurationDisplayContext {
 		}
 	}
 
-	private void _initRepository() {
+	private void _initRepository() throws PortalException {
 		if (_selectedRepositoryId != 0) {
 			return;
 		}
@@ -301,6 +302,8 @@ public class IGConfigurationDisplayContext {
 			return;
 		}
 
+		_initFolder();
+
 		if ((_folder == null) && (_folderId != null) &&
 			(_folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID)) {
 
@@ -314,17 +317,6 @@ public class IGConfigurationDisplayContext {
 			_selectedRepositoryId = ParamUtil.getLong(
 				_httpServletRequest, "repositoryId",
 				_themeDisplay.getScopeGroupId());
-		}
-
-		try {
-			_repository = _repositoryLocalService.getRepository(
-				_selectedRepositoryId);
-
-			_repositoryNotFound = false;
-		}
-		catch (Exception exception) {
-			_repository = null;
-			_repositoryNotFound = true;
 		}
 	}
 
@@ -346,9 +338,7 @@ public class IGConfigurationDisplayContext {
 	private final PortletPreferencesLocalService
 		_portletPreferencesLocalService;
 	private final RenderRequest _renderRequest;
-	private Repository _repository;
 	private final RepositoryLocalService _repositoryLocalService;
-	private boolean _repositoryNotFound;
 	private long _selectedRepositoryId;
 	private final ThemeDisplay _themeDisplay;
 	private final TrashHelper _trashHelper;

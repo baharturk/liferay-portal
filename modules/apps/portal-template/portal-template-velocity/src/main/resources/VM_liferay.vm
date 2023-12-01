@@ -3,9 +3,9 @@
 #set ($js_main_file = "")
 
 #if ($themeDisplay)
-	#set ($css_main_file = $htmlUtil.escape($portalUtil.getStaticResourceURL($request, "$themeDisplay.getPathThemeCss()/main.css")))
+	#set ($css_main_file = $htmlUtil.escape($themeDisplay.getMainCSSURL()))
 	#set ($is_signed_in = $themeDisplay.isSignedIn())
-	#set ($js_main_file = $htmlUtil.escape($portalUtil.getStaticResourceURL($request, "$themeDisplay.getPathThemeCss()/main.js")))
+	#set ($js_main_file = $htmlUtil.escape($themeDisplay.getClayCSSURL()))
 #end
 
 #set ($is_setup_complete = false)
@@ -35,9 +35,9 @@ $dateUtil.getCurrentDate($date_format, $locale)#end
 
 #macro (js $file_name)
 	#if ($file_name == $js_main_file)
-		<script id="mainLiferayThemeJavaScript" src="$file_name" type="text/javascript"></script>
+		<script $nonceAttribute id="mainLiferayThemeJavaScript" src="$file_name" type="text/javascript"></script>
 	#else
-		<script src="$file_name" type="text/javascript"></script>
+		<script $nonceAttribute src="$file_name" type="text/javascript"></script>
 	#end
 #end
 

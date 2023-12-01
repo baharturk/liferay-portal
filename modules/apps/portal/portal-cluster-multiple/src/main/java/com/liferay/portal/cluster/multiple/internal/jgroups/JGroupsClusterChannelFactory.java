@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.cluster.multiple.internal.jgroups;
@@ -63,7 +54,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.cluster.multiple.configuration.ClusterExecutorConfiguration",
-	enabled = false, immediate = true, service = ClusterChannelFactory.class
+	enabled = false, service = ClusterChannelFactory.class
 )
 public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
 
@@ -115,11 +106,6 @@ public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
 	@Deactivate
 	protected synchronized void deactivate() {
 		_classLoaders.clear();
-	}
-
-	@Reference(unbind = "-")
-	protected void setProps(Props props) {
-		_props = props;
 	}
 
 	private InputStream _getInputStream(String channelPropertiesLocation)
@@ -181,7 +167,7 @@ public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
 						"loopback");
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(ioException1, ioException1);
+					_log.debug(ioException1);
 				}
 			}
 
@@ -311,6 +297,8 @@ public class JGroupsClusterChannelFactory implements ClusterChannelFactory {
 		new ConcurrentReferenceKeyHashMap<>(
 			FinalizeManager.WEAK_REFERENCE_FACTORY);
 	private volatile ClusterExecutorConfiguration _clusterExecutorConfiguration;
+
+	@Reference
 	private Props _props;
 
 }

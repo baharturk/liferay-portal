@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.object.deployer;
@@ -42,16 +33,15 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marco Leo
  */
-@Component(
-	enabled = false, immediate = true, service = ObjectDefinitionDeployer.class
-)
+@Component(service = ObjectDefinitionDeployer.class)
 public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 
 	@Override
 	public List<ServiceRegistration<?>> deploy(
 		ObjectDefinition objectDefinition) {
 
-		if (Objects.equals(
+		if (objectDefinition.isUnmodifiableSystemObject() ||
+			Objects.equals(
 				objectDefinition.getScope(),
 				ObjectDefinitionConstants.SCOPE_COMPANY)) {
 
@@ -63,7 +53,7 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 				CommerceNotificationType.class,
 				new ObjectDefinitionCommerceNotificationType(
 					"create", objectDefinition.getClassName() + "#create",
-					objectDefinition.getName()),
+					objectDefinition.getShortName()),
 				HashMapDictionaryBuilder.put(
 					"commerce.notification.type.key",
 					objectDefinition.getClassName() + "#create"
@@ -72,7 +62,7 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 				CommerceNotificationType.class,
 				new ObjectDefinitionCommerceNotificationType(
 					"delete", objectDefinition.getClassName() + "#delete",
-					objectDefinition.getName()),
+					objectDefinition.getShortName()),
 				HashMapDictionaryBuilder.put(
 					"commerce.notification.type.key",
 					objectDefinition.getClassName() + "#delete"
@@ -81,7 +71,7 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 				CommerceNotificationType.class,
 				new ObjectDefinitionCommerceNotificationType(
 					"update", objectDefinition.getClassName() + "#update",
-					objectDefinition.getName()),
+					objectDefinition.getShortName()),
 				HashMapDictionaryBuilder.put(
 					"commerce.notification.type.key",
 					objectDefinition.getClassName() + "#update"

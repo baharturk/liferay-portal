@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -55,7 +46,7 @@ SelectRolesDisplayContext selectRolesDisplayContext = new SelectRolesDisplayCont
 						colspan="<%= 2 %>"
 					>
 						<h5>
-							<aui:a cssClass="selector-button" data="<%= data %>" href="javascript:;">
+							<aui:a cssClass="selector-button" data="<%= data %>" href="javascript:void(0);">
 								<%= HtmlUtil.escape(role.getTitle(locale)) %>
 							</aui:a>
 						</h5>
@@ -65,7 +56,7 @@ SelectRolesDisplayContext selectRolesDisplayContext = new SelectRolesDisplayCont
 						</h6>
 
 						<h6 class="text-default">
-							<%= LanguageUtil.get(request, role.getTypeLabel()) %>
+							<liferay-ui:message key="<%= role.getTypeLabel() %>" />
 						</h6>
 					</liferay-ui:search-container-column-text>
 				</c:when>
@@ -75,7 +66,7 @@ SelectRolesDisplayContext selectRolesDisplayContext = new SelectRolesDisplayCont
 						name="title"
 						truncate="<%= true %>"
 					>
-						<aui:a cssClass="selector-button" data="<%= data %>" href="javascript:;">
+						<aui:a cssClass="selector-button" data="<%= data %>" href="javascript:void(0);">
 							<%= HtmlUtil.escape(role.getTitle(locale)) %>
 						</aui:a>
 					</liferay-ui:search-container-column-text>

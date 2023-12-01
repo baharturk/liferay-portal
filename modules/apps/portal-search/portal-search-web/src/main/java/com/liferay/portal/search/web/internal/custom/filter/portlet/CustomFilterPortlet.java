@@ -1,29 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.custom.filter.portlet;
 
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.web.internal.custom.filter.constants.CustomFilterPortletKeys;
-import com.liferay.portal.search.web.internal.custom.filter.display.context.CustomFilterDisplayBuilder;
 import com.liferay.portal.search.web.internal.custom.filter.display.context.CustomFilterDisplayContext;
+import com.liferay.portal.search.web.internal.custom.filter.display.context.builder.CustomFilterDisplayContextBuilder;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 
@@ -42,7 +32,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Luan Maoski
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-custom-filter",
@@ -61,7 +50,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.view-template=/custom/filter/view.jsp",
 		"javax.portlet.name=" + CustomFilterPortletKeys.CUSTOM_FILTER,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user"
+		"javax.portlet.security-role-ref=guest,power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -100,9 +90,6 @@ public class CustomFilterPortlet extends MVCPortlet {
 	}
 
 	@Reference
-	protected Http http;
-
-	@Reference
 	protected Portal portal;
 
 	@Reference
@@ -122,26 +109,24 @@ public class CustomFilterPortlet extends MVCPortlet {
 
 		SearchRequest searchRequest = searchResponse.getRequest();
 
-		return CustomFilterDisplayBuilder.builder(
-		).customHeadingOptional(
-			customFilterPortletPreferences.getCustomHeadingOptional()
+		return CustomFilterDisplayContextBuilder.builder(
+		).customHeading(
+			customFilterPortletPreferences.getCustomHeading()
 		).disabled(
 			customFilterPortletPreferences.isDisabled()
-		).filterFieldOptional(
-			customFilterPortletPreferences.getFilterFieldOptional()
-		).http(
-			http
+		).filterField(
+			customFilterPortletPreferences.getFilterField()
 		).immutable(
 			customFilterPortletPreferences.isImmutable()
-		).filterValueOptional(
-			customFilterPortletPreferences.getFilterValueOptional()
+		).filterValue(
+			customFilterPortletPreferences.getFilterValue()
 		).parameterName(
 			parameterName
-		).parameterValueOptional(
+		).parameterValue(
 			portletSharedSearchResponse.getParameter(
 				parameterName, renderRequest)
-		).queryNameOptional(
-			customFilterPortletPreferences.getQueryNameOptional()
+		).queryName(
+			customFilterPortletPreferences.getQueryName()
 		).renderNothing(
 			_isRenderNothing(searchRequest)
 		).themeDisplay(
@@ -169,7 +154,7 @@ public class CustomFilterPortlet extends MVCPortlet {
 		CustomFilterPortletPreferences customFilterPortletPreferences) {
 
 		return portletSharedSearchResponse.getFederatedSearchResponse(
-			customFilterPortletPreferences.getFederatedSearchKeyOptional());
+			customFilterPortletPreferences.getFederatedSearchKey());
 	}
 
 	private boolean _isRenderNothing(SearchRequest searchRequest) {

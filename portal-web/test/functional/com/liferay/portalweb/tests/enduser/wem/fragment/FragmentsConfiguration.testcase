@@ -1,6 +1,7 @@
 @component-name = "portal-wcm"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Fragments";
@@ -13,7 +14,7 @@ definition {
 		}
 
 		task ("Add a site") {
-			JSONGroup.addGroup(groupName = "Test Site Name");
+			HeadlessSite.addSite(siteName = "Test Site Name");
 		}
 
 		task ("Add a content page") {
@@ -37,9 +38,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -47,23 +48,342 @@ definition {
 		}
 	}
 
+	@description = "This is a test for LPS-164104. View fragment with fragmentEntryLinkNamespace variable to JavaScript on content page."
+	@priority = 4
+	test AddFragmentWithFragmentEntryLinkNamespaceInJavaScriptToContentPage {
+		task ("Given a page creator has a fragment with fragmentEntryLinkNamespace in JavaScript") {
+			FragmentsAdmin.addFragment(fragmentName = "Fragment Name");
+
+			var htmlSnippet = '''
+<div class="fragment-name">
+    <div id="fragment-${fragmentEntryLinkNamespace}"></div>
+</div>''';
+
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
+
+			FragmentsEditor.waitForAutoSave();
+
+			var jsSnippet = '''
+const element = document.getElementById(`fragment-${fragmentEntryLinkNamespace}`);
+element.textContent = 'Fragment Example';''';
+
+			FragmentsEditor.waitForAutoSave();
+
+			FragmentsEditor.typeJsEditor(content = ${jsSnippet});
+
+			FragmentsEditor.publish();
+		}
+
+		task ("When the page creator adds the new fragment to a content page") {
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Collection Name",
+				fragmentName = "Fragment Name");
+		}
+
+		task ("Then the page creator sees the content of new fragment") {
+			AssertTextEquals(
+				index = 1,
+				key_fragmentName = "Fragment Name",
+				locator1 = "Fragment#FRAGMENT_CONTENT",
+				value1 = "Fragment Example");
+
+			PageEditor.publish();
+		}
+
+		task ("When the page creator navigates to the content page at view mode") {
+			ContentPagesNavigator.openViewContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+		}
+
+		task ("Then the page creators sees the content of new fragment") {
+			AssertTextEquals(
+				fragmentName = "fragment-name",
+				index = 1,
+				locator1 = "Fragment#FRAGMENT_BODY",
+				value1 = "Fragment Example");
+		}
+	}
+
+	@description = "This is a test for LPS-164104. View fragment with fragmentEntryLinkNamespace variable to JavaScript on associated display page template."
+	@priority = 4
+	test AddFragmentWithFragmentEntryLinkNamespaceInJavaScriptToDisplayPageTemplate {
+		property testray.component.names = "Display Page Templates,Fragments";
+
+		task ("Given a page creator has a fragment with fragmentEntryLinkNamespace in JavaScript") {
+			FragmentsAdmin.addFragment(fragmentName = "Fragment Name");
+
+			var htmlSnippet = '''
+<div class="fragment-name">
+    <div id="fragment-${fragmentEntryLinkNamespace}"></div>
+</div>''';
+
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
+
+			FragmentsEditor.waitForAutoSave();
+
+			var jsSnippet = '''
+const element = document.getElementById(`fragment-${fragmentEntryLinkNamespace}`);
+element.textContent = 'Fragment Example';''';
+
+			FragmentsEditor.waitForAutoSave();
+
+			FragmentsEditor.typeJsEditor(content = ${jsSnippet});
+
+			FragmentsEditor.publish();
+		}
+
+		task ("When the page creator adds the new fragment to a display page template") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			PageEditor.addFragment(
+				collectionName = "Collection Name",
+				fragmentName = "Fragment Name");
+		}
+
+		task ("Then the page creator sees the content of new fragment") {
+			AssertTextEquals(
+				index = 1,
+				key_fragmentName = "Fragment Name",
+				locator1 = "Fragment#FRAGMENT_CONTENT",
+				value1 = "Fragment Example");
+
+			PageEditor.publish();
+
+			JSONLayoutpagetemplate.setLayoutPageTemplateEntryAsDefault(
+				groupName = "Test Site Name",
+				layoutPageTemplateEntryName = "Display Page Name",
+				type = "Display Page Template");
+		}
+
+		task ("When the page creator navigates to the associated display page template") {
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContentNavigator.gotoEntryMenuItem(
+				entry = "Web Content Title",
+				menuItem = "View Content");
+		}
+
+		task ("Then the page creators sees the content of new fragment") {
+			AssertTextEquals(
+				fragmentName = "fragment-name",
+				index = 1,
+				locator1 = "Fragment#FRAGMENT_BODY",
+				value1 = "Fragment Example");
+		}
+	}
+
+	@description = "This is a test for LPS-158328. The user can change default resource image on content page after propagation."
+	@priority = 4
+	test ChangeResourceImageAfterPropagation {
+		task ("Given a page creator has a fragment on content page with propagated resource image") {
+			task ("Add a fragment with an invalid image resource") {
+				var newLine = '''
+''';
+				var htmlSnippet = '''
+<div class="fragment-name">
+	<img
+		data-lfr-editable-id="image-square"
+		data-lfr-editable-type="image"
+		alt=""
+		src="[resources:invalid.jpg]"
+	/>
+</div>	''';
+
+				var htmlSnippet = StringUtil.regexReplaceAll(${htmlSnippet}, ${newLine}, "");
+
+				JSONFragment.addSection(
+					collectionName = "Collection Name",
+					fragmentStatus = "Approved",
+					groupName = "Test Site Name",
+					html = ${htmlSnippet},
+					name = "Fragment Name");
+			}
+
+			task ("Add the new fragment to content page") {
+				ContentPagesNavigator.openEditContentPage(
+					pageName = "Test Page Name",
+					siteName = "Test Site Name");
+
+				PageEditor.addFragment(
+					collectionName = "Collection Name",
+					fragmentName = "Fragment Name");
+			}
+
+			task ("View Gray image is shown on the fragment at edit mode") {
+				PageEditor.viewFragmentEditableImage(
+					id = "image-square",
+					imageDescription = "",
+					imageFileName = "data:image/png");
+			}
+
+			task ("Publish the page") {
+				PageEditor.publish();
+			}
+
+			task ("Add an image resource") {
+				FragmentsAdminNavigator.openFragmentsAdmin(siteURLKey = "test-site-name");
+
+				Navigator.gotoNavItem(navItem = "Resources");
+
+				FragmentsAdmin.addResource(resourceFile = "Document_1.jpg");
+			}
+
+			task ("Add the new resource image within the fragment") {
+				FragmentsAdminNavigator.openFragmentsAdmin(siteURLKey = "test-site-name");
+
+				FragmentsAdminNavigator.gotoCollection(collectionName = "Collection Name");
+
+				FragmentsAdminNavigator.gotoEntryEllipsisItem(
+					entry = "Fragment Name",
+					item = "Edit");
+
+				var htmlSnippet = '''
+<div class="fragment-name">
+	<img
+		data-lfr-editable-id="image-square"
+		data-lfr-editable-type="image"
+		alt=""
+		src="[resources:Document_1.jpg]"
+	/>
+</div>	''';
+
+				FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
+
+				FragmentsEditor.waitForAutoSave();
+
+				FragmentsEditor.publish();
+			}
+
+			task ("Propagate the changes") {
+				FragmentsAdminNavigator.gotoEntryEllipsisItem(
+					entry = "Fragment Name",
+					item = "View Usages");
+
+				FragmentsAdmin.propagateChanges();
+			}
+		}
+
+		task ("When the page creator publishes the page after change resource image") {
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			// There is a missing step to validate the image was propagated to page until LPS-158453 be fixed.
+
+			PageEditor.editFragmentImage(
+				fileName = "Document_2.jpg",
+				fragmentName = "Fragment Name",
+				id = "image-square");
+
+			PageEditor.viewFragmentEditableImage(
+				id = "image-square",
+				imageDescription = "",
+				imageFileName = "document_2-jpg");
+
+			PageEditor.publish();
+		}
+
+		task ("Then the page creator should see the image on content page at view mode") {
+			ContentPagesNavigator.openViewContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			ContentPages.viewFragmentImage(
+				fragmentName = "fragment-name",
+				id = "image-square",
+				image = "document_2-jpg");
+		}
+	}
+
+	@description = "This is a test for LPS-152633. The changes of a draft contributed fragment cannot be shown on the content page."
+	@priority = 3
+	test ChangesOfDraftContributedFragmentNotPresentOnPage {
+		task ("Given a Fragments creator has a new Fragment Set with a copied contributed fragment") {
+			FragmentsAdminNavigator.gotoCollection(collectionName = "Basic Components");
+
+			FragmentsAdminNavigator.gotoEntryEllipsisItem(
+				entry = "Button",
+				item = "Copy To");
+
+			FragmentsAdmin.selectCollection(collectionName = "Collection Name");
+		}
+
+		task ("When the Fragments creator makes an edition in the fragment and do not publish it") {
+			FragmentsAdminNavigator.gotoEntryEllipsisItem(
+				entry = "Button (Copy)",
+				item = "Edit");
+
+			var htmlSnippet = '''
+<div class="component-button text-break">
+	<a class="btn btn-${configuration.buttonSize} btn-${configuration.buttonType}" data-lfr-editable-id="link">
+		Go Somewhere edited
+	</a>
+</div>
+		''';
+
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
+
+			FragmentsEditor.waitForAutoSave();
+		}
+
+		task ("Then the changes are not shown after add the fragment into a content page") {
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Collection Name",
+				fragmentName = "Button (Copy)");
+
+			PageEditor.viewFragmentEditableText(
+				className = "button",
+				editableText = "Go Somewhere",
+				fragmentName = "Button (Copy)",
+				id = "link");
+
+			AssertTextNotEquals(
+				fragmentName = "button",
+				id = "link",
+				index = 1,
+				locator1 = "Fragment#CONTRIBUTED_FRAGMENT_TEXT",
+				value1 = "Go Somewhere edited");
+		}
+	}
+
 	@description = "This is a test for LPS-97177. User can change checkbox fragment configuration."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureCheckboxConfigurationInContentPage {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with checkbox configuration") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "checkbox_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "checkbox_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "Checkbox Fragment Example");
 		}
 
@@ -86,7 +406,7 @@ definition {
 				checkboxName = "Make Bold",
 				fragmentName = "Checkbox Fragment Example");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment configuration at view mode") {
@@ -101,22 +421,21 @@ definition {
 	}
 
 	@description = "This is a test for LPS-97177. User can change checkbox fragment configuration in content page template."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureCheckboxConfigurationInContentPageTemplate {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with checkbox configuration") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "checkbox_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "checkbox_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "Checkbox Fragment Example");
 		}
 
@@ -158,7 +477,7 @@ definition {
 				checkboxName = "Make Bold",
 				fragmentName = "Checkbox Fragment Example");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment configuration") {
@@ -177,22 +496,21 @@ definition {
 	}
 
 	@description = "This is a test for LPS-97177. User can change checkbox fragment configuration in display page template."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureCheckboxConfigurationInDisplayPageTemplate {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with checkbox configuration") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "checkbox_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "checkbox_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "Checkbox Fragment Example");
 		}
 
@@ -223,7 +541,7 @@ definition {
 				checkboxName = "Make Bold",
 				fragmentName = "Checkbox Fragment Example");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment configuration") {
@@ -238,22 +556,21 @@ definition {
 	}
 
 	@description = "This is a test for LPS-97179. User can change colorPalette fragment configuration."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureColorPaletteInContentPage {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with colorPalette configuration") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "colorPalette_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "colorPalette_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "ColorPalette Fragment Example");
 		}
 
@@ -272,7 +589,7 @@ definition {
 				colorPalette = "danger",
 				fragmentName = "ColorPalette Fragment Example");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment configuration at view mode") {
@@ -287,8 +604,10 @@ definition {
 	}
 
 	@description = "This is a test for LPS-140717. The user can change fragment text color via color picker configuration."
-	@priority = "5"
+	@priority = 5
 	test ConfigureColorPicker {
+		property portal.acceptance = "true";
+
 		task ("Add a fragment with colorPicker configuration") {
 			FragmentsAdmin.addFragment(fragmentName = "Fragment Name");
 
@@ -314,7 +633,7 @@ definition {
 	]
 }				''';
 
-			FragmentsEditor.typeConfigurationEditor(content = "${jsonSnippet}");
+			FragmentsEditor.typeConfigurationEditor(content = ${jsonSnippet});
 
 			FragmentsEditor.waitForAutoSave();
 
@@ -330,7 +649,7 @@ definition {
 	</h1>
 </div>			''';
 
-			FragmentsEditor.typeHtmlEditor(content = "${htmlSnippet}");
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
 
 			FragmentsEditor.waitForAutoSave();
 
@@ -361,16 +680,16 @@ definition {
 
 		task ("View the color of fragment texts") {
 			AssertAttributeValue(
-				attribute1 = "style",
 				locator1 = "//div[contains(@class,'fragment-name')]//h1[contains(.,'This is the first header')]",
-				value1 = "color: var(--brand-color-1);");
+				value1 = "style",
+				value2 = "color: var(--brand-color-1);");
 
 			AssertAttributeValue(
-				attribute1 = "style",
 				locator1 = "//div[contains(@class,'fragment-name')]//h1[contains(.,'This is the second header')]",
-				value1 = "color: var(--brand-color-2);");
+				value1 = "style",
+				value2 = "color: var(--brand-color-2);");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the color of fragment texts at view mode") {
@@ -379,19 +698,19 @@ definition {
 				siteName = "Test Site Name");
 
 			AssertAttributeValue(
-				attribute1 = "style",
 				locator1 = "//div[contains(@class,'fragment-name')]//h1[contains(.,'This is the first header')]",
-				value1 = "color: var(--brand-color-1);");
+				value1 = "style",
+				value2 = "color: var(--brand-color-1);");
 
 			AssertAttributeValue(
-				attribute1 = "style",
 				locator1 = "//div[contains(@class,'fragment-name')]//h1[contains(.,'This is the second header')]",
-				value1 = "color: var(--brand-color-2);");
+				value1 = "style",
+				value2 = "color: var(--brand-color-2);");
 		}
 	}
 
 	@description = "This is a test for LPS-100963. When a fragment that uses JavaScript has a configuration, there is a JavaScript configuration object available which contains the current values of the fragment configuration."
-	@priority = "4"
+	@priority = 4
 	test ConfigureFragmentWithJavaScript {
 		task ("Add a new fragment with the following codes") {
 			FragmentsAdmin.addFragment(fragmentName = "Fragment Name");
@@ -406,7 +725,7 @@ definition {
 				{
 					"dataType": "string",
 					"defaultValue": "primary",
-					"label": "type",
+					"label": "style",
 					"name": "buttonType",
 					"type": "select",
 					"typeOptions": {
@@ -463,7 +782,7 @@ definition {
 }
 				''';
 
-			FragmentsEditor.typeConfigurationEditor(content = "${jsonSnippet}");
+			FragmentsEditor.typeConfigurationEditor(content = ${jsonSnippet});
 
 			FragmentsEditor.waitForAutoSave();
 
@@ -483,7 +802,7 @@ definition {
 </div>
 			''';
 
-			FragmentsEditor.typeHtmlEditor(content = "${htmlSnippet}");
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
 
 			var jsSnippet = '''
 
@@ -503,7 +822,7 @@ main();
 
 			FragmentsEditor.waitForAutoSave();
 
-			FragmentsEditor.typeJsEditor(content = "${jsSnippet}");
+			FragmentsEditor.typeJsEditor(content = ${jsSnippet});
 
 			FragmentsEditor.waitForAutoSave();
 
@@ -524,13 +843,13 @@ main();
 			PageEditor.viewFragmentStyle(
 				fragmentName = "Fragment-Name",
 				size = "nm",
-				type = "primary");
+				style = "primary");
 		}
 
 		task ("Configure the fragment") {
 			PageEditor.gotoConfiguration(fragmentName = "Fragment Name");
 
-			PageEditor.configureFragment(type = "Link");
+			PageEditor.configureFragment(style = "Link");
 
 			PageEditor.gotoStyle(fragmentName = "Fragment Name");
 
@@ -541,9 +860,9 @@ main();
 			PageEditor.viewFragmentStyle(
 				fragmentName = "Fragment-Name",
 				size = "lg",
-				type = "link");
+				style = "link");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment styles in view mode") {
@@ -554,27 +873,26 @@ main();
 			PageEditor.viewFragmentStyle(
 				fragmentName = "Fragment-Name",
 				size = "lg",
-				type = "link");
+				style = "link");
 		}
 	}
 
 	@description = "This is a test for LPS-96685. User can change select fragment configuration."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureSelectConfigurationInContentPage {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with select configuration") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "select_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "select_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "Select Fragment Example");
 		}
 
@@ -590,10 +908,11 @@ main();
 
 		task ("Configure the new fragment") {
 			PageEditorConfiguration.changeConfigSelection(
+				fieldLabel = "applied-style",
 				fragmentName = "Select Fragment Example",
 				optionValue = "Dark");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment configuration at view mode") {
@@ -606,22 +925,21 @@ main();
 	}
 
 	@description = "This is a test for LPS-96685. User can change select fragment configuration in content page template."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureSelectConfigurationInContentPageTemplate {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with select configuration") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "select_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "select_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "Select Fragment Example");
 		}
 
@@ -656,10 +974,11 @@ main();
 
 		task ("Configure the new fragment") {
 			PageEditorConfiguration.changeConfigSelection(
+				fieldLabel = "applied-style",
 				fragmentName = "Select Fragment Example",
 				optionValue = "Dark");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment configuration") {
@@ -676,22 +995,21 @@ main();
 	}
 
 	@description = "This is a test for LPS-96685. User can change select fragment configuration in display page template."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureSelectConfigurationInDisplayPageTemplate {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with select configuration") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "select_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "select_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "Select Fragment Example");
 		}
 
@@ -715,10 +1033,11 @@ main();
 
 		task ("Configure the new fragment") {
 			PageEditorConfiguration.changeConfigSelection(
+				fieldLabel = "applied-style",
 				fragmentName = "Select Fragment Example",
 				optionValue = "Dark");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment configuration") {
@@ -731,22 +1050,21 @@ main();
 	}
 
 	@description = "This is a test for LPS-97192. User can change text fragment configuration."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureTextConfigurationInContentPage {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with text configuration") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "text_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "text_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "Text Fragment Example");
 		}
 
@@ -764,19 +1082,19 @@ main();
 			PageEditor.gotoConfiguration(fragmentName = "Text Fragment Example");
 
 			AssertAttributeValue(
-				attribute1 = "placeholder",
 				key_fieldLabel = "Button Text",
 				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "Placeholder");
+				value1 = "placeholder",
+				value2 = "Placeholder");
 		}
 
 		task ("Configure the new fragment") {
 			PageEditorConfiguration.changeConfigText(
 				editableText = "Updated fragment text",
 				fragmentName = "Text Fragment Example",
-				textConfigName = "buttonText");
+				textConfigName = "Button Text");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment configuration at view mode") {
@@ -792,22 +1110,21 @@ main();
 	}
 
 	@description = "This is a test for LPS-97192. User can change text fragment configuration in content page template."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureTextConfigurationInContentPageTemplate {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with text configuration") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "text_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "text_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "Text Fragment Example");
 		}
 
@@ -844,19 +1161,19 @@ main();
 			PageEditor.gotoConfiguration(fragmentName = "Text Fragment Example");
 
 			AssertAttributeValue(
-				attribute1 = "placeholder",
 				key_fieldLabel = "Button Text",
 				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "Placeholder");
+				value1 = "placeholder",
+				value2 = "Placeholder");
 		}
 
 		task ("Configure the new fragment") {
 			PageEditorConfiguration.changeConfigText(
 				editableText = "Updated fragment text",
 				fragmentName = "Text Fragment Example",
-				textConfigName = "buttonText");
+				textConfigName = "Button Text");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment configuration") {
@@ -876,22 +1193,21 @@ main();
 	}
 
 	@description = "This is a test for LPS-97192. User can change text fragment configuration in display page template."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureTextConfigurationInDisplayPageTemplate {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with text configuration") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "text_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "text_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "Text Fragment Example");
 		}
 
@@ -917,19 +1233,19 @@ main();
 			PageEditor.gotoConfiguration(fragmentName = "Text Fragment Example");
 
 			AssertAttributeValue(
-				attribute1 = "placeholder",
 				key_fieldLabel = "Button Text",
 				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "Placeholder");
+				value1 = "placeholder",
+				value2 = "Placeholder");
 		}
 
 		task ("Configure the new fragment") {
 			PageEditorConfiguration.changeConfigText(
 				editableText = "Updated fragment text",
 				fragmentName = "Text Fragment Example",
-				textConfigName = "buttonText");
+				textConfigName = "Button Text");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the fragment configuration") {
@@ -944,23 +1260,491 @@ main();
 		}
 	}
 
+	@description = "This is a test for LPS-164081. The fragment developer can configure a URL selector on Freemarker."
+	@priority = 3
+	test ConfigureURLSelectorConfiguration {
+		task ("Given a fragment developer has a new fragment with URL selector configuration") {
+			var newLine = '''
+''';
+			var htmlSnippet = '''
+<div class="fragment-name">
+	Fragment Example
+</div>''';
+
+			var htmlSnippet = StringUtil.regexReplaceAll(${htmlSnippet}, ${newLine}, "");
+			var jsonSnippet = '''
+{
+    "fieldSets": [
+        {
+            "fields" : [
+                {
+                    "label": "Link",
+                    "name": "Link",
+                    "type": "url"
+                }
+            ]
+        }
+    ]
+}''';
+
+			var jsonSnippet = StringUtil.regexReplaceAll(${jsonSnippet}, ${newLine}, "");
+
+			JSONFragment.addSection(
+				collectionName = "Collection Name",
+				configuration = ${jsonSnippet},
+				fragmentStatus = "Approved",
+				groupName = "Test Site Name",
+				html = ${htmlSnippet},
+				name = "Fragment Name");
+
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name 2");
+		}
+
+		task ("When the fragment developer adds the new fragment to a content page") {
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Collection Name",
+				fragmentName = "Fragment Name");
+		}
+
+		task ("Then the fragment developer could link the fragment to a page via the URL selector") {
+			PageEditor.gotoConfiguration(fragmentName = "Fragment Name");
+
+			Select(
+				key_fieldLabel = "Link",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = "Page");
+
+			Click(
+				key_fieldLabel = "Page",
+				key_text = "plus",
+				locator1 = "Icon#ANY_ITEM_SELECTOR");
+
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+			Portlet.expandTree();
+
+			Click(
+				key_nodeName = "Test Page Name 2",
+				locator1 = "Treeview#NODE_UNSELECTED");
+
+			SelectFrameTop();
+
+			PageEditor.waitForAutoSave();
+
+			AssertTextEquals(
+				key_fieldLabel = "Page",
+				locator1 = "PageEditor#ITEM_SELECTOR_CONTENT_INPUT",
+				value1 = "Test Page Name 2");
+		}
+	}
+
+	@description = "This is a test for LPS-147897. The page designer could customize date format on date fragment."
+	@priority = 4
+	test CustomizeDateFormatToMappedDate {
+		task ("Given a page designer has a fragment with mapped date") {
+			FragmentsAdmin.addFragment(fragmentName = "Fragment Name");
+
+			var htmlSnippet = '''
+<div class="fragment-name">
+	<div data-lfr-editable-type="date-time" data-lfr-editable-id="date-time">
+	</div>
+</div>''';
+
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
+
+			FragmentsEditor.waitForAutoSave();
+
+			FragmentsEditor.publish();
+
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Collection Name",
+				fragmentName = "Fragment Name");
+
+			PageEditorMapping.gotoEditableFieldMapping(
+				fragmentName = "Fragment Name",
+				id = "date-time");
+
+			PageEditorMapping.mapEditableFieldToAsset(
+				entryTitle = "Web Content Title",
+				navItem = "Web Content");
+
+			Select(
+				key_fieldLabel = "Field",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = "Publish Date");
+
+			PageEditor.waitForAutoSave();
+		}
+
+		task ("When the page designer customizes the date format") {
+			Select(
+				key_fieldLabel = "Date Format",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = "Custom");
+
+			Type(
+				key_fieldLabel = "Custom Format",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = "dd-MM-YYYY HH:mm:ss");
+
+			Click(
+				key_sidebarButton = "Browser",
+				locator1 = "PageEditor#FRAGMENT_SIDEBAR_TITLE");
+
+			PageEditor.waitForAutoSave();
+		}
+
+		task ("Then the page designer sees the customized date format applied to mapped date") {
+			var modifiedDate = selenium.getText("//div[contains(@id,'fragment-')][.//*[contains(@class,'fragment-name')]]//*[contains(@data-lfr-editable-id,'date-time')]");
+
+			var match = StringUtil.matches(${modifiedDate}, "^(\d\d-\d\d-\d\d\d\d\s\d\d:\d\d:\d\d)$");
+
+			if (${match} == "true") {
+				echo("PASSED");
+			}
+			else {
+				fail("The ${modifiedDate} doesn't follow the expected format dd-MM-YYYY HH:mm:ss");
+			}
+		}
+	}
+
+	@description = "This is a test for LPS-191007. The fragment developer can define the maximum number of items to display."
+	@priority = 4
+	test DefineMaximumNumberOfItemsToDisplay {
+		task ("Given a fragment developer has a fragment with a maximum number of items to display") {
+			FragmentsAdmin.addFragment(fragmentName = "Fragment Name");
+
+			var htmlSnippet = '''<div class="fragment-name">
+	<h1>
+		List of Items:
+	</h1>
+	<ul>
+		[#if collectionObjectList??]
+			[#list collectionObjectList as item]
+				<li>${item.title}</li>
+			[/#list]
+		[/#if]
+	</ul>
+</div>''';
+
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
+
+			FragmentsEditor.waitForAutoSave();
+
+			FragmentsEditor.gotoConfigurationTab();
+
+			var jsonSnippet = '''{
+	"fieldSets": [
+		{
+			"label": "Collection",
+			"fields": [
+				{
+					"name": "collection",
+					"label": "Collection",
+					"type": "collectionSelector",
+					typeOptions: {
+						"numberOfItems": 2
+					}
+				}
+			]
+		}
+	]
+}''';
+
+			FragmentsEditor.typeConfigurationEditor(content = ${jsonSnippet});
+
+			FragmentsEditor.waitForAutoSave();
+
+			FragmentsEditor.publish();
+		}
+
+		task ("When the fragment developer selects a dynamic collection in the fragment on a content page") {
+			for (var i : list "1,2,3") {
+				HeadlessBlog.addBlogEntry(
+					content = "Blog Test Content ${i}",
+					groupName = "Test Site Name",
+					title = "Blog Test Title ${i}");
+			}
+
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(itemType = "All Types");
+
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Collection Name",
+				fragmentName = "Fragment Name");
+
+			PageEditor.editCollectionDisplay(
+				assetListName = "Dynamic Collection",
+				fragmentName = "Fragment Name");
+		}
+
+		task ("Then the fragment developer sees the number of displayed assets is 2") {
+			AssertVisible(
+				key_entryContent = "[normalize-space(text())='Blog Test Title 3']",
+				key_fragmentName = "Fragment Name",
+				key_position = 1,
+				locator1 = "PageEditor#COLLECTION_ITEM_CONTENT_IN_BULLETED_LIST_AT_VIEW_MODE");
+
+			AssertVisible(
+				key_entryContent = "[normalize-space(text())='Blog Test Title 2']",
+				key_fragmentName = "Fragment Name",
+				key_position = 2,
+				locator1 = "PageEditor#COLLECTION_ITEM_CONTENT_IN_BULLETED_LIST_AT_VIEW_MODE");
+
+			AssertElementNotPresent(
+				key_entryContent = "",
+				key_fragmentName = "Fragment Name",
+				key_position = 3,
+				locator1 = "PageEditor#COLLECTION_ITEM_CONTENT_IN_BULLETED_LIST_AT_VIEW_MODE");
+		}
+	}
+
+	@description = "This is a test for LPS-147897. The page designer could map the date field in specific date format to date fragment."
+	@priority = 5
+	test MapDateFieldToFragmentWithDateEditableField {
+		property portal.acceptance = "true";
+
+		task ("Given a page designer has a fragment with date editable field") {
+			FragmentsAdmin.addFragment(fragmentName = "Fragment Name");
+
+			var htmlSnippet = '''
+<div class="fragment-name">
+	<div data-lfr-editable-type="date-time" data-lfr-editable-id="date-time">
+	</div>
+</div>''';
+
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
+
+			FragmentsEditor.waitForAutoSave();
+
+			FragmentsEditor.publish();
+
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			NavItem.gotoStructures();
+
+			WebContentStructures.addCP(structureName = "WC Structure Name");
+
+			DataEngine.addField(
+				fieldFieldLabel = "Date",
+				fieldName = "Date");
+
+			WebContentStructures.saveCP();
+
+			NavItem.click(navItem = "Web Content");
+
+			WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+			WebContent.addWithStructureCP(
+				webContentDate = "01/01/2023",
+				webContentTitle = "Web Content Title");
+
+			PortletEntry.publish();
+		}
+
+		task ("When the page designer adds a new fragment to a content page") {
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Collection Name",
+				fragmentName = "Fragment Name");
+		}
+
+		task ("Then the page designer could map the date field to new fragment") {
+			PageEditorMapping.gotoEditableFieldMapping(
+				fragmentName = "Fragment Name",
+				id = "date-time");
+
+			PageEditorMapping.mapEditableFieldToAsset(
+				entryTitle = "Web Content Title",
+				navItem = "Web Content");
+
+			Select(
+				key_fieldLabel = "Field",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = "Date");
+
+			PageEditor.waitForAutoSave();
+
+			PageEditor.viewFragmentEditableText(
+				editableText = "1/1/23",
+				fragmentName = "Fragment Name",
+				id = "date-time");
+		}
+
+		task ("When the page designer changes the date format to DD/MM/YYYY") {
+			Select(
+				key_fieldLabel = "Date Format",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = "DD/MM/YYYY");
+
+			PageEditor.waitForAutoSave();
+		}
+
+		task ("Then the page designer sees the date format applied to mapped date") {
+			PageEditor.viewFragmentEditableText(
+				editableText = "01/01/2023",
+				fragmentName = "Fragment Name",
+				id = "date-time");
+		}
+	}
+
+	@description = "This is a test for LPS-164242. The fragment developer could map to web contents in Collection Display using itemSelector configuration."
+	@priority = 5
+	test MapToWebContentsInCollectionDisplayViaItemSelectorConfiguration {
+		property portal.acceptance = "true";
+
+		task ("Given a fragment developer has a new fragment with itemSelector configuration") {
+			var newLine = '''
+''';
+			var htmlSnippet = '''
+<div class="fragment-name">
+    [#if itemSelectorObject??]
+        ${itemSelectorObject.getUrlTitle()}
+    [/#if]
+</div>''';
+
+			var htmlSnippet = StringUtil.regexReplaceAll(${htmlSnippet}, ${newLine}, "");
+			var jsonSnippet = '''
+{
+    "fieldSets": [
+        {
+            "fields" : [
+                {
+                    "label": "itemSelector",
+                    "type": "itemSelector",
+                    "name": "itemSelector"
+                }
+            ]
+        }
+    ]
+}''';
+
+			var jsonSnippet = StringUtil.regexReplaceAll(${jsonSnippet}, ${newLine}, "");
+
+			JSONFragment.addSection(
+				collectionName = "Collection Name",
+				configuration = ${jsonSnippet},
+				fragmentStatus = "Approved",
+				groupName = "Test Site Name",
+				html = ${htmlSnippet},
+				name = "Fragment Name");
+		}
+
+		task ("When the fragment developer adds the new fragment into a Collection Display") {
+			for (var title : list "SpaceX,Tesla,Twitter") {
+				JSONWebcontent.addWebContent(
+					content = "${title} Introduction",
+					groupName = "Test Site Name",
+					title = ${title});
+			}
+
+			JSONAssetlist.addDynamicAssetListEntryWithItemType(
+				groupName = "Test Site Name",
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article",
+				title = "Dynamic Collection");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Content Display",
+				fragmentName = "Collection Display");
+
+			PageEditor.editCollectionDisplay(
+				assetListName = "Dynamic Collection",
+				fragmentName = "Collection Display");
+
+			PageEditor.addFragmentToCollectionDisplay(
+				collectionName = "Collection Name",
+				entryTitle = "SpaceX",
+				fragmentName = "Fragment Name");
+		}
+
+		task ("Then the fragment developer sees the each new fragment displays the title of associated web content") {
+			var n = 1;
+
+			for (var title : list "twitter,tesla,spacex") {
+				AssertTextEquals(
+					index = ${n},
+					key_fragmentName = "Fragment Name",
+					locator1 = "Fragment#FRAGMENT_CONTENT",
+					value1 = ${title});
+
+				var n = ${n} + 1;
+			}
+
+			PageEditor.publish();
+		}
+
+		task ("When the fragment developer navigates to the content page at view mode") {
+			ContentPagesNavigator.openViewContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+		}
+
+		task ("Then the fragment developer sees the Collection Display displays the title of associated web content") {
+			var n = 1;
+
+			for (var title : list "twitter,tesla,spacex") {
+				AssertTextEquals(
+					key_colPosition = 1,
+					key_rowPosition = ${n},
+					locator1 = "PageEditor#COLLECTION_ITEM",
+					value1 = ${title});
+
+				var n = ${n} + 1;
+			}
+		}
+	}
+
 	@description = "This is a test for LPS-100751. View placeholder in fragment configuration without default value."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ViewPlaceholderInConfigurationWithoutDefaultValue {
 		property portal.acceptance = "true";
 
 		task ("Add a fragment with text configuration without default value") {
 			var htmlSnippet = FragmentsAPI.getFragmentFileContent(fileName = "text_configuration.html");
-
 			var jsonSnippet = FragmentsAPI.getFragmentFileContent(fileName = "placeholder_configuration.json");
 
 			JSONFragment.addSection(
 				collectionName = "Collection Name",
-				configuration = "${jsonSnippet}",
+				configuration = ${jsonSnippet},
 				fragmentStatus = "Approved",
 				groupName = "Test Site Name",
-				html = "${htmlSnippet}",
+				html = ${htmlSnippet},
 				name = "Text Fragment Example");
 		}
 
@@ -978,15 +1762,15 @@ main();
 			PageEditor.gotoConfiguration(fragmentName = "Text Fragment Example");
 
 			AssertAttributeValue(
-				attribute1 = "placeholder",
 				key_fieldLabel = "Button Text",
 				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "Placeholder");
+				value1 = "placeholder",
+				value2 = "Placeholder");
 		}
 	}
 
 	@description = "This is a test for LPS-109138. When type email address in the configuration text field, the field can constraint min and max length."
-	@priority = "4"
+	@priority = 4
 	test ViewValidationInTextFieldWithEmailConstraintRules {
 		task ("Add a fragment with email constraint rules in configuration text field") {
 			FragmentsAdmin.addFragment(fragmentName = "Fragment Name");
@@ -1018,7 +1802,7 @@ main();
 }
 			''';
 
-			FragmentsEditor.typeConfigurationEditor(content = "${jsonSnippet}");
+			FragmentsEditor.typeConfigurationEditor(content = ${jsonSnippet});
 
 			FragmentsEditor.waitForAutoSave();
 
@@ -1030,7 +1814,7 @@ main();
 </div>
 			''';
 
-			FragmentsEditor.typeHtmlEditor(content = "${htmlSnippet}");
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
 
 			FragmentsEditor.publish();
 		}
@@ -1093,7 +1877,7 @@ main();
 	}
 
 	@description = "This is a test for LPS-109138. When type integer in the configuration text field, the field can constraint min and max value."
-	@priority = "4"
+	@priority = 4
 	test ViewValidationInTextFieldWithNumberConstraintRules {
 		task ("Add a fragment with number constraint rules in configuration text field") {
 			FragmentsAdmin.addFragment(fragmentName = "Fragment Name");
@@ -1125,7 +1909,7 @@ main();
 }
 			''';
 
-			FragmentsEditor.typeConfigurationEditor(content = "${jsonSnippet}");
+			FragmentsEditor.typeConfigurationEditor(content = ${jsonSnippet});
 
 			FragmentsEditor.waitForAutoSave();
 
@@ -1137,7 +1921,7 @@ main();
 </div>
 			''';
 
-			FragmentsEditor.typeHtmlEditor(content = "${htmlSnippet}");
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
 
 			FragmentsEditor.publish();
 		}
@@ -1162,7 +1946,7 @@ main();
 			Type(
 				key_text = "Age",
 				locator1 = "TextInput#ANY",
-				value1 = "10");
+				value1 = 10);
 
 			AssertTextEquals(
 				locator1 = "Message#WARNING_FEEDBACK",
@@ -1173,7 +1957,7 @@ main();
 			Type(
 				key_text = "Age",
 				locator1 = "TextInput#ANY",
-				value1 = "70");
+				value1 = 70);
 
 			AssertTextEquals(
 				locator1 = "Message#WARNING_FEEDBACK",
@@ -1184,14 +1968,14 @@ main();
 			Type(
 				key_text = "Age",
 				locator1 = "TextInput#ANY",
-				value1 = "30");
+				value1 = 30);
 
 			AssertElementNotPresent(locator1 = "Message#WARNING_FEEDBACK");
 		}
 	}
 
 	@description = "This is a test for LPS-109138. When type URL in the configuration text field, the field can constraint min and max length."
-	@priority = "4"
+	@priority = 4
 	test ViewValidationInTextFieldWithURLConstraintRules {
 		task ("Add a fragment with URL constraint rules in configuration text field") {
 			FragmentsAdmin.addFragment(fragmentName = "Fragment Name");
@@ -1223,7 +2007,7 @@ main();
 }
 			''';
 
-			FragmentsEditor.typeConfigurationEditor(content = "${jsonSnippet}");
+			FragmentsEditor.typeConfigurationEditor(content = ${jsonSnippet});
 
 			FragmentsEditor.waitForAutoSave();
 
@@ -1235,7 +2019,7 @@ main();
 </div>
 			''';
 
-			FragmentsEditor.typeHtmlEditor(content = "${htmlSnippet}");
+			FragmentsEditor.typeHtmlEditor(content = ${htmlSnippet});
 
 			FragmentsEditor.publish();
 		}

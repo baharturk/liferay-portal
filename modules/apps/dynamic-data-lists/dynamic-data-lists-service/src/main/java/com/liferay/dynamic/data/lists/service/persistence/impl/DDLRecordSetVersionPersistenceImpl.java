@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.service.persistence.impl;
@@ -38,7 +29,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -50,7 +40,6 @@ import com.liferay.portal.kernel.util.SetUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -82,9 +71,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(
-	service = {DDLRecordSetVersionPersistence.class, BasePersistence.class}
-)
+@Component(service = DDLRecordSetVersionPersistence.class)
 public class DDLRecordSetVersionPersistenceImpl
 	extends BasePersistenceImpl<DDLRecordSetVersion>
 	implements DDLRecordSetVersionPersistence {
@@ -208,7 +195,7 @@ public class DDLRecordSetVersionPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDLRecordSetVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDLRecordSetVersion ddlRecordSetVersion : list) {
@@ -585,7 +572,7 @@ public class DDLRecordSetVersionPersistenceImpl
 
 			finderArgs = new Object[] {recordSetId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -695,20 +682,21 @@ public class DDLRecordSetVersionPersistenceImpl
 
 		version = Objects.toString(version, "");
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordSetVersion.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {recordSetId, version};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(_finderPathFetchByRS_V, finderArgs);
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByRS_V, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			DDLRecordSetVersion.class);
 
 		if (result instanceof DDLRecordSetVersion) {
 			DDLRecordSetVersion ddlRecordSetVersion =
@@ -719,6 +707,15 @@ public class DDLRecordSetVersionPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						DDLRecordSetVersion.class,
+						ddlRecordSetVersion.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -829,7 +826,7 @@ public class DDLRecordSetVersionPersistenceImpl
 
 			finderArgs = new Object[] {recordSetId, version};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -999,7 +996,7 @@ public class DDLRecordSetVersionPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDLRecordSetVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDLRecordSetVersion ddlRecordSetVersion : list) {
@@ -1400,7 +1397,7 @@ public class DDLRecordSetVersionPersistenceImpl
 
 			finderArgs = new Object[] {recordSetId, status};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1825,7 +1822,9 @@ public class DDLRecordSetVersionPersistenceImpl
 	 */
 	@Override
 	public DDLRecordSetVersion fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(DDLRecordSetVersion.class)) {
+		if (ctPersistenceHelper.isProductionMode(
+				DDLRecordSetVersion.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -2048,7 +2047,7 @@ public class DDLRecordSetVersionPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDLRecordSetVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2124,7 +2123,7 @@ public class DDLRecordSetVersionPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -2310,30 +2309,14 @@ public class DDLRecordSetVersionPersistenceImpl
 			new String[] {Long.class.getName(), Integer.class.getName()},
 			new String[] {"recordSetId", "status"}, false);
 
-		_setDDLRecordSetVersionUtilPersistence(this);
+		DDLRecordSetVersionUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setDDLRecordSetVersionUtilPersistence(null);
+		DDLRecordSetVersionUtil.setPersistence(null);
 
 		entityCache.removeCache(DDLRecordSetVersionImpl.class.getName());
-	}
-
-	private void _setDDLRecordSetVersionUtilPersistence(
-		DDLRecordSetVersionPersistence ddlRecordSetVersionPersistence) {
-
-		try {
-			Field field = DDLRecordSetVersionUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, ddlRecordSetVersionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -2401,9 +2384,5 @@ public class DDLRecordSetVersionPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private DDLRecordSetVersionModelArgumentsResolver
-		_ddlRecordSetVersionModelArgumentsResolver;
 
 }

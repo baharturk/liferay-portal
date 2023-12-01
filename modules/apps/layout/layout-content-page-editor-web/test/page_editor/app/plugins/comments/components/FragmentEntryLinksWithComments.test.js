@@ -1,19 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {fireEvent, render, waitFor} from '@testing-library/react';
+import {fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
 import {LAYOUT_DATA_ITEM_TYPES} from '../../../../../../src/main/resources/META-INF/resources/page_editor/app/config/constants/layoutDataItemTypes';
@@ -43,7 +34,7 @@ jest.mock(
 );
 
 const NO_COMMENTS_STATE = {
-	layoutData: {items: {}},
+	layoutData: {deletedItems: [], items: {}},
 };
 
 const COMMENTS_STATE = {
@@ -68,6 +59,7 @@ const COMMENTS_STATE = {
 	},
 
 	layoutData: {
+		deletedItems: [],
 		items: {
 			'sandro-item': {
 				config: {fragmentEntryLinkId: 'sandro-fragment'},
@@ -130,15 +122,15 @@ describe('FragmentEntryLinksWithComments', () => {
 			showResolvedComments: true,
 		});
 
-		const [sandroFragment] = getAllByRole('button');
+		const [sandroFragment] = getAllByRole('button', {
+			name: 'show-comments',
+		});
 
 		sandroFragment.focus();
 
-		await waitFor(() => {
-			expect(sandroFragment).toHaveTextContent('Sandro Fragment');
-			expect(sandroFragment).toHaveFocus();
-			expect(hoverItem).toHaveBeenCalledWith('sandro-item');
-		});
+		expect(sandroFragment).toHaveTextContent('Sandro Fragment');
+		expect(sandroFragment).toHaveFocus();
+		expect(hoverItem).toHaveBeenCalledWith('sandro-item');
 	});
 
 	it('sets a fragment to hovered on mouseover', async () => {
@@ -149,14 +141,14 @@ describe('FragmentEntryLinksWithComments', () => {
 			showResolvedComments: true,
 		});
 
-		const [sandroFragment] = getAllByRole('button');
+		const [sandroFragment] = getAllByRole('button', {
+			name: 'show-comments',
+		});
 
 		fireEvent.mouseOver(sandroFragment);
 
-		await waitFor(() => {
-			expect(sandroFragment).toHaveTextContent('Sandro Fragment');
-			expect(hoverItem).toHaveBeenCalledWith('sandro-item');
-		});
+		expect(sandroFragment).toHaveTextContent('Sandro Fragment');
+		expect(hoverItem).toHaveBeenCalledWith('sandro-item');
 	});
 
 	it('sets a fragment to not hovered on mouseout', async () => {
@@ -167,14 +159,14 @@ describe('FragmentEntryLinksWithComments', () => {
 			showResolvedComments: true,
 		});
 
-		const [sandroFragment] = getAllByRole('button');
+		const [sandroFragment] = getAllByRole('button', {
+			name: 'show-comments',
+		});
 
 		fireEvent.mouseOut(sandroFragment);
 
-		await waitFor(() => {
-			expect(sandroFragment).toHaveTextContent('Sandro Fragment');
-			expect(hoverItem).toHaveBeenCalledWith(null);
-		});
+		expect(sandroFragment).toHaveTextContent('Sandro Fragment');
+		expect(hoverItem).toHaveBeenCalledWith(null);
 	});
 
 	it('sets a fragment to selected on click', async () => {
@@ -185,15 +177,13 @@ describe('FragmentEntryLinksWithComments', () => {
 			showResolvedComments: true,
 		});
 
-		const [sandroFragment] = getAllByRole('button');
+		const [sandroFragment] = getAllByRole('button', {
+			name: 'show-comments',
+		});
 
 		fireEvent.click(sandroFragment);
 
-		await waitFor(() => {
-			expect(sandroFragment).toHaveTextContent('Sandro Fragment');
-			expect(selectItem).toHaveBeenCalledWith('sandro-item');
-		});
+		expect(sandroFragment).toHaveTextContent('Sandro Fragment');
+		expect(selectItem).toHaveBeenCalledWith('sandro-item');
 	});
-
-	test.todo('shows the number of comments on each list item');
 });

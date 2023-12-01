@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -22,7 +13,6 @@ import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.ListType;
 import com.liferay.portal.kernel.model.ListTypeModel;
-import com.liferay.portal.kernel.model.ListTypeSoap;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -32,18 +22,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -73,7 +60,8 @@ public class ListTypeModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"listTypeId", Types.BIGINT},
-		{"name", Types.VARCHAR}, {"type_", Types.VARCHAR}
+		{"companyId", Types.BIGINT}, {"name", Types.VARCHAR},
+		{"type_", Types.VARCHAR}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -82,12 +70,13 @@ public class ListTypeModelImpl
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("listTypeId", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("type_", Types.VARCHAR);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table ListType (mvccVersion LONG default 0 not null,listTypeId LONG not null primary key,name VARCHAR(75) null,type_ VARCHAR(75) null)";
+		"create table ListType (mvccVersion LONG default 0 not null,listTypeId LONG not null primary key,companyId LONG,name VARCHAR(75) null,type_ VARCHAR(75) null)";
 
 	public static final String TABLE_SQL_DROP = "drop table ListType";
 
@@ -123,58 +112,19 @@ public class ListTypeModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long NAME_COLUMN_BITMASK = 1L;
+	public static final long COMPANYID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 2L;
+	public static final long NAME_COLUMN_BITMASK = 2L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static ListType toModel(ListTypeSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		ListType model = new ListTypeImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setListTypeId(soapModel.getListTypeId());
-		model.setName(soapModel.getName());
-		model.setType(soapModel.getType());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<ListType> toModels(ListTypeSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<ListType> models = new ArrayList<ListType>(soapModels.length);
-
-		for (ListTypeSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
+	public static final long TYPE_COLUMN_BITMASK = 4L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
@@ -255,72 +205,64 @@ public class ListTypeModelImpl
 	public Map<String, Function<ListType, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<ListType, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, ListType>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			ListType.class.getClassLoader(), ListType.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<ListType, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<ListType> constructor =
-				(Constructor<ListType>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<ListType, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<ListType, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", ListType::getMvccVersion);
+			attributeGetterFunctions.put("listTypeId", ListType::getListTypeId);
+			attributeGetterFunctions.put("companyId", ListType::getCompanyId);
+			attributeGetterFunctions.put("name", ListType::getName);
+			attributeGetterFunctions.put("type", ListType::getType);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<ListType, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<ListType, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<ListType, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<ListType, Object>>();
-		Map<String, BiConsumer<ListType, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<ListType, ?>>();
+		private static final Map<String, BiConsumer<ListType, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", ListType::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<ListType, Long>)ListType::setMvccVersion);
-		attributeGetterFunctions.put("listTypeId", ListType::getListTypeId);
-		attributeSetterBiConsumers.put(
-			"listTypeId", (BiConsumer<ListType, Long>)ListType::setListTypeId);
-		attributeGetterFunctions.put("name", ListType::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<ListType, String>)ListType::setName);
-		attributeGetterFunctions.put("type", ListType::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<ListType, String>)ListType::setType);
+		static {
+			Map<String, BiConsumer<ListType, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<ListType, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<ListType, Long>)ListType::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"listTypeId",
+				(BiConsumer<ListType, Long>)ListType::setListTypeId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<ListType, Long>)ListType::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"name", (BiConsumer<ListType, String>)ListType::setName);
+			attributeSetterBiConsumers.put(
+				"type", (BiConsumer<ListType, String>)ListType::setType);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -351,6 +293,31 @@ public class ListTypeModelImpl
 		}
 
 		_listTypeId = listTypeId;
+	}
+
+	@JSON
+	@Override
+	public long getCompanyId() {
+		return _companyId;
+	}
+
+	@Override
+	public void setCompanyId(long companyId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_companyId = companyId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalCompanyId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("companyId"));
 	}
 
 	@JSON
@@ -438,7 +405,7 @@ public class ListTypeModelImpl
 	@Override
 	public ExpandoBridge getExpandoBridge() {
 		return ExpandoBridgeFactoryUtil.getExpandoBridge(
-			0, ListType.class.getName(), getPrimaryKey());
+			getCompanyId(), ListType.class.getName(), getPrimaryKey());
 	}
 
 	@Override
@@ -469,6 +436,7 @@ public class ListTypeModelImpl
 
 		listTypeImpl.setMvccVersion(getMvccVersion());
 		listTypeImpl.setListTypeId(getListTypeId());
+		listTypeImpl.setCompanyId(getCompanyId());
 		listTypeImpl.setName(getName());
 		listTypeImpl.setType(getType());
 
@@ -485,6 +453,8 @@ public class ListTypeModelImpl
 			this.<Long>getColumnOriginalValue("mvccVersion"));
 		listTypeImpl.setListTypeId(
 			this.<Long>getColumnOriginalValue("listTypeId"));
+		listTypeImpl.setCompanyId(
+			this.<Long>getColumnOriginalValue("companyId"));
 		listTypeImpl.setName(this.<String>getColumnOriginalValue("name"));
 		listTypeImpl.setType(this.<String>getColumnOriginalValue("type_"));
 
@@ -564,6 +534,8 @@ public class ListTypeModelImpl
 
 		listTypeCacheModel.listTypeId = getListTypeId();
 
+		listTypeCacheModel.companyId = getCompanyId();
+
 		listTypeCacheModel.name = getName();
 
 		String name = listTypeCacheModel.name;
@@ -632,54 +604,27 @@ public class ListTypeModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<ListType, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<ListType, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<ListType, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((ListType)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, ListType>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					ListType.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
 	private long _listTypeId;
+	private long _companyId;
 	private String _name;
 	private String _type;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<ListType, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<ListType, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -706,6 +651,7 @@ public class ListTypeModelImpl
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("listTypeId", _listTypeId);
+		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("name", _name);
 		_columnOriginalValues.put("type_", _type);
 	}
@@ -735,9 +681,11 @@ public class ListTypeModelImpl
 
 		columnBitmasks.put("listTypeId", 2L);
 
-		columnBitmasks.put("name", 4L);
+		columnBitmasks.put("companyId", 4L);
 
-		columnBitmasks.put("type_", 8L);
+		columnBitmasks.put("name", 8L);
+
+		columnBitmasks.put("type_", 16L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

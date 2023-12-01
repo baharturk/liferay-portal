@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.configuration.admin.web.internal.portlet.action;
 
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
+import com.liferay.configuration.admin.exportimport.ConfigurationExportImportProcessor;
 import com.liferay.configuration.admin.web.internal.display.context.ConfigurationScopeDisplayContext;
 import com.liferay.configuration.admin.web.internal.display.context.ConfigurationScopeDisplayContextFactory;
 import com.liferay.configuration.admin.web.internal.exporter.ConfigurationExporter;
@@ -24,16 +16,18 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition.Scope;
 import com.liferay.portal.configuration.metatype.definitions.ExtendedAttributeDefinition;
 import com.liferay.portal.configuration.metatype.definitions.ExtendedObjectClassDefinition;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.portlet.PortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.zip.ZipWriter;
-import com.liferay.portal.kernel.zip.ZipWriterFactoryUtil;
+import com.liferay.portal.kernel.zip.ZipWriterFactory;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.FileInputStream;
@@ -42,7 +36,7 @@ import java.io.Serializable;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.Objects;
 
 import javax.portlet.PortletException;
 import javax.portlet.ResourceRequest;
@@ -60,7 +54,6 @@ import org.osgi.service.metatype.AttributeDefinition;
  * @author Raymond Augé
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
 		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
@@ -98,12 +91,12 @@ public class ExportConfigurationMVCResourceCommand
 		return false;
 	}
 
-	protected Properties getProperties(
+	protected Dictionary<String, Object> getProperties(
 			String languageId, String factoryPid, String pid, Scope scope,
 			Serializable scopePK)
 		throws Exception {
 
-		Properties properties = new Properties();
+		Dictionary<String, Object> properties = new HashMapDictionary<>();
 
 		Map<String, ConfigurationModel> configurationModels =
 			_configurationModelRetriever.getConfigurationModels(
@@ -156,6 +149,11 @@ public class ExportConfigurationMVCResourceCommand
 
 		if (!Scope.SYSTEM.equals(scope)) {
 			properties.put(scope.getPropertyKey(), scopePK);
+
+			if (FeatureFlagManagerUtil.isEnabled("LPS-155284")) {
+				_configurationExportImportProcessor.prepareForExport(
+					pid, properties);
+			}
 		}
 
 		return properties;
@@ -170,7 +168,7 @@ public class ExportConfigurationMVCResourceCommand
 
 		String languageId = themeDisplay.getLanguageId();
 
-		ZipWriter zipWriter = ZipWriterFactoryUtil.getZipWriter();
+		ZipWriter zipWriter = _zipWriterFactory.getZipWriter();
 
 		ConfigurationScopeDisplayContext configurationScopeDisplayContext =
 			ConfigurationScopeDisplayContextFactory.create(resourceRequest);
@@ -184,9 +182,9 @@ public class ExportConfigurationMVCResourceCommand
 		for (ConfigurationModel configurationModel :
 				configurationModels.values()) {
 
-			if (configurationModel.isFactory()) {
-				String curFactoryPid = configurationModel.getFactoryPid();
+			String curFactoryPid = configurationModel.getFactoryPid();
 
+			if (configurationModel.isFactory()) {
 				List<ConfigurationModel> factoryInstances =
 					_configurationModelRetriever.getFactoryInstances(
 						configurationModel,
@@ -217,13 +215,26 @@ public class ExportConfigurationMVCResourceCommand
 					curFileName,
 					ConfigurationExporter.getPropertiesAsBytes(
 						getProperties(
-							languageId, curPid, curPid,
+							languageId, curFactoryPid, curPid,
 							configurationScopeDisplayContext.getScope(),
 							configurationScopeDisplayContext.getScopePK())));
 			}
 		}
 
-		String fileName = "liferay-system-settings.zip";
+		String fileName = "liferay-site-settings.zip";
+
+		if (Objects.equals(
+				ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+				themeDisplay.getPpid())) {
+
+			fileName = "liferay-instance-settings.zip";
+		}
+		else if (Objects.equals(
+					ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
+					themeDisplay.getPpid())) {
+
+			fileName = "liferay-system-settings.zip";
+		}
 
 		PortletResponseUtil.sendFile(
 			resourceRequest, resourceResponse, fileName,
@@ -240,7 +251,7 @@ public class ExportConfigurationMVCResourceCommand
 
 		String languageId = themeDisplay.getLanguageId();
 
-		ZipWriter zipWriter = ZipWriterFactoryUtil.getZipWriter();
+		ZipWriter zipWriter = _zipWriterFactory.getZipWriter();
 
 		String factoryPid = ParamUtil.getString(resourceRequest, "factoryPid");
 
@@ -319,11 +330,17 @@ public class ExportConfigurationMVCResourceCommand
 		if (Validator.isNotNull(factoryPid) && !factoryPid.equals(pid)) {
 			String factoryInstanceId = pid.substring(factoryPid.length() + 1);
 
-			if (factoryInstanceId.startsWith("scoped")) {
+			if (factoryInstanceId.startsWith("scoped.")) {
 				factoryPid = factoryPid + ".scoped";
 
 				factoryInstanceId = StringUtil.removeSubstring(
 					factoryInstanceId, "scoped.");
+			}
+			else if (factoryInstanceId.startsWith("scoped~")) {
+				factoryPid = factoryPid + ".scoped";
+
+				factoryInstanceId = StringUtil.removeSubstring(
+					factoryInstanceId, "scoped~");
 			}
 
 			fileName = factoryPid + StringPool.TILDE + factoryInstanceId;
@@ -332,7 +349,14 @@ public class ExportConfigurationMVCResourceCommand
 		return fileName + ".config";
 	}
 
+	@Reference
+	private ConfigurationExportImportProcessor
+		_configurationExportImportProcessor;
+
 	@Reference(target = "(filter.visibility=*)")
 	private ConfigurationModelRetriever _configurationModelRetriever;
+
+	@Reference
+	private ZipWriterFactory _zipWriterFactory;
 
 }

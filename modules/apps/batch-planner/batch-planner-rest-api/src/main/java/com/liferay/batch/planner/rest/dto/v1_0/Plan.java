@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.rest.dto.v1_0;
@@ -225,6 +216,34 @@ public class Plan implements Serializable {
 	protected String internalClassName;
 
 	@Schema
+	public String getInternalClassNameKey() {
+		return internalClassNameKey;
+	}
+
+	public void setInternalClassNameKey(String internalClassNameKey) {
+		this.internalClassNameKey = internalClassNameKey;
+	}
+
+	@JsonIgnore
+	public void setInternalClassNameKey(
+		UnsafeSupplier<String, Exception> internalClassNameKeyUnsafeSupplier) {
+
+		try {
+			internalClassNameKey = internalClassNameKeyUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String internalClassNameKey;
+
+	@Schema
 	@Valid
 	public Mapping[] getMappings() {
 		return mappings;
@@ -309,6 +328,60 @@ public class Plan implements Serializable {
 	protected Policy[] policies;
 
 	@Schema
+	public Integer getSize() {
+		return size;
+	}
+
+	public void setSize(Integer size) {
+		this.size = size;
+	}
+
+	@JsonIgnore
+	public void setSize(UnsafeSupplier<Integer, Exception> sizeUnsafeSupplier) {
+		try {
+			size = sizeUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Integer size;
+
+	@Schema
+	public Integer getStatus() {
+		return status;
+	}
+
+	public void setStatus(Integer status) {
+		this.status = status;
+	}
+
+	@JsonIgnore
+	public void setStatus(
+		UnsafeSupplier<Integer, Exception> statusUnsafeSupplier) {
+
+		try {
+			status = statusUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Integer status;
+
+	@Schema
 	public String getTaskItemDelegateName() {
 		return taskItemDelegateName;
 	}
@@ -335,6 +408,62 @@ public class Plan implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String taskItemDelegateName;
+
+	@Schema
+	public Boolean getTemplate() {
+		return template;
+	}
+
+	public void setTemplate(Boolean template) {
+		this.template = template;
+	}
+
+	@JsonIgnore
+	public void setTemplate(
+		UnsafeSupplier<Boolean, Exception> templateUnsafeSupplier) {
+
+		try {
+			template = templateUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean template;
+
+	@Schema
+	public Integer getTotal() {
+		return total;
+	}
+
+	public void setTotal(Integer total) {
+		this.total = total;
+	}
+
+	@JsonIgnore
+	public void setTotal(
+		UnsafeSupplier<Integer, Exception> totalUnsafeSupplier) {
+
+		try {
+			total = totalUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Integer total;
 
 	@Override
 	public boolean equals(Object object) {
@@ -435,6 +564,20 @@ public class Plan implements Serializable {
 			sb.append("\"");
 		}
 
+		if (internalClassNameKey != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"internalClassNameKey\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(internalClassNameKey));
+
+			sb.append("\"");
+		}
+
 		if (mappings != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -489,6 +632,26 @@ public class Plan implements Serializable {
 			sb.append("]");
 		}
 
+		if (size != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"size\": ");
+
+			sb.append(size);
+		}
+
+		if (status != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"status\": ");
+
+			sb.append(status);
+		}
+
 		if (taskItemDelegateName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -501,6 +664,26 @@ public class Plan implements Serializable {
 			sb.append(_escape(taskItemDelegateName));
 
 			sb.append("\"");
+		}
+
+		if (template != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"template\": ");
+
+			sb.append(template);
+		}
+
+		if (total != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"total\": ");
+
+			sb.append(total);
 		}
 
 		sb.append("}");
@@ -597,5 +780,7 @@ public class Plan implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

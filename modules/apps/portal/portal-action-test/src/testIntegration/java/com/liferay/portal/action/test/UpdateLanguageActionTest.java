@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.action.test;
@@ -30,6 +21,7 @@ import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.VirtualLayoutConstants;
 import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -42,6 +34,7 @@ import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -113,7 +106,7 @@ public class UpdateLanguageActionTest {
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
 
-		_layout = LayoutTestUtil.addLayout(
+		_layout = LayoutTestUtil.addTypePortletLayout(
 			_group.getGroupId(), false,
 			HashMapBuilder.put(
 				_defaultLocale, "Page in Default Locale"
@@ -188,16 +181,21 @@ public class UpdateLanguageActionTest {
 
 		LayoutSet layoutSet = _layout.getLayoutSet();
 
-		layoutSet.setVirtualHostname(_VIRTUAL_HOSTNAME);
+		layoutSet.setVirtualHostnames(
+			TreeMapBuilder.put(
+				_VIRTUAL_HOSTNAME, StringPool.BLANK
+			).build());
 
+		themeDisplay.setCompany(
+			_companyLocalService.getCompany(_group.getCompanyId()));
 		themeDisplay.setI18nLanguageId(_sourceUKLocale.getLanguage());
 		themeDisplay.setI18nPath("/" + _sourceUKLocale.getLanguage());
-		themeDisplay.setLocale(_sourceUKLocale);
 		themeDisplay.setLayout(_layout);
 		themeDisplay.setLayoutSet(_group.getPublicLayoutSet());
-		themeDisplay.setSiteGroupId(_group.getGroupId());
+		themeDisplay.setLocale(_sourceUKLocale);
 		themeDisplay.setPortalDomain(_VIRTUAL_HOSTNAME);
 		themeDisplay.setPortalURL(Http.HTTP_WITH_SLASH + _VIRTUAL_HOSTNAME);
+		themeDisplay.setSiteGroupId(_group.getGroupId());
 
 		Assert.assertEquals(
 			StringBundler.concat(
@@ -274,10 +272,10 @@ public class UpdateLanguageActionTest {
 
 		mockHttpServletRequest.setParameter("redirect", url);
 
-		String redirect = updateLanguageAction.getRedirect(
-			mockHttpServletRequest, themeDisplay, _targetLocale);
-
-		Assert.assertEquals(expectedRedirect, redirect);
+		Assert.assertEquals(
+			expectedRedirect,
+			updateLanguageAction.getRedirect(
+				mockHttpServletRequest, themeDisplay, _targetLocale));
 	}
 
 	private String _getFriendlyURLSeparatorPart(Locale locale)
@@ -366,6 +364,8 @@ public class UpdateLanguageActionTest {
 			themeDisplay.setLocale(_sourceLocale);
 		}
 
+		themeDisplay.setCompany(
+			_companyLocalService.getCompany(_group.getCompanyId()));
 		themeDisplay.setLayout(_layout);
 		themeDisplay.setLayoutSet(_group.getPublicLayoutSet());
 		themeDisplay.setSiteGroupId(_group.getGroupId());
@@ -416,6 +416,8 @@ public class UpdateLanguageActionTest {
 			themeDisplay.setLocale(_sourceLocale);
 		}
 
+		themeDisplay.setCompany(
+			_companyLocalService.getCompany(_group.getCompanyId()));
 		themeDisplay.setLayout(_layout);
 		themeDisplay.setLayoutSet(_group.getPublicLayoutSet());
 		themeDisplay.setSiteGroupId(_group.getGroupId());
@@ -453,6 +455,9 @@ public class UpdateLanguageActionTest {
 
 	@Inject
 	private static Portal _portal;
+
+	@Inject
+	private CompanyLocalService _companyLocalService;
 
 	private Group _group;
 	private JournalArticle _journalArticle;

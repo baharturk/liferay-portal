@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {
@@ -108,8 +99,11 @@ export function generateInstanceId(isNumbersOnly) {
 }
 
 export function getDefaultFieldName(isOptionField = false, fieldType = '') {
-	const defaultFieldName = fieldType?.label
-		? normalizeFieldName(fieldType.label)
+	const defaultFieldName = fieldType?.name
+		? normalizeFieldName(fieldType.name)
+				.split('_')
+				.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+				.join('')
 		: isOptionField
 		? Liferay.Language.get('option')
 		: Liferay.Language.get('field');
@@ -216,6 +210,7 @@ export function getFieldProperties(
 						value.errorMessage[defaultLanguageId];
 				}
 
+				/* TODO: define a proper parameter type and apply it here */
 				if (!value.parameter[editingLanguageId]) {
 					value.parameter[editingLanguageId] =
 						value.parameter[defaultLanguageId];

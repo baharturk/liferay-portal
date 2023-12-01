@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
@@ -40,14 +31,26 @@ public class ObjectRelationshipServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.object.service.impl.ObjectRelationshipServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static ObjectRelationship addObjectRelationship(
-			long objectDefinitionId1, long objectDefinitionId2,
+			String externalReferenceCode, long objectDefinitionId1,
+			long objectDefinitionId2, long parameterObjectFieldId,
 			String deletionType, Map<java.util.Locale, String> labelMap,
-			String name, String type)
+			String name, boolean system, String type,
+			com.liferay.object.model.ObjectField objectField)
 		throws PortalException {
 
 		return getService().addObjectRelationship(
-			objectDefinitionId1, objectDefinitionId2, deletionType, labelMap,
-			name, type);
+			externalReferenceCode, objectDefinitionId1, objectDefinitionId2,
+			parameterObjectFieldId, deletionType, labelMap, name, system, type,
+			objectField);
+	}
+
+	public static void addObjectRelationshipMappingTableValues(
+			long objectRelationshipId, long primaryKey1, long primaryKey2,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		getService().addObjectRelationshipMappingTableValues(
+			objectRelationshipId, primaryKey1, primaryKey2, serviceContext);
 	}
 
 	public static ObjectRelationship deleteObjectRelationship(
@@ -57,11 +60,28 @@ public class ObjectRelationshipServiceUtil {
 		return getService().deleteObjectRelationship(objectRelationshipId);
 	}
 
+	public static ObjectRelationship
+			fetchObjectRelationshipByExternalReferenceCode(
+				String externalReferenceCode, long companyId,
+				long objectDefinitionId1)
+		throws PortalException {
+
+		return getService().fetchObjectRelationshipByExternalReferenceCode(
+			externalReferenceCode, companyId, objectDefinitionId1);
+	}
+
 	public static ObjectRelationship getObjectRelationship(
 			long objectRelationshipId)
 		throws PortalException {
 
 		return getService().getObjectRelationship(objectRelationshipId);
+	}
+
+	public static ObjectRelationship getObjectRelationship(
+			long objectDefinitionId1, String name)
+		throws PortalException {
+
+		return getService().getObjectRelationship(objectDefinitionId1, name);
 	}
 
 	public static List<ObjectRelationship> getObjectRelationships(
@@ -82,16 +102,23 @@ public class ObjectRelationshipServiceUtil {
 	}
 
 	public static ObjectRelationship updateObjectRelationship(
-			long objectRelationshipId, String deletionType,
-			Map<java.util.Locale, String> labelMap)
+			String externalReferenceCode, long objectRelationshipId,
+			long parameterObjectFieldId, String deletionType, boolean edge,
+			Map<java.util.Locale, String> labelMap,
+			com.liferay.object.model.ObjectField objectField)
 		throws PortalException {
 
 		return getService().updateObjectRelationship(
-			objectRelationshipId, deletionType, labelMap);
+			externalReferenceCode, objectRelationshipId, parameterObjectFieldId,
+			deletionType, edge, labelMap, objectField);
 	}
 
 	public static ObjectRelationshipService getService() {
 		return _service;
+	}
+
+	public static void setService(ObjectRelationshipService service) {
+		_service = service;
 	}
 
 	private static volatile ObjectRelationshipService _service;

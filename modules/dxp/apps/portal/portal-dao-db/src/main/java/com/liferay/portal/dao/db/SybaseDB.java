@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.db;
@@ -17,16 +8,24 @@ package com.liferay.portal.dao.db;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.IOException;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
 
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -90,8 +89,75 @@ public class SybaseDB extends BaseDB {
 	}
 
 	@Override
+	public void removePrimaryKey(Connection connection, String tableName)
+		throws Exception {
+
+		DatabaseMetaData databaseMetaData = connection.getMetaData();
+
+		DBInspector dbInspector = new DBInspector(connection);
+
+		String normalizedTableName = dbInspector.normalizeName(
+			tableName, databaseMetaData);
+
+		if (!dbInspector.hasTable(normalizedTableName)) {
+			throw new SQLException(
+				StringBundler.concat(
+					"Table ", normalizedTableName, " does not exist"));
+		}
+
+		String primaryKeyConstraintName = null;
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"sp_helpconstraint ?")) {
+
+			preparedStatement.setString(1, normalizedTableName);
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				while (resultSet.next()) {
+					String definition = resultSet.getString("definition");
+
+					if (definition.startsWith("PRIMARY KEY INDEX")) {
+						primaryKeyConstraintName = resultSet.getString("name");
+
+						break;
+					}
+				}
+			}
+		}
+
+		if (primaryKeyConstraintName == null) {
+			throw new SQLException(
+				"No primary key constraint found for " + normalizedTableName);
+		}
+
+		if (dbInspector.hasIndex(
+				normalizedTableName, primaryKeyConstraintName)) {
+
+			runSQL(
+				StringBundler.concat(
+					"alter table ", normalizedTableName, " drop constraint ",
+					primaryKeyConstraintName));
+		}
+		else {
+			throw new SQLException(
+				StringBundler.concat(
+					"Primary key with name ", primaryKeyConstraintName,
+					" does not exist"));
+		}
+	}
+
+	@Override
 	protected int[] getSQLTypes() {
 		return _SQL_TYPES;
+	}
+
+	@Override
+	protected Map<String, Integer> getSQLVarcharSizes() {
+		return HashMapBuilder.put(
+			"STRING", _SQL_STRING_SIZE
+		).put(
+			"TEXT", SQL_SIZE_NONE
+		).build();
 	}
 
 	@Override
@@ -162,6 +228,23 @@ public class SybaseDB extends BaseDB {
 						REWORD_TEMPLATE, template);
 
 					line = StringUtil.replace(line, " ;", ";");
+
+					String defaultValue = template[template.length - 2];
+
+					if (!Validator.isBlank(defaultValue)) {
+						line = line.concat(
+							StringUtil.replace(
+								"alter table @table@ replace @old-column@ " +
+									"default @default@;",
+								REWORD_TEMPLATE, template));
+					}
+					else {
+						line = line.concat(
+							StringUtil.replace(
+								"alter table @table@ replace @old-column@ " +
+									"default null;",
+								REWORD_TEMPLATE, template));
+					}
 				}
 				else if (line.startsWith(ALTER_TABLE_NAME)) {
 					String[] template = buildTableNameTokens(line);
@@ -195,10 +278,12 @@ public class SybaseDB extends BaseDB {
 
 	protected static final String DROP_COLUMN = "drop column";
 
+	private static final int _SQL_STRING_SIZE = 4000;
+
 	private static final int _SQL_TYPE_TIMESTAMP = 11;
 
 	private static final int[] _SQL_TYPES = {
-		Types.LONGVARBINARY, Types.LONGVARBINARY, Types.INTEGER,
+		Types.LONGVARBINARY, Types.LONGVARBINARY, Types.DECIMAL, Types.INTEGER,
 		_SQL_TYPE_TIMESTAMP, Types.DOUBLE, Types.INTEGER, Types.DECIMAL,
 		Types.VARCHAR, Types.LONGVARCHAR, Types.VARCHAR
 	};
@@ -208,9 +293,10 @@ public class SybaseDB extends BaseDB {
 	private static final boolean _SUPPORTS_NEW_UUID_FUNCTION = true;
 
 	private static final String[] _SYBASE = {
-		"--", "1", "0", "'19700101'", "getdate()", " image", " image", " int",
-		" bigdatetime", " float", " int", " decimal(20,0)", " varchar(4000)",
-		" text", " varchar", "  identity(1,1)", "go"
+		"--", "1", "0", "'19700101'", "getdate()", " image", " image",
+		" decimal(30, 16)", " int", " bigdatetime", " float", " int",
+		" decimal(20,0)", " varchar(4000)", " text", " varchar",
+		"  identity(1,1)", "go"
 	};
 
 	private static final Pattern _columnLengthPattern = Pattern.compile(

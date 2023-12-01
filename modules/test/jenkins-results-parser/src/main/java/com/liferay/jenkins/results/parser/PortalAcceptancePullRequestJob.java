@@ -1,35 +1,63 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
 
 import java.io.File;
 
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
  */
 public class PortalAcceptancePullRequestJob
-	extends PortalAcceptanceTestSuiteJob {
+	extends PortalAcceptanceTestSuiteJob implements PortalWorkspaceJob {
 
-	public PortalAcceptancePullRequestJob(
-		String jobName, BuildProfile buildProfile, String testSuiteName,
-		String branchName) {
+	public boolean isCentralMergePullRequest() {
+		if (_centralMergePullRequest != null) {
+			return _centralMergePullRequest;
+		}
 
-		super(jobName, buildProfile, testSuiteName, branchName);
+		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
+
+		List<File> currentBranchModifiedFiles =
+			gitWorkingDirectory.getModifiedFilesList();
+
+		if (currentBranchModifiedFiles.size() == 1) {
+			File modifiedFile = currentBranchModifiedFiles.get(0);
+
+			String modifiedFileName = modifiedFile.getName();
+
+			if (modifiedFileName.equals("ci-merge")) {
+				_centralMergePullRequest = true;
+
+				return _centralMergePullRequest;
+			}
+		}
+
+		_centralMergePullRequest = false;
+
+		return _centralMergePullRequest;
+	}
+
+	protected PortalAcceptancePullRequestJob(
+		BuildProfile buildProfile, String jobName,
+		PortalGitWorkingDirectory portalGitWorkingDirectory,
+		String testSuiteName, String upstreamBranchName) {
+
+		super(
+			buildProfile, jobName, portalGitWorkingDirectory, testSuiteName,
+			upstreamBranchName);
+	}
+
+	protected PortalAcceptancePullRequestJob(JSONObject jsonObject) {
+		super(jsonObject);
 	}
 
 	@Override
@@ -83,5 +111,7 @@ public class PortalAcceptancePullRequestJob
 
 		return testSuiteName.equals("relevant");
 	}
+
+	private Boolean _centralMergePullRequest;
 
 }

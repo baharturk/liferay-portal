@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.testray;
@@ -68,8 +59,17 @@ public class TestrayCaseResult {
 		return jsonObject.optString("errors");
 	}
 
-	public String getID() {
-		return jsonObject.optString("testrayCaseResultId");
+	public URL getHistoryURL() {
+		try {
+			return new URL(getURL() + "/history");
+		}
+		catch (MalformedURLException malformedURLException) {
+			throw new RuntimeException(malformedURLException);
+		}
+	}
+
+	public long getID() {
+		return jsonObject.optLong("testrayCaseResultId");
 	}
 
 	public JSONObject getJSONObject() {
@@ -124,7 +124,8 @@ public class TestrayCaseResult {
 		try {
 			_testrayCase = new TestrayCase(
 				getTestrayProject(),
-				JenkinsResultsParserUtil.toJSONObject(testrayCaseURL));
+				JenkinsResultsParserUtil.toJSONObject(
+					testrayCaseURL, testrayServer.getHTTPAuthorization()));
 		}
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
@@ -157,8 +158,7 @@ public class TestrayCaseResult {
 		try {
 			return new URL(
 				testrayServer.getURL(),
-				JenkinsResultsParserUtil.combine(
-					"home/-/testray/case_results/", getID()));
+				"home/-/testray/case_results/" + getID());
 		}
 		catch (MalformedURLException malformedURLException) {
 			throw new RuntimeException(malformedURLException);
@@ -224,7 +224,7 @@ public class TestrayCaseResult {
 
 	protected final JSONObject jsonObject;
 
-	private void _initTestrayAttachments() {
+	private synchronized void _initTestrayAttachments() {
 		if (_testrayAttachments != null) {
 			return;
 		}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.synchronizer;
@@ -25,7 +16,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -39,10 +29,7 @@ public class IndexToFilterSynchronizerImplTest extends BaseSynonymsWebTestCase {
 		LiferayUnitTestRule.INSTANCE;
 
 	@Before
-	@Override
 	public void setUp() throws Exception {
-		super.setUp();
-
 		_indexToFilterSynchronizerImpl = new IndexToFilterSynchronizerImpl();
 
 		ReflectionTestUtil.setFieldValue(
@@ -51,9 +38,6 @@ public class IndexToFilterSynchronizerImplTest extends BaseSynonymsWebTestCase {
 		ReflectionTestUtil.setFieldValue(
 			_indexToFilterSynchronizerImpl, "_synonymSetFilterWriter",
 			_synonymSetFilterWriter);
-		ReflectionTestUtil.setFieldValue(
-			_indexToFilterSynchronizerImpl, "_synonymSetIndexNameBuilder",
-			synonymSetIndexNameBuilder);
 		ReflectionTestUtil.setFieldValue(
 			_indexToFilterSynchronizerImpl, "_synonymSetIndexReader",
 			synonymSetIndexReader);
@@ -69,14 +53,13 @@ public class IndexToFilterSynchronizerImplTest extends BaseSynonymsWebTestCase {
 		Mockito.verify(
 			_synonymSetFilterWriter, Mockito.times(1)
 		).updateSynonymSets(
-			Mockito.anyString(), Mockito.anyString(), Mockito.anyObject(),
+			Mockito.anyString(), Mockito.anyString(), Mockito.any(),
 			Mockito.anyBoolean()
 		);
 	}
 
 	private IndexToFilterSynchronizerImpl _indexToFilterSynchronizerImpl;
-
-	@Mock
-	private SynonymSetFilterWriter _synonymSetFilterWriter;
+	private final SynonymSetFilterWriter _synonymSetFilterWriter = Mockito.mock(
+		SynonymSetFilterWriter.class);
 
 }

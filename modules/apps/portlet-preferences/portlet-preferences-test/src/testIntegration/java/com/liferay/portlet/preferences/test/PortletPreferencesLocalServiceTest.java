@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.preferences.test;
@@ -104,11 +95,9 @@ public class PortletPreferencesLocalServiceTest
 	public void testAddPortletPreferencesWithDefaultMultipleXML()
 		throws Exception {
 
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _MULTIPLE_VALUES);
-
 		PortletPreferences portletPreferences = addLayoutPortletPreferences(
-			testLayout, testPortlet, portletPreferencesXML);
+			testLayout, testPortlet,
+			getPortletPreferencesXML(_NAME, _MULTIPLE_VALUES));
 
 		PortletPreferencesImpl portletPreferencesImpl =
 			_toPortletPreferencesImpl(portletPreferences);
@@ -157,11 +146,9 @@ public class PortletPreferencesLocalServiceTest
 	public void testAddPortletPreferencesWithDefaultSingleXML()
 		throws Exception {
 
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _SINGLE_VALUE);
-
 		PortletPreferences portletPreferences = addLayoutPortletPreferences(
-			testLayout, testPortlet, portletPreferencesXML);
+			testLayout, testPortlet,
+			getPortletPreferencesXML(_NAME, _SINGLE_VALUE));
 
 		PortletPreferencesImpl portletPreferencesImpl =
 			_toPortletPreferencesImpl(portletPreferences);
@@ -173,10 +160,8 @@ public class PortletPreferencesLocalServiceTest
 
 	@Test
 	public void testAddPortletPreferencesWithPortlet() throws Exception {
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _SINGLE_VALUE);
-
-		testPortlet.setDefaultPreferences(portletPreferencesXML);
+		testPortlet.setDefaultPreferences(
+			getPortletPreferencesXML(_NAME, _SINGLE_VALUE));
 
 		PortletPreferences portletPreferences = addLayoutPortletPreferences(
 			testLayout, testPortlet);
@@ -393,11 +378,9 @@ public class PortletPreferencesLocalServiceTest
 
 	@Test
 	public void testFetchNonexistentPreferences() throws Exception {
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _SINGLE_VALUE);
-
 		addLayoutPortletPreferences(
-			testLayout, testPortlet, portletPreferencesXML);
+			testLayout, testPortlet,
+			getPortletPreferencesXML(_NAME, _SINGLE_VALUE));
 
 		portletPreferencesLocalService.deletePortletPreferences(
 			PortletKeys.PREFS_OWNER_ID_DEFAULT,
@@ -415,11 +398,9 @@ public class PortletPreferencesLocalServiceTest
 
 	@Test
 	public void testFetchPreferences() throws Exception {
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _SINGLE_VALUE);
-
 		addLayoutPortletPreferences(
-			testLayout, testPortlet, portletPreferencesXML);
+			testLayout, testPortlet,
+			getPortletPreferencesXML(_NAME, _SINGLE_VALUE));
 
 		javax.portlet.PortletPreferences jxPortletPreferences =
 			portletPreferencesLocalService.fetchPreferences(
@@ -432,11 +413,9 @@ public class PortletPreferencesLocalServiceTest
 
 	@Test
 	public void testFetchPreferencesByPortletPreferencesIds() throws Exception {
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _SINGLE_VALUE);
-
 		addLayoutPortletPreferences(
-			testLayout, testPortlet, portletPreferencesXML);
+			testLayout, testPortlet,
+			getPortletPreferencesXML(_NAME, _SINGLE_VALUE));
 
 		PortletPreferencesIds portletPreferencesIds = new PortletPreferencesIds(
 			testLayout.getCompanyId(), PortletKeys.PREFS_OWNER_ID_DEFAULT,
@@ -669,11 +648,9 @@ public class PortletPreferencesLocalServiceTest
 
 	@Test
 	public void testGetGroupPreferencesByPortletPreferencesIds() {
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _SINGLE_VALUE);
-
 		addGroupPortletPreferences(
-			testLayout, testPortlet, portletPreferencesXML);
+			testLayout, testPortlet,
+			getPortletPreferencesXML(_NAME, _SINGLE_VALUE));
 
 		PortletPreferencesIds portletPreferencesIds = new PortletPreferencesIds(
 			testGroup.getCompanyId(), testGroup.getGroupId(),
@@ -692,14 +669,12 @@ public class PortletPreferencesLocalServiceTest
 
 	@Test
 	public void testGetGroupreferencesByOwnerAndPlidAndPortletIdWithDefaultXMLAutoAdded() {
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _SINGLE_VALUE);
-
 		javax.portlet.PortletPreferences jxPortletPreferences =
 			portletPreferencesLocalService.getPreferences(
 				testGroup.getCompanyId(), testGroup.getGroupId(),
 				PortletKeys.PREFS_OWNER_TYPE_GROUP, testLayout.getPlid(),
-				testPortlet.getPortletId(), portletPreferencesXML);
+				testPortlet.getPortletId(),
+				getPortletPreferencesXML(_NAME, _SINGLE_VALUE));
 
 		assertValues(jxPortletPreferences, _NAME, _SINGLE_VALUE);
 		assertOwner(
@@ -714,7 +689,8 @@ public class PortletPreferencesLocalServiceTest
 		addLayoutPortletPreferences(testLayout, testPortlet);
 
 		addLayoutPortletPreferences(
-			LayoutTestUtil.addLayout(testLayout.getGroup()), testPortlet);
+			LayoutTestUtil.addTypePortletLayout(testLayout.getGroup()),
+			testPortlet);
 
 		List<PortletPreferences> portletPreferencesList =
 			portletPreferencesLocalService.getPortletPreferences(
@@ -788,7 +764,7 @@ public class PortletPreferencesLocalServiceTest
 		addLayoutPortletPreferences(testLayout, testPortlet);
 
 		addLayoutPortletPreferences(
-			LayoutTestUtil.addLayout(testGroup), testPortlet);
+			LayoutTestUtil.addTypePortletLayout(testGroup), testPortlet);
 
 		Assert.assertEquals(
 			2,
@@ -823,14 +799,12 @@ public class PortletPreferencesLocalServiceTest
 
 	@Test
 	public void testGetLayoutPreferencesByOwnerAndPlidAndPortletIdWithDefaultXMLAutoAdded() {
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _SINGLE_VALUE);
-
 		javax.portlet.PortletPreferences jxPortletPreferences =
 			portletPreferencesLocalService.getPreferences(
 				testLayout.getCompanyId(), PortletKeys.PREFS_OWNER_ID_DEFAULT,
 				PortletKeys.PREFS_OWNER_TYPE_LAYOUT, testLayout.getPlid(),
-				testPortlet.getPortletId(), portletPreferencesXML);
+				testPortlet.getPortletId(),
+				getPortletPreferencesXML(_NAME, _SINGLE_VALUE));
 
 		assertValues(jxPortletPreferences, _NAME, _SINGLE_VALUE);
 		assertOwner(testLayout, (PortletPreferencesImpl)jxPortletPreferences);
@@ -852,11 +826,9 @@ public class PortletPreferencesLocalServiceTest
 	public void testGetLayoutPreferencesByPortletPreferencesIds()
 		throws Exception {
 
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _SINGLE_VALUE);
-
 		addLayoutPortletPreferences(
-			testLayout, testPortlet, portletPreferencesXML);
+			testLayout, testPortlet,
+			getPortletPreferencesXML(_NAME, _SINGLE_VALUE));
 
 		PortletPreferencesIds portletPreferencesIds = new PortletPreferencesIds(
 			testLayout.getCompanyId(), PortletKeys.PREFS_OWNER_ID_DEFAULT,
@@ -1112,7 +1084,7 @@ public class PortletPreferencesLocalServiceTest
 		addLayoutPortletPreferences(testLayout, testPortlet);
 
 		addLayoutPortletPreferences(
-			LayoutTestUtil.addLayout(testGroup), testPortlet);
+			LayoutTestUtil.addTypePortletLayout(testGroup), testPortlet);
 
 		Assert.assertEquals(
 			2,
@@ -1133,7 +1105,7 @@ public class PortletPreferencesLocalServiceTest
 	public void testGetPortletPreferencesByPlid() throws Exception {
 		addLayoutPortletPreferences(testLayout, testPortlet);
 
-		Layout layout = LayoutTestUtil.addLayout(testGroup);
+		Layout layout = LayoutTestUtil.addTypePortletLayout(testGroup);
 
 		Portlet portlet1 = portletLocalService.getPortletById(
 			layout.getCompanyId(), String.valueOf(_PORTLET_ID + 1));
@@ -1159,7 +1131,7 @@ public class PortletPreferencesLocalServiceTest
 		addLayoutPortletPreferences(testLayout, testPortlet);
 
 		addLayoutPortletPreferences(
-			LayoutTestUtil.addLayout(testGroup), testPortlet);
+			LayoutTestUtil.addTypePortletLayout(testGroup), testPortlet);
 
 		List<PortletPreferences> portletPreferencesList =
 			portletPreferencesLocalService.getPortletPreferences(
@@ -1253,13 +1225,11 @@ public class PortletPreferencesLocalServiceTest
 
 	@Test
 	public void testUpdatePreferencesAutoAdd() {
-		String portletPreferencesXML = getPortletPreferencesXML(
-			_NAME, _SINGLE_VALUE);
-
 		portletPreferencesLocalService.updatePreferences(
 			PortletKeys.PREFS_OWNER_ID_DEFAULT,
 			PortletKeys.PREFS_OWNER_TYPE_LAYOUT, testLayout.getPlid(),
-			testPortlet.getPortletId(), portletPreferencesXML);
+			testPortlet.getPortletId(),
+			getPortletPreferencesXML(_NAME, _SINGLE_VALUE));
 
 		javax.portlet.PortletPreferences jxPortletPreferences =
 			portletPreferencesLocalService.getPreferences(
@@ -1406,7 +1376,7 @@ public class PortletPreferencesLocalServiceTest
 
 		_groups.add(group);
 
-		return LayoutTestUtil.addLayout(group, privateLayout);
+		return LayoutTestUtil.addTypePortletLayout(group, privateLayout);
 	}
 
 	private PortletPreferencesImpl _toPortletPreferencesImpl(

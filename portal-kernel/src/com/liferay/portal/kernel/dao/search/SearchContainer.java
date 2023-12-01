@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.dao.search;
@@ -109,7 +100,7 @@ public class SearchContainer<R> {
 		else {
 			if (cur < 1) {
 				_cur = ParamUtil.getInteger(
-					portletRequest, _curParam, DEFAULT_CUR);
+					portletRequest, curParam, DEFAULT_CUR);
 
 				if (_cur < 1) {
 					_cur = DEFAULT_CUR;
@@ -486,15 +477,6 @@ public class SearchContainer<R> {
 		_orderByTypeParam = orderByTypeParam;
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #setResultsAndTotal(UnsafeSupplier, int)}
-	 */
-	@Deprecated
-	public void setResults(List<R> results) {
-		_setResults(results);
-	}
-
 	public <T extends BaseModel<T>> void setResultsAndTotal(
 		BaseModelSearchResult<T> baseModelSearchResult) {
 
@@ -503,13 +485,19 @@ public class SearchContainer<R> {
 			baseModelSearchResult.getLength());
 	}
 
+	public void setResultsAndTotal(List<R> results) {
+		_setTotal(results.size());
+
+		_setResults(results.subList(_start, _resultEnd));
+	}
+
 	public <E extends Throwable> void setResultsAndTotal(
-			UnsafeSupplier<List<R>, E> setResultsSupplier, int total)
+			UnsafeSupplier<List<R>, E> setResultsUnsafeSupplier, int total)
 		throws E {
 
 		_setTotal(total);
 
-		_setResults(setResultsSupplier.get());
+		_setResults(setResultsUnsafeSupplier.get());
 	}
 
 	public void setRowChecker(RowChecker rowChecker) {
@@ -526,15 +514,6 @@ public class SearchContainer<R> {
 
 	public void setSummary(String summary) {
 		_summary = summary;
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #setResultsAndTotal(UnsafeSupplier, int)}
-	 */
-	@Deprecated
-	public void setTotal(int total) {
-		_setTotal(total);
 	}
 
 	public void setTotalVar(String totalVar) {

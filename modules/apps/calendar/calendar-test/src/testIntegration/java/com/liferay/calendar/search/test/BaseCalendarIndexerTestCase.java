@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.search.test;
@@ -31,6 +22,7 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
@@ -44,6 +36,8 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
+import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.test.util.HitsAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
 import com.liferay.portal.search.test.util.SearchTestRule;
@@ -125,7 +119,8 @@ public abstract class BaseCalendarIndexerTestCase {
 	}
 
 	protected IndexedFieldsFixture createIndexedFieldsFixture() {
-		return new IndexedFieldsFixture(resourcePermissionLocalService);
+		return new IndexedFieldsFixture(
+			resourcePermissionLocalService, searchEngineHelper);
 	}
 
 	protected SearchContext getSearchContext(String keywords, Locale locale) {
@@ -169,6 +164,27 @@ public abstract class BaseCalendarIndexerTestCase {
 			search(getSearchContext(keywords, locale)));
 	}
 
+	protected SearchResponse searchOnlyOneSearchResponse(
+		String keywords, Locale locale) {
+
+		SearchContext searchContext = getSearchContext(keywords, locale);
+
+		searchRequestBuilderFactory.builder(
+			searchContext
+		).fetchSourceIncludes(
+			new String[] {"*_sortable"}
+		).build();
+
+		search(searchContext);
+
+		SearchResponse searchResponse =
+			(SearchResponse)searchContext.getAttribute("search.response");
+
+		HitsAssert.assertOnlyOne(searchResponse.getSearchHits());
+
+		return searchResponse;
+	}
+
 	protected void setIndexerClass(Class<?> clazz) {
 		_indexer = indexerRegistry.getIndexer(clazz);
 	}
@@ -187,6 +203,12 @@ public abstract class BaseCalendarIndexerTestCase {
 
 	@Inject
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
+
+	@Inject
+	protected SearchEngineHelper searchEngineHelper;
+
+	@Inject
+	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
 
 	protected User user;
 

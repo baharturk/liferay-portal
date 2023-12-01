@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayForm, {ClayInput} from '@clayui/form';
@@ -23,7 +14,7 @@ const RequiredMark = () => (
 		<span className="inline-item-after reference-mark text-warning">
 			<ClayIcon symbol="asterisk" />
 		</span>
-		<span className="hide-accessible">
+		<span className="hide-accessible sr-only">
 			{Liferay.Language.get('required')}
 		</span>
 	</>
@@ -39,7 +30,7 @@ const Feedback = ({message, warning}) => (
 	</ClayForm.FeedbackGroup>
 );
 
-const FileNameInput = ({initialValue, portletNamespace, required, visible}) => {
+const FileNameInput = ({initialValue, portletNamespace, required}) => {
 	const inputId = portletNamespace + 'fileName';
 	const [inputValue, setInputValue] = useState(initialValue);
 	const valueChanged = initialValue !== inputValue;
@@ -66,7 +57,7 @@ const FileNameInput = ({initialValue, portletNamespace, required, visible}) => {
 				name={inputId}
 				onChange={({target: {value}}) => setInputValue(value)}
 				required={required}
-				type={visible ? 'text' : 'hidden'}
+				type="text"
 				value={inputValue}
 			/>
 
@@ -92,7 +83,6 @@ FileNameInput.propTypes = {
 	initialValue: PropTypes.string,
 	portletNamespace: PropTypes.string,
 	required: PropTypes.bool,
-	visible: PropTypes.bool,
 };
 
 export default FileNameInput;

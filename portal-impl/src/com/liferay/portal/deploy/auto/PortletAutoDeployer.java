@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.deploy.auto;
@@ -47,9 +38,6 @@ import java.util.List;
 public class PortletAutoDeployer
 	extends BaseAutoDeployer implements AutoDeployer {
 
-	public static final String JSF_STANDARD =
-		"javax.portlet.faces.GenericFacesPortlet";
-
 	public PortletAutoDeployer() {
 		super(Plugin.TYPE_PORTLET);
 
@@ -78,7 +66,7 @@ public class PortletAutoDeployer
 				tempDirPaths, "liferay-util.tld");
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -117,38 +105,7 @@ public class PortletAutoDeployer
 		updatePortletXML(portletXML);
 
 		sb.append(getServletContent(portletXML, webXML));
-
-		String extraContent = super.getExtraContent(
-			webXmlVersion, srcFile, displayName);
-
-		sb.append(extraContent);
-
-		return sb.toString();
-	}
-
-	@Override
-	public String getExtraFiltersContent(double webXmlVersion, File srcFile)
-		throws Exception {
-
-		StringBundler sb = new StringBundler(4);
-
-		String extraFiltersContent = super.getExtraFiltersContent(
-			webXmlVersion, srcFile);
-
-		sb.append(extraFiltersContent);
-
-		// Ignore filters
-
-		sb.append(getIgnoreFiltersContent(srcFile));
-
-		// Speed filters
-
-		sb.append(getSpeedFiltersContent(srcFile));
-
-		// Servlet context include filters
-
-		sb.append(
-			getServletContextIncludeFiltersContent(webXmlVersion, srcFile));
+		sb.append(super.getExtraContent(webXmlVersion, srcFile, displayName));
 
 		return sb.toString();
 	}

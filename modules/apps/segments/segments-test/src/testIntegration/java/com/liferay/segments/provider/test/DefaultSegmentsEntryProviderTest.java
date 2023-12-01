@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.provider.test;
@@ -101,18 +92,14 @@ public class DefaultSegmentsEntryProviderTest {
 			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
 			User.class.getName());
 
-		int segmentsEntryClassPKsCount =
+		Assert.assertEquals(
+			1,
 			_segmentsEntryProvider.getSegmentsEntryClassPKsCount(
-				segmentsEntry.getSegmentsEntryId());
-
-		Assert.assertEquals(1, segmentsEntryClassPKsCount);
-
-		long[] segmentsEntryClassPKs =
-			_segmentsEntryProvider.getSegmentsEntryClassPKs(
-				segmentsEntry.getSegmentsEntryId(), 0, 1);
-
+				segmentsEntry.getSegmentsEntryId()));
 		Assert.assertArrayEquals(
-			new long[] {_user1.getUserId()}, segmentsEntryClassPKs);
+			new long[] {_user1.getUserId()},
+			_segmentsEntryProvider.getSegmentsEntryClassPKs(
+				segmentsEntry.getSegmentsEntryId(), 0, 1));
 	}
 
 	@Test
@@ -141,11 +128,10 @@ public class DefaultSegmentsEntryProviderTest {
 			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
 			User.class.getName());
 
-		int segmentsEntryClassPKsCount =
+		Assert.assertEquals(
+			0,
 			_segmentsEntryProvider.getSegmentsEntryClassPKsCount(
-				segmentsEntry.getSegmentsEntryId());
-
-		Assert.assertEquals(0, segmentsEntryClassPKsCount);
+				segmentsEntry.getSegmentsEntryId()));
 	}
 
 	@Test
@@ -162,18 +148,14 @@ public class DefaultSegmentsEntryProviderTest {
 			_portal.getClassNameId(User.class.getName()), _user1.getUserId(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
-		int segmentsEntryClassPKsCount =
+		Assert.assertEquals(
+			1,
 			_segmentsEntryProvider.getSegmentsEntryClassPKsCount(
-				segmentsEntry.getSegmentsEntryId());
-
-		Assert.assertEquals(1, segmentsEntryClassPKsCount);
-
-		long[] segmentsEntryClassPKs =
-			_segmentsEntryProvider.getSegmentsEntryClassPKs(
-				segmentsEntry.getSegmentsEntryId(), 0, 1);
-
+				segmentsEntry.getSegmentsEntryId()));
 		Assert.assertArrayEquals(
-			new long[] {_user1.getUserId()}, segmentsEntryClassPKs);
+			new long[] {_user1.getUserId()},
+			_segmentsEntryProvider.getSegmentsEntryClassPKs(
+				segmentsEntry.getSegmentsEntryId(), 0, 1));
 	}
 
 	@Test
@@ -194,22 +176,18 @@ public class DefaultSegmentsEntryProviderTest {
 			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
 			User.class.getName());
 
-		int segmentsEntryClassPKsCount =
+		Assert.assertEquals(
+			1,
 			_segmentsEntryProvider.getSegmentsEntryClassPKsCount(
-				segmentsEntry.getSegmentsEntryId());
-
-		Assert.assertEquals(1, segmentsEntryClassPKsCount);
-
-		long[] segmentsEntryClassPKs =
-			_segmentsEntryProvider.getSegmentsEntryClassPKs(
-				segmentsEntry.getSegmentsEntryId(), 0, 1);
-
+				segmentsEntry.getSegmentsEntryId()));
 		Assert.assertArrayEquals(
-			new long[] {_user1.getUserId()}, segmentsEntryClassPKs);
+			new long[] {_user1.getUserId()},
+			_segmentsEntryProvider.getSegmentsEntryClassPKs(
+				segmentsEntry.getSegmentsEntryId(), 0, 1));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithContextCriterionAndDefaultUser()
+	public void testGetSegmentsEntryIdsWithContextCriterionAndGuestUser()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -224,23 +202,22 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "en");
 		context.put(Context.SIGNED_IN, false);
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
 		Assert.assertArrayEquals(
-			new long[] {segmentsEntry.getSegmentsEntryId()}, segmentsEntryIds);
+			new long[] {segmentsEntry.getSegmentsEntryId()},
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithContextCriterionAndDefaultUserWithoutSignedInContext()
+	public void testGetSegmentsEntryIdsWithContextCriterionAndGuestUserWithoutSignedInContext()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -255,18 +232,17 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "en");
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
 		Assert.assertArrayEquals(
-			new long[] {segmentsEntry.getSegmentsEntryId()}, segmentsEntryIds);
+			new long[] {segmentsEntry.getSegmentsEntryId()},
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
@@ -329,7 +305,7 @@ public class DefaultSegmentsEntryProviderTest {
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithContextCriterionAndModelCriterionAndDefaultUser()
+	public void testGetSegmentsEntryIdsWithContextCriterionAndModelCriterionAndGuestUser()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -340,11 +316,11 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		_userSegmentsCriteriaContributor.contribute(
 			criteria,
-			String.format("(firstName eq '%s')", defaultUser.getFirstName()),
+			String.format("(firstName eq '%s')", guestUser.getFirstName()),
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
@@ -356,15 +332,15 @@ public class DefaultSegmentsEntryProviderTest {
 		context.put(Context.LANGUAGE_ID, "en");
 		context.put(Context.SIGNED_IN, false);
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
-		Assert.assertArrayEquals(new long[0], segmentsEntryIds);
+		Assert.assertArrayEquals(
+			new long[0],
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithContextCriterionAndModelCriterionAndDefaultUserWithoutSignedInContext()
+	public void testGetSegmentsEntryIdsWithContextCriterionAndModelCriterionAndGuestUserWithoutSignedInContext()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -375,11 +351,11 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		_userSegmentsCriteriaContributor.contribute(
 			criteria,
-			String.format("(firstName eq '%s')", defaultUser.getFirstName()),
+			String.format("(firstName eq '%s')", guestUser.getFirstName()),
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
@@ -390,15 +366,15 @@ public class DefaultSegmentsEntryProviderTest {
 
 		context.put(Context.LANGUAGE_ID, "en");
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
-		Assert.assertArrayEquals(new long[0], segmentsEntryIds);
+		Assert.assertArrayEquals(
+			new long[0],
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithContextCriterionOrModelCriterionAndDefaultUser()
+	public void testGetSegmentsEntryIdsWithContextCriterionOrModelCriterionAndGuestUser()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -409,11 +385,11 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		_userSegmentsCriteriaContributor.contribute(
 			criteria,
-			String.format("(firstName eq '%s')", defaultUser.getFirstName()),
+			String.format("(firstName eq '%s')", guestUser.getFirstName()),
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
@@ -425,16 +401,15 @@ public class DefaultSegmentsEntryProviderTest {
 		context.put(Context.LANGUAGE_ID, "en");
 		context.put(Context.SIGNED_IN, false);
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
 		Assert.assertArrayEquals(
-			new long[] {segmentsEntry.getSegmentsEntryId()}, segmentsEntryIds);
+			new long[] {segmentsEntry.getSegmentsEntryId()},
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithContextCriterionOrModelCriterionAndDefaultUserWithoutSignedInContext()
+	public void testGetSegmentsEntryIdsWithContextCriterionOrModelCriterionAndGuestUserWithoutSignedInContext()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -445,11 +420,11 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		_userSegmentsCriteriaContributor.contribute(
 			criteria,
-			String.format("(firstName eq '%s')", defaultUser.getFirstName()),
+			String.format("(firstName eq '%s')", guestUser.getFirstName()),
 			Criteria.Conjunction.AND);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
@@ -460,28 +435,27 @@ public class DefaultSegmentsEntryProviderTest {
 
 		context.put(Context.LANGUAGE_ID, "en");
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
 		Assert.assertArrayEquals(
-			new long[] {segmentsEntry.getSegmentsEntryId()}, segmentsEntryIds);
+			new long[] {segmentsEntry.getSegmentsEntryId()},
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithModelCriterionAndDefaultUser()
+	public void testGetSegmentsEntryIdsWithModelCriterionAndGuestUser()
 		throws Exception {
 
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		Criteria criteria = new Criteria();
 
 		_userSegmentsCriteriaContributor.contribute(
 			criteria,
-			String.format("(firstName eq '%s')", defaultUser.getFirstName()),
+			String.format("(firstName eq '%s')", guestUser.getFirstName()),
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
@@ -492,11 +466,11 @@ public class DefaultSegmentsEntryProviderTest {
 
 		context.put(Context.SIGNED_IN, false);
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
-		Assert.assertArrayEquals(new long[0], segmentsEntryIds);
+		Assert.assertArrayEquals(
+			new long[0],
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
@@ -558,7 +532,7 @@ public class DefaultSegmentsEntryProviderTest {
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionAndDefaultUser()
+	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionAndGuestUser()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -573,22 +547,22 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "es");
 		context.put(Context.SIGNED_IN, false);
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
-		Assert.assertArrayEquals(new long[0], segmentsEntryIds);
+		Assert.assertArrayEquals(
+			new long[0],
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionAndDefaultUserWithoutSignedInContext()
+	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionAndGuestUserWithoutSignedInContext()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -603,17 +577,17 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		Context context = new Context();
 
 		context.put(Context.LANGUAGE_ID, "es");
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
-		Assert.assertArrayEquals(new long[0], segmentsEntryIds);
+		Assert.assertArrayEquals(
+			new long[0],
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
@@ -640,15 +614,15 @@ public class DefaultSegmentsEntryProviderTest {
 
 		context.put("languageId", "es");
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), _user1.getUserId(),
-			context);
-
-		Assert.assertArrayEquals(new long[0], segmentsEntryIds);
+		Assert.assertArrayEquals(
+			new long[0],
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(), _user1.getUserId(),
+				context));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionAndModelCriterionAndDefaultUser()
+	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionAndModelCriterionAndGuestUser()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -659,11 +633,11 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		_userSegmentsCriteriaContributor.contribute(
 			criteria,
-			String.format("(firstName eq '%s')", defaultUser.getFirstName()),
+			String.format("(firstName eq '%s')", guestUser.getFirstName()),
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
@@ -675,15 +649,15 @@ public class DefaultSegmentsEntryProviderTest {
 		context.put(Context.LANGUAGE_ID, "es");
 		context.put(Context.SIGNED_IN, false);
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
-		Assert.assertArrayEquals(new long[0], segmentsEntryIds);
+		Assert.assertArrayEquals(
+			new long[0],
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionAndModelCriterionAndDefaultUserWithoutSignedInContext()
+	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionAndModelCriterionAndGuestUserWithoutSignedInContext()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -694,11 +668,11 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		_userSegmentsCriteriaContributor.contribute(
 			criteria,
-			String.format("(firstName eq '%s')", defaultUser.getFirstName()),
+			String.format("(firstName eq '%s')", guestUser.getFirstName()),
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
@@ -709,15 +683,15 @@ public class DefaultSegmentsEntryProviderTest {
 
 		context.put(Context.LANGUAGE_ID, "es");
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
-		Assert.assertArrayEquals(new long[0], segmentsEntryIds);
+		Assert.assertArrayEquals(
+			new long[0],
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionOrModelCriterionAndDefaultUser()
+	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionOrModelCriterionAndGuestUser()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -728,11 +702,11 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		_userSegmentsCriteriaContributor.contribute(
 			criteria,
-			String.format("(firstName eq '%s')", defaultUser.getFirstName()),
+			String.format("(firstName eq '%s')", guestUser.getFirstName()),
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
@@ -744,15 +718,15 @@ public class DefaultSegmentsEntryProviderTest {
 		context.put(Context.LANGUAGE_ID, "es");
 		context.put(Context.SIGNED_IN, false);
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
-		Assert.assertArrayEquals(new long[0], segmentsEntryIds);
+		Assert.assertArrayEquals(
+			new long[0],
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
-	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionOrModelCriterionAndDefaultUserWithoutSignedInContext()
+	public void testGetSegmentsEntryIdsWithNonmatchingContextCriterionOrModelCriterionAndGuestUserWithoutSignedInContext()
 		throws Exception {
 
 		Criteria criteria = new Criteria();
@@ -763,11 +737,11 @@ public class DefaultSegmentsEntryProviderTest {
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
 		_userSegmentsCriteriaContributor.contribute(
 			criteria,
-			String.format("(firstName eq '%s')", defaultUser.getFirstName()),
+			String.format("(firstName eq '%s')", guestUser.getFirstName()),
 			Criteria.Conjunction.AND);
 
 		SegmentsTestUtil.addSegmentsEntry(
@@ -778,11 +752,11 @@ public class DefaultSegmentsEntryProviderTest {
 
 		context.put(Context.LANGUAGE_ID, "es");
 
-		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), defaultUser.getUserId(),
-			context);
-
-		Assert.assertArrayEquals(new long[0], segmentsEntryIds);
+		Assert.assertArrayEquals(
+			new long[0],
+			_segmentsEntryProvider.getSegmentsEntryIds(
+				_group.getGroupId(), User.class.getName(),
+				guestUser.getUserId(), context));
 	}
 
 	@Test
@@ -867,7 +841,8 @@ public class DefaultSegmentsEntryProviderTest {
 			User.class.getName());
 
 		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
-			_group.getGroupId(), User.class.getName(), _user1.getUserId());
+			_group.getGroupId(), User.class.getName(), _user1.getUserId(), null,
+			new long[0], new long[0]);
 
 		Assert.assertEquals(
 			StringUtil.merge(segmentsEntryIds, StringPool.COMMA), 2,
@@ -878,6 +853,51 @@ public class DefaultSegmentsEntryProviderTest {
 					segmentsEntry1.getSegmentsEntryId(),
 					segmentsEntry2.getSegmentsEntryId()
 				},
+				segmentsEntryIds));
+	}
+
+	@Test
+	public void testGetSegmentsEntryIdsWithSingleModelCriterionAndFilterSegmenntEntryIds()
+		throws Exception {
+
+		_user1 = UserTestUtil.addUser(_group.getGroupId());
+		_user2 = UserTestUtil.addUser(_group.getGroupId());
+
+		Criteria criteria1 = new Criteria();
+
+		_userSegmentsCriteriaContributor.contribute(
+			criteria1,
+			String.format("(firstName eq '%s')", _user1.getFirstName()),
+			Criteria.Conjunction.AND);
+
+		SegmentsEntry segmentsEntry1 = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId(), User.class.getName(), _user1.getUserId());
+
+		SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria1),
+			User.class.getName());
+
+		Criteria criteria2 = new Criteria();
+
+		_userSegmentsCriteriaContributor.contribute(
+			criteria2,
+			String.format("(firstName eq '%s')", _user2.getFirstName()),
+			Criteria.Conjunction.AND);
+
+		SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId(), User.class.getName(), _user2.getUserId());
+		SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria2),
+			User.class.getName());
+
+		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
+			_group.getGroupId(), User.class.getName(), _user1.getUserId(), null,
+			new long[] {segmentsEntry1.getSegmentsEntryId()}, new long[0]);
+
+		Assert.assertTrue(
+			StringUtil.merge(segmentsEntryIds, StringPool.COMMA),
+			ArrayUtil.containsAll(
+				new long[] {segmentsEntry1.getSegmentsEntryId()},
 				segmentsEntryIds));
 	}
 

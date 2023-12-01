@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.dto.v1_0;
@@ -96,6 +87,36 @@ public class NavigationMenuItem implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String[] availableLanguages;
+
+	@Schema(description = "The navigation menu item's content API REST URL.")
+	public String getContentURL() {
+		return contentURL;
+	}
+
+	public void setContentURL(String contentURL) {
+		this.contentURL = contentURL;
+	}
+
+	@JsonIgnore
+	public void setContentURL(
+		UnsafeSupplier<String, Exception> contentURLUnsafeSupplier) {
+
+		try {
+			contentURL = contentURLUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField(
+		description = "The navigation menu item's content API REST URL."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String contentURL;
 
 	@Schema(description = "The navigation menu item's creator.")
 	@Valid
@@ -550,6 +571,20 @@ public class NavigationMenuItem implements Serializable {
 			sb.append("]");
 		}
 
+		if (contentURL != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"contentURL\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(contentURL));
+
+			sb.append("\"");
+		}
+
 		if (creator != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -822,5 +857,7 @@ public class NavigationMenuItem implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

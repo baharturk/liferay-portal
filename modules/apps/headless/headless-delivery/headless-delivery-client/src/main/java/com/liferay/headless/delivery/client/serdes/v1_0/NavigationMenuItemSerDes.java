@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.serdes.v1_0;
@@ -25,7 +16,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 import javax.annotation.Generated;
 
@@ -60,7 +50,7 @@ public class NavigationMenuItemSerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (navigationMenuItem.getAvailableLanguages() != null) {
 			if (sb.length() > 1) {
@@ -89,6 +79,20 @@ public class NavigationMenuItemSerDes {
 			}
 
 			sb.append("]");
+		}
+
+		if (navigationMenuItem.getContentURL() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"contentURL\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(navigationMenuItem.getContentURL()));
+
+			sb.append("\"");
 		}
 
 		if (navigationMenuItem.getCreator() != null) {
@@ -301,7 +305,7 @@ public class NavigationMenuItemSerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (navigationMenuItem.getAvailableLanguages() == null) {
 			map.put("availableLanguages", null);
@@ -310,6 +314,15 @@ public class NavigationMenuItemSerDes {
 			map.put(
 				"availableLanguages",
 				String.valueOf(navigationMenuItem.getAvailableLanguages()));
+		}
+
+		if (navigationMenuItem.getContentURL() == null) {
+			map.put("contentURL", null);
+		}
+		else {
+			map.put(
+				"contentURL",
+				String.valueOf(navigationMenuItem.getContentURL()));
 		}
 
 		if (navigationMenuItem.getCreator() == null) {
@@ -453,6 +466,12 @@ public class NavigationMenuItemSerDes {
 						toStrings((Object[])jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "contentURL")) {
+				if (jsonParserFieldValue != null) {
+					navigationMenuItem.setContentURL(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "creator")) {
 				if (jsonParserFieldValue != null) {
 					navigationMenuItem.setCreator(
@@ -505,15 +524,20 @@ public class NavigationMenuItemSerDes {
 						jsonParserFieldName, "navigationMenuItems")) {
 
 				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					NavigationMenuItem[] navigationMenuItemsArray =
+						new NavigationMenuItem[jsonParserFieldValues.length];
+
+					for (int i = 0; i < navigationMenuItemsArray.length; i++) {
+						navigationMenuItemsArray[i] =
+							NavigationMenuItemSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
 					navigationMenuItem.setNavigationMenuItems(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> NavigationMenuItemSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new NavigationMenuItem[size]
-						));
+						navigationMenuItemsArray);
 				}
 			}
 			else if (Objects.equals(

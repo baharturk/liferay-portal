@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.web.internal.blueprint.options.portlet;
@@ -19,7 +10,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.service.permission.PortletPermission;
+import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -39,17 +30,19 @@ import org.osgi.service.component.annotations.Reference;
  * @author Kevin Tan
  */
 @Component(
-	enabled = false, immediate = true,
+	enabled = false,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-sxp-blueprint-options",
 		"com.liferay.portlet.display-category=category.search",
 		"com.liferay.portlet.header-portlet-css=/sxp_blueprint_options/css/main.css",
+		"com.liferay.portlet.instanceable=true",
 		"javax.portlet.init-param.template-path=/META-INF/resources/sxp_blueprint_options/",
 		"javax.portlet.init-param.view-template=/sxp_blueprint_options/view.jsp",
 		"javax.portlet.name=" + SXPPortletKeys.SXP_BLUEPRINT_OPTIONS,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"javax.portlet.security-role-ref=power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -73,12 +66,12 @@ public class SXPBlueprintOptionsPortlet extends MVCPortlet {
 			WebKeys.THEME_DISPLAY);
 
 		try {
-			return _portletPermission.contains(
+			return PortletPermissionUtil.contains(
 				themeDisplay.getPermissionChecker(), themeDisplay.getPlid(),
 				_portal.getPortletId(renderRequest), ActionKeys.CONFIGURATION);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return false;
 		}
@@ -89,8 +82,5 @@ public class SXPBlueprintOptionsPortlet extends MVCPortlet {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private PortletPermission _portletPermission;
 
 }

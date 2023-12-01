@@ -1,19 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import moment from 'moment';
 import React from 'react';
@@ -24,15 +15,17 @@ describe('DatePicker', () => {
 	it('renders the help text', () => {
 		render(<DatePicker tip="Type something" />);
 
-		expect(document.querySelector('.form-text')).toHaveTextContent(
-			'Type something'
-		);
+		expect(
+			document.querySelector('.form-feedback-group')
+		).toHaveTextContent('Type something');
 	});
 
 	it('renders the label', () => {
 		render(<DatePicker label="Date picker" />);
 
-		expect(screen.getByText('Date picker')).toBeInTheDocument();
+		const allByText = screen.getAllByText('Date picker');
+		expect(allByText).toHaveLength(1);
+		expect(allByText[0]).toBeInTheDocument();
 	});
 
 	it('renders the predefined value', () => {
@@ -44,7 +37,9 @@ describe('DatePicker', () => {
 	it('expands the datepicker on calendar icon click', () => {
 		render(<DatePicker />);
 
-		userEvent.click(screen.getByLabelText('Choose date'));
+		const [button] = screen.getAllByLabelText('select-date');
+
+		userEvent.click(button);
 
 		expect(
 			document.body.querySelector('.date-picker-dropdown-menu.show')
@@ -52,12 +47,14 @@ describe('DatePicker', () => {
 	});
 
 	it('fills the input with the date selected on Date Picker', () => {
-		render(<DatePicker onChange={() => {}} />);
+		const {getByLabelText} = render(<DatePicker onChange={() => {}} />);
 
-		userEvent.click(screen.getByLabelText('Choose date'));
-		userEvent.click(screen.getByLabelText('Select current date'));
+		const [button] = screen.getAllByLabelText('select-date');
 
-		expect(screen.getByRole('textbox')).toHaveValue(
+		userEvent.click(button);
+		fireEvent.click(getByLabelText('select-current-date'));
+
+		expect(screen.getByRole('textbox', {hidden: true})).toHaveValue(
 			moment().format('MM/DD/YYYY')
 		);
 	});
@@ -67,8 +64,10 @@ describe('DatePicker', () => {
 
 		render(<DatePicker onChange={onChange} />);
 
-		userEvent.click(screen.getByLabelText('Choose date'));
-		userEvent.click(screen.getByLabelText('Select current date'));
+		const [button] = screen.getAllByLabelText('select-date');
+
+		userEvent.click(button);
+		fireEvent.click(screen.getByLabelText('select-current-date'));
 
 		expect(onChange).toHaveBeenCalledWith(
 			{},
@@ -79,10 +78,12 @@ describe('DatePicker', () => {
 	it('fills the input date according to the locale', () => {
 		render(<DatePicker locale="ja_JP" onChange={() => {}} />);
 
-		userEvent.click(screen.getByLabelText('Choose date'));
-		userEvent.click(screen.getByLabelText('Select current date'));
+		const [button] = screen.getAllByLabelText('select-date');
 
-		expect(screen.getByRole('textbox')).toHaveValue(
+		userEvent.click(button);
+		fireEvent.click(screen.getByLabelText('select-current-date'));
+
+		expect(screen.getByRole('textbox', {hidden: true})).toHaveValue(
 			moment().format('YYYY/MM/DD')
 		);
 	});
@@ -125,5 +126,54 @@ describe('DatePicker', () => {
 		userEvent.type(input, '٠١/٠١/٢٠٢١');
 
 		expect(onChange).toHaveBeenLastCalledWith('');
+	});
+
+	xit('fills the input date and time according to the locale', () => {
+		const {container} = render(
+			<DatePicker locale="pt_BR" onChange={() => {}} type="date_time" />
+		);
+
+		userEvent.click(screen.getByLabelText('Choose date'));
+
+		const hours = screen.getByLabelText('Enter the hour in 00:00 format');
+		const minutes = screen.getByLabelText(
+			'Enter the minutes in 00:00 format'
+		);
+
+		userEvent.click(screen.getByLabelText('Select current date'));
+
+		userEvent.type(hours, '23');
+		userEvent.type(minutes, '30');
+
+		expect(container.querySelector('[type=text]')).toHaveValue(
+			moment().format('DD/MM/YYYY [23:30]')
+		);
+	});
+
+	xit('calls the onChange callback with a valid date and time', () => {
+		const onChange = jest.fn();
+
+		render(<DatePicker onChange={onChange} type="date_time" />);
+
+		userEvent.click(screen.getByLabelText('Choose date'));
+
+		const hours = screen.getByLabelText('Enter the hour in 00:00 format');
+		const minutes = screen.getByLabelText(
+			'Enter the minutes in 00:00 format'
+		);
+		const sufix = screen.getByLabelText(
+			'Select time of day (AM/PM) using up (PM) and down (AM) arrow keys'
+		);
+
+		userEvent.click(screen.getByLabelText('Select current date'));
+
+		userEvent.type(hours, '11');
+		userEvent.type(minutes, '30');
+		fireEvent.keyDown(sufix, {code: 'ArrowUp', key: 'ArrowUp'}); // PM
+
+		expect(onChange).toHaveBeenCalledWith(
+			{},
+			moment().format('YYYY-MM-DD [23:30]')
+		);
 	});
 });

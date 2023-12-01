@@ -1,26 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {fetch} from 'frontend-js-web';
 
 import createOdataFilter from './odata';
-
-export function delay(duration) {
-	return new Promise((resolve) => {
-		setTimeout(() => resolve(), duration);
-	});
-}
 
 export function getData(apiURL, query) {
 	const url = new URL(apiURL);
@@ -40,15 +25,6 @@ export function getSchemaString(object, path) {
 	}
 	else {
 		return path.reduce((acc, path) => acc[path], object);
-	}
-}
-
-export function liferayNavigate(url) {
-	if (Liferay.SPA) {
-		Liferay.SPA.app.navigate(url);
-	}
-	else {
-		window.location.href = url;
 	}
 }
 
@@ -98,55 +74,6 @@ export function getValueFromItem(item, fieldName) {
 	return item[fieldName];
 }
 
-export function getValueDetailsFromItem(item, fieldName) {
-	if (!fieldName) {
-		return null;
-	}
-
-	let rootPropertyName = fieldName;
-	const valuePath = [];
-	let navigatedValue = item;
-
-	if (Array.isArray(fieldName)) {
-		rootPropertyName = fieldName[0];
-
-		fieldName.forEach((property) => {
-			let formattedProperty = property;
-
-			if (property === 'LANG') {
-				const languageId = Liferay.ThemeDisplay.getLanguageId();
-				const BCP47LanguageId = Liferay.ThemeDisplay.getBCP47LanguageId();
-
-				if (navigatedValue[languageId]) {
-					formattedProperty = languageId;
-				}
-				else if (navigatedValue[BCP47LanguageId]) {
-					formattedProperty = BCP47LanguageId;
-				}
-				else {
-					formattedProperty = Liferay.ThemeDisplay.getDefaultLanguageId();
-				}
-			}
-
-			valuePath.push(formattedProperty);
-
-			if (navigatedValue) {
-				navigatedValue = navigatedValue[formattedProperty];
-			}
-		});
-	}
-	else {
-		valuePath.push(fieldName);
-		navigatedValue = navigatedValue[fieldName];
-	}
-
-	return {
-		rootPropertyName,
-		value: navigatedValue,
-		valuePath,
-	};
-}
-
 export function formatItemChanges(itemChanges) {
 	const formattedChanges = Object.values(itemChanges).reduce(
 		(changes, {value, valuePath}) => {
@@ -165,18 +92,11 @@ export function formatItemChanges(itemChanges) {
 	return formattedChanges;
 }
 
-export function executeAsyncAction(url, method = 'GET') {
-	return fetch(url, {
-		headers: {
-			'Accept': 'application/json',
-			'Accept-Language': Liferay.ThemeDisplay.getBCP47LanguageId(),
-			'Content-Type': 'application/json',
-		},
-		method,
-	});
-}
-
 export function formatActionURL(url, item) {
+	if (!url) {
+		return '';
+	}
+
 	const replacedURL = url.replace(new RegExp('{(.*?)}', 'mg'), (matched) =>
 		getValueFromItem(
 			item,
@@ -230,26 +150,38 @@ export function getFiltersString(odataFiltersStrings, providedFilters) {
 	return filtersString;
 }
 
-export function loadData(
+export async function loadData(
 	apiURL,
 	currentURL,
 	odataFiltersStrings,
 	searchParam,
 	delta,
 	page = 1,
-	sorting = []
+	sorts = []
 ) {
-	const url = new URL(apiURL, themeDisplay.getPortalURL());
+	const fullUrl = apiURL.startsWith('/')
+		? themeDisplay.getPortalURL() + themeDisplay.getPathContext() + apiURL
+		: apiURL;
+
+	const url = new URL(fullUrl);
+
+	if (currentURL) {
+		url.searchParams.set('currentURL', currentURL);
+	}
+
 	const providedFilters = url.searchParams.get('filter');
 
 	url.searchParams.delete('filter');
-	url.searchParams.append('currentURL', currentURL);
 
 	if (providedFilters || odataFiltersStrings.length) {
 		url.searchParams.append(
 			'filter',
 			getFiltersString(odataFiltersStrings, providedFilters)
 		);
+	}
+
+	if (themeDisplay.isImpersonated()) {
+		url.searchParams.append('doAsUserId', themeDisplay.getUserId());
 	}
 
 	url.searchParams.append('page', page);
@@ -259,14 +191,28 @@ export function loadData(
 		url.searchParams.append('search', searchParam);
 	}
 
-	if (sorting.length) {
+	if (sorts.length) {
 		url.searchParams.append(
 			'sort',
-			sorting.map((item) => `${item.key}:${item.direction}`).join(',')
+			sorts.map((item) => `${item.key}:${item.direction}`).join(',')
 		);
 	}
 
-	return executeAsyncAction(url, 'GET').then((response) => response.json());
+	const response = await fetch(url, {
+		headers: {
+			'Accept': 'application/json',
+			'Accept-Language': Liferay.ThemeDisplay.getBCP47LanguageId(),
+			'Content-Type': 'application/json',
+		},
+		method: 'GET',
+	});
+	const responseJSON = await response.json();
+
+	return {
+		data: responseJSON,
+		ok: response.ok,
+		status: response.status,
+	};
 }
 
 export function getCurrentItemUpdates(

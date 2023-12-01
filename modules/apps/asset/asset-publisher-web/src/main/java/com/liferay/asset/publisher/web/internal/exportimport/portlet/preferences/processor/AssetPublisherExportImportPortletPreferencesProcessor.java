@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.exportimport.portlet.preferences.processor;
@@ -27,6 +18,7 @@ import com.liferay.asset.list.model.AssetListEntry;
 import com.liferay.asset.list.service.AssetListEntryLocalService;
 import com.liferay.asset.publisher.constants.AssetPublisherPortletKeys;
 import com.liferay.asset.publisher.util.AssetPublisherHelper;
+import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherSelectionStyleConfigurationUtil;
 import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration;
 import com.liferay.asset.publisher.web.internal.constants.AssetPublisherSelectionStyleConstants;
 import com.liferay.asset.publisher.web.internal.display.context.AssetPublisherDisplayContext;
@@ -116,7 +108,6 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration",
-	immediate = true,
 	property = "javax.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
 	service = ExportImportPortletPreferencesProcessor.class
 )
@@ -470,7 +461,8 @@ public class AssetPublisherExportImportPortletPreferencesProcessor
 
 		String selectionStyle = portletPreferences.getValue(
 			"selectionStyle",
-			AssetPublisherSelectionStyleConstants.TYPE_DYNAMIC);
+			AssetPublisherSelectionStyleConfigurationUtil.
+				defaultSelectionStyle());
 
 		if (selectionStyle.equals(
 				AssetPublisherSelectionStyleConstants.TYPE_DYNAMIC)) {
@@ -564,12 +556,11 @@ public class AssetPublisherExportImportPortletPreferencesProcessor
 			assetPublisherHelper.getAssetEntryQuery(
 				portletPreferences, groupId, layout, null, null);
 
-		long[] classNameIds = assetPublisherHelper.getClassNameIds(
-			portletPreferences,
-			AssetRendererFactoryRegistryUtil.getClassNameIds(companyId, true));
-
-		assetEntryQuery.setClassNameIds(classNameIds);
-
+		assetEntryQuery.setClassNameIds(
+			assetPublisherHelper.getClassNameIds(
+				portletPreferences,
+				AssetRendererFactoryRegistryUtil.getClassNameIds(
+					companyId, true)));
 		assetEntryQuery.setEnablePermissions(false);
 
 		int end = _assetPublisherWebConfiguration.dynamicExportLimit();
@@ -589,7 +580,6 @@ public class AssetPublisherExportImportPortletPreferencesProcessor
 		}
 
 		assetEntryQuery.setEnd(end);
-
 		assetEntryQuery.setExcludeZeroViewCount(false);
 
 		int start = 0;
@@ -820,12 +810,10 @@ public class AssetPublisherExportImportPortletPreferencesProcessor
 			PortletPreferences portletPreferences)
 		throws Exception {
 
-		Layout layout = layoutLocalService.getLayout(
-			portletDataContext.getPlid());
-
 		PortletPreferences originalPortletPreferences =
 			PortletPreferencesFactoryUtil.getLayoutPortletSetup(
-				layout, portletDataContext.getPortletId());
+				layoutLocalService.getLayout(portletDataContext.getPlid()),
+				portletDataContext.getPortletId());
 
 		String[] values = originalPortletPreferences.getValues(
 			name, new String[] {StringPool.BLANK});

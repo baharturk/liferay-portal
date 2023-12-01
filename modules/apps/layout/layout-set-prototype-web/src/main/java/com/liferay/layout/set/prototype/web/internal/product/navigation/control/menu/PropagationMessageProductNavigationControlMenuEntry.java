@@ -1,19 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.set.prototype.web.internal.product.navigation.control.menu;
 
+import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
+import com.liferay.layout.utility.page.service.LayoutUtilityPageEntryLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
@@ -37,7 +33,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Tamas Molnar
  */
 @Component(
-	immediate = true,
 	property = {
 		"product.navigation.control.menu.category.key=" + ProductNavigationControlMenuCategoryKeys.TOOLS,
 		"product.navigation.control.menu.entry.order:Integer=300"
@@ -63,7 +58,7 @@ public class PropagationMessageProductNavigationControlMenuEntry
 
 		Layout layout = themeDisplay.getLayout();
 
-		if (layout.isTypeControlPanel()) {
+		if (layout.isTypeControlPanel() || layout.isTypeAssetDisplay()) {
 			return false;
 		}
 
@@ -77,7 +72,38 @@ public class PropagationMessageProductNavigationControlMenuEntry
 			_layoutSetPrototypeLocalService.fetchLayoutSetPrototype(
 				group.getClassPK());
 
-		if ((layoutSetPrototype == null) ||
+		if (layoutSetPrototype == null) {
+			return false;
+		}
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_layoutPageTemplateEntryLocalService.
+				fetchLayoutPageTemplateEntryByPlid(layout.getPlid());
+
+		if (layoutPageTemplateEntry == null) {
+			layoutPageTemplateEntry =
+				_layoutPageTemplateEntryLocalService.
+					fetchLayoutPageTemplateEntryByPlid(layout.getClassPK());
+		}
+
+		int layoutType = -1;
+
+		if (layoutPageTemplateEntry != null) {
+			layoutType = layoutPageTemplateEntry.getType();
+		}
+
+		if ((layoutType == LayoutPageTemplateEntryTypeConstants.BASIC) ||
+			(layoutType ==
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT)) {
+
+			return false;
+		}
+
+		LayoutUtilityPageEntry layoutUtilityPageEntry =
+			_layoutUtilityPageEntryLocalService.
+				fetchLayoutUtilityPageEntryByPlid(layout.getClassPK());
+
+		if ((layoutUtilityPageEntry != null) ||
 			!LayoutSetPrototypePermissionUtil.contains(
 				themeDisplay.getPermissionChecker(),
 				layoutSetPrototype.getLayoutSetPrototypeId(),
@@ -90,15 +116,24 @@ public class PropagationMessageProductNavigationControlMenuEntry
 	}
 
 	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.set.prototype.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	@Reference
+	private LayoutPageTemplateEntryLocalService
+		_layoutPageTemplateEntryLocalService;
+
+	@Reference
 	private LayoutSetPrototypeLocalService _layoutSetPrototypeLocalService;
+
+	@Reference
+	private LayoutUtilityPageEntryLocalService
+		_layoutUtilityPageEntryLocalService;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.layout.set.prototype.web)"
+	)
+	private ServletContext _servletContext;
 
 }

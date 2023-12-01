@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -23,6 +14,7 @@ TranslateDisplayContext translateDisplayContext = (TranslateDisplayContext)reque
 
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(redirect);
+portletDisplay.setURLBackTitle(ParamUtil.getString(request, "backURLTitle"));
 
 renderResponse.setTitle(translateDisplayContext.getTitle());
 %>
@@ -80,7 +72,7 @@ renderResponse.setTitle(translateDisplayContext.getTitle());
 
 								<span class="ml-1"> <%= sourceLanguageIdTitle %> </span>
 
-								<div class="separator"><!-- --></div>
+								<hr class="separator" />
 							</clay:col>
 
 							<clay:col
@@ -97,7 +89,7 @@ renderResponse.setTitle(translateDisplayContext.getTitle());
 
 								<span class="ml-1"> <%= targetLanguageIdTitle %> </span>
 
-								<div class="separator"><!-- --></div>
+								<hr class="separator" />
 							</clay:col>
 						</clay:row>
 
@@ -136,10 +128,10 @@ renderResponse.setTitle(translateDisplayContext.getTitle());
 
 							<%
 							for (InfoField<TextInfoFieldType> infoField : infoFields) {
-								boolean html = translateDisplayContext.getBooleanValue(infoField, TextInfoFieldType.HTML);
+								boolean html = translateDisplayContext.isHTMLInfoFieldType(infoField);
 								String label = translateDisplayContext.getInfoFieldLabel(infoField);
-								boolean multiline = translateDisplayContext.getBooleanValue(infoField, TextInfoFieldType.MULTILINE);
-								String name = infoField.getName();
+
+								boolean multiline = html || translateDisplayContext.getBooleanValue(infoField, TextInfoFieldType.MULTILINE);
 
 								String sourceContentDir = LanguageUtil.get(translateDisplayContext.getSourceLocale(), "lang.dir");
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.service.impl;
@@ -81,24 +72,6 @@ import java.util.Map;
 public class AssetCategoryLocalServiceImpl
 	extends AssetCategoryLocalServiceBaseImpl {
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 * #addCategory(String, long, long, long, Map, Map, long, String[], ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public AssetCategory addCategory(
-			long userId, long groupId, long parentCategoryId,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			long vocabularyId, String[] categoryProperties,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		return addCategory(
-			null, userId, groupId, parentCategoryId, titleMap, descriptionMap,
-			vocabularyId, categoryProperties, serviceContext);
-	}
-
 	@Override
 	public AssetCategory addCategory(
 			long userId, long groupId, String title, long vocabularyId,
@@ -155,10 +128,6 @@ public class AssetCategoryLocalServiceImpl
 		_assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
 
 		long categoryId = counterLocalService.increment();
-
-		if (Validator.isNull(externalReferenceCode)) {
-			externalReferenceCode = String.valueOf(categoryId);
-		}
 
 		_validateExternalReferenceCode(externalReferenceCode, groupId);
 
@@ -364,9 +333,21 @@ public class AssetCategoryLocalServiceImpl
 	}
 
 	@Override
+	public List<AssetCategory> getCategories(
+		long classNameId, long classPK, int start, int end) {
+
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public List<AssetCategory> getCategories(String className, long classPK) {
 		return assetCategoryLocalService.getCategories(
 			_classNameLocalService.getClassNameId(className), classPK);
+	}
+
+	@Override
+	public int getCategoriesCount(long classNameId, long classPK) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -577,8 +558,7 @@ public class AssetCategoryLocalServiceImpl
 		long groupId, String name, String[] categoryProperties, int start,
 		int end) {
 
-		return assetCategoryFinder.findByG_N_P(
-			groupId, name, categoryProperties, start, end);
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -659,6 +639,12 @@ public class AssetCategoryLocalServiceImpl
 
 		validate(categoryId, parentCategoryId, name, vocabularyId);
 
+		if (categoryId == parentCategoryId) {
+			throw new InvalidAssetCategoryException(
+				parentCategoryId,
+				InvalidAssetCategoryException.CANNOT_MOVE_INTO_ITSELF);
+		}
+
 		AssetCategory parentCategory = null;
 
 		if (parentCategoryId > 0) {
@@ -704,7 +690,6 @@ public class AssetCategoryLocalServiceImpl
 			).put(
 				Field.TITLE, title
 			).build());
-
 		searchContext.setCompanyId(companyId);
 		searchContext.setEnd(end);
 		searchContext.setGroupIds(groupIds);
@@ -827,8 +812,12 @@ public class AssetCategoryLocalServiceImpl
 			String externalReferenceCode, long groupId)
 		throws PortalException {
 
-		AssetCategory assetCategory = assetCategoryPersistence.fetchByG_ERC(
-			groupId, externalReferenceCode);
+		if (Validator.isNull(externalReferenceCode)) {
+			return;
+		}
+
+		AssetCategory assetCategory = assetCategoryPersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
 
 		if (assetCategory != null) {
 			throw new DuplicateCategoryExternalReferenceCodeException(

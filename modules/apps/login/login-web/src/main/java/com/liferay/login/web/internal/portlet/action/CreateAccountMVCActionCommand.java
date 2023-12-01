@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.login.web.internal.portlet.action;
@@ -18,7 +9,8 @@ import com.liferay.captcha.configuration.CaptchaConfiguration;
 import com.liferay.captcha.util.CaptchaUtil;
 import com.liferay.login.web.constants.LoginPortletKeys;
 import com.liferay.login.web.internal.portlet.util.LoginUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.captcha.CaptchaConfigurationException;
 import com.liferay.portal.kernel.captcha.CaptchaException;
 import com.liferay.portal.kernel.exception.AddressCityException;
@@ -54,12 +46,11 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.ListType;
 import com.liferay.portal.kernel.model.ListTypeConstants;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.DynamicActionRequest;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
-import com.liferay.portal.kernel.security.auth.session.AuthenticatedSessionManager;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ListTypeLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -74,11 +65,13 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PwdGenerator;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.security.auth.session.AuthenticatedSessionManagerUtil;
 import com.liferay.portal.util.PropsValues;
 
 import javax.portlet.ActionRequest;
@@ -128,13 +121,14 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 		String emailAddress = ParamUtil.getString(
 			actionRequest, "emailAddress");
 		long facebookId = ParamUtil.getLong(actionRequest, "facebookId");
-		String openId = ParamUtil.getString(actionRequest, "openId");
 		String languageId = ParamUtil.getString(actionRequest, "languageId");
 		String firstName = ParamUtil.getString(actionRequest, "firstName");
 		String middleName = ParamUtil.getString(actionRequest, "middleName");
 		String lastName = ParamUtil.getString(actionRequest, "lastName");
-		long prefixId = ParamUtil.getInteger(actionRequest, "prefixId");
-		long suffixId = ParamUtil.getInteger(actionRequest, "suffixId");
+		long prefixListTypeId = ParamUtil.getInteger(
+			actionRequest, "prefixListTypeId");
+		long suffixListTypeId = ParamUtil.getInteger(
+			actionRequest, "suffixListTypeId");
 		boolean male = ParamUtil.getBoolean(actionRequest, "male", true);
 		int birthdayMonth = ParamUtil.getInteger(
 			actionRequest, "birthdayMonth");
@@ -150,7 +144,11 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			User.class.getName(), actionRequest);
 
-		if (PropsValues.LOGIN_CREATE_ACCOUNT_ALLOW_CUSTOM_PASSWORD) {
+		if (PrefsPropsUtil.getBoolean(
+				company.getCompanyId(),
+				PropsKeys.LOGIN_CREATE_ACCOUNT_ALLOW_CUSTOM_PASSWORD,
+				PropsValues.LOGIN_CREATE_ACCOUNT_ALLOW_CUSTOM_PASSWORD)) {
+
 			autoPassword = false;
 
 			password1 = ParamUtil.getString(actionRequest, "password1");
@@ -159,11 +157,11 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 
 		User user = _userService.addUserWithWorkflow(
 			company.getCompanyId(), autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, facebookId, openId,
-			LocaleUtil.fromLanguageId(languageId), firstName, middleName,
-			lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
-			birthdayYear, jobTitle, groupIds, organizationIds, roleIds,
-			userGroupIds, sendEmail, serviceContext);
+			autoScreenName, screenName, emailAddress, facebookId,
+			StringPool.BLANK, LocaleUtil.fromLanguageId(languageId), firstName,
+			middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+			birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
+			organizationIds, roleIds, userGroupIds, sendEmail, serviceContext);
 
 		// Session messages
 
@@ -295,7 +293,7 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchLayoutException, noSuchLayoutException);
+				_log.debug(noSuchLayoutException);
 			}
 		}
 	}
@@ -340,7 +338,7 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 			ParamUtil.getString(actionRequest, "redirect"));
 
 		if (Validator.isNotNull(redirect)) {
-			_authenticatedSessionManager.login(
+			AuthenticatedSessionManagerUtil.login(
 				httpServletRequest,
 				_portal.getHttpServletResponse(actionResponse), login, password,
 				false, null);
@@ -355,23 +353,6 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 		}
 
 		actionResponse.sendRedirect(redirect);
-	}
-
-	@Reference(unbind = "-")
-	protected void setLayoutLocalService(
-		LayoutLocalService layoutLocalService) {
-
-		_layoutLocalService = layoutLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserService(UserService userService) {
-		_userService = userService;
 	}
 
 	protected void updateIncompleteUser(
@@ -411,12 +392,13 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 			password2 = password1;
 		}
 
-		String openId = ParamUtil.getString(actionRequest, "openId");
 		String firstName = ParamUtil.getString(actionRequest, "firstName");
 		String middleName = ParamUtil.getString(actionRequest, "middleName");
 		String lastName = ParamUtil.getString(actionRequest, "lastName");
-		long prefixId = ParamUtil.getInteger(actionRequest, "prefixId");
-		long suffixId = ParamUtil.getInteger(actionRequest, "suffixId");
+		long prefixListTypeId = ParamUtil.getInteger(
+			actionRequest, "prefixListTypeId");
+		long suffixListTypeId = ParamUtil.getInteger(
+			actionRequest, "suffixListTypeId");
 		boolean male = ParamUtil.getBoolean(actionRequest, "male", true);
 		int birthdayMonth = ParamUtil.getInteger(
 			actionRequest, "birthdayMonth");
@@ -436,10 +418,11 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 
 		User user = _userService.updateIncompleteUser(
 			themeDisplay.getCompanyId(), autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, facebookId, openId,
-			themeDisplay.getLocale(), firstName, middleName, lastName, prefixId,
-			suffixId, male, birthdayMonth, birthdayDay, birthdayYear, jobTitle,
-			updateUserInformation, sendEmail, serviceContext);
+			autoScreenName, screenName, emailAddress, facebookId,
+			StringPool.BLANK, themeDisplay.getLocale(), firstName, middleName,
+			lastName, prefixListTypeId, suffixListTypeId, male, birthdayMonth,
+			birthdayDay, birthdayYear, jobTitle, updateUserInformation,
+			sendEmail, serviceContext);
 
 		if (facebookId > 0) {
 			httpSession.removeAttribute(WebKeys.FACEBOOK_INCOMPLETE_USER_ID);
@@ -481,14 +464,19 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	private long _getListTypeId(
-			PortletRequest portletRequest, String parameterName, String type)
+			long companyId, PortletRequest portletRequest, String parameterName,
+			String type)
 		throws Exception {
 
 		String parameterValue = ParamUtil.getString(
 			portletRequest, parameterName);
 
+		if (Validator.isNull(parameterValue)) {
+			return 0;
+		}
+
 		ListType listType = _listTypeLocalService.addListType(
-			parameterValue, type);
+			companyId, parameterValue, type);
 
 		return listType.getListTypeId();
 	}
@@ -537,15 +525,21 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 		DynamicActionRequest dynamicActionRequest = new DynamicActionRequest(
 			actionRequest);
 
-		long prefixId = _getListTypeId(
-			actionRequest, "prefixValue", ListTypeConstants.CONTACT_PREFIX);
+		long companyId = _portal.getCompanyId(actionRequest);
 
-		dynamicActionRequest.setParameter("prefixId", String.valueOf(prefixId));
+		long prefixListTypeId = _getListTypeId(
+			companyId, actionRequest, "prefixListTypeValue",
+			ListTypeConstants.CONTACT_PREFIX);
 
-		long suffixId = _getListTypeId(
-			actionRequest, "suffixValue", ListTypeConstants.CONTACT_SUFFIX);
+		dynamicActionRequest.setParameter(
+			"prefixListTypeId", String.valueOf(prefixListTypeId));
 
-		dynamicActionRequest.setParameter("suffixId", String.valueOf(suffixId));
+		long suffixListTypeId = _getListTypeId(
+			companyId, actionRequest, "suffixListTypeValue",
+			ListTypeConstants.CONTACT_SUFFIX);
+
+		dynamicActionRequest.setParameter(
+			"suffixListTypeId", String.valueOf(suffixListTypeId));
 
 		return dynamicActionRequest;
 	}
@@ -556,11 +550,9 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 		CreateAccountMVCActionCommand.class);
 
 	@Reference
-	private AuthenticatedSessionManager _authenticatedSessionManager;
-
-	@Reference
 	private ConfigurationProvider _configurationProvider;
 
+	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
@@ -569,7 +561,10 @@ public class CreateAccountMVCActionCommand extends BaseMVCActionCommand {
 	@Reference
 	private Portal _portal;
 
+	@Reference
 	private UserLocalService _userLocalService;
+
+	@Reference
 	private UserService _userService;
 
 }

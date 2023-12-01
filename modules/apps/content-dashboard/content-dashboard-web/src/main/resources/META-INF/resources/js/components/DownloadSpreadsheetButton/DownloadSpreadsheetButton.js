@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
@@ -18,14 +9,12 @@ import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {ClayTooltipProvider} from '@clayui/tooltip';
 import classnames from 'classnames';
+import {navigate} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
 
-import {
-	downloadFileFromBlob,
-	fetchFile,
-} from '../../utils/downloadSpreadsheetUtils';
 import DownloadSpreadsheetModal from './DownloadSpreadsheetModal';
+import {downloadFileFromBlob, fetchFile} from './downloadSpreadsheetUtils';
 
 const initialToastState = {
 	content: null,
@@ -181,7 +170,7 @@ const DownloadSpreadsheetButton = ({fileURL, total}) => {
 
 			setTimeout(() => {
 				onClose();
-				Liferay.Util.navigate(tentativeNavigationPath);
+				navigate(tentativeNavigationPath);
 			}, DEFAULT_TIMEOUT_DELAY + FEEDBACK_TIMEOUT_DELAY);
 		},
 		[tentativeNavigationPath]
@@ -272,7 +261,7 @@ const DownloadSpreadsheetButton = ({fileURL, total}) => {
 				<ClayTooltipProvider>
 					<ClayButtonWithIcon
 						borderless
-						className="ml-2"
+						className="c-ml-2"
 						data-tooltip-align="top"
 						displayType="secondary"
 						onClick={handleCancelRequest}

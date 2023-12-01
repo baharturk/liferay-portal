@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -47,12 +38,12 @@ String scriptOutput = (String)SessionMessages.get(renderRequest, "scriptOutput")
 	<pre><%= HtmlUtil.escape(se.getMessage()) %></pre>
 </liferay-ui:error>
 
-<aui:fieldset-group markupView="lexicon">
-	<aui:fieldset>
+<div class="sheet">
+	<div class="panel-group panel-group-flush">
 		<aui:select name="language">
 
 			<%
-			for (String supportedLanguage : ScriptingUtil.getSupportedLanguages()) {
+			for (String supportedLanguage : ServerScriptingUtil.getSupportedLanguages()) {
 			%>
 
 				<aui:option label="<%= TextFormatter.format(supportedLanguage, TextFormatter.J) %>" selected="<%= supportedLanguage.equals(language) %>" value="<%= supportedLanguage %>" />
@@ -69,8 +60,12 @@ String scriptOutput = (String)SessionMessages.get(renderRequest, "scriptOutput")
 		</aui:select>
 
 		<aui:input cssClass="lfr-textarea-container" name="script" resizable="<%= true %>" type="textarea" value="<%= script %>" />
-	</aui:fieldset>
-</aui:fieldset-group>
+
+		<aui:button-row>
+			<aui:button cssClass="save-server-button" data-cmd="runScript" primary="<%= true %>" value="execute" />
+		</aui:button-row>
+	</div>
+</div>
 
 <c:if test="<%= Validator.isNotNull(scriptOutput) %>">
 	<b><liferay-ui:message key="output" /></b>
@@ -84,10 +79,6 @@ String scriptOutput = (String)SessionMessages.get(renderRequest, "scriptOutput")
 		</c:otherwise>
 	</c:choose>
 </c:if>
-
-<aui:button-row>
-	<aui:button cssClass="save-server-button" data-cmd="runScript" value="execute" />
-</aui:button-row>
 
 <aui:script>
 	var <portlet:namespace />selectLanguage = document.getElementById(

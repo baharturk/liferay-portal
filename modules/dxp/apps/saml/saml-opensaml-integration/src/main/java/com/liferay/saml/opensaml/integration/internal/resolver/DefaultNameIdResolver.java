@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.opensaml.integration.internal.resolver;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
+import com.liferay.portal.kernel.bean.BeanProperties;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.saml.opensaml.integration.internal.metadata.MetadataManager;
@@ -29,7 +20,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Mika Koivisto
  */
 @Component(
-	immediate = true, property = "service.ranking:Integer=" + Integer.MIN_VALUE,
+	property = "service.ranking:Integer=" + Integer.MIN_VALUE,
 	service = NameIdResolver.class
 )
 public class DefaultNameIdResolver implements NameIdResolver {
@@ -41,11 +32,6 @@ public class DefaultNameIdResolver implements NameIdResolver {
 		NameIdResolverSAMLContext nameIdResolverSAMLContext) {
 
 		return _getNameIdValue(user, entityId);
-	}
-
-	@Reference(unbind = "-")
-	public void setMetadataManager(MetadataManager metadataManager) {
-		_metadataManager = metadataManager;
 	}
 
 	private String _getNameIdAttributeName(String entityId) {
@@ -71,8 +57,7 @@ public class DefaultNameIdResolver implements NameIdResolver {
 			return nameIdAttributeName.substring(7);
 		}
 
-		return _toString(
-			BeanPropertiesUtil.getObject(user, nameIdAttributeName));
+		return _toString(_beanProperties.getObject(user, nameIdAttributeName));
 	}
 
 	private String _toString(Object object) {
@@ -83,6 +68,10 @@ public class DefaultNameIdResolver implements NameIdResolver {
 		return object.toString();
 	}
 
+	@Reference
+	private BeanProperties _beanProperties;
+
+	@Reference
 	private MetadataManager _metadataManager;
 
 }

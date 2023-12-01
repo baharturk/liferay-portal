@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.service;
@@ -42,31 +33,14 @@ public class CommerceShippingFixedOptionServiceUtil {
 	 */
 	public static CommerceShippingFixedOption addCommerceShippingFixedOption(
 			long groupId, long commerceShippingMethodId,
-			Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap,
-			java.math.BigDecimal amount, double priority)
+			java.math.BigDecimal amount,
+			Map<java.util.Locale, String> descriptionMap, String key,
+			Map<java.util.Locale, String> nameMap, double priority)
 		throws PortalException {
 
 		return getService().addCommerceShippingFixedOption(
-			groupId, commerceShippingMethodId, nameMap, descriptionMap, amount,
-			priority);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static CommerceShippingFixedOption addCommerceShippingFixedOption(
-			long commerceShippingMethodId,
-			Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap,
-			java.math.BigDecimal amount, double priority,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addCommerceShippingFixedOption(
-			commerceShippingMethodId, nameMap, descriptionMap, amount, priority,
-			serviceContext);
+			groupId, commerceShippingMethodId, amount, descriptionMap, key,
+			nameMap, priority);
 	}
 
 	public static void deleteCommerceShippingFixedOption(
@@ -83,6 +57,13 @@ public class CommerceShippingFixedOptionServiceUtil {
 
 		return getService().fetchCommerceShippingFixedOption(
 			commerceShippingFixedOptionId);
+	}
+
+	public static CommerceShippingFixedOption fetchCommerceShippingFixedOption(
+			long companyId, String key)
+		throws PortalException {
+
+		return getService().fetchCommerceShippingFixedOption(companyId, key);
 	}
 
 	public static List<CommerceShippingFixedOption>
@@ -142,19 +123,22 @@ public class CommerceShippingFixedOptionServiceUtil {
 	}
 
 	public static CommerceShippingFixedOption updateCommerceShippingFixedOption(
-			long commerceShippingFixedOptionId,
-			Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap,
-			java.math.BigDecimal amount, double priority)
+			long commerceShippingFixedOptionId, java.math.BigDecimal amount,
+			Map<java.util.Locale, String> descriptionMap, String key,
+			Map<java.util.Locale, String> nameMap, double priority)
 		throws PortalException {
 
 		return getService().updateCommerceShippingFixedOption(
-			commerceShippingFixedOptionId, nameMap, descriptionMap, amount,
+			commerceShippingFixedOptionId, amount, descriptionMap, key, nameMap,
 			priority);
 	}
 
 	public static CommerceShippingFixedOptionService getService() {
 		return _service;
+	}
+
+	public static void setService(CommerceShippingFixedOptionService service) {
+		_service = service;
 	}
 
 	private static volatile CommerceShippingFixedOptionService _service;

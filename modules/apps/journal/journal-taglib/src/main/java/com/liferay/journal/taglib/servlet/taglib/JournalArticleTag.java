@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.taglib.servlet.taglib;
@@ -18,7 +9,6 @@ import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalArticleDisplay;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
 import com.liferay.journal.taglib.internal.servlet.ServletContextUtil;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -27,10 +17,13 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.taglib.util.IncludeTag;
+
+import java.util.Objects;
 
 import javax.portlet.PortletRequest;
 import javax.portlet.PortletResponse;
@@ -43,6 +36,15 @@ import javax.servlet.jsp.PageContext;
  * @author Eudaldo Alonso
  */
 public class JournalArticleTag extends IncludeTag {
+
+	@Override
+	public int doEndTag() throws JspException {
+		if (!_isShowArticle()) {
+			return SKIP_PAGE;
+		}
+
+		return super.doEndTag();
+	}
 
 	@Override
 	public int doStartTag() throws JspException {
@@ -73,16 +75,14 @@ public class JournalArticleTag extends IncludeTag {
 
 		try {
 			_articleDisplay = JournalArticleLocalServiceUtil.getArticleDisplay(
-				_article.getGroupId(), _article.getArticleId(),
-				_article.getVersion(), _ddmTemplateKey,
+				_article, _ddmTemplateKey,
 				ParamUtil.getString(
 					httpServletRequest, "p_l_mode", Constants.VIEW),
 				getLanguageId(), 1, portletRequestModel, themeDisplay);
 		}
-		catch (PortalException portalException) {
+		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Unable to get journal article display", portalException);
+				_log.debug("Unable to get journal article display", exception);
 			}
 
 			return SKIP_BODY;
@@ -195,6 +195,8 @@ public class JournalArticleTag extends IncludeTag {
 	@Override
 	protected void setAttributes(HttpServletRequest httpServletRequest) {
 		httpServletRequest.setAttribute(
+			"liferay-journal:journal-article:article", _article);
+		httpServletRequest.setAttribute(
 			"liferay-journal:journal-article:articleDisplay", _articleDisplay);
 		httpServletRequest.setAttribute(
 			"liferay-journal:journal-article:dataAnalyticsTrackingEnabled",
@@ -205,6 +207,31 @@ public class JournalArticleTag extends IncludeTag {
 		httpServletRequest.setAttribute(
 			"liferay-journal:journal-article:wrapperCssClass",
 			_wrapperCssClass);
+	}
+
+	private boolean _isShowArticle() {
+		HttpServletRequest httpServletRequest = getRequest();
+
+		HttpServletRequest originalHttpServletRequest =
+			PortalUtil.getOriginalServletRequest(httpServletRequest);
+
+		String mode = ParamUtil.getString(
+			PortalUtil.getOriginalServletRequest(originalHttpServletRequest),
+			"p_l_mode", Constants.VIEW);
+
+		if (Objects.equals(Constants.EDIT, mode) ||
+			Objects.equals(Constants.PREVIEW, mode)) {
+
+			return true;
+		}
+
+		if ((_article == null) || (_articleDisplay == null) ||
+			_article.isExpired()) {
+
+			return false;
+		}
+
+		return true;
 	}
 
 	private static final String _PAGE = "/journal_article/page.jsp";

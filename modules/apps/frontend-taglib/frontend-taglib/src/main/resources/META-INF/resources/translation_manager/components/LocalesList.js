@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import ClayTabs from '@clayui/tabs';
-import React from 'react';
+import React, {useMemo} from 'react';
 
 const Locale = ({children, editingLocale, locale, onLocaleClicked}) => (
 	<ClayTabs.Item
@@ -38,9 +29,26 @@ export default function LocalesList({
 	onLocaleClicked,
 	onLocaleRemoved,
 }) {
+	const sortedLocales = useMemo(() => {
+		const availableLocalesArray = Array.from(availableLocales.values());
+
+		if (
+			!availableLocalesArray.some((locale) => locale.id === defaultLocale)
+		) {
+			return availableLocalesArray;
+		}
+
+		return [
+			availableLocalesArray.find((locale) => locale.id === defaultLocale),
+			...availableLocalesArray.filter(
+				(locale) => locale.id !== defaultLocale
+			),
+		];
+	}, [availableLocales, defaultLocale]);
+
 	return (
 		<>
-			{Array.from(availableLocales.values()).map((locale) => (
+			{sortedLocales.map((locale) => (
 				<Locale
 					editingLocale={editingLocale}
 					key={locale.id}

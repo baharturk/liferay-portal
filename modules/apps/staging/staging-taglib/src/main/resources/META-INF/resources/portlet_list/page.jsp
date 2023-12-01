@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -78,9 +69,9 @@
 		boolean displayCounts = (exportModelCount > 0) || (modelDeletionCount > 0);
 
 		if (!type.equals(Constants.EXPORT)) {
-			UnicodeProperties liveGroupTypeSettings = liveGroup.getTypeSettingsProperties();
+			UnicodeProperties liveGroupTypeSettingsUnicodeProperties = liveGroup.getTypeSettingsProperties();
 
-			displayCounts = displayCounts && GetterUtil.getBoolean(liveGroupTypeSettings.getProperty(StagingUtil.getStagedPortletId(portlet.getRootPortletId())), portletDataHandler.isPublishToLiveByDefault());
+			displayCounts = displayCounts && GetterUtil.getBoolean(liveGroupTypeSettingsUnicodeProperties.getProperty(StagingUtil.getStagedPortletId(portlet.getRootPortletId())), portletDataHandler.isPublishToLiveByDefault());
 		}
 
 		if (!displayCounts && !showAllPortlets) {
@@ -90,7 +81,7 @@
 		boolean showPortletDataInput = MapUtil.getBoolean(parameterMap, PortletDataHandlerKeys.PORTLET_DATA + StringPool.UNDERLINE + portlet.getPortletId(), portletDataHandler.isPublishToLiveByDefault()) || MapUtil.getBoolean(parameterMap, PortletDataHandlerKeys.PORTLET_DATA_ALL);
 	%>
 
-		<li class="tree-item">
+		<li class="tree-item <%= ((exportModelCount > 0) || showAllPortlets) ? StringPool.BLANK : "deletions" %>">
 			<liferay-staging:checkbox
 				checked="<%= showPortletDataInput %>"
 				deletions="<%= modelDeletionCount %>"
@@ -208,7 +199,7 @@
 									"portlettitle", portletTitle
 								).build()
 							%>'
-							href="javascript:;"
+							href="javascript:void(0);"
 							id='<%= "contentLink_" + portlet.getPortletId() %>'
 							label="change"
 							method="get"
@@ -244,7 +235,7 @@ html = html.trim();
 		<span class="selected-labels" id="<portlet:namespace />selectedContentOptions"></span>
 
 		<span <%= !disableInputs ? StringPool.BLANK : "class=\"hide\"" %>>
-			<aui:a cssClass="modify-link" href="javascript:;" id="contentOptionsLink" label="change" method="get" />
+			<aui:a cssClass="modify-link" href="javascript:void(0);" id="contentOptionsLink" label="change" method="get" />
 		</span>
 
 		<div class="hide" id="<portlet:namespace />contentOptions">

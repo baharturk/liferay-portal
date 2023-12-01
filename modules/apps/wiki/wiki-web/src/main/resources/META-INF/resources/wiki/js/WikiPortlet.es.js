@@ -1,18 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {fetch} from 'frontend-js-web';
+import {fetch, openConfirmModal, sub} from 'frontend-js-web';
 
 const CONFIRM_DISCARD_IMAGES = Liferay.Language.get(
 	'uploads-are-in-progress-confirmation'
@@ -132,22 +123,27 @@ class WikiPortlet {
 			formatSelect.selectedIndex
 		].text.trim();
 
-		const confirmMessage = Liferay.Util.sub(
+		const confirmMessage = sub(
 			this._strings.confirmLoseFormatting,
 			this._currentFormatLabel,
 			newFormat
 		);
 
-		if (confirm(confirmMessage)) {
-			const form = this.rootNode.querySelector(
-				`[name="${this._namespace}fm"]`
-			);
-			form.setAttribute('action', this._renderUrl);
-			this._save();
-		}
-		else {
-			formatSelect.selectedIndex = this.currentFormatIndex;
-		}
+		openConfirmModal({
+			message: confirmMessage,
+			onConfirm: (isConfirmed) => {
+				if (isConfirmed) {
+					const form = this.rootNode.querySelector(
+						`[name="${this._namespace}fm"]`
+					);
+					form.setAttribute('action', this._renderUrl);
+					this._save();
+				}
+				else {
+					formatSelect.selectedIndex = this.currentFormatIndex;
+				}
+			},
+		});
 	}
 
 	/**
@@ -180,25 +176,30 @@ class WikiPortlet {
 	 * confirmation to the user.
 	 *
 	 * @protected
-	 * @return {Boolean} False if there are temporal images and
-	 * user does not confirm she wants to lose them. True in other case.
+	 * @return {void} Call the callback if there aren't temporal
+	 * images, and the user does not confirm she wants to lose them.
+	 * Otherwise, the callback will not be called.
 	 */
-	_removeTempImages() {
+	_maybeRemoveTempImages(callback) {
 		const tempImages = this.rootNode.querySelector('img[data-random-id]');
-		let discardTempImages = true;
 
-		if (tempImages && tempImages.length > 0) {
-			if (confirm(this._strings.confirmDiscardImages)) {
-				tempImages.forEach((node) => {
-					node.parentElement.remove();
-				});
-			}
-			else {
-				discardTempImages = false;
-			}
+		if (tempImages && !!tempImages.length) {
+			openConfirmModal({
+				message: this._strings.confirmDiscardImages,
+				onConfirm: (isConfirmed) => {
+					if (isConfirmed) {
+						tempImages.forEach((node) => {
+							node.parentElement.remove();
+						});
+
+						callback();
+					}
+				},
+			});
 		}
-
-		return discardTempImages;
+		else {
+			callback();
+		}
 	}
 
 	/**
@@ -209,7 +210,7 @@ class WikiPortlet {
 	_save() {
 		const namespace = this._namespace;
 
-		if (this._removeTempImages()) {
+		this._maybeRemoveTempImages(() => {
 			document.getElementById(
 				namespace + this._constants.CMD
 			).value = this._currentAction;
@@ -223,7 +224,7 @@ class WikiPortlet {
 			}
 
 			submitForm(document[`${namespace}fm`]);
-		}
+		});
 	}
 }
 

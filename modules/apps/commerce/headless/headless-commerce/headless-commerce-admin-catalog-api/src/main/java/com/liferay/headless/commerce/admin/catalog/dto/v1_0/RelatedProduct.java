@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.dto.v1_0;
@@ -62,7 +53,7 @@ public class RelatedProduct implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getId() {
 		return id;
 	}
@@ -88,7 +79,7 @@ public class RelatedProduct implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@Schema(example = "1.2")
 	public Double getPriority() {
 		return priority;
 	}
@@ -116,7 +107,7 @@ public class RelatedProduct implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double priority;
 
-	@Schema
+	@Schema(example = "AB-34098-789-N")
 	public String getProductExternalReferenceCode() {
 		return productExternalReferenceCode;
 	}
@@ -149,7 +140,7 @@ public class RelatedProduct implements Serializable {
 	protected String productExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30129")
 	public Long getProductId() {
 		return productId;
 	}
@@ -178,7 +169,7 @@ public class RelatedProduct implements Serializable {
 	@NotNull
 	protected Long productId;
 
-	@Schema
+	@Schema(example = "cross-sell")
 	public String getType() {
 		return type;
 	}
@@ -384,5 +375,7 @@ public class RelatedProduct implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

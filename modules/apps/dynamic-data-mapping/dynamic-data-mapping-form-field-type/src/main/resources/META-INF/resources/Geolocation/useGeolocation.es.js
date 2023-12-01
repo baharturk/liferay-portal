@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import MapGoogleMaps from '@liferay/map-google-maps/js/MapGoogleMaps.es';
-import MapOpenStreetMap from '@liferay/map-openstreetmap/js/MapOpenStreetMap.es';
+import MapGoogleMaps from '@liferay/map-google-maps/js/MapGoogleMaps';
+import MapOpenStreetMap from '@liferay/map-openstreetmap/js/MapOpenStreetMap';
 import {parseName} from 'data-engine-js-components-web';
 import Leaflet from 'leaflet';
-import {useCallback, useEffect, useRef} from 'react';
+import {useEffect, useRef} from 'react';
 
 export const MAP_PROVIDER = {
 	googleMaps: 'GoogleMaps',
@@ -107,17 +98,6 @@ export function useGeolocation({
 	value,
 	viewMode,
 }) {
-	const eventHandlerPositionChanged = useCallback(
-		(event) => {
-			const {
-				newVal: {location},
-			} = event;
-
-			onChange(JSON.stringify(location));
-		},
-		[onChange]
-	);
-
 	const mapRef = useRef(null);
 
 	useEffect(() => {
@@ -142,6 +122,14 @@ export function useGeolocation({
 					mapRef.current,
 					`#map_${instanceId}`
 				);
+
+				mapRef.current.removeAllListeners('positionChange');
+
+				mapRef.current.on('positionChange', onChange);
+
+				if (value) {
+					mapRef.current.setCenter(parseJSONValue(value));
+				}
 			};
 
 			switch (mapProviderKey) {
@@ -174,12 +162,12 @@ export function useGeolocation({
 		if (mapRef.current) {
 			mapRef.current.removeAllListeners('positionChange');
 
-			mapRef.current.on('positionChange', eventHandlerPositionChanged);
+			mapRef.current.on('positionChange', onChange);
 		}
-	}, [eventHandlerPositionChanged]);
+	}, [onChange]);
 
 	useEffect(() => {
-		if (value && mapRef.current) {
+		if (value) {
 			let _value = value;
 
 			if (typeof _value !== 'string') {
@@ -190,7 +178,9 @@ export function useGeolocation({
 				.getElementById(`input_value_${instanceId}`)
 				.setAttribute('value', _value);
 
-			mapRef.current.setCenter(parseJSONValue(value));
+			if (mapRef.current) {
+				mapRef.current.setCenter(parseJSONValue(value));
+			}
 		}
 	}, [instanceId, value]);
 }

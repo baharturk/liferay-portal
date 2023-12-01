@@ -1,29 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.iframe.web.internal.portlet;
 
+import com.liferay.fragment.processor.PortletRegistry;
 import com.liferay.iframe.web.internal.configuration.IFramePortletInstanceConfiguration;
 import com.liferay.iframe.web.internal.constants.IFramePortletKeys;
 import com.liferay.iframe.web.internal.constants.IFrameWebKeys;
 import com.liferay.iframe.web.internal.display.context.IFrameDisplayContext;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -35,7 +27,9 @@ import javax.portlet.PortletException;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -44,9 +38,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Peter Fellwock
  */
 @Component(
-	immediate = true,
 	property = {
-		"com.liferay.fragment.entry.processor.portlet.alias=iframe",
 		"com.liferay.portlet.css-class-wrapper=portlet-iframe",
 		"com.liferay.portlet.display-category=category.sample",
 		"com.liferay.portlet.instanceable=true",
@@ -60,7 +52,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.view-template=/view.jsp",
 		"javax.portlet.name=" + IFramePortletKeys.IFRAME,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"javax.portlet.security-role-ref=power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -77,7 +70,7 @@ public class IFramePortlet extends MVCPortlet {
 			src = _transformSrc(renderRequest, renderResponse);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 
 		renderRequest.setAttribute(IFrameWebKeys.IFRAME_SRC, src);
@@ -92,11 +85,14 @@ public class IFramePortlet extends MVCPortlet {
 		}
 	}
 
-	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.iframe.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
-	)
-	protected void setRelease(Release release) {
+	@Activate
+	protected void activate() {
+		_portletRegistry.registerAlias(_ALIAS, IFramePortletKeys.IFRAME);
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_portletRegistry.unregisterAlias(_ALIAS);
 	}
 
 	private String _transformSrc(
@@ -129,6 +125,16 @@ public class IFramePortlet extends MVCPortlet {
 		return src;
 	}
 
+	private static final String _ALIAS = "iframe";
+
 	private static final Log _log = LogFactoryUtil.getLog(IFramePortlet.class);
+
+	@Reference
+	private PortletRegistry _portletRegistry;
+
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.iframe.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))"
+	)
+	private Release _release;
 
 }

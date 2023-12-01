@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.persistence.impl;
@@ -38,7 +29,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -50,7 +40,6 @@ import com.liferay.portal.kernel.util.SetUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -82,9 +71,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(
-	service = {DDMStructureVersionPersistence.class, BasePersistence.class}
-)
+@Component(service = DDMStructureVersionPersistence.class)
 public class DDMStructureVersionPersistenceImpl
 	extends BasePersistenceImpl<DDMStructureVersion>
 	implements DDMStructureVersionPersistence {
@@ -208,7 +195,7 @@ public class DDMStructureVersionPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMStructureVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMStructureVersion ddmStructureVersion : list) {
@@ -585,7 +572,7 @@ public class DDMStructureVersionPersistenceImpl
 
 			finderArgs = new Object[] {structureId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -695,20 +682,21 @@ public class DDMStructureVersionPersistenceImpl
 
 		version = Objects.toString(version, "");
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMStructureVersion.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {structureId, version};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(_finderPathFetchByS_V, finderArgs);
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByS_V, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			DDMStructureVersion.class);
 
 		if (result instanceof DDMStructureVersion) {
 			DDMStructureVersion ddmStructureVersion =
@@ -719,6 +707,15 @@ public class DDMStructureVersionPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						DDMStructureVersion.class,
+						ddmStructureVersion.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -829,7 +826,7 @@ public class DDMStructureVersionPersistenceImpl
 
 			finderArgs = new Object[] {structureId, version};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -999,7 +996,7 @@ public class DDMStructureVersionPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMStructureVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMStructureVersion ddmStructureVersion : list) {
@@ -1400,7 +1397,7 @@ public class DDMStructureVersionPersistenceImpl
 
 			finderArgs = new Object[] {structureId, status};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1837,7 +1834,9 @@ public class DDMStructureVersionPersistenceImpl
 	 */
 	@Override
 	public DDMStructureVersion fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(DDMStructureVersion.class)) {
+		if (ctPersistenceHelper.isProductionMode(
+				DDMStructureVersion.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -2060,7 +2059,7 @@ public class DDMStructureVersionPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMStructureVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2136,7 +2135,7 @@ public class DDMStructureVersionPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -2324,30 +2323,14 @@ public class DDMStructureVersionPersistenceImpl
 			new String[] {Long.class.getName(), Integer.class.getName()},
 			new String[] {"structureId", "status"}, false);
 
-		_setDDMStructureVersionUtilPersistence(this);
+		DDMStructureVersionUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setDDMStructureVersionUtilPersistence(null);
+		DDMStructureVersionUtil.setPersistence(null);
 
 		entityCache.removeCache(DDMStructureVersionImpl.class.getName());
-	}
-
-	private void _setDDMStructureVersionUtilPersistence(
-		DDMStructureVersionPersistence ddmStructureVersionPersistence) {
-
-		try {
-			Field field = DDMStructureVersionUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, ddmStructureVersionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -2415,9 +2398,5 @@ public class DDMStructureVersionPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private DDMStructureVersionModelArgumentsResolver
-		_ddmStructureVersionModelArgumentsResolver;
 
 }

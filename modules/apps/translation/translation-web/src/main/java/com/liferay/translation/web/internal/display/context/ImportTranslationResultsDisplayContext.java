@@ -1,31 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.translation.web.internal.display.context;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.translation.model.TranslationEntry;
+import com.liferay.util.JS;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.io.StringWriter;
 
 import java.util.List;
 import java.util.Locale;
@@ -34,6 +28,9 @@ import java.util.Objects;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+
 /**
  * @author Alicia García
  */
@@ -41,7 +38,7 @@ public class ImportTranslationResultsDisplayContext implements Serializable {
 
 	public ImportTranslationResultsDisplayContext(
 		long classNameId, long classPK, long companyId, long groupId,
-		Map<String, String> failureMessages, String fileName,
+		List<Map<String, String>> failureMessages, String fileName,
 		List<String> successMessages, String title, int workflowAction,
 		WorkflowDefinitionLinkLocalService workflowDefinitionLinkLocalService) {
 
@@ -58,12 +55,54 @@ public class ImportTranslationResultsDisplayContext implements Serializable {
 			workflowDefinitionLinkLocalService;
 	}
 
-	public Map<String, String> getFailureMessages() {
+	public String getFailureMessageKey() {
+		String pattern = "x-files-could-not-be-published";
+
+		if (_workflowAction == WorkflowConstants.ACTION_PUBLISH) {
+			if (getFailureMessagesCount() == 1) {
+				pattern = "x-file-could-not-be-published";
+			}
+		}
+		else {
+			pattern = "x-files-could-not-be-saved";
+
+			if (getFailureMessagesCount() == 1) {
+				pattern = "x-file-could-not-be-saved";
+			}
+		}
+
+		return pattern;
+	}
+
+	public List<Map<String, String>> getFailureMessages() {
 		return _failureMessages;
 	}
 
 	public int getFailureMessagesCount() {
 		return _failureMessages.size();
+	}
+
+	public String getFailureMessagesCSVDataURL(Locale locale)
+		throws IOException {
+
+		StringWriter stringWriter = new StringWriter();
+
+		CSVPrinter csvPrinter = new CSVPrinter(
+			stringWriter,
+			CSVFormat.DEFAULT.withHeader(
+				LanguageUtil.get(locale, "file-name"),
+				LanguageUtil.get(locale, "error-message"),
+				LanguageUtil.get(locale, "container")));
+
+		for (Map<String, String> failureMessage : _failureMessages) {
+			csvPrinter.printRecord(
+				failureMessage.get("fileName"),
+				failureMessage.get("errorMessage"),
+				failureMessage.get("container"));
+		}
+
+		return "data:text/csv;charset=utf-8," +
+			JS.encodeURIComponent(stringWriter.toString());
 	}
 
 	public String getFileName() {
@@ -190,7 +229,7 @@ public class ImportTranslationResultsDisplayContext implements Serializable {
 	private final long _classNameId;
 	private final long _classPK;
 	private final long _companyId;
-	private final Map<String, String> _failureMessages;
+	private final List<Map<String, String>> _failureMessages;
 	private final String _fileName;
 	private final long _groupId;
 	private String _redirect;

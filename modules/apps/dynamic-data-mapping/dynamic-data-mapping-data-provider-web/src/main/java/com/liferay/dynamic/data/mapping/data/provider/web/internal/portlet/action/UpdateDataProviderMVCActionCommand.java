@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.data.provider.web.internal.portlet.action;
@@ -38,10 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
@@ -53,7 +41,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Leonardo Barros
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_DATA_PROVIDER,
 		"mvc.command.name=/dynamic_data_mapping_data_provider/update_data_provider"
@@ -108,7 +95,7 @@ public class UpdateDataProviderMVCActionCommand
 		return ddmFormValuesDeserializerDeserializeResponse.getDDMFormValues();
 	}
 
-	private Optional<DDMFormFieldValue> _findStoredDDMFormFieldValue(
+	private DDMFormFieldValue _findStoredDDMFormFieldValue(
 		String name, String instanceId, DDMFormValues storedDDMFormValues) {
 
 		Set<DDMFormFieldValue> storedDDMFormFieldValues = new HashSet<>();
@@ -117,16 +104,15 @@ public class UpdateDataProviderMVCActionCommand
 			storedDDMFormValues.getDDMFormFieldValues(),
 			storedDDMFormFieldValues);
 
-		Stream<DDMFormFieldValue> storedDDMFormFieldValuesStream =
-			storedDDMFormFieldValues.stream();
+		for (DDMFormFieldValue ddmFormFieldValue : storedDDMFormFieldValues) {
+			if (Objects.equals(ddmFormFieldValue.getName(), name) &&
+				Objects.equals(ddmFormFieldValue.getInstanceId(), instanceId)) {
 
-		Predicate<DDMFormFieldValue> predicate = ddmFormFieldValue ->
-			Objects.equals(ddmFormFieldValue.getName(), name) &&
-			Objects.equals(ddmFormFieldValue.getInstanceId(), instanceId);
+				return ddmFormFieldValue;
+			}
+		}
 
-		return storedDDMFormFieldValuesStream.filter(
-			predicate
-		).findFirst();
+		return null;
 	}
 
 	private void _flattenDDMFormFieldValues(
@@ -148,7 +134,7 @@ public class UpdateDataProviderMVCActionCommand
 		DDMDataProviderInstance dataProviderInstance) {
 
 		DDMDataProvider ddmDataProvider =
-			ddmDataProviderTracker.getDDMDataProvider(
+			ddmDataProviderRegistry.getDDMDataProvider(
 				dataProviderInstance.getType());
 
 		Class<?> clazz = ddmDataProvider.getSettings();
@@ -188,14 +174,13 @@ public class UpdateDataProviderMVCActionCommand
 		DDMFormFieldValue ddmFormFieldValue,
 		DDMFormValues storedDDMFormValues) {
 
-		Optional<DDMFormFieldValue> storedFormFieldValueOptional =
-			_findStoredDDMFormFieldValue(
-				ddmFormFieldValue.getName(), ddmFormFieldValue.getInstanceId(),
-				storedDDMFormValues);
+		DDMFormFieldValue storedFormFieldValue = _findStoredDDMFormFieldValue(
+			ddmFormFieldValue.getName(), ddmFormFieldValue.getInstanceId(),
+			storedDDMFormValues);
 
-		storedFormFieldValueOptional.ifPresent(
-			storedDDMFormFieldValue -> _restoreDDMFormFieldValue(
-				ddmFormFieldValue, storedDDMFormFieldValue));
+		if (storedFormFieldValue != null) {
+			_restoreDDMFormFieldValue(ddmFormFieldValue, storedFormFieldValue);
+		}
 	}
 
 	private void _restoreDDMFormFieldValues(
@@ -233,13 +218,11 @@ public class UpdateDataProviderMVCActionCommand
 			DDMDataProviderPortletUtil.getDDMFormFieldNamesByType(
 				dataProviderInstanceSettingsDDMForm, "password");
 
-		DDMFormValues storedDDMFormValues = _getStoredDDMFormValues(
-			dataProviderInstanceSettingsDDMForm,
-			dataProviderInstance.getDefinition());
-
 		_restoreDDMFormFieldValues(
 			passwordDDMFormFieldNames, ddmFormValues.getDDMFormFieldValues(),
-			storedDDMFormValues);
+			_getStoredDDMFormValues(
+				dataProviderInstanceSettingsDDMForm,
+				dataProviderInstance.getDefinition()));
 	}
 
 }

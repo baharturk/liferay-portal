@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.web.internal.info.item;
@@ -18,17 +9,25 @@ import com.liferay.info.field.InfoField;
 import com.liferay.info.field.type.DateInfoFieldType;
 import com.liferay.info.field.type.ImageInfoFieldType;
 import com.liferay.info.field.type.TextInfoFieldType;
-import com.liferay.info.field.type.URLInfoFieldType;
 import com.liferay.info.localized.InfoLocalizedValue;
+import com.liferay.object.model.ObjectEntry;
 
 /**
  * @author Jorge Ferrer
  */
-public interface ObjectEntryInfoItemFields {
+public class ObjectEntryInfoItemFields {
 
+	public static final InfoField<TextInfoFieldType> authorInfoField =
+		BuilderHolder._builder.infoFieldType(
+			TextInfoFieldType.INSTANCE
+		).name(
+			"author"
+		).labelInfoLocalizedValue(
+			InfoLocalizedValue.localize(
+				ObjectEntryInfoItemFields.class, "author")
+		).build();
 	public static final InfoField<DateInfoFieldType> createDateInfoField =
-		InfoField.builder(
-		).infoFieldType(
+		BuilderHolder._builder.infoFieldType(
 			DateInfoFieldType.INSTANCE
 		).name(
 			"createDate"
@@ -36,19 +35,17 @@ public interface ObjectEntryInfoItemFields {
 			InfoLocalizedValue.localize(
 				ObjectEntryInfoItemFields.class, "create-date")
 		).build();
-	public static final InfoField<URLInfoFieldType> displayPageURLInfoField =
-		InfoField.builder(
-		).infoFieldType(
-			URLInfoFieldType.INSTANCE
+	public static final InfoField<TextInfoFieldType>
+		externalReferenceCodeInfoField = BuilderHolder._builder.infoFieldType(
+			TextInfoFieldType.INSTANCE
 		).name(
-			"displayPageURL"
+			"externalReferenceCode"
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.localize(
-				"com.liferay.asset.info.display.impl", "display-page-url")
+				ObjectEntryInfoItemFields.class, "external-reference-code")
 		).build();
 	public static final InfoField<DateInfoFieldType> modifiedDateInfoField =
-		InfoField.builder(
-		).infoFieldType(
+		BuilderHolder._builder.infoFieldType(
 			DateInfoFieldType.INSTANCE
 		).name(
 			"modifiedDate"
@@ -56,9 +53,16 @@ public interface ObjectEntryInfoItemFields {
 			InfoLocalizedValue.localize(
 				ObjectEntryInfoItemFields.class, "modified-date")
 		).build();
+	public static final InfoField<TextInfoFieldType> objectEntryIdInfoField =
+		BuilderHolder._builder.infoFieldType(
+			TextInfoFieldType.INSTANCE
+		).name(
+			"objectEntryId"
+		).labelInfoLocalizedValue(
+			InfoLocalizedValue.localize(ObjectEntryInfoItemFields.class, "id")
+		).build();
 	public static final InfoField<DateInfoFieldType> publishDateInfoField =
-		InfoField.builder(
-		).infoFieldType(
+		BuilderHolder._builder.infoFieldType(
 			DateInfoFieldType.INSTANCE
 		).name(
 			"publishDate"
@@ -66,24 +70,30 @@ public interface ObjectEntryInfoItemFields {
 			InfoLocalizedValue.localize(
 				ObjectEntryInfoItemFields.class, "publish-date")
 		).build();
-	public static final InfoField<TextInfoFieldType> userNameInfoField =
-		InfoField.builder(
-		).infoFieldType(
+	public static final InfoField<TextInfoFieldType> statusInfoField =
+		BuilderHolder._builder.infoFieldType(
 			TextInfoFieldType.INSTANCE
 		).name(
-			"userName"
+			"status"
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.localize(
-				ObjectEntryInfoItemFields.class, "user-name")
+				ObjectEntryInfoItemFields.class, "status")
 		).build();
-	public static final InfoField userProfileImage = InfoField.builder(
-	).infoFieldType(
-		ImageInfoFieldType.INSTANCE
-	).name(
-		"userProfileImage"
-	).labelInfoLocalizedValue(
-		InfoLocalizedValue.localize(
-			ObjectEntryInfoItemFields.class, "user-profile-image")
-	).build();
+	public static final InfoField<ImageInfoFieldType>
+		userProfileImageInfoField = BuilderHolder._builder.infoFieldType(
+			ImageInfoFieldType.INSTANCE
+		).name(
+			"userProfileImage"
+		).labelInfoLocalizedValue(
+			InfoLocalizedValue.localize(
+				ObjectEntryInfoItemFields.class, "user-profile-image")
+		).build();
+
+	private static class BuilderHolder {
+
+		private static final InfoField.NamespacedBuilder _builder =
+			InfoField.builder(ObjectEntry.class.getSimpleName());
+
+	}
 
 }

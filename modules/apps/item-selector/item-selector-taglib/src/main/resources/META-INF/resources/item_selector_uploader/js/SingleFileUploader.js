@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayButtonWithIcon} from '@clayui/button';
@@ -18,12 +9,13 @@ import ClayLayout from '@clayui/layout';
 import ClayProgressBar from '@clayui/progress-bar';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
 import classNames from 'classnames';
+import {formatStorage, sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useEffect, useMemo, useState} from 'react';
 import {ErrorCode, useDropzone} from 'react-dropzone';
 
 import ItemSelectorPreview from '../../item_selector_preview/js/ItemSelectorPreview.es';
-import DragFileIcon from './components/DragFileIcon';
+import DragFileBackground from './components/DragFilePlaceholder';
 import getPreviewProps from './utils/getPreviewProps';
 import getUploadErrorMessage from './utils/getUploadErrorMessage';
 import sendFile from './utils/sendFile';
@@ -34,9 +26,10 @@ function SingleFileUploader({
 	itemSelectedEventName,
 	maxFileSize: initialMaxFileSizeString = Liferay.PropsValues
 		.UPLOAD_SERVLET_REQUEST_IMPL_MAX_SIZE,
+	mimeTypeRestriction,
 	uploadItemReturnType,
 	uploadItemURL,
-	validExtensions = '*',
+	validExtensions,
 }) {
 	const [abort, setAbort] = useState(null);
 	const [errorAnimation, setErrorAnimation] = useState(false);
@@ -51,18 +44,18 @@ function SingleFileUploader({
 
 	const CLIENT_ERRORS = useMemo(
 		() => ({
-			[ErrorCode.FileInvalidType]: Liferay.Util.sub(
+			[ErrorCode.FileInvalidType]: sub(
 				Liferay.Language.get(
 					'please-enter-a-file-with-a-valid-extension-x'
 				),
 				[validExtensions]
 			),
 
-			[ErrorCode.FileTooLarge]: Liferay.Util.sub(
+			[ErrorCode.FileTooLarge]: sub(
 				Liferay.Language.get(
 					'please-enter-a-file-with-a-valid-file-size-no-larger-than-x'
 				),
-				[Liferay.Util.formatStorage(maxFileSize)]
+				[formatStorage(maxFileSize)]
 			),
 			[ErrorCode.TooManyFiles]: Liferay.Language.get(
 				'multiple-file-upload-is-not-supported-please-enter-a-single-file'
@@ -72,7 +65,7 @@ function SingleFileUploader({
 	);
 
 	const {getInputProps, getRootProps, isDragActive} = useDropzone({
-		accept: validExtensions,
+		accept: validExtensions === '*' ? undefined : validExtensions,
 		maxSize: maxFileSize,
 		multiple: false,
 		onDropAccepted: (acceptedFiles) => {
@@ -176,15 +169,9 @@ function SingleFileUploader({
 							</ClayLayout.ContentCol>
 						</ClayLayout.ContentRow>
 					) : (
-						<div>
-							<div className="dropzone-drag-file-icon-wrapper">
-								<DragFileIcon />
-							</div>
-
-							{Liferay.Language.get(
-								'drag-and-drop-or-click-to-upload'
-							)}
-						</div>
+						<DragFileBackground
+							mimeTypeRestriction={mimeTypeRestriction}
+						/>
 					)}
 				</div>
 

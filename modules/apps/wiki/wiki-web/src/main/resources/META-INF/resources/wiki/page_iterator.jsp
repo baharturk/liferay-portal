@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -117,7 +108,7 @@ if (navigation.equals("all-pages") || navigation.equals("categorized-pages") || 
 	headerNames.add(StringPool.BLANK);
 }
 
-WikiListPagesDisplayContext wikiListPagesDisplayContext = wikiDisplayContextProvider.getWikiListPagesDisplayContext(request, response, node);
+WikiListPagesDisplayContext wikiListPagesDisplayContext = new WikiListPagesDisplayContext(request, (TrashHelper)request.getAttribute(TrashWebKeys.TRASH_HELPER), node);
 
 String orderByCol = ParamUtil.getString(request, "orderByCol");
 String orderByType = ParamUtil.getString(request, "orderByType");
@@ -267,12 +258,15 @@ for (int i = 0; i < pages.size(); i++) {
 />
 
 <liferay-ui:search-iterator
+	markupView="deprecated"
 	paginate='<%= navigation.equals("history") ? false : true %>'
 	searchContainer="<%= searchContainer %>"
 />
 
 <c:if test='<%= navigation.equals("history") %>'>
-	<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
+	<aui:script require="frontend-js-web/index as frontendJsWeb">
+		var {delegate} = frontendJsWeb;
+
 		function <portlet:namespace />initRowsChecked() {
 			var rowIdsNodes = document.querySelectorAll(
 				'input[name=<portlet:namespace />rowIds]'
@@ -363,8 +357,6 @@ for (int i = 0; i < pages.size(); i++) {
 		);
 
 		if (searchContainer) {
-			var delegate = delegateModule.default;
-
 			delegate(
 				searchContainer,
 				'click',

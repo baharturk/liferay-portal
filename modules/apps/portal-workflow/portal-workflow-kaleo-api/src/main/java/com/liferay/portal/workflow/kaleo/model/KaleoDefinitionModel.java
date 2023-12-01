@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.model;
@@ -21,6 +12,7 @@ import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
 
 import java.util.Date;
 import java.util.Locale;
@@ -41,8 +33,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface KaleoDefinitionModel
-	extends BaseModel<KaleoDefinition>, GroupedModel, LocalizedModel, MVCCModel,
-			ShardedModel {
+	extends BaseModel<KaleoDefinition>, CTModel<KaleoDefinition>, GroupedModel,
+			LocalizedModel, MVCCModel, ShardedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -55,6 +47,7 @@ public interface KaleoDefinitionModel
 	 *
 	 * @return the primary key of this kaleo definition
 	 */
+	@Override
 	public long getPrimaryKey();
 
 	/**
@@ -62,6 +55,7 @@ public interface KaleoDefinitionModel
 	 *
 	 * @param primaryKey the primary key of this kaleo definition
 	 */
+	@Override
 	public void setPrimaryKey(long primaryKey);
 
 	/**
@@ -79,6 +73,22 @@ public interface KaleoDefinitionModel
 	 */
 	@Override
 	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the ct collection ID of this kaleo definition.
+	 *
+	 * @return the ct collection ID of this kaleo definition
+	 */
+	@Override
+	public long getCtCollectionId();
+
+	/**
+	 * Sets the ct collection ID of this kaleo definition.
+	 *
+	 * @param ctCollectionId the ct collection ID of this kaleo definition
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId);
 
 	/**
 	 * Returns the kaleo definition ID of this kaleo definition.
@@ -416,5 +426,9 @@ public interface KaleoDefinitionModel
 
 	@Override
 	public KaleoDefinition cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

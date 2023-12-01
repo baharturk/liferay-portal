@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.internal.trash;
@@ -18,6 +9,7 @@ import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileVersion;
 import com.liferay.document.library.kernel.model.DLFolder;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.kernel.service.DLFileVersionLocalService;
@@ -52,10 +44,11 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.trash.TrashHelper;
 import com.liferay.trash.constants.TrashActionKeys;
-import com.liferay.trash.kernel.exception.RestoreEntryException;
+import com.liferay.trash.constants.TrashEntryConstants;
+import com.liferay.trash.exception.RestoreEntryException;
 import com.liferay.trash.kernel.model.TrashEntry;
-import com.liferay.trash.kernel.model.TrashEntryConstants;
 
 import javax.portlet.PortletRequest;
 
@@ -186,7 +179,9 @@ public class DLFileEntryTrashHandler extends BaseDLTrashHandler {
 
 		DLFolder dlFolder = dlFileEntry.getFolder();
 
-		return DLUtil.getAbsolutePath(portletRequest, dlFolder.getFolderId());
+		return DLUtil.getAbsolutePath(
+			portletRequest, DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			dlFolder.getFolderId());
 	}
 
 	@Override
@@ -201,7 +196,7 @@ public class DLFileEntryTrashHandler extends BaseDLTrashHandler {
 		}
 		catch (PortalException | UnsupportedCapabilityException exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return null;
@@ -259,7 +254,7 @@ public class DLFileEntryTrashHandler extends BaseDLTrashHandler {
 			return false;
 		}
 
-		return !dlFileEntry.isInTrashContainer();
+		return !_trashHelper.isInTrashContainer(dlFileEntry);
 	}
 
 	@Override
@@ -318,12 +313,11 @@ public class DLFileEntryTrashHandler extends BaseDLTrashHandler {
 
 		dlFileEntry.setTitle(name);
 
-		_dlFileEntryLocalService.updateDLFileEntry(dlFileEntry);
+		dlFileEntry = _dlFileEntryLocalService.updateDLFileEntry(dlFileEntry);
 
 		DLFileVersion dlFileVersion = dlFileEntry.getFileVersion();
 
 		dlFileVersion.setFileName(fileName);
-
 		dlFileVersion.setTitle(name);
 
 		_dlFileVersionLocalService.updateDLFileVersion(dlFileVersion);
@@ -431,39 +425,6 @@ public class DLFileEntryTrashHandler extends BaseDLTrashHandler {
 			permissionChecker, classPK, actionId);
 	}
 
-	@Reference(unbind = "-")
-	protected void setDLAppLocalService(DLAppLocalService dlAppLocalService) {
-		_dlAppLocalService = dlAppLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDLFileEntryLocalService(
-		DLFileEntryLocalService dlFileEntryLocalService) {
-
-		_dlFileEntryLocalService = dlFileEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDLFileVersionLocalService(
-		DLFileVersionLocalService dlFileVersionLocalService) {
-
-		_dlFileVersionLocalService = dlFileVersionLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDLFolderLocalService(
-		DLFolderLocalService dlFolderLocalService) {
-
-		_dlFolderLocalService = dlFolderLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDLTrashLocalService(
-		DLTrashLocalService dlTrashLocalService) {
-
-		_dlTrashLocalService = dlTrashLocalService;
-	}
-
 	private DLFileEntry _fetchDLFileEntry(long classPK) throws PortalException {
 		Repository repository = RepositoryProviderUtil.getFileEntryRepository(
 			classPK);
@@ -495,10 +456,19 @@ public class DLFileEntryTrashHandler extends BaseDLTrashHandler {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLFileEntryTrashHandler.class);
 
+	@Reference
 	private DLAppLocalService _dlAppLocalService;
+
+	@Reference
 	private DLFileEntryLocalService _dlFileEntryLocalService;
+
+	@Reference
 	private DLFileVersionLocalService _dlFileVersionLocalService;
+
+	@Reference
 	private DLFolderLocalService _dlFolderLocalService;
+
+	@Reference
 	private DLTrashLocalService _dlTrashLocalService;
 
 	@Reference
@@ -517,5 +487,8 @@ public class DLFileEntryTrashHandler extends BaseDLTrashHandler {
 		target = "(model.class.name=com.liferay.portal.kernel.repository.model.Folder)"
 	)
 	private ModelResourcePermission<Folder> _folderModelResourcePermission;
+
+	@Reference
+	private TrashHelper _trashHelper;
 
 }

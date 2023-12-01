@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.account.dto.v1_0;
@@ -62,7 +53,7 @@ public class AccountMember implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getAccountId() {
 		return accountId;
 	}
@@ -90,7 +81,9 @@ public class AccountMember implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long accountId;
 
-	@Schema
+	@Schema(
+		example = "[{description={en_US=Account Administrator Description US, hr_HR=Account Administrator Description HR, hu_HU=Account Administrator Description HU}}, {description={en_US=Order Manager Description US, hr_HR=Order Manager Description HR, hu_HU=Order Manager Description HU}}]"
+	)
 	@Valid
 	public AccountRole[] getAccountRoles() {
 		return accountRoles;
@@ -119,7 +112,7 @@ public class AccountMember implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected AccountRole[] accountRoles;
 
-	@Schema
+	@Schema(example = "joe.1@commerce.com")
 	public String getEmail() {
 		return email;
 	}
@@ -148,7 +141,7 @@ public class AccountMember implements Serializable {
 	@NotEmpty
 	protected String email;
 
-	@Schema
+	@Schema(example = "AB-34098-789-N")
 	public String getExternalReferenceCode() {
 		return externalReferenceCode;
 	}
@@ -176,7 +169,7 @@ public class AccountMember implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
-	@Schema
+	@Schema(example = "User Name")
 	public String getName() {
 		return name;
 	}
@@ -202,7 +195,7 @@ public class AccountMember implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema
+	@Schema(example = "UAB-34098-789-N")
 	public String getUserExternalReferenceCode() {
 		return userExternalReferenceCode;
 	}
@@ -233,7 +226,7 @@ public class AccountMember implements Serializable {
 	protected String userExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30002")
 	public Long getUserId() {
 		return userId;
 	}
@@ -478,5 +471,7 @@ public class AccountMember implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

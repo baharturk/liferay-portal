@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.order.internal.resource.v1_0;
@@ -23,29 +14,46 @@ import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceOrderService;
+import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
+import com.liferay.expando.kernel.service.ExpandoTableLocalService;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.Order;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.OrderItem;
-import com.liferay.headless.commerce.admin.order.internal.dto.v1_0.converter.OrderItemDTOConverter;
-import com.liferay.headless.commerce.admin.order.internal.helper.v1_0.OrderItemHelper;
+import com.liferay.headless.commerce.admin.order.internal.dto.v1_0.converter.constants.DTOConverterConstants;
+import com.liferay.headless.commerce.admin.order.internal.dto.v1_0.util.CustomFieldsUtil;
+import com.liferay.headless.commerce.admin.order.internal.odata.entity.v1_0.OrderItemEntityModel;
 import com.liferay.headless.commerce.admin.order.internal.util.v1_0.OrderItemUtil;
 import com.liferay.headless.commerce.admin.order.resource.v1_0.OrderItemResource;
 import com.liferay.headless.commerce.core.util.ExpandoUtil;
 import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.common.spi.odata.entity.EntityFieldsUtil;
+import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.search.expando.ExpandoBridgeIndexer;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
-import com.liferay.portal.vulcan.fields.NestedFieldSupport;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
+import com.liferay.portal.vulcan.util.SearchUtil;
+
+import java.io.Serializable;
 
 import java.math.BigDecimal;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
@@ -56,13 +64,11 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/order-item.properties",
-	scope = ServiceScope.PROTOTYPE,
-	service = {NestedFieldSupport.class, OrderItemResource.class}
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = OrderItemResource.class
 )
-public class OrderItemResourceImpl
-	extends BaseOrderItemResourceImpl implements NestedFieldSupport {
+public class OrderItemResourceImpl extends BaseOrderItemResourceImpl {
 
 	@Override
 	public Response deleteOrderItem(Long id) throws Exception {
@@ -115,6 +121,17 @@ public class OrderItemResourceImpl
 	}
 
 	@Override
+	public EntityModel getEntityModel(MultivaluedMap multivaluedMap)
+		throws Exception {
+
+		return new OrderItemEntityModel(
+			EntityFieldsUtil.getEntityFields(
+				_portal.getClassNameId(CommerceOrderItem.class.getName()),
+				contextCompany.getCompanyId(), _expandoBridgeIndexer,
+				_expandoColumnLocalService, _expandoTableLocalService));
+	}
+
+	@Override
 	public Page<OrderItem> getOrderByExternalReferenceCodeOrderItemsPage(
 			String externalReferenceCode, Pagination pagination)
 		throws Exception {
@@ -138,7 +155,7 @@ public class OrderItemResourceImpl
 			commerceOrder.getCommerceOrderId());
 
 		return Page.of(
-			_orderItemHelper.toOrderItems(
+			_toOrderItems(
 				commerceOrderItems, contextAcceptLanguage.getPreferredLocale()),
 			pagination, totalItems);
 	}
@@ -149,8 +166,24 @@ public class OrderItemResourceImpl
 			Long id, Pagination pagination)
 		throws Exception {
 
-		return _orderItemHelper.getOrderItemsPage(
-			id, contextAcceptLanguage.getPreferredLocale(), pagination);
+		CommerceOrder commerceOrder = _commerceOrderService.fetchCommerceOrder(
+			id);
+
+		if (commerceOrder == null) {
+			return Page.of(Collections.emptyList());
+		}
+
+		List<CommerceOrderItem> commerceOrderItems =
+			_commerceOrderItemService.getCommerceOrderItems(
+				id, pagination.getStartPosition(), pagination.getEndPosition());
+
+		int totalItems = _commerceOrderItemService.getCommerceOrderItemsCount(
+			id);
+
+		return Page.of(
+			_toOrderItems(
+				commerceOrderItems, contextAcceptLanguage.getPreferredLocale()),
+			pagination, totalItems);
 	}
 
 	@Override
@@ -174,6 +207,23 @@ public class OrderItemResourceImpl
 		}
 
 		return _toOrderItem(commerceOrderItem.getCommerceOrderItemId());
+	}
+
+	@Override
+	public Page<OrderItem> getOrderItemsPage(
+			String search, Filter filter, Pagination pagination, Sort[] sorts)
+		throws Exception {
+
+		return SearchUtil.search(
+			null, booleanQuery -> booleanQuery.getPreBooleanFilter(), filter,
+			CommerceOrderItem.class.getName(), search, pagination,
+			queryConfig -> queryConfig.setSelectedFieldNames(
+				Field.ENTRY_CLASS_PK),
+			searchContext -> searchContext.setCompanyId(
+				contextCompany.getCompanyId()),
+			sorts,
+			document -> _toOrderItem(
+				GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK))));
 	}
 
 	@Override
@@ -234,6 +284,218 @@ public class OrderItemResourceImpl
 
 		return _addOrderItem(
 			_commerceOrderService.getCommerceOrder(id), orderItem);
+	}
+
+	@Override
+	public OrderItem putOrderItem(Long id, OrderItem orderItem)
+		throws Exception {
+
+		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
+			orderItem.getOrderId());
+
+		CommerceOrderItem commerceOrderItem =
+			_commerceOrderItemService.updateCommerceOrderItem(
+				id, GetterUtil.getString(orderItem.getOptions(), "[]"),
+				BigDecimal.valueOf(
+					GetterUtil.getInteger(orderItem.getQuantity())),
+				_commerceContextFactory.create(
+					contextCompany.getCompanyId(), commerceOrder.getGroupId(),
+					contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
+					commerceOrder.getCommerceAccountId()),
+				_serviceContextHelper.getServiceContext(
+					commerceOrder.getScopeGroupId()));
+
+		// Pricing
+
+		PortletResourcePermission portletResourcePermission =
+			_commerceOrderModelResourcePermission.
+				getPortletResourcePermission();
+
+		if (portletResourcePermission.contains(
+				PermissionThreadLocal.getPermissionChecker(),
+				commerceOrder.getGroupId(),
+				CommerceActionKeys.MANAGE_COMMERCE_ORDER_PRICES)) {
+
+			commerceOrderItem =
+				_commerceOrderItemService.updateCommerceOrderItemPrices(
+					commerceOrderItem.getCommerceOrderItemId(),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getDiscountAmount(), BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getDiscountWithTaxAmount(), BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getDiscountPercentageLevel1(),
+						BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getDiscountPercentageLevel1WithTaxAmount(),
+						BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getDiscountPercentageLevel2(),
+						BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getDiscountPercentageLevel2WithTaxAmount(),
+						BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getDiscountPercentageLevel3(),
+						BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getDiscountPercentageLevel3WithTaxAmount(),
+						BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getDiscountPercentageLevel4(),
+						BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getDiscountPercentageLevel4WithTaxAmount(),
+						BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getFinalPrice(), BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getFinalPriceWithTaxAmount(),
+						BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getPromoPrice(), BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getPromoPriceWithTaxAmount(),
+						BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getUnitPrice(), BigDecimal.ZERO),
+					(BigDecimal)GetterUtil.getNumber(
+						orderItem.getUnitPriceWithTaxAmount(),
+						BigDecimal.ZERO));
+		}
+
+		// Expando
+
+		Map<String, ?> customFields = _getExpandoBridgeAttributes(orderItem);
+
+		if ((customFields != null) && !customFields.isEmpty()) {
+			ExpandoUtil.updateExpando(
+				contextCompany.getCompanyId(), CommerceOrderItem.class,
+				commerceOrderItem.getPrimaryKey(), customFields);
+		}
+
+		return _toOrderItem(commerceOrderItem.getCommerceOrderItemId());
+	}
+
+	@Override
+	public OrderItem putOrderItemByExternalReferenceCode(
+			String externalReferenceCode, OrderItem orderItem)
+		throws Exception {
+
+		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
+			GetterUtil.getLong(orderItem.getOrderId()));
+
+		CommerceOrderItem commerceOrderItem =
+			_commerceOrderItemService.fetchByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceOrderItem == null) {
+			commerceOrderItem = OrderItemUtil.addCommerceOrderItem(
+				_cpInstanceService, _commerceOrderItemService,
+				_commerceOrderModelResourcePermission, orderItem, commerceOrder,
+				_commerceContextFactory.create(
+					contextCompany.getCompanyId(), commerceOrder.getGroupId(),
+					contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
+					commerceOrder.getCommerceAccountId()),
+				_serviceContextHelper.getServiceContext(
+					commerceOrder.getGroupId()));
+
+			commerceOrderItem =
+				_commerceOrderItemService.updateExternalReferenceCode(
+					commerceOrderItem.getCommerceOrderItemId(),
+					externalReferenceCode);
+		}
+		else {
+			commerceOrderItem =
+				_commerceOrderItemService.updateCommerceOrderItem(
+					commerceOrderItem.getCommerceOrderItemId(),
+					GetterUtil.getString(orderItem.getOptions(), "[]"),
+					BigDecimal.valueOf(
+						GetterUtil.getInteger(orderItem.getQuantity())),
+					_commerceContextFactory.create(
+						contextCompany.getCompanyId(),
+						commerceOrder.getGroupId(), contextUser.getUserId(),
+						commerceOrder.getCommerceOrderId(),
+						commerceOrder.getCommerceAccountId()),
+					_serviceContextHelper.getServiceContext(
+						commerceOrder.getGroupId()));
+
+			// Pricing
+
+			PortletResourcePermission portletResourcePermission =
+				_commerceOrderModelResourcePermission.
+					getPortletResourcePermission();
+
+			if (portletResourcePermission.contains(
+					PermissionThreadLocal.getPermissionChecker(),
+					commerceOrder.getGroupId(),
+					CommerceActionKeys.MANAGE_COMMERCE_ORDER_PRICES)) {
+
+				commerceOrderItem =
+					_commerceOrderItemService.updateCommerceOrderItemPrices(
+						commerceOrderItem.getCommerceOrderItemId(),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getDiscountAmount(), BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getDiscountWithTaxAmount(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getDiscountPercentageLevel1(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.
+								getDiscountPercentageLevel1WithTaxAmount(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getDiscountPercentageLevel2(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.
+								getDiscountPercentageLevel2WithTaxAmount(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getDiscountPercentageLevel3(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.
+								getDiscountPercentageLevel3WithTaxAmount(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getDiscountPercentageLevel4(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.
+								getDiscountPercentageLevel4WithTaxAmount(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getFinalPrice(), BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getFinalPriceWithTaxAmount(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getPromoPrice(), BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getPromoPriceWithTaxAmount(),
+							BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getUnitPrice(), BigDecimal.ZERO),
+						(BigDecimal)GetterUtil.getNumber(
+							orderItem.getUnitPriceWithTaxAmount(),
+							BigDecimal.ZERO));
+			}
+		}
+
+		// Expando
+
+		Map<String, ?> customFields = _getExpandoBridgeAttributes(orderItem);
+
+		if ((customFields != null) && !customFields.isEmpty()) {
+			ExpandoUtil.updateExpando(
+				contextCompany.getCompanyId(), CommerceOrderItem.class,
+				commerceOrderItem.getPrimaryKey(), customFields);
+		}
+
+		return _toOrderItem(commerceOrderItem.getCommerceOrderItemId());
 	}
 
 	private OrderItem _addOrderItem(
@@ -321,7 +583,7 @@ public class OrderItemResourceImpl
 
 		// Expando
 
-		Map<String, ?> customFields = orderItem.getCustomFields();
+		Map<String, ?> customFields = _getExpandoBridgeAttributes(orderItem);
 
 		if ((customFields != null) && !customFields.isEmpty()) {
 			ExpandoUtil.updateExpando(
@@ -332,11 +594,36 @@ public class OrderItemResourceImpl
 		return _toOrderItem(commerceOrderItem.getCommerceOrderItemId());
 	}
 
+	private Map<String, Serializable> _getExpandoBridgeAttributes(
+		OrderItem orderItem) {
+
+		return CustomFieldsUtil.toMap(
+			CommerceOrderItem.class.getName(), contextCompany.getCompanyId(),
+			orderItem.getCustomFields(),
+			contextAcceptLanguage.getPreferredLocale());
+	}
+
 	private OrderItem _toOrderItem(long commerceOrderItemId) throws Exception {
 		return _orderItemDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
 				commerceOrderItemId,
 				contextAcceptLanguage.getPreferredLocale()));
+	}
+
+	private List<OrderItem> _toOrderItems(
+			List<CommerceOrderItem> commerceOrderItems, Locale locale)
+		throws Exception {
+
+		List<OrderItem> orderItems = new ArrayList<>();
+
+		for (CommerceOrderItem commerceOrderItem : commerceOrderItems) {
+			orderItems.add(
+				_orderItemDTOConverter.toDTO(
+					new DefaultDTOConverterContext(
+						commerceOrderItem.getCommerceOrderItemId(), locale)));
+		}
+
+		return orderItems;
 	}
 
 	private OrderItem _updateOrderItem(
@@ -346,10 +633,14 @@ public class OrderItemResourceImpl
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
 			commerceOrderItem.getCommerceOrderId());
 
+		BigDecimal quantity = commerceOrderItem.getQuantity();
+
 		commerceOrderItem = _commerceOrderItemService.updateCommerceOrderItem(
 			commerceOrderItem.getCommerceOrderItemId(),
-			GetterUtil.get(
-				orderItem.getQuantity(), commerceOrderItem.getQuantity()),
+			GetterUtil.getString(
+				orderItem.getOptions(), commerceOrderItem.getJson()),
+			BigDecimal.valueOf(
+				GetterUtil.get(orderItem.getQuantity(), quantity.intValue())),
 			_commerceContextFactory.create(
 				contextCompany.getCompanyId(), commerceOrder.getGroupId(),
 				contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
@@ -427,7 +718,7 @@ public class OrderItemResourceImpl
 
 		// Expando
 
-		Map<String, ?> customFields = orderItem.getCustomFields();
+		Map<String, ?> customFields = _getExpandoBridgeAttributes(orderItem);
 
 		if ((customFields != null) && !customFields.isEmpty()) {
 			ExpandoUtil.updateExpando(
@@ -457,10 +748,19 @@ public class OrderItemResourceImpl
 	private CPInstanceService _cpInstanceService;
 
 	@Reference
-	private OrderItemDTOConverter _orderItemDTOConverter;
+	private ExpandoBridgeIndexer _expandoBridgeIndexer;
 
 	@Reference
-	private OrderItemHelper _orderItemHelper;
+	private ExpandoColumnLocalService _expandoColumnLocalService;
+
+	@Reference
+	private ExpandoTableLocalService _expandoTableLocalService;
+
+	@Reference(target = DTOConverterConstants.ORDER_ITEM_DTO_CONVERTER)
+	private DTOConverter<CommerceOrderItem, OrderItem> _orderItemDTOConverter;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

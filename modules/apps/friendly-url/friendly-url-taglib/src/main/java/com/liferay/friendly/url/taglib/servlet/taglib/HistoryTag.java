@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.taglib.servlet.taglib;
@@ -18,10 +9,13 @@ import com.liferay.friendly.url.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
@@ -45,6 +39,10 @@ public class HistoryTag extends IncludeTag {
 		return _elementId;
 	}
 
+	public boolean isDisabled() {
+		return _disabled;
+	}
+
 	public boolean isLocalizable() {
 		return _localizable;
 	}
@@ -55,6 +53,10 @@ public class HistoryTag extends IncludeTag {
 
 	public void setClassPK(long classPK) {
 		_classPK = classPK;
+	}
+
+	public void setDisabled(boolean disabled) {
+		_disabled = disabled;
 	}
 
 	public void setElementId(String elementId) {
@@ -78,6 +80,7 @@ public class HistoryTag extends IncludeTag {
 
 		_className = null;
 		_classPK = 0;
+		_disabled = false;
 		_elementId = null;
 		_localizable = true;
 	}
@@ -95,6 +98,8 @@ public class HistoryTag extends IncludeTag {
 			"liferay-friendly-url:history:defaultLanguageId",
 			_getDefaultLanguageId(httpServletRequest));
 		httpServletRequest.setAttribute(
+			"liferay-friendly-url:history:disabled", isDisabled());
+		httpServletRequest.setAttribute(
 			"liferay-friendly-url:history:elementId", getElementId());
 		httpServletRequest.setAttribute(
 			"liferay-friendly-url:history:friendlyURLEntryURL",
@@ -111,11 +116,15 @@ public class HistoryTag extends IncludeTag {
 				(ThemeDisplay)httpServletRequest.getAttribute(
 					WebKeys.THEME_DISPLAY);
 
-			User user = themeDisplay.getDefaultUser();
+			User user = themeDisplay.getGuestUser();
 
 			return user.getLanguageId();
 		}
 		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
 			return LanguageUtil.getLanguageId(LocaleUtil.getDefault());
 		}
 	}
@@ -128,14 +137,27 @@ public class HistoryTag extends IncludeTag {
 				WebKeys.THEME_DISPLAY);
 
 		return StringBundler.concat(
-			themeDisplay.getPortalURL(), Portal.PATH_MODULE, "/friendly-url/",
-			getClassName(), StringPool.SLASH, getClassPK());
+			themeDisplay.getPortalURL(), PortalUtil.getPathContext(),
+			Portal.PATH_MODULE, "/friendly-url/",
+			_getGroupId(httpServletRequest), StringPool.SLASH, getClassName(),
+			StringPool.SLASH, getClassPK());
+	}
+
+	private long _getGroupId(HttpServletRequest httpServletRequest) {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return themeDisplay.getSiteGroupId();
 	}
 
 	private static final String _PAGE = "/history/page.jsp";
 
+	private static final Log _log = LogFactoryUtil.getLog(HistoryTag.class);
+
 	private String _className;
 	private long _classPK;
+	private boolean _disabled;
 	private String _elementId;
 	private boolean _localizable = true;
 

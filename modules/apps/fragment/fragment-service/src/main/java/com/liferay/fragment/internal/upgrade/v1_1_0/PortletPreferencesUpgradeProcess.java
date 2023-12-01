@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.upgrade.v1_1_0;
@@ -94,19 +85,21 @@ public class PortletPreferencesUpgradeProcess extends UpgradeProcess {
 
 		Map<Long, Long> portletPreferencesMap = new HashMap<>();
 
-		long companyControlPanelPlid = _companyControlPanelPlids.get(companyId);
-
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				StringBundler.concat(
 					"select PortletPreferences.portletPreferencesId, ",
 					"PortletPreferences.plid from PortletPreferences inner ",
 					"join Layout on PortletPreferences.plid = Layout.plid ",
 					"where PortletPreferences.portletId like ",
-					"CONCAT('%_INSTANCE_', '", namespace,
-					"') and (Layout.groupId = ", groupId,
-					" or PortletPreferences.plid = ", companyControlPanelPlid,
-					")"));
-			ResultSet resultSet = preparedStatement.executeQuery()) {
+					"CONCAT('%_INSTANCE_', ?) and (Layout.groupId = ? or ",
+					"PortletPreferences.plid = ?)"))) {
+
+			preparedStatement.setString(1, namespace);
+			preparedStatement.setLong(2, groupId);
+			preparedStatement.setLong(
+				3, _companyControlPanelPlids.get(companyId));
+
+			ResultSet resultSet = preparedStatement.executeQuery();
 
 			while (resultSet.next()) {
 				long portletPreferencesId = resultSet.getLong(
@@ -127,14 +120,14 @@ public class PortletPreferencesUpgradeProcess extends UpgradeProcess {
 					"FragmentEntryLink");
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(
-						"delete from PortletPreferences where " +
-							"portletPreferencesId = ?"));
+					connection,
+					"delete from PortletPreferences where " +
+						"portletPreferencesId = ?");
 			PreparedStatement preparedStatement3 =
 				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(
-						"update PortletPreferences set plid = ? where " +
-							"portletPreferencesId = ?"));
+					connection,
+					"update PortletPreferences set plid = ? where " +
+						"portletPreferencesId = ?");
 			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
 			while (resultSet.next()) {
@@ -215,7 +208,7 @@ public class PortletPreferencesUpgradeProcess extends UpgradeProcess {
 					}
 				}
 				catch (Exception exception) {
-					_log.error(exception, exception);
+					_log.error(exception);
 				}
 			}
 

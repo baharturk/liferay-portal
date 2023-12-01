@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.persistence.impl;
@@ -38,7 +29,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -51,7 +41,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -82,9 +71,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(
-	service = {DDMFormInstanceReportPersistence.class, BasePersistence.class}
-)
+@Component(service = DDMFormInstanceReportPersistence.class)
 public class DDMFormInstanceReportPersistenceImpl
 	extends BasePersistenceImpl<DDMFormInstanceReport>
 	implements DDMFormInstanceReportPersistence {
@@ -165,21 +152,21 @@ public class DDMFormInstanceReportPersistenceImpl
 	public DDMFormInstanceReport fetchByFormInstanceId(
 		long formInstanceId, boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFormInstanceReport.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {formInstanceId};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByFormInstanceId, finderArgs);
+				_finderPathFetchByFormInstanceId, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			DDMFormInstanceReport.class);
 
 		if (result instanceof DDMFormInstanceReport) {
 			DDMFormInstanceReport ddmFormInstanceReport =
@@ -188,6 +175,15 @@ public class DDMFormInstanceReportPersistenceImpl
 			if (formInstanceId != ddmFormInstanceReport.getFormInstanceId()) {
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						DDMFormInstanceReport.class,
+						ddmFormInstanceReport.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -294,7 +290,7 @@ public class DDMFormInstanceReportPersistenceImpl
 
 			finderArgs = new Object[] {formInstanceId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -731,7 +727,9 @@ public class DDMFormInstanceReportPersistenceImpl
 	 */
 	@Override
 	public DDMFormInstanceReport fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(DDMFormInstanceReport.class)) {
+		if (ctPersistenceHelper.isProductionMode(
+				DDMFormInstanceReport.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -954,7 +952,7 @@ public class DDMFormInstanceReportPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMFormInstanceReport>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1030,7 +1028,7 @@ public class DDMFormInstanceReportPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -1171,30 +1169,14 @@ public class DDMFormInstanceReportPersistenceImpl
 			new String[] {Long.class.getName()},
 			new String[] {"formInstanceId"}, false);
 
-		_setDDMFormInstanceReportUtilPersistence(this);
+		DDMFormInstanceReportUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setDDMFormInstanceReportUtilPersistence(null);
+		DDMFormInstanceReportUtil.setPersistence(null);
 
 		entityCache.removeCache(DDMFormInstanceReportImpl.class.getName());
-	}
-
-	private void _setDDMFormInstanceReportUtilPersistence(
-		DDMFormInstanceReportPersistence ddmFormInstanceReportPersistence) {
-
-		try {
-			Field field = DDMFormInstanceReportUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, ddmFormInstanceReportPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -1263,9 +1245,5 @@ public class DDMFormInstanceReportPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private DDMFormInstanceReportModelArgumentsResolver
-		_ddmFormInstanceReportModelArgumentsResolver;
 
 }

@@ -1,31 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.util.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.VirtualHostLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -79,12 +74,32 @@ public class PortalImplLayoutFriendlyURLTest {
 	public void testCompanyDefaultSiteVirtualHostWithLayoutSetVirtualHost()
 		throws Exception {
 
-		_setLayoutSetVirtualHost();
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"VIRTUAL_HOSTS_DEFAULT_SITE_NAME", GroupConstants.GUEST)) {
 
-		_testLayoutFriendlyURL(
-			_company.getVirtualHostname(),
-			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING +
-				_group.getFriendlyURL() + _layout.getFriendlyURL());
+			_setLayoutSetVirtualHost();
+
+			_testLayoutFriendlyURL(
+				_company.getVirtualHostname(), _layout.getFriendlyURL());
+		}
+	}
+
+	@Test
+	public void testCompanyNoDefaultSiteVirtualHostWithLayoutSetVirtualHost()
+		throws Exception {
+
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"VIRTUAL_HOSTS_DEFAULT_SITE_NAME", StringPool.BLANK)) {
+
+			_setLayoutSetVirtualHost();
+
+			_testLayoutFriendlyURL(
+				_company.getVirtualHostname(),
+				PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING +
+					_group.getFriendlyURL() + _layout.getFriendlyURL());
+		}
 	}
 
 	@Test
@@ -145,6 +160,9 @@ public class PortalImplLayoutFriendlyURLTest {
 
 	@DeleteAfterTestRun
 	private Company _company;
+
+	@Inject
+	private CompanyLocalService _companyLocalService;
 
 	private Group _group;
 

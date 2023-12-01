@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.struts;
@@ -72,11 +63,6 @@ public class RSSStrutsAction implements StrutsAction {
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setWikiPageService(WikiPageService wikiPageService) {
-		_wikiPageService = wikiPageService;
-	}
-
 	private byte[] _getRSS(HttpServletRequest httpServletRequest)
 		throws Exception {
 
@@ -101,12 +87,10 @@ public class RSSStrutsAction implements StrutsAction {
 			httpServletRequest, "version", RSSUtil.VERSION_DEFAULT);
 		String displayStyle = ParamUtil.getString(
 			httpServletRequest, "displayStyle", RSSUtil.DISPLAY_STYLE_DEFAULT);
-
-		String layoutFullURL = _portal.getLayoutFullURL(
-			themeDisplay.getScopeGroupId(), WikiPortletKeys.WIKI);
-
 		String feedURL = StringBundler.concat(
-			layoutFullURL, Portal.FRIENDLY_URL_SEPARATOR, "wiki/", nodeId);
+			_portal.getLayoutFullURL(
+				themeDisplay.getScopeGroupId(), WikiPortletKeys.WIKI),
+			Portal.FRIENDLY_URL_SEPARATOR, "wiki/", nodeId);
 
 		String entryURL = feedURL + StringPool.SLASH + title;
 
@@ -143,6 +127,7 @@ public class RSSStrutsAction implements StrutsAction {
 	@Reference
 	private Portal _portal;
 
+	@Reference
 	private WikiPageService _wikiPageService;
 
 }

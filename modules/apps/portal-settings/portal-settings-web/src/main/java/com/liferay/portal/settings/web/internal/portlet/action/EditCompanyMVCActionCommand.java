@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.settings.web.internal.portlet.action;
@@ -37,7 +28,7 @@ import com.liferay.portal.kernel.exception.PhoneNumberExtensionException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.exception.WebsiteURLException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.EmailAddress;
@@ -70,7 +61,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.settings.web.internal.exception.RequiredLocaleException;
-import com.liferay.users.admin.kernel.util.UsersAdminUtil;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 
 import java.util.Enumeration;
 import java.util.List;
@@ -179,16 +170,6 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 		throws Exception {
 	}
 
-	@Reference(unbind = "-")
-	protected void setCompanyService(CompanyService companyService) {
-		_companyService = companyService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDLAppLocalService(DLAppLocalService dlAppLocalService) {
-		_dlAppLocalService = dlAppLocalService;
-	}
-
 	private void _updateCompany(ActionRequest actionRequest) throws Exception {
 		long companyId = _portal.getCompanyId(actionRequest);
 
@@ -204,7 +185,7 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 			logoBytes = FileUtil.getBytes(fileEntry.getContentStream());
 		}
 
-		User defaultUser = _userLocalService.getDefaultUser(companyId);
+		User guestUser = _userLocalService.getGuestUser(companyId);
 
 		List<Address> addresses = UsersAdminUtil.getAddresses(actionRequest);
 
@@ -300,9 +281,9 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 			actionRequest, "size", company.getSize());
 
 		String languageId = ParamUtil.getString(
-			actionRequest, "languageId", defaultUser.getLanguageId());
+			actionRequest, "languageId", guestUser.getLanguageId());
 		String timeZoneId = ParamUtil.getString(
-			actionRequest, "timeZoneId", defaultUser.getTimeZoneId());
+			actionRequest, "timeZoneId", guestUser.getTimeZoneId());
 
 		_companyService.updateCompany(
 			companyId, virtualHostname, mx, homeURL, !deleteLogo, logoBytes,
@@ -330,7 +311,7 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 
 		String[] removedLanguageIds = ArrayUtil.filter(
 			LocaleUtil.toLanguageIds(
-				LanguageUtil.getCompanyAvailableLocales(companyId)),
+				_language.getCompanyAvailableLocales(companyId)),
 			languageId -> !StringUtil.contains(
 				newLanguageIds, languageId, StringPool.COMMA));
 
@@ -396,7 +377,10 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 	@Reference
 	private AddressLocalService _addressLocalService;
 
+	@Reference
 	private CompanyService _companyService;
+
+	@Reference
 	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
@@ -404,6 +388,9 @@ public class EditCompanyMVCActionCommand extends BaseFormMVCActionCommand {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private PhoneLocalService _phoneLocalService;

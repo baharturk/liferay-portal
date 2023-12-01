@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.portlet;
@@ -26,7 +17,6 @@ import com.liferay.portal.kernel.security.permission.ResourceActions;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FastDateFormatFactory;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -46,7 +36,6 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import javax.portlet.Portlet;
 import javax.portlet.PortletException;
@@ -62,7 +51,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Kevin Tan
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-similar-results",
@@ -74,7 +62,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.view-template=/similar/results/view.jsp",
 		"javax.portlet.name=" + SimilarResultsPortletKeys.SIMILAR_RESULTS,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"javax.portlet.security-role-ref=power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -114,8 +103,7 @@ public class SimilarResultsPortlet extends MVCPortlet {
 
 		SearchResponse searchResponse =
 			portletSharedSearchResponse.getFederatedSearchResponse(
-				Optional.of(
-					similarResultsPortletPreferences.getFederatedSearchKey()));
+				similarResultsPortletPreferences.getFederatedSearchKey());
 
 		if (searchResponse == null) {
 			return similarResultsDisplayContext;
@@ -138,19 +126,13 @@ public class SimilarResultsPortlet extends MVCPortlet {
 
 		similarResultsDisplayContext.setDocuments(legacyDocuments);
 
-		ThemeDisplay themeDisplay = portletSharedSearchResponse.getThemeDisplay(
-			renderRequest);
-
-		Optional<SimilarResultsRoute> optional =
-			similarResultsContributorsRegistry.detectRoute(
-				_portal.getCurrentURL(renderRequest));
-
-		SimilarResultsRoute similarResultsRoute = optional.orElse(null);
-
 		similarResultsDisplayContext.setSimilarResultsDocumentDisplayContexts(
 			_buildSimilarResultsDocumentDisplayContexts(
-				legacyDocuments, similarResultsRoute, renderRequest,
-				renderResponse, themeDisplay));
+				legacyDocuments,
+				similarResultsContributorsRegistry.detectRoute(
+					_portal.getCurrentURL(renderRequest)),
+				renderRequest, renderResponse,
+				portletSharedSearchResponse.getThemeDisplay(renderRequest)));
 
 		return similarResultsDisplayContext;
 	}
@@ -201,8 +183,6 @@ public class SimilarResultsPortlet extends MVCPortlet {
 			_fastDateFormatFactory
 		).setHighlightEnabled(
 			false
-		).setHttp(
-			_http
 		).setIndexerRegistry(
 			_indexerRegistry
 		).setLocale(
@@ -307,9 +287,6 @@ public class SimilarResultsPortlet extends MVCPortlet {
 
 	@Reference
 	private FastDateFormatFactory _fastDateFormatFactory;
-
-	@Reference
-	private Http _http;
 
 	@Reference
 	private IndexerRegistry _indexerRegistry;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service;
@@ -24,7 +15,6 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import java.io.Serializable;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Provides the local service utility for FragmentEntryLink. This utility wraps
@@ -67,14 +57,15 @@ public class FragmentEntryLinkLocalServiceUtil {
 			long fragmentEntryId, long segmentsExperienceId, long plid,
 			String css, String html, String js, String configuration,
 			String editableValues, String namespace, int position,
-			String rendererKey,
+			String rendererKey, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addFragmentEntryLink(
 			userId, groupId, originalFragmentEntryLinkId, fragmentEntryId,
 			segmentsExperienceId, plid, css, html, js, configuration,
-			editableValues, namespace, position, rendererKey, serviceContext);
+			editableValues, namespace, position, rendererKey, type,
+			serviceContext);
 	}
 
 	/**
@@ -137,10 +128,29 @@ public class FragmentEntryLinkLocalServiceUtil {
 		getService().deleteFragmentEntryLinks(groupId);
 	}
 
+	public static void deleteFragmentEntryLinks(
+		long groupId, long plid, boolean deleted) {
+
+		getService().deleteFragmentEntryLinks(groupId, plid, deleted);
+	}
+
 	public static void deleteFragmentEntryLinks(long[] fragmentEntryLinkIds)
 		throws PortalException {
 
 		getService().deleteFragmentEntryLinks(fragmentEntryLinkIds);
+	}
+
+	public static void deleteFragmentEntryLinksByFragmentEntryId(
+		long fragmentEntryId) {
+
+		getService().deleteFragmentEntryLinksByFragmentEntryId(fragmentEntryId);
+	}
+
+	public static void deleteFragmentEntryLinksByFragmentEntryId(
+		long fragmentEntryId, boolean deleted) {
+
+		getService().deleteFragmentEntryLinksByFragmentEntryId(
+			fragmentEntryId, deleted);
 	}
 
 	public static List<FragmentEntryLink>
@@ -403,6 +413,18 @@ public class FragmentEntryLinkLocalServiceUtil {
 	}
 
 	public static List<FragmentEntryLink> getFragmentEntryLinks(
+		long companyId, String rendererKey) {
+
+		return getService().getFragmentEntryLinks(companyId, rendererKey);
+	}
+
+	public static List<FragmentEntryLink> getFragmentEntryLinks(
+		long companyId, String[] rendererKeys) {
+
+		return getService().getFragmentEntryLinks(companyId, rendererKeys);
+	}
+
+	public static List<FragmentEntryLink> getFragmentEntryLinks(
 		String rendererKey) {
 
 		return getService().getFragmentEntryLinks(rendererKey);
@@ -413,6 +435,14 @@ public class FragmentEntryLinkLocalServiceUtil {
 
 		return getService().getFragmentEntryLinksByFragmentEntryId(
 			fragmentEntryId);
+	}
+
+	public static List<FragmentEntryLink>
+		getFragmentEntryLinksByFragmentEntryId(
+			long fragmentEntryId, boolean deleted) {
+
+		return getService().getFragmentEntryLinksByFragmentEntryId(
+			fragmentEntryId, deleted);
 	}
 
 	public static List<FragmentEntryLink> getFragmentEntryLinksByPlid(
@@ -432,6 +462,15 @@ public class FragmentEntryLinkLocalServiceUtil {
 	public static List<FragmentEntryLink>
 		getFragmentEntryLinksBySegmentsExperienceId(
 			long groupId, long segmentsExperienceId, long plid,
+			boolean deleted) {
+
+		return getService().getFragmentEntryLinksBySegmentsExperienceId(
+			groupId, segmentsExperienceId, plid, deleted);
+	}
+
+	public static List<FragmentEntryLink>
+		getFragmentEntryLinksBySegmentsExperienceId(
+			long groupId, long segmentsExperienceId, long plid,
 			String rendererKey) {
 
 		return getService().getFragmentEntryLinksBySegmentsExperienceId(
@@ -444,6 +483,15 @@ public class FragmentEntryLinkLocalServiceUtil {
 
 		return getService().getFragmentEntryLinksBySegmentsExperienceId(
 			groupId, segmentsExperienceIds, plid);
+	}
+
+	public static List<FragmentEntryLink>
+		getFragmentEntryLinksBySegmentsExperienceId(
+			long groupId, long[] segmentsExperienceIds, long plid,
+			boolean deleted) {
+
+		return getService().getFragmentEntryLinksBySegmentsExperienceId(
+			groupId, segmentsExperienceIds, plid, deleted);
 	}
 
 	/**
@@ -493,6 +541,13 @@ public class FragmentEntryLinkLocalServiceUtil {
 
 		return getService().getFragmentEntryLinksCountByFragmentEntryId(
 			fragmentEntryId);
+	}
+
+	public static int getFragmentEntryLinksCountByFragmentEntryId(
+		long fragmentEntryId, boolean deleted) {
+
+		return getService().getFragmentEntryLinksCountByFragmentEntryId(
+			fragmentEntryId, deleted);
 	}
 
 	public static int getFragmentEntryLinksCountByPlid(
@@ -567,6 +622,13 @@ public class FragmentEntryLinkLocalServiceUtil {
 		getService().updateClassedModel(plid);
 	}
 
+	public static FragmentEntryLink updateDeleted(
+			long fragmentEntryLinkId, boolean deleted)
+		throws PortalException {
+
+		return getService().updateDeleted(fragmentEntryLinkId, deleted);
+	}
+
 	/**
 	 * Updates the fragment entry link in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -595,14 +657,14 @@ public class FragmentEntryLinkLocalServiceUtil {
 			long userId, long fragmentEntryLinkId,
 			long originalFragmentEntryLinkId, long fragmentEntryId, long plid,
 			String css, String html, String js, String configuration,
-			String editableValues, String namespace, int position,
+			String editableValues, String namespace, int position, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateFragmentEntryLink(
 			userId, fragmentEntryLinkId, originalFragmentEntryLinkId,
 			fragmentEntryId, plid, css, html, js, configuration, editableValues,
-			namespace, position, serviceContext);
+			namespace, position, type, serviceContext);
 	}
 
 	public static FragmentEntryLink updateFragmentEntryLink(
@@ -622,23 +684,12 @@ public class FragmentEntryLinkLocalServiceUtil {
 			fragmentEntryLinkId, editableValues, updateClassedModel);
 	}
 
-	public static void updateFragmentEntryLinks(
-			long userId, long groupId, long plid, long[] fragmentEntryIds,
-			String editableValues,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public static void updateLatestChanges(
+			com.liferay.fragment.model.FragmentEntry fragmentEntry,
+			FragmentEntryLink fragmentEntryLink)
 		throws PortalException {
 
-		getService().updateFragmentEntryLinks(
-			userId, groupId, plid, fragmentEntryIds, editableValues,
-			serviceContext);
-	}
-
-	public static void updateFragmentEntryLinks(
-			Map<Long, String> fragmentEntryLinksEditableValuesMap)
-		throws PortalException {
-
-		getService().updateFragmentEntryLinks(
-			fragmentEntryLinksEditableValuesMap);
+		getService().updateLatestChanges(fragmentEntry, fragmentEntryLink);
 	}
 
 	public static void updateLatestChanges(long fragmentEntryLinkId)
@@ -649,6 +700,10 @@ public class FragmentEntryLinkLocalServiceUtil {
 
 	public static FragmentEntryLinkLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(FragmentEntryLinkLocalService service) {
+		_service = service;
 	}
 
 	private static volatile FragmentEntryLinkLocalService _service;

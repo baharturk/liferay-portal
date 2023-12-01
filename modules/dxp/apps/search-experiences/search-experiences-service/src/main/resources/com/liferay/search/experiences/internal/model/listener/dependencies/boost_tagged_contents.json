@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Boost contents having at least one of the given tags."
+		"en_US": "boost-tagged-contents-description"
 	},
 	"elementDefinition": {
 		"category": "boost",
@@ -30,13 +30,13 @@
 				{
 					"fields": [
 						{
-							"label": "Asset Tags",
+							"label": "asset-tags",
 							"name": "asset_tags",
 							"type": "multiselect"
 						},
 						{
 							"defaultValue": 5,
-							"label": "Boost",
+							"label": "boost",
 							"name": "boost",
 							"type": "number",
 							"typeOptions": {
@@ -48,7 +48,8 @@
 			]
 		}
 	},
+	"externalReferenceCode": "BOOST_TAGGED_CONTENTS",
 	"title_i18n": {
-		"en_US": "Boost Tagged Contents"
+		"en_US": "boost-tagged-contents"
 	}
 }

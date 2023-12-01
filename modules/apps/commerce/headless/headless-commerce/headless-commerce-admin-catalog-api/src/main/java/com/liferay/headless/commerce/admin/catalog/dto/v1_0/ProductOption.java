@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.dto.v1_0;
@@ -92,6 +83,65 @@ public class ProductOption implements Serializable {
 
 	@Schema
 	@Valid
+	public CustomField[] getCustomFields() {
+		return customFields;
+	}
+
+	public void setCustomFields(CustomField[] customFields) {
+		this.customFields = customFields;
+	}
+
+	@JsonIgnore
+	public void setCustomFields(
+		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+
+		try {
+			customFields = customFieldsUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected CustomField[] customFields;
+
+	@Schema(example = "true")
+	public Boolean getDefinedExternally() {
+		return definedExternally;
+	}
+
+	public void setDefinedExternally(Boolean definedExternally) {
+		this.definedExternally = definedExternally;
+	}
+
+	@JsonIgnore
+	public void setDefinedExternally(
+		UnsafeSupplier<Boolean, Exception> definedExternallyUnsafeSupplier) {
+
+		try {
+			definedExternally = definedExternallyUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean definedExternally;
+
+	@Schema(
+		example = "{hu_HU=Description HU, hr_HR=Description HR, en_US=Description}"
+	)
+	@Valid
 	public Map<String, String> getDescription() {
 		return description;
 	}
@@ -120,7 +170,7 @@ public class ProductOption implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> description;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getFacetable() {
 		return facetable;
 	}
@@ -148,7 +198,9 @@ public class ProductOption implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean facetable;
 
-	@Schema
+	@Schema(
+		example = "checkbox, checkbox_multiple, date, numeric, radio, select"
+	)
 	public String getFieldType() {
 		return fieldType;
 	}
@@ -178,7 +230,7 @@ public class ProductOption implements Serializable {
 	protected String fieldType;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getId() {
 		return id;
 	}
@@ -205,6 +257,34 @@ public class ProductOption implements Serializable {
 	protected Long id;
 
 	@Schema
+	public String getInfoItemServiceKey() {
+		return infoItemServiceKey;
+	}
+
+	public void setInfoItemServiceKey(String infoItemServiceKey) {
+		this.infoItemServiceKey = infoItemServiceKey;
+	}
+
+	@JsonIgnore
+	public void setInfoItemServiceKey(
+		UnsafeSupplier<String, Exception> infoItemServiceKeyUnsafeSupplier) {
+
+		try {
+			infoItemServiceKey = infoItemServiceKeyUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String infoItemServiceKey;
+
+	@Schema(example = "color")
 	public String getKey() {
 		return key;
 	}
@@ -231,7 +311,7 @@ public class ProductOption implements Serializable {
 	@NotEmpty
 	protected String key;
 
-	@Schema
+	@Schema(example = "{en_US=Color, hr_HR=Color HR, hu_HU=Color HU}")
 	@Valid
 	public Map<String, String> getName() {
 		return name;
@@ -262,7 +342,7 @@ public class ProductOption implements Serializable {
 	protected Map<String, String> name;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30080")
 	public Long getOptionId() {
 		return optionId;
 	}
@@ -291,7 +371,35 @@ public class ProductOption implements Serializable {
 	@NotNull
 	protected Long optionId;
 
-	@Schema
+	@Schema(example = "dynamic, static")
+	public String getPriceType() {
+		return priceType;
+	}
+
+	public void setPriceType(String priceType) {
+		this.priceType = priceType;
+	}
+
+	@JsonIgnore
+	public void setPriceType(
+		UnsafeSupplier<String, Exception> priceTypeUnsafeSupplier) {
+
+		try {
+			priceType = priceTypeUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String priceType;
+
+	@Schema(example = "1.2")
 	public Double getPriority() {
 		return priority;
 	}
@@ -351,7 +459,7 @@ public class ProductOption implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ProductOptionValue[] productOptionValues;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getRequired() {
 		return required;
 	}
@@ -379,7 +487,7 @@ public class ProductOption implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean required;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getSkuContributor() {
 		return skuContributor;
 	}
@@ -406,6 +514,34 @@ public class ProductOption implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean skuContributor;
+
+	@Schema(example = "22.50")
+	public String getTypeSettings() {
+		return typeSettings;
+	}
+
+	public void setTypeSettings(String typeSettings) {
+		this.typeSettings = typeSettings;
+	}
+
+	@JsonIgnore
+	public void setTypeSettings(
+		UnsafeSupplier<String, Exception> typeSettingsUnsafeSupplier) {
+
+		try {
+			typeSettings = typeSettingsUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String typeSettings;
 
 	@Override
 	public boolean equals(Object object) {
@@ -442,6 +578,36 @@ public class ProductOption implements Serializable {
 			sb.append("\"catalogId\": ");
 
 			sb.append(catalogId);
+		}
+
+		if (customFields != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"customFields\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < customFields.length; i++) {
+				sb.append(String.valueOf(customFields[i]));
+
+				if ((i + 1) < customFields.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		if (definedExternally != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"definedExternally\": ");
+
+			sb.append(definedExternally);
 		}
 
 		if (description != null) {
@@ -488,6 +654,20 @@ public class ProductOption implements Serializable {
 			sb.append(id);
 		}
 
+		if (infoItemServiceKey != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"infoItemServiceKey\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(infoItemServiceKey));
+
+			sb.append("\"");
+		}
+
 		if (key != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -520,6 +700,20 @@ public class ProductOption implements Serializable {
 			sb.append("\"optionId\": ");
 
 			sb.append(optionId);
+		}
+
+		if (priceType != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"priceType\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(priceType));
+
+			sb.append("\"");
 		}
 
 		if (priority != null) {
@@ -570,6 +764,20 @@ public class ProductOption implements Serializable {
 			sb.append("\"skuContributor\": ");
 
 			sb.append(skuContributor);
+		}
+
+		if (typeSettings != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"typeSettings\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(typeSettings));
+
+			sb.append("\"");
 		}
 
 		sb.append("}");
@@ -666,5 +874,7 @@ public class ProductOption implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

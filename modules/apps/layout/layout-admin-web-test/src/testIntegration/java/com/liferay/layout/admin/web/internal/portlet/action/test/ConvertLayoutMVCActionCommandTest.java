@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.portlet.action.test;
@@ -29,6 +20,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTypePortletConstants;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
@@ -48,13 +40,16 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
+import com.liferay.segments.model.SegmentsExperience;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -101,14 +96,11 @@ public class ConvertLayoutMVCActionCommandTest {
 
 	@Test
 	public void testConvertWidgetLayoutToContentLayout() throws Exception {
-		UnicodeProperties typeSettingsUnicodeProperties =
-			new UnicodeProperties();
-
-		typeSettingsUnicodeProperties.setProperty(
-			LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, "1_column");
-
-		Layout originalLayout = LayoutTestUtil.addLayout(
-			_group.getGroupId(), typeSettingsUnicodeProperties.toString());
+		Layout originalLayout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, "1_column"
+			).buildString());
 
 		_mvcActionCommand.processAction(
 			_getMockLiferayPortletActionRequest(originalLayout.getPlid()),
@@ -121,24 +113,46 @@ public class ConvertLayoutMVCActionCommandTest {
 	public void testConvertWidgetLayoutToContentLayoutWithExistingStructure()
 		throws Exception {
 
-		UnicodeProperties typeSettingsUnicodeProperties =
-			new UnicodeProperties();
+		Layout originalLayout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, "1_column"
+			).buildString());
 
-		typeSettingsUnicodeProperties.setProperty(
-			LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, "1_column");
-
-		Layout originalLayout = LayoutTestUtil.addLayout(
-			_group.getGroupId(), typeSettingsUnicodeProperties.toString());
+		SegmentsExperience segmentsExperience =
+			_segmentsExperienceLocalService.addDefaultSegmentsExperience(
+				TestPropsValues.getUserId(), originalLayout.getPlid(),
+				_serviceContext);
 
 		_layoutPageTemplateStructureLocalService.addLayoutPageTemplateStructure(
 			TestPropsValues.getUserId(), _group.getGroupId(),
-			originalLayout.getPlid(), StringPool.BLANK, _serviceContext);
+			originalLayout.getPlid(),
+			segmentsExperience.getSegmentsExperienceId(), StringPool.BLANK,
+			_serviceContext);
 
 		_mvcActionCommand.processAction(
 			_getMockLiferayPortletActionRequest(originalLayout.getPlid()),
 			new MockLiferayPortletActionResponse());
 
 		_validateLayoutConversion(originalLayout);
+	}
+
+	private void _assertTypeSettingsProperties(
+		Layout originalLayout, Layout persistedLayout) {
+
+		UnicodeProperties originalLayoutTypeSettingsUnicodeProperties =
+			originalLayout.getTypeSettingsProperties();
+		UnicodeProperties persistedLayoutTypeSettingsUnicodeProperties =
+			persistedLayout.getTypeSettingsProperties();
+
+		for (Map.Entry<String, String> entry :
+				originalLayoutTypeSettingsUnicodeProperties.entrySet()) {
+
+			Assert.assertEquals(
+				entry.getValue(),
+				persistedLayoutTypeSettingsUnicodeProperties.getProperty(
+					entry.getKey()));
+		}
 	}
 
 	private MockLiferayPortletActionRequest _getMockLiferayPortletActionRequest(
@@ -152,7 +166,7 @@ public class ConvertLayoutMVCActionCommandTest {
 			WebKeys.THEME_DISPLAY, _getThemeDisplay());
 
 		mockLiferayPortletActionRequest.addParameter(
-			"selPlid", String.valueOf(plid));
+			"rowIds", new String[] {String.valueOf(plid)});
 
 		return mockLiferayPortletActionRequest;
 	}
@@ -176,7 +190,6 @@ public class ConvertLayoutMVCActionCommandTest {
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
 		themeDisplay.setCompany(_company);
-
 		themeDisplay.setPermissionChecker(
 			PermissionThreadLocal.getPermissionChecker());
 		themeDisplay.setUser(TestPropsValues.getUser());
@@ -199,8 +212,7 @@ public class ConvertLayoutMVCActionCommandTest {
 		Assert.assertNotNull(layoutPageTemplateStructure);
 
 		LayoutStructure layoutStructure = LayoutStructure.of(
-			layoutPageTemplateStructure.getData(
-				SegmentsExperienceConstants.ID_DEFAULT));
+			layoutPageTemplateStructure.getDefaultSegmentsExperienceData());
 
 		Assert.assertNotNull(layoutStructure.getMainItemId());
 
@@ -309,10 +321,11 @@ public class ConvertLayoutMVCActionCommandTest {
 		Assert.assertEquals(
 			originalLayout.getRobotsMap(),
 			persistedPublishedLayout.getRobotsMap());
-		Assert.assertEquals("content", persistedPublishedLayout.getType());
 		Assert.assertEquals(
-			originalLayout.getTypeSettings(),
-			persistedPublishedLayout.getTypeSettings());
+			LayoutConstants.TYPE_CONTENT, persistedPublishedLayout.getType());
+
+		_assertTypeSettingsProperties(originalLayout, persistedDraftLayout);
+
 		Assert.assertEquals(
 			originalLayout.isSystem(), persistedPublishedLayout.isSystem());
 		Assert.assertEquals(
@@ -340,6 +353,9 @@ public class ConvertLayoutMVCActionCommandTest {
 
 	@Inject
 	private Portal _portal;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	private ServiceContext _serviceContext;
 

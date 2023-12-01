@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.upgrade.v0_0_5;
@@ -23,8 +14,9 @@ import com.liferay.dynamic.data.mapping.util.DefaultDDMStructureHelper;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.petra.xml.XMLUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
@@ -38,6 +30,7 @@ import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.util.UpgradeProcessUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -47,6 +40,7 @@ import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
+import com.liferay.portal.kernel.xml.DocumentException;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 
@@ -65,8 +59,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Gergely Mathe
@@ -113,7 +105,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 
 		Group group = _groupLocalService.getCompanyGroup(companyId);
 
-		long defaultUserId = _userLocalService.getDefaultUserId(companyId);
+		long guestUserId = _userLocalService.getGuestUserId(companyId);
 
 		Class<?> clazz = getClass();
 
@@ -126,7 +118,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 
 		try {
 			_defaultDDMStructureHelper.addDDMStructures(
-				defaultUserId, group.getGroupId(),
+				guestUserId, group.getGroupId(),
 				PortalUtil.getClassNameId(JournalArticle.class),
 				clazz.getClassLoader(),
 				"com/liferay/journal/internal/upgrade/v1_0_0/dependencies" +
@@ -155,11 +147,8 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		for (Map.Entry<Long, List<Long>> entry :
 				ddmStructureIdsMap.entrySet()) {
 
-			long ddmStructureId = _getDDMStructureId(
-				entry.getKey(), entry.getValue());
-
 			DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
-				ddmStructureId);
+				_getDDMStructureId(entry.getKey(), entry.getValue()));
 
 			DDMStructureVersion ddmStructureVersion =
 				ddmStructure.getStructureVersion();
@@ -325,7 +314,58 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 			dynamicElementElement.add(dynamicContentElement);
 		}
 
-		return XMLUtil.formatXML(newDocument);
+		return newDocument.formattedString(StringPool.DOUBLE_SPACE);
+	}
+
+	private String _fixStaticContent(
+			long id, String content, DocumentException documentException)
+		throws Exception {
+
+		// LPS-23332 and LPS-26009
+
+		if (_log.isWarnEnabled()) {
+			_log.warn("Detected invalid content in journal article " + id);
+		}
+
+		if (!content.contains("<static-content ") &&
+			!content.contains("</static-content>")) {
+
+			_log.error(
+				"Journal article " + id + " does not have static content");
+
+			throw documentException;
+		}
+
+		String message = documentException.getMessage();
+
+		if (!message.contains(
+				"The entity \"reg\" was referenced, but not declared.")) {
+
+			_log.error(
+				"Journal article " + id +
+					" does not have invalid content due to LPS-23332");
+
+			throw documentException;
+		}
+
+		content = HtmlUtil.unescape(content);
+
+		int index = content.indexOf("<static-content ");
+
+		index = content.indexOf(">", index);
+
+		content =
+			content.substring(0, index + 1) + "<![CDATA[" +
+				content.substring(index + 1);
+
+		content = StringUtil.replace(
+			content, "</static-content>", "]]></static-content>");
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("Fixed static content: " + content);
+		}
+
+		return content;
 	}
 
 	private Set<String> _getArticleDynamicElements(Element rootElement) {
@@ -436,15 +476,21 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		return defaultLanguageId;
 	}
 
-	private Map<String, String> _getInvalidDDMFormFieldNamesMap(
-		String content) {
+	private Map<String, String> _getInvalidDDMFormFieldNamesMap(String content)
+		throws Exception {
 
 		Map<String, String> invalidDDMFormFieldNamesMap = new HashMap<>();
 
-		Matcher matcher = _nameAttributePattern.matcher(content);
+		Document document = SAXReaderUtil.read(content);
 
-		while (matcher.find()) {
-			String oldFieldName = matcher.group(1);
+		Element rootElement = document.getRootElement();
+
+		List<Element> dynamicElementElements = rootElement.elements(
+			"dynamic-element");
+
+		for (Element dynamicElementElement : dynamicElementElements) {
+			String oldFieldName = GetterUtil.getString(
+				dynamicElementElement.attributeValue("name"));
 
 			String newFieldName = oldFieldName.replaceAll(
 				_INVALID_FIELD_NAME_CHARS_REGEX, StringPool.BLANK);
@@ -520,10 +566,10 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 
 		_transformDateFieldValues(dynamicElementElements);
 
-		return XMLUtil.formatXML(document);
+		return document.formattedString(StringPool.DOUBLE_SPACE);
 	}
 
-	private String _transformFieldNames(String content) {
+	private String _transformFieldNames(String content) throws Exception {
 		Map<String, String> invalidDDMFormFieldNamesMap =
 			_getInvalidDDMFormFieldNamesMap(content);
 
@@ -593,7 +639,25 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 				if (Validator.isNull(ddmStructureKey)) {
 					long groupId = resultSet.getLong("groupId");
 
-					content = _convertStaticContentToDynamic(groupId, content);
+					try {
+						content = _convertStaticContentToDynamic(
+							groupId, content);
+					}
+					catch (DocumentException documentException) {
+						content = _fixStaticContent(
+							id, content, documentException);
+
+						content = _convertStaticContentToDynamic(
+							groupId, content);
+					}
+					catch (Exception exception) {
+						_log.error(
+							StringBundler.concat(
+								"ID: ", id, "\nGroup ID: ", groupId,
+								"\nContent: ", content));
+
+						throw exception;
+					}
 
 					_updateJournalArticle(id, name, name, content);
 
@@ -618,10 +682,11 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 
 	private static final String _TYPE_ATTRIBUTE_DDM_DATE = "type=\"ddm-date\"";
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		JournalUpgradeProcess.class);
+
 	private static final DateFormat _dateFormat =
 		DateFormatFactoryUtil.getSimpleDateFormat("yyyy-MM-dd");
-	private static final Pattern _nameAttributePattern = Pattern.compile(
-		"name=\"([^\"]+)\"");
 
 	static {
 		try {

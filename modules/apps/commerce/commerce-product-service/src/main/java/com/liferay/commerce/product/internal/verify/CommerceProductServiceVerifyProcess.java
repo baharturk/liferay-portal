@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.verify;
@@ -35,35 +26,10 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(
-	enabled = false, immediate = true,
-	property = "verify.process.name=com.liferay.commerce.product.service",
-	service = {CommerceProductServiceVerifyProcess.class, VerifyProcess.class}
-)
+@Component(property = "initial.deployment=true", service = VerifyProcess.class)
 public class CommerceProductServiceVerifyProcess extends VerifyProcess {
 
-	@Override
-	protected void doVerify() throws Exception {
-		_verifyCPMeasurementUnits();
-	}
-
-	private long _getAdminUserId(long companyId) throws PortalException {
-		Role role = _roleLocalService.getRole(
-			companyId, RoleConstants.ADMINISTRATOR);
-
-		long[] userIds = _userLocalService.getRoleUserIds(role.getRoleId());
-
-		if (userIds.length == 0) {
-			throw new NoSuchUserException(
-				StringBundler.concat(
-					"No user exists in company ", companyId, " with role ",
-					role.getName()));
-		}
-
-		return userIds[0];
-	}
-
-	private void _verifyCPMeasurementUnits() throws Exception {
+	public void verifyCPMeasurementUnits() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			_companyLocalService.forEachCompanyId(
 				companyId -> {
@@ -80,6 +46,27 @@ public class CommerceProductServiceVerifyProcess extends VerifyProcess {
 						serviceContext);
 				});
 		}
+	}
+
+	@Override
+	protected void doVerify() throws Exception {
+		verifyCPMeasurementUnits();
+	}
+
+	private long _getAdminUserId(long companyId) throws PortalException {
+		Role role = _roleLocalService.getRole(
+			companyId, RoleConstants.ADMINISTRATOR);
+
+		long[] userIds = _userLocalService.getRoleUserIds(role.getRoleId());
+
+		if (userIds.length == 0) {
+			throw new NoSuchUserException(
+				StringBundler.concat(
+					"No user exists in company ", companyId, " with role ",
+					role.getName()));
+		}
+
+		return userIds[0];
 	}
 
 	@Reference

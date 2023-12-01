@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.web.internal.admin.portlet;
 
-import com.liferay.document.library.kernel.store.DLStoreUtil;
+import com.liferay.document.library.kernel.store.Store;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -57,7 +48,6 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.reports.engine.console.web.internal.admin.configuration.ReportsEngineAdminWebConfiguration",
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=reports-portlet",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -82,7 +72,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.portlet-info.title=Reports Admin",
 		"javax.portlet.portlet-mode=text/html;config",
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,guest,power-user,user"
+		"javax.portlet.security-role-ref=administrator,guest,power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -138,18 +129,6 @@ public class AdminPortlet extends MVCPortlet {
 		}
 	}
 
-	@Reference(unbind = "-")
-	public void setDefinitionLocalService(
-		DefinitionLocalService definitionLocalService) {
-
-		_definitionLocalService = definitionLocalService;
-	}
-
-	@Reference(unbind = "-")
-	public void setSourceLocalService(SourceLocalService sourceLocalService) {
-		_sourceLocalService = sourceLocalService;
-	}
-
 	@Activate
 	@Modified
 	protected void activate(Map<String, Object> properties) {
@@ -157,6 +136,15 @@ public class AdminPortlet extends MVCPortlet {
 			ConfigurableUtil.createConfigurable(
 				ReportsEngineAdminWebConfiguration.class, properties);
 	}
+
+	@Reference
+	protected DefinitionLocalService definitionLocalService;
+
+	@Reference
+	protected SourceLocalService sourceLocalService;
+
+	@Reference(target = "(default=true)")
+	protected Store store;
 
 	private void _serveDownload(
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
@@ -169,8 +157,9 @@ public class AdminPortlet extends MVCPortlet {
 
 		String shortFileName = StringUtil.extractLast(
 			fileName, StringPool.SLASH);
-		InputStream inputStream = DLStoreUtil.getFileAsStream(
-			themeDisplay.getCompanyId(), CompanyConstants.SYSTEM, fileName);
+		InputStream inputStream = store.getFileAsStream(
+			themeDisplay.getCompanyId(), CompanyConstants.SYSTEM, fileName,
+			StringPool.BLANK);
 
 		PortletResponseUtil.sendFile(
 			resourceRequest, resourceResponse, shortFileName, inputStream,
@@ -185,7 +174,7 @@ public class AdminPortlet extends MVCPortlet {
 		Definition definition = null;
 
 		if (definitionId > 0) {
-			definition = _definitionLocalService.getDefinition(definitionId);
+			definition = definitionLocalService.getDefinition(definitionId);
 		}
 
 		renderRequest.setAttribute(ReportsEngineWebKeys.DEFINITION, definition);
@@ -207,15 +196,13 @@ public class AdminPortlet extends MVCPortlet {
 		Source source = null;
 
 		if (sourceId > 0) {
-			source = _sourceLocalService.getSource(sourceId);
+			source = sourceLocalService.getSource(sourceId);
 		}
 
 		renderRequest.setAttribute(ReportsEngineWebKeys.SOURCE, source);
 	}
 
-	private DefinitionLocalService _definitionLocalService;
 	private volatile ReportsEngineAdminWebConfiguration
 		_reportsEngineAdminWebConfiguration;
-	private SourceLocalService _sourceLocalService;
 
 }

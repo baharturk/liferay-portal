@@ -1,31 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.translation.web.internal.helper;
 
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.GroupKeyInfoItemIdentifier;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.translator.InfoItemIdentifierTranslator;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.segments.constants.SegmentsExperienceConstants;
 import com.liferay.segments.model.SegmentsExperience;
+import com.liferay.segments.model.SegmentsExperienceModel;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 import javax.portlet.PortletRequest;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -33,15 +33,35 @@ import javax.portlet.PortletRequest;
 public class TranslationRequestHelper {
 
 	public TranslationRequestHelper(
-		InfoItemServiceTracker infoItemServiceTracker,
-		PortletRequest portletRequest) {
+		HttpServletRequest httpServletRequest,
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		SegmentsExperienceLocalService segmentsExperienceLocalService) {
 
-		_infoItemServiceTracker = infoItemServiceTracker;
-		_portletRequest = portletRequest;
+		_httpServletRequest = httpServletRequest;
+		_infoItemServiceRegistry = infoItemServiceRegistry;
+		_segmentsExperienceLocalService = segmentsExperienceLocalService;
+	}
+
+	public TranslationRequestHelper(
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		PortletRequest portletRequest,
+		SegmentsExperienceLocalService segmentsExperienceLocalService) {
+
+		this(
+			PortalUtil.getHttpServletRequest(portletRequest),
+			infoItemServiceRegistry, segmentsExperienceLocalService);
 	}
 
 	public String getClassName(long segmentsExperienceId) {
-		if (segmentsExperienceId != SegmentsExperienceConstants.ID_DEFAULT) {
+		SegmentsExperience segmentsExperience =
+			_segmentsExperienceLocalService.fetchSegmentsExperience(
+				segmentsExperienceId);
+
+		if ((segmentsExperience != null) &&
+			!Objects.equals(
+				segmentsExperience.getSegmentsExperienceKey(),
+				SegmentsExperienceConstants.KEY_DEFAULT)) {
+
 			return SegmentsExperience.class.getName();
 		}
 
@@ -49,12 +69,26 @@ public class TranslationRequestHelper {
 	}
 
 	public String getClassName(long[] segmentsExperienceIds) {
-		if (ArrayUtil.isEmpty(segmentsExperienceIds) ||
-			((segmentsExperienceIds.length == 1) &&
-			 (segmentsExperienceIds[0] ==
-				 SegmentsExperienceConstants.ID_DEFAULT))) {
-
+		if (ArrayUtil.isEmpty(segmentsExperienceIds)) {
 			return getModelClassName();
+		}
+
+		if (_isExportAllSegmentsExperiences(segmentsExperienceIds)) {
+			return SegmentsExperience.class.getName();
+		}
+
+		if (segmentsExperienceIds.length == 1) {
+			SegmentsExperience segmentsExperience =
+				_segmentsExperienceLocalService.fetchSegmentsExperience(
+					segmentsExperienceIds[0]);
+
+			if ((segmentsExperience == null) ||
+				Objects.equals(
+					segmentsExperience.getSegmentsExperienceKey(),
+					SegmentsExperienceConstants.KEY_DEFAULT)) {
+
+				return getModelClassName();
+			}
 		}
 
 		return SegmentsExperience.class.getName();
@@ -65,14 +99,22 @@ public class TranslationRequestHelper {
 			return _classNameId;
 		}
 
-		_classNameId = ParamUtil.getLong(_portletRequest, "classNameId");
+		_classNameId = ParamUtil.getLong(_httpServletRequest, "classNameId");
 
 		return _classNameId;
 	}
 
 	public long getClassPK(long segmentsExperienceId) throws PortalException {
-		if (segmentsExperienceId != SegmentsExperienceConstants.ID_DEFAULT) {
-			return segmentsExperienceId;
+		SegmentsExperience segmentsExperience =
+			_segmentsExperienceLocalService.fetchSegmentsExperience(
+				segmentsExperienceId);
+
+		if ((segmentsExperience != null) &&
+			!Objects.equals(
+				segmentsExperience.getSegmentsExperienceKey(),
+				SegmentsExperienceConstants.KEY_DEFAULT)) {
+
+			return segmentsExperience.getSegmentsExperienceId();
 		}
 
 		return getModelClassPK();
@@ -81,12 +123,26 @@ public class TranslationRequestHelper {
 	public long[] getClassPKs(long[] segmentsExperienceIds)
 		throws PortalException {
 
-		if (ArrayUtil.isEmpty(segmentsExperienceIds) ||
-			((segmentsExperienceIds.length == 1) &&
-			 (segmentsExperienceIds[0] ==
-				 SegmentsExperienceConstants.ID_DEFAULT))) {
-
+		if (ArrayUtil.isEmpty(segmentsExperienceIds)) {
 			return getModelClassPKs();
+		}
+
+		if (_isExportAllSegmentsExperiences(segmentsExperienceIds)) {
+			return _getSegmentsExperienceIds(getModelClassPKs());
+		}
+
+		if (segmentsExperienceIds.length == 1) {
+			SegmentsExperience segmentsExperience =
+				_segmentsExperienceLocalService.fetchSegmentsExperience(
+					segmentsExperienceIds[0]);
+
+			if ((segmentsExperience == null) ||
+				Objects.equals(
+					segmentsExperience.getSegmentsExperienceKey(),
+					SegmentsExperienceConstants.KEY_DEFAULT)) {
+
+				return getModelClassPKs();
+			}
 		}
 
 		return segmentsExperienceIds;
@@ -97,7 +153,7 @@ public class TranslationRequestHelper {
 			return _groupId;
 		}
 
-		_groupId = ParamUtil.getLong(_portletRequest, "groupId");
+		_groupId = ParamUtil.getLong(_httpServletRequest, "groupId");
 
 		return _groupId;
 	}
@@ -127,17 +183,18 @@ public class TranslationRequestHelper {
 			return _modelClassPKs;
 		}
 
-		_modelClassPKs = ParamUtil.getLongValues(_portletRequest, "classPK");
+		_modelClassPKs = ParamUtil.getLongValues(
+			_httpServletRequest, "classPK");
 
 		if (_modelClassPKs.length != 0) {
 			return _modelClassPKs;
 		}
 
 		InfoItemIdentifierTranslator infoItemIdentifierTranslator =
-			_infoItemServiceTracker.getFirstInfoItemService(
+			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemIdentifierTranslator.class, getModelClassName());
 
-		String[] keys = ParamUtil.getStringValues(_portletRequest, "key");
+		String[] keys = ParamUtil.getStringValues(_httpServletRequest, "key");
 
 		long[] modelClassPKs = new long[keys.length];
 
@@ -156,11 +213,39 @@ public class TranslationRequestHelper {
 		return _modelClassPKs;
 	}
 
+	private long[] _getSegmentsExperienceIds(long[] classPKs) {
+		List<SegmentsExperience> segmentsExperiences = new ArrayList<>();
+
+		for (long classPK : classPKs) {
+			segmentsExperiences.addAll(
+				_segmentsExperienceLocalService.getSegmentsExperiences(
+					getGroupId(), classPK));
+		}
+
+		return ListUtil.toLongArray(
+			segmentsExperiences,
+			SegmentsExperienceModel::getSegmentsExperienceId);
+	}
+
+	private boolean _isExportAllSegmentsExperiences(
+		long[] segmentsExperienceIds) {
+
+		if ((segmentsExperienceIds.length == 1) &&
+			(segmentsExperienceIds[0] == -1)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private Long _classNameId;
 	private Long _groupId;
-	private final InfoItemServiceTracker _infoItemServiceTracker;
+	private final HttpServletRequest _httpServletRequest;
+	private final InfoItemServiceRegistry _infoItemServiceRegistry;
 	private String _modelClassName;
 	private long[] _modelClassPKs;
-	private final PortletRequest _portletRequest;
+	private final SegmentsExperienceLocalService
+		_segmentsExperienceLocalService;
 
 }

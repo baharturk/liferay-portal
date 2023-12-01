@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.model.impl;
@@ -34,23 +25,19 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.model.StyleBookEntryModel;
-import com.liferay.style.book.model.StyleBookEntrySoap;
 import com.liferay.style.book.model.StyleBookEntryVersion;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -200,66 +187,6 @@ public class StyleBookEntryModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static StyleBookEntry toModel(StyleBookEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		StyleBookEntry model = new StyleBookEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setHeadId(soapModel.getHeadId());
-		model.setStyleBookEntryId(soapModel.getStyleBookEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setDefaultStyleBookEntry(soapModel.isDefaultStyleBookEntry());
-		model.setFrontendTokensValues(soapModel.getFrontendTokensValues());
-		model.setName(soapModel.getName());
-		model.setPreviewFileEntryId(soapModel.getPreviewFileEntryId());
-		model.setStyleBookEntryKey(soapModel.getStyleBookEntryKey());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<StyleBookEntry> toModels(
-		StyleBookEntrySoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<StyleBookEntry> models = new ArrayList<StyleBookEntry>(
-			soapModels.length);
-
-		for (StyleBookEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public StyleBookEntryModelImpl() {
 	}
 
@@ -336,138 +263,135 @@ public class StyleBookEntryModelImpl
 	public Map<String, Function<StyleBookEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<StyleBookEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, StyleBookEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			StyleBookEntry.class.getClassLoader(), StyleBookEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<StyleBookEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<StyleBookEntry> constructor =
-				(Constructor<StyleBookEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<StyleBookEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<StyleBookEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", StyleBookEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", StyleBookEntry::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", StyleBookEntry::getUuid);
+			attributeGetterFunctions.put("headId", StyleBookEntry::getHeadId);
+			attributeGetterFunctions.put(
+				"styleBookEntryId", StyleBookEntry::getStyleBookEntryId);
+			attributeGetterFunctions.put("groupId", StyleBookEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", StyleBookEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", StyleBookEntry::getUserId);
+			attributeGetterFunctions.put(
+				"userName", StyleBookEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", StyleBookEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", StyleBookEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"defaultStyleBookEntry",
+				StyleBookEntry::getDefaultStyleBookEntry);
+			attributeGetterFunctions.put(
+				"frontendTokensValues",
+				StyleBookEntry::getFrontendTokensValues);
+			attributeGetterFunctions.put("name", StyleBookEntry::getName);
+			attributeGetterFunctions.put(
+				"previewFileEntryId", StyleBookEntry::getPreviewFileEntryId);
+			attributeGetterFunctions.put(
+				"styleBookEntryKey", StyleBookEntry::getStyleBookEntryKey);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<StyleBookEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<StyleBookEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<StyleBookEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<StyleBookEntry, Object>>();
-		Map<String, BiConsumer<StyleBookEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<StyleBookEntry, ?>>();
+		private static final Map<String, BiConsumer<StyleBookEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", StyleBookEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<StyleBookEntry, Long>)StyleBookEntry::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", StyleBookEntry::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<StyleBookEntry, Long>)
-				StyleBookEntry::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", StyleBookEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<StyleBookEntry, String>)StyleBookEntry::setUuid);
-		attributeGetterFunctions.put("headId", StyleBookEntry::getHeadId);
-		attributeSetterBiConsumers.put(
-			"headId",
-			(BiConsumer<StyleBookEntry, Long>)StyleBookEntry::setHeadId);
-		attributeGetterFunctions.put(
-			"styleBookEntryId", StyleBookEntry::getStyleBookEntryId);
-		attributeSetterBiConsumers.put(
-			"styleBookEntryId",
-			(BiConsumer<StyleBookEntry, Long>)
-				StyleBookEntry::setStyleBookEntryId);
-		attributeGetterFunctions.put("groupId", StyleBookEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<StyleBookEntry, Long>)StyleBookEntry::setGroupId);
-		attributeGetterFunctions.put("companyId", StyleBookEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<StyleBookEntry, Long>)StyleBookEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", StyleBookEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<StyleBookEntry, Long>)StyleBookEntry::setUserId);
-		attributeGetterFunctions.put("userName", StyleBookEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<StyleBookEntry, String>)StyleBookEntry::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", StyleBookEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<StyleBookEntry, Date>)StyleBookEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", StyleBookEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<StyleBookEntry, Date>)StyleBookEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"defaultStyleBookEntry", StyleBookEntry::getDefaultStyleBookEntry);
-		attributeSetterBiConsumers.put(
-			"defaultStyleBookEntry",
-			(BiConsumer<StyleBookEntry, Boolean>)
-				StyleBookEntry::setDefaultStyleBookEntry);
-		attributeGetterFunctions.put(
-			"frontendTokensValues", StyleBookEntry::getFrontendTokensValues);
-		attributeSetterBiConsumers.put(
-			"frontendTokensValues",
-			(BiConsumer<StyleBookEntry, String>)
-				StyleBookEntry::setFrontendTokensValues);
-		attributeGetterFunctions.put("name", StyleBookEntry::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<StyleBookEntry, String>)StyleBookEntry::setName);
-		attributeGetterFunctions.put(
-			"previewFileEntryId", StyleBookEntry::getPreviewFileEntryId);
-		attributeSetterBiConsumers.put(
-			"previewFileEntryId",
-			(BiConsumer<StyleBookEntry, Long>)
-				StyleBookEntry::setPreviewFileEntryId);
-		attributeGetterFunctions.put(
-			"styleBookEntryKey", StyleBookEntry::getStyleBookEntryKey);
-		attributeSetterBiConsumers.put(
-			"styleBookEntryKey",
-			(BiConsumer<StyleBookEntry, String>)
-				StyleBookEntry::setStyleBookEntryKey);
+		static {
+			Map<String, BiConsumer<StyleBookEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<StyleBookEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<StyleBookEntry, Long>)
+					StyleBookEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<StyleBookEntry, Long>)
+					StyleBookEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<StyleBookEntry, String>)StyleBookEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"headId",
+				(BiConsumer<StyleBookEntry, Long>)StyleBookEntry::setHeadId);
+			attributeSetterBiConsumers.put(
+				"styleBookEntryId",
+				(BiConsumer<StyleBookEntry, Long>)
+					StyleBookEntry::setStyleBookEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<StyleBookEntry, Long>)StyleBookEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<StyleBookEntry, Long>)StyleBookEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<StyleBookEntry, Long>)StyleBookEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<StyleBookEntry, String>)
+					StyleBookEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<StyleBookEntry, Date>)
+					StyleBookEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<StyleBookEntry, Date>)
+					StyleBookEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"defaultStyleBookEntry",
+				(BiConsumer<StyleBookEntry, Boolean>)
+					StyleBookEntry::setDefaultStyleBookEntry);
+			attributeSetterBiConsumers.put(
+				"frontendTokensValues",
+				(BiConsumer<StyleBookEntry, String>)
+					StyleBookEntry::setFrontendTokensValues);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<StyleBookEntry, String>)StyleBookEntry::setName);
+			attributeSetterBiConsumers.put(
+				"previewFileEntryId",
+				(BiConsumer<StyleBookEntry, Long>)
+					StyleBookEntry::setPreviewFileEntryId);
+			attributeSetterBiConsumers.put(
+				"styleBookEntryKey",
+				(BiConsumer<StyleBookEntry, String>)
+					StyleBookEntry::setStyleBookEntryKey);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -1217,41 +1141,12 @@ public class StyleBookEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<StyleBookEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<StyleBookEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<StyleBookEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((StyleBookEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, StyleBookEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					StyleBookEntry.class, ModelWrapper.class);
 
 	}
 
@@ -1282,7 +1177,8 @@ public class StyleBookEntryModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<StyleBookEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

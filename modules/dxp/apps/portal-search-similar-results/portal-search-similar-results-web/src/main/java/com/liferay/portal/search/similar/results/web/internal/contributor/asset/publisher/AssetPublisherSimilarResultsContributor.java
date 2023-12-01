@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.contributor.asset.publisher;
@@ -23,6 +14,7 @@ import com.liferay.blogs.service.BlogsEntryLocalService;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.portal.kernel.model.ClassedModel;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.similar.results.web.internal.builder.AssetTypeUtil;
 import com.liferay.portal.search.similar.results.web.internal.helper.HttpHelper;
@@ -54,7 +46,8 @@ public class AssetPublisherSimilarResultsContributor
 	public void detectRoute(
 		RouteBuilder routeBuilder, RouteHelper routeHelper) {
 
-		String urlString = routeHelper.getURLString();
+		String urlString = HttpComponentsUtil.decodePath(
+			routeHelper.getURLString());
 
 		String[] parameters = _httpHelper.getFriendlyURLParameters(urlString);
 
@@ -109,37 +102,6 @@ public class AssetPublisherSimilarResultsContributor
 		);
 	}
 
-	@Reference(unbind = "-")
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		_assetEntryLocalService = assetEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setBlogsEntryLocalService(
-		BlogsEntryLocalService blogsEntryLocalService) {
-
-		_blogsEntryLocalService = blogsEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setHttpHelper(HttpHelper httpHelper) {
-		_httpHelper = httpHelper;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUIDFactory(UIDFactory uidFactory) {
-		_uidFactory = uidFactory;
-	}
-
-	@Reference(unbind = "-")
-	protected void setWikiPageLocalService(
-		WikiPageLocalService wikiPageLocalService) {
-
-		_wikiPageLocalService = wikiPageLocalService;
-	}
-
 	private String _getAssetPublisherPortletId(String instanceId) {
 		return AssetPublisherPortletKeys.ASSET_PUBLISHER + "_INSTANCE_" +
 			instanceId;
@@ -187,10 +149,19 @@ public class AssetPublisherSimilarResultsContributor
 		routeBuilder.addAttribute(name, value);
 	}
 
+	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
 	private BlogsEntryLocalService _blogsEntryLocalService;
+
+	@Reference
 	private HttpHelper _httpHelper;
+
+	@Reference
 	private UIDFactory _uidFactory;
+
+	@Reference
 	private WikiPageLocalService _wikiPageLocalService;
 
 }

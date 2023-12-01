@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.rankings.web.internal.index;
 
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.engine.adapter.document.DeleteDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.DeleteDocumentResponse;
 import com.liferay.portal.search.engine.adapter.document.IndexDocumentRequest;
@@ -27,7 +19,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -41,15 +32,15 @@ public class RankingIndexWriterImplTest extends BaseRankingsIndexTestCase {
 		LiferayUnitTestRule.INSTANCE;
 
 	@Before
-	@Override
 	public void setUp() throws Exception {
-		super.setUp();
-
 		_rankingIndexWriterImpl = new RankingIndexWriterImpl();
 
-		_rankingIndexWriterImpl.setRankingToDocumentTranslator(
+		ReflectionTestUtil.setFieldValue(
+			_rankingIndexWriterImpl, "_rankingToDocumentTranslator",
 			_rankingToDocumentTranslator);
-		_rankingIndexWriterImpl.setSearchEngineAdapter(searchEngineAdapter);
+		ReflectionTestUtil.setFieldValue(
+			_rankingIndexWriterImpl, "_searchEngineAdapter",
+			searchEngineAdapter);
 	}
 
 	@Test
@@ -81,7 +72,7 @@ public class RankingIndexWriterImplTest extends BaseRankingsIndexTestCase {
 		Mockito.verify(
 			searchEngineAdapter, Mockito.times(1)
 		).execute(
-			(DeleteDocumentRequest)Mockito.anyObject()
+			(DeleteDocumentRequest)Mockito.any()
 		);
 	}
 
@@ -94,13 +85,12 @@ public class RankingIndexWriterImplTest extends BaseRankingsIndexTestCase {
 		Mockito.verify(
 			searchEngineAdapter, Mockito.times(1)
 		).execute(
-			(IndexDocumentRequest)Mockito.anyObject()
+			(IndexDocumentRequest)Mockito.any()
 		);
 	}
 
 	private RankingIndexWriterImpl _rankingIndexWriterImpl;
-
-	@Mock
-	private RankingToDocumentTranslator _rankingToDocumentTranslator;
+	private final RankingToDocumentTranslator _rankingToDocumentTranslator =
+		Mockito.mock(RankingToDocumentTranslator.class);
 
 }

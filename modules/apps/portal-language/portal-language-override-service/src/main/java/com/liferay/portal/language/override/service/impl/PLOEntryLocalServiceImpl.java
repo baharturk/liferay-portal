@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.language.override.service.impl;
@@ -17,10 +8,14 @@ package com.liferay.portal.language.override.service.impl;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.language.override.exception.PLOEntryKeyException;
+import com.liferay.portal.language.override.exception.PLOEntryValueException;
 import com.liferay.portal.language.override.model.PLOEntry;
 import com.liferay.portal.language.override.service.base.PLOEntryLocalServiceBaseImpl;
 
@@ -47,6 +42,8 @@ public class PLOEntryLocalServiceImpl extends PLOEntryLocalServiceBaseImpl {
 			long companyId, long userId, String key, String languageId,
 			String value)
 		throws PortalException {
+
+		_validate(key, value);
 
 		PLOEntry ploEntry = fetchPLOEntry(companyId, key, languageId);
 
@@ -111,13 +108,18 @@ public class PLOEntryLocalServiceImpl extends PLOEntryLocalServiceBaseImpl {
 	}
 
 	@Override
+	public int getPLOEntriesCount(long companyId) {
+		return ploEntryPersistence.countByCompanyId(companyId);
+	}
+
+	@Override
 	public void setPLOEntries(
 			long companyId, long userId, String key,
 			Map<Locale, String> localizationMap)
 		throws PortalException {
 
 		for (Map.Entry<Locale, String> entry : localizationMap.entrySet()) {
-			String languageId = LanguageUtil.getLanguageId(entry.getKey());
+			String languageId = _language.getLanguageId(entry.getKey());
 			String value = StringUtil.trim(entry.getValue());
 
 			if ((value == null) || value.equals(StringPool.BLANK)) {
@@ -128,6 +130,26 @@ public class PLOEntryLocalServiceImpl extends PLOEntryLocalServiceBaseImpl {
 			}
 		}
 	}
+
+	private void _validate(String key, String value) throws PortalException {
+		if (Validator.isBlank(key)) {
+			throw new PLOEntryKeyException.MustNotBeNull();
+		}
+
+		int keyMaxLength = ModelHintsUtil.getMaxLength(
+			PLOEntry.class.getName(), "key");
+
+		if (key.length() > keyMaxLength) {
+			throw new PLOEntryKeyException.MustBeShorter(keyMaxLength);
+		}
+
+		if (Validator.isBlank(value)) {
+			throw new PLOEntryValueException.MustNotBeNull();
+		}
+	}
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private UserLocalService _userLocalService;

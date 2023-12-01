@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service;
 
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
 
 /**
  * Provides a wrapper for {@link KaleoDefinitionLocalService}.
@@ -80,20 +75,15 @@ public class KaleoDefinitionLocalServiceWrapper
 	 * @return the kaleo definition that was added
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-		addKaleoDefinition(
-			com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-				kaleoDefinition) {
-
+	public KaleoDefinition addKaleoDefinition(KaleoDefinition kaleoDefinition) {
 		return _kaleoDefinitionLocalService.addKaleoDefinition(kaleoDefinition);
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-			addKaleoDefinition(
-				String name, String title, String description, String content,
-				String scope, int version,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public KaleoDefinition addKaleoDefinition(
+			String name, String title, String description, String content,
+			String scope, int version,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoDefinitionLocalService.addKaleoDefinition(
@@ -107,9 +97,7 @@ public class KaleoDefinitionLocalServiceWrapper
 	 * @return the new kaleo definition
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-		createKaleoDefinition(long kaleoDefinitionId) {
-
+	public KaleoDefinition createKaleoDefinition(long kaleoDefinitionId) {
 		return _kaleoDefinitionLocalService.createKaleoDefinition(
 			kaleoDefinitionId);
 	}
@@ -151,10 +139,8 @@ public class KaleoDefinitionLocalServiceWrapper
 	 * @return the kaleo definition that was removed
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-		deleteKaleoDefinition(
-			com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-				kaleoDefinition) {
+	public KaleoDefinition deleteKaleoDefinition(
+		KaleoDefinition kaleoDefinition) {
 
 		return _kaleoDefinitionLocalService.deleteKaleoDefinition(
 			kaleoDefinition);
@@ -172,8 +158,7 @@ public class KaleoDefinitionLocalServiceWrapper
 	 * @throws PortalException if a kaleo definition with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-			deleteKaleoDefinition(long kaleoDefinitionId)
+	public KaleoDefinition deleteKaleoDefinition(long kaleoDefinitionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoDefinitionLocalService.deleteKaleoDefinition(
@@ -306,18 +291,15 @@ public class KaleoDefinitionLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-		fetchKaleoDefinition(long kaleoDefinitionId) {
-
+	public KaleoDefinition fetchKaleoDefinition(long kaleoDefinitionId) {
 		return _kaleoDefinitionLocalService.fetchKaleoDefinition(
 			kaleoDefinitionId);
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-		fetchKaleoDefinition(
-			String name,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext) {
+	public KaleoDefinition fetchKaleoDefinition(
+		String name,
+		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return _kaleoDefinitionLocalService.fetchKaleoDefinition(
 			name, serviceContext);
@@ -346,8 +328,7 @@ public class KaleoDefinitionLocalServiceWrapper
 	 * @throws PortalException if a kaleo definition with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-			getKaleoDefinition(long kaleoDefinitionId)
+	public KaleoDefinition getKaleoDefinition(long kaleoDefinitionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoDefinitionLocalService.getKaleoDefinition(
@@ -355,10 +336,9 @@ public class KaleoDefinitionLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-			getKaleoDefinition(
-				String name,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public KaleoDefinition getKaleoDefinition(
+			String name,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoDefinitionLocalService.getKaleoDefinition(
@@ -366,15 +346,11 @@ public class KaleoDefinitionLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
-			getKaleoDefinitions(
-				boolean active, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
-						orderByComparator,
-				com.liferay.portal.kernel.service.ServiceContext
-					serviceContext) {
+	public java.util.List<KaleoDefinition> getKaleoDefinitions(
+		boolean active, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<KaleoDefinition>
+			orderByComparator,
+		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return _kaleoDefinitionLocalService.getKaleoDefinitions(
 			active, start, end, orderByComparator, serviceContext);
@@ -392,23 +368,18 @@ public class KaleoDefinitionLocalServiceWrapper
 	 * @return the range of kaleo definitions
 	 */
 	@Override
-	public java.util.List
-		<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
-			getKaleoDefinitions(int start, int end) {
+	public java.util.List<KaleoDefinition> getKaleoDefinitions(
+		int start, int end) {
 
 		return _kaleoDefinitionLocalService.getKaleoDefinitions(start, end);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
-			getKaleoDefinitions(
-				int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
-						orderByComparator,
-				com.liferay.portal.kernel.service.ServiceContext
-					serviceContext) {
+	public java.util.List<KaleoDefinition> getKaleoDefinitions(
+		int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<KaleoDefinition>
+			orderByComparator,
+		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return _kaleoDefinitionLocalService.getKaleoDefinitions(
 			start, end, orderByComparator, serviceContext);
@@ -481,30 +452,22 @@ public class KaleoDefinitionLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
-			getScopeKaleoDefinitions(
-				String scope, boolean active, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
-						orderByComparator,
-				com.liferay.portal.kernel.service.ServiceContext
-					serviceContext) {
+	public java.util.List<KaleoDefinition> getScopeKaleoDefinitions(
+		String scope, boolean active, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<KaleoDefinition>
+			orderByComparator,
+		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return _kaleoDefinitionLocalService.getScopeKaleoDefinitions(
 			scope, active, start, end, orderByComparator, serviceContext);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
-			getScopeKaleoDefinitions(
-				String scope, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.portal.workflow.kaleo.model.KaleoDefinition>
-						orderByComparator,
-				com.liferay.portal.kernel.service.ServiceContext
-					serviceContext) {
+	public java.util.List<KaleoDefinition> getScopeKaleoDefinitions(
+		String scope, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<KaleoDefinition>
+			orderByComparator,
+		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return _kaleoDefinitionLocalService.getScopeKaleoDefinitions(
 			scope, start, end, orderByComparator, serviceContext);
@@ -529,11 +492,10 @@ public class KaleoDefinitionLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-			updatedKaleoDefinition(
-				long kaleoDefinitionId, String title, String description,
-				String content,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public KaleoDefinition updatedKaleoDefinition(
+			long kaleoDefinitionId, String title, String description,
+			String content,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoDefinitionLocalService.updatedKaleoDefinition(
@@ -551,13 +513,36 @@ public class KaleoDefinitionLocalServiceWrapper
 	 * @return the kaleo definition that was updated
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-		updateKaleoDefinition(
-			com.liferay.portal.workflow.kaleo.model.KaleoDefinition
-				kaleoDefinition) {
+	public KaleoDefinition updateKaleoDefinition(
+		KaleoDefinition kaleoDefinition) {
 
 		return _kaleoDefinitionLocalService.updateKaleoDefinition(
 			kaleoDefinition);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _kaleoDefinitionLocalService.getBasePersistence();
+	}
+
+	@Override
+	public CTPersistence<KaleoDefinition> getCTPersistence() {
+		return _kaleoDefinitionLocalService.getCTPersistence();
+	}
+
+	@Override
+	public Class<KaleoDefinition> getModelClass() {
+		return _kaleoDefinitionLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<KaleoDefinition>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return _kaleoDefinitionLocalService.updateWithUnsafeFunction(
+			updateUnsafeFunction);
 	}
 
 	@Override

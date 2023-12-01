@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.model.impl;
@@ -60,9 +51,11 @@ public class ERCCompanyEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(7);
+		StringBundler sb = new StringBundler(9);
 
-		sb.append("{externalReferenceCode=");
+		sb.append("{uuid=");
+		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
 		sb.append(externalReferenceCode);
 		sb.append(", ercCompanyEntryId=");
 		sb.append(ercCompanyEntryId);
@@ -76,6 +69,13 @@ public class ERCCompanyEntryCacheModel
 	@Override
 	public ERCCompanyEntry toEntityModel() {
 		ERCCompanyEntryImpl ercCompanyEntryImpl = new ERCCompanyEntryImpl();
+
+		if (uuid == null) {
+			ercCompanyEntryImpl.setUuid("");
+		}
+		else {
+			ercCompanyEntryImpl.setUuid(uuid);
+		}
 
 		if (externalReferenceCode == null) {
 			ercCompanyEntryImpl.setExternalReferenceCode("");
@@ -94,6 +94,7 @@ public class ERCCompanyEntryCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		uuid = objectInput.readUTF();
 		externalReferenceCode = objectInput.readUTF();
 
 		ercCompanyEntryId = objectInput.readLong();
@@ -103,6 +104,13 @@ public class ERCCompanyEntryCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		if (uuid == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
 		if (externalReferenceCode == null) {
 			objectOutput.writeUTF("");
 		}
@@ -115,6 +123,7 @@ public class ERCCompanyEntryCacheModel
 		objectOutput.writeLong(companyId);
 	}
 
+	public String uuid;
 	public String externalReferenceCode;
 	public long ercCompanyEntryId;
 	public long companyId;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.data.set.view.table;
@@ -48,44 +39,74 @@ public class FDSTableSchemaField {
 		return _sortingOrder;
 	}
 
-	public boolean isExpand() {
-		return _expand;
+	public boolean isContentRendererClientExtension() {
+		return _contentRendererClientExtension;
+	}
+
+	public boolean isLocalizeLabel() {
+		return _localizeLabel;
 	}
 
 	public boolean isSortable() {
 		return _sortable;
 	}
 
-	public void setActionId(String actionId) {
+	public FDSTableSchemaField setActionId(String actionId) {
 		_actionId = actionId;
+
+		return this;
 	}
 
-	public void setContentRenderer(String contentRenderer) {
+	public FDSTableSchemaField setContentRenderer(String contentRenderer) {
 		_contentRenderer = contentRenderer;
+
+		return this;
 	}
 
-	public void setContentRendererModuleURL(String contentRendererModuleURL) {
+	public FDSTableSchemaField setContentRendererClientExtension(
+		boolean contentRendererClientExtension) {
+
+		_contentRendererClientExtension = contentRendererClientExtension;
+
+		return this;
+	}
+
+	public FDSTableSchemaField setContentRendererModuleURL(
+		String contentRendererModuleURL) {
+
 		_contentRendererModuleURL = contentRendererModuleURL;
+
+		return this;
 	}
 
-	public void setExpand(boolean expand) {
-		_expand = expand;
-	}
-
-	public void setFieldName(String fieldName) {
+	public FDSTableSchemaField setFieldName(String fieldName) {
 		_fieldName = fieldName;
+
+		return this;
 	}
 
-	public void setLabel(String label) {
+	public FDSTableSchemaField setLabel(String label) {
 		_label = label;
+
+		return this;
 	}
 
-	public void setSortable(boolean sortable) {
+	public FDSTableSchemaField setLocalizeLabel(boolean localizeLabel) {
+		_localizeLabel = localizeLabel;
+
+		return this;
+	}
+
+	public FDSTableSchemaField setSortable(boolean sortable) {
 		_sortable = sortable;
+
+		return this;
 	}
 
-	public void setSortingOrder(SortingOrder sortingOrder) {
+	public FDSTableSchemaField setSortingOrder(SortingOrder sortingOrder) {
 		_sortingOrder = sortingOrder;
+
+		return this;
 	}
 
 	public JSONObject toJSONObject() {
@@ -94,9 +115,9 @@ public class FDSTableSchemaField {
 		).put(
 			"contentRenderer", getContentRenderer()
 		).put(
-			"contentRendererModuleURL", getContentRendererModuleURL()
+			"contentRendererClientExtension", isContentRendererClientExtension()
 		).put(
-			"expand", isExpand()
+			"contentRendererModuleURL", getContentRendererModuleURL()
 		).put(
 			"fieldName",
 			() -> {
@@ -108,6 +129,8 @@ public class FDSTableSchemaField {
 
 				return fieldName;
 			}
+		).put(
+			"localizeLabel", isLocalizeLabel()
 		).put(
 			"sortable", isSortable()
 		).put(
@@ -133,10 +156,11 @@ public class FDSTableSchemaField {
 
 	private String _actionId;
 	private String _contentRenderer;
+	private boolean _contentRendererClientExtension;
 	private String _contentRendererModuleURL;
-	private boolean _expand;
 	private String _fieldName;
 	private String _label;
+	private boolean _localizeLabel = true;
 	private boolean _sortable;
 	private SortingOrder _sortingOrder;
 

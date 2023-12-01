@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
@@ -16,6 +10,7 @@ import ClaySticker from '@clayui/sticker';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
 import AddToCart from 'commerce-frontend-js/components/add_to_cart/AddToCart';
 import {isProductPurchasable} from 'commerce-frontend-js/utilities/index';
+import {sub} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
 import {getCartItems} from '../utilities/data';
@@ -85,7 +80,7 @@ function SkuContent({
 						displayType="warning"
 						title={Liferay.Language.get('alert')}
 					>
-						{Liferay.Util.sub(
+						{sub(
 							Liferay.Language.get('x-has-been-replaced-by-x'),
 							mappedProduct.sku,
 							product.sku
@@ -117,8 +112,12 @@ function SkuContent({
 				</div>
 
 				<h4 className="component-title mb-1">
-					<a href={productURL}>{productName}</a>
+					<a href={productURL}>{product.sku}</a>
 				</h4>
+
+				<p className="component-subtitle mb-1">
+					<a href={productURL}>{productName}</a>
+				</p>
 
 				<p>
 					{Liferay.Language.get('quantity')}: {product.quantity}
@@ -143,32 +142,20 @@ function SkuContent({
 							}}
 							cpInstance={{
 								inCart,
-								options: formatProductOptions(
-									product.options,
-									product.productOptions
-								),
 								quantity: product.quantity,
 								skuId: product.skuId,
+								skuOptions: formatProductOptions(
+									product.skuOptions,
+									product.productOptions
+								),
 							}}
 							disabled={!productPurchasable}
 							settings={{
 								alignment: 'full-width',
 								iconOnly: true,
 								inline: false,
-								quantityDetails: {
-									allowedQuantities:
-										product.productConfiguration
-											.allowedOrderQuantities,
-									maxQuantity:
-										product.productConfiguration
-											.maxOrderQuantity,
-									minQuantity:
-										product.productConfiguration
-											.minOrderQuantity,
-									multipleQuantity:
-										product.productConfiguration
-											.multipleOrderQuantity,
-								},
+								productConfiguration:
+									product.productConfiguration,
 								size: 'sm',
 							}}
 						/>

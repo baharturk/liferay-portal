@@ -1,25 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.util;
 
 import com.liferay.depot.model.DepotEntry;
-import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.depot.service.DepotEntryService;
 import com.liferay.item.selector.criteria.group.criterion.GroupItemSelectorCriterion;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
@@ -27,10 +17,11 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.GroupService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.usersadmin.search.GroupSearch;
-import com.liferay.portlet.usersadmin.search.GroupSearchTerms;
+import com.liferay.site.search.GroupSearch;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -39,13 +30,14 @@ import java.util.List;
 import javax.portlet.PortletRequest;
 import javax.portlet.PortletURL;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alejandro Tardín
  */
-@Component(immediate = true, service = DepotAdminGroupSearchProvider.class)
+@Component(service = DepotAdminGroupSearchProvider.class)
 public class DepotAdminGroupSearchProvider {
 
 	public GroupSearch getGroupSearch(
@@ -68,12 +60,10 @@ public class DepotAdminGroupSearchProvider {
 		return _getGroupSearch(portletRequest, portletURL);
 	}
 
-	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
-	protected void setModuleServiceLifecycle(
-		ModuleServiceLifecycle moduleServiceLifecycle) {
-
+	@Activate
+	protected void activate() {
 		_classNameIds = new long[] {
-			PortalUtil.getClassNameId(DepotEntry.class.getName())
+			_portal.getClassNameId(DepotEntry.class.getName())
 		};
 	}
 
@@ -86,26 +76,26 @@ public class DepotAdminGroupSearchProvider {
 
 		GroupSearch groupSearch = new GroupSearch(portletRequest, portletURL);
 
-		groupSearch.setTotal(
+		groupSearch.setEmptyResultsMessage(
+			_language.get(
+				portletRequest.getLocale(), "no-asset-libraries-were-found"));
+		groupSearch.setResultsAndTotal(
+			() -> {
+				List<DepotEntry> depotEntries =
+					_depotEntryService.getGroupConnectedDepotEntries(
+						themeDisplay.getScopeGroupId(), groupSearch.getStart(),
+						groupSearch.getEnd());
+
+				List<Group> groups = new ArrayList<>();
+
+				for (DepotEntry depotEntry : depotEntries) {
+					groups.add(depotEntry.getGroup());
+				}
+
+				return groups;
+			},
 			_depotEntryService.getGroupConnectedDepotEntriesCount(
 				themeDisplay.getScopeGroupId()));
-
-		List<DepotEntry> depotEntries =
-			_depotEntryService.getGroupConnectedDepotEntries(
-				themeDisplay.getScopeGroupId(), groupSearch.getStart(),
-				groupSearch.getEnd());
-
-		List<Group> groups = new ArrayList<>();
-
-		for (DepotEntry depotEntry : depotEntries) {
-			groups.add(depotEntry.getGroup());
-		}
-
-		groupSearch.setResults(groups);
-
-		groupSearch.setEmptyResultsMessage(
-			LanguageUtil.get(
-				portletRequest.getLocale(), "no-asset-libraries-were-found"));
 
 		return groupSearch;
 	}
@@ -129,40 +119,31 @@ public class DepotAdminGroupSearchProvider {
 		GroupSearch groupSearch = new GroupSearch(portletRequest, portletURL);
 
 		groupSearch.setEmptyResultsMessage(
-			LanguageUtil.get(
+			_language.get(
 				portletRequest.getLocale(), "no-asset-libraries-were-found"));
 
-		GroupSearchTerms searchTerms =
-			(GroupSearchTerms)groupSearch.getSearchTerms();
+		String keywords = ParamUtil.getString(portletRequest, "keywords");
 
-		List<Group> results = null;
-
-		if (searchTerms.hasSearchTerms()) {
-			int total = _groupService.searchCount(
-				company.getCompanyId(), _classNameIds,
-				searchTerms.getKeywords(), groupParams);
-
-			groupSearch.setTotal(total);
-
-			results = _groupService.search(
-				company.getCompanyId(), _classNameIds,
-				searchTerms.getKeywords(), groupParams, groupSearch.getStart(),
-				groupSearch.getEnd(), groupSearch.getOrderByComparator());
+		if (Validator.isNotNull(keywords)) {
+			groupSearch.setResultsAndTotal(
+				() -> _groupService.search(
+					company.getCompanyId(), _classNameIds, keywords,
+					groupParams, groupSearch.getStart(), groupSearch.getEnd(),
+					groupSearch.getOrderByComparator()),
+				_groupService.searchCount(
+					company.getCompanyId(), _classNameIds, keywords,
+					groupParams));
 		}
 		else {
-			int total = _groupService.searchCount(
-				company.getCompanyId(), _classNameIds,
-				searchTerms.getKeywords(), groupParams);
-
-			groupSearch.setTotal(total);
-
-			results = _groupService.search(
-				company.getCompanyId(), _classNameIds,
-				searchTerms.getKeywords(), groupParams, groupSearch.getStart(),
-				groupSearch.getEnd(), groupSearch.getOrderByComparator());
+			groupSearch.setResultsAndTotal(
+				() -> _groupService.search(
+					company.getCompanyId(), _classNameIds, keywords,
+					groupParams, groupSearch.getStart(), groupSearch.getEnd(),
+					groupSearch.getOrderByComparator()),
+				_groupService.searchCount(
+					company.getCompanyId(), _classNameIds, keywords,
+					groupParams));
 		}
-
-		groupSearch.setResults(results);
 
 		return groupSearch;
 	}
@@ -170,12 +151,18 @@ public class DepotAdminGroupSearchProvider {
 	private long[] _classNameIds;
 
 	@Reference
-	private DepotEntryLocalService _depotEntryLocalService;
-
-	@Reference
 	private DepotEntryService _depotEntryService;
 
 	@Reference
 	private GroupService _groupService;
+
+	@Reference
+	private Language _language;
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
+	private ModuleServiceLifecycle _moduleServiceLifecycle;
+
+	@Reference
+	private Portal _portal;
 
 }

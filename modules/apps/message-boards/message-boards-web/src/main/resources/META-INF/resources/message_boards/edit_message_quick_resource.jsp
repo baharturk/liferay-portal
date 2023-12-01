@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -70,7 +61,7 @@ String redirect = ParamUtil.getString(request, "redirect");
 	>
 		<clay:content-col>
 			<div class="list-group-card-icon">
-				<liferay-ui:user-portrait
+				<liferay-user:user-portrait
 					userId="<%= themeDisplay.getUserId() %>"
 				/>
 			</div>
@@ -129,10 +120,10 @@ String redirect = ParamUtil.getString(request, "redirect");
 <div class="divider"></div>
 
 <div class="panel-body">
-	<div class="card-body message-content" id="<%= liferayPortletResponse.getNamespace() + "addQuickReply" + parentMessageId %>">
+	<div class="card-body message-content" id="<portlet:namespace />addQuickReply<%= parentMessageId %>">
 		<portlet:actionURL name="/message_boards/edit_message" var="editMessageURL" />
 
-		<aui:form action="<%= editMessageURL %>" method="post" name='<%= "addQuickReplyFm" + parentMessageId %>' onSubmit='<%= "event.preventDefault(); " %>'>
+		<aui:form action="<%= editMessageURL %>" method="post" name='<%= "addQuickReplyFm" + parentMessageId %>' onSubmit="event.preventDefault(); ">
 			<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.ADD %>" />
 			<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
 			<aui:input name="messageId" type="hidden" value="<%= 0 %>" />
@@ -194,7 +185,7 @@ String redirect = ParamUtil.getString(request, "redirect");
 				String publishButtonLabel = "publish";
 
 				if (WorkflowDefinitionLinkLocalServiceUtil.hasWorkflowDefinitionLink(themeDisplay.getCompanyId(), scopeGroupId, MBMessage.class.getName())) {
-					publishButtonLabel = "submit-for-publication";
+					publishButtonLabel = "submit-for-workflow";
 				}
 				%>
 

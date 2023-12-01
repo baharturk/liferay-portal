@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.job.property;
@@ -18,7 +9,7 @@ import com.liferay.jenkins.results.parser.Job;
 
 import java.io.File;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -38,7 +29,9 @@ public class QAWebsitesTestDirJobProperty extends BaseTestDirJobProperty {
 
 	@Override
 	protected List<File> getJobPropertiesFiles() {
-		return Collections.singletonList(
+		return Arrays.asList(
+			new File(getTestBaseDir(), "poshi-ext.properties"),
+			new File(getTestBaseDir(), "poshi.properties"),
 			new File(getTestBaseDir(), "test.properties"));
 	}
 

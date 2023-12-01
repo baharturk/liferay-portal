@@ -1,4 +1,4 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-lima"
 definition {
 
 	property custom.properties = "jsonws.web.service.paths.excludes=";
@@ -11,7 +11,7 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Test Site");
+		HeadlessSite.addSite(siteName = "Test Site");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Test Site",
@@ -30,16 +30,25 @@ definition {
 	}
 
 	tearDown {
-		JSONGroup.deleteGroupByName(groupName = "Test Site");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		JSONUser.tearDownNonAdminUsers();
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site");
+
+			JSONUser.tearDownNonAdminUsers();
+		}
 	}
 
 	@description = "This test ensures that Sharing can be disabled at the instance level."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanDisableSharingAtInstanceScope {
-		property test.name.skip.portal.instance = "SharingUsecase#CanDisableSharingAtInstanceScope";
+		property custom.properties = "dl.actions.visible=true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		SystemSettings.openSystemSettingsAdmin();
 
@@ -53,7 +62,7 @@ definition {
 		SystemSettings.saveConfiguration();
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Test Site",
 			layoutName = "Test Page",
 			widgetName = "Documents and Media");
@@ -61,8 +70,6 @@ definition {
 		Navigator.gotoSitePage(
 			pageName = "Test Page",
 			siteName = "Test Site");
-
-		DMDocument.enableActionsMenuOnPortlet();
 
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentTitle = "Document with sharing disabled",
@@ -97,10 +104,12 @@ definition {
 	}
 
 	@description = "This test ensures that Sharing can be disabled at the system level."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanDisableSharingAtSystemScope {
-		property test.name.skip.portal.instance = "SharingUsecase#CanDisableSharingAtSystemScope";
+		property custom.properties = "dl.actions.visible=true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		SystemSettings.openSystemSettingsAdmin();
 
@@ -114,7 +123,7 @@ definition {
 		SystemSettings.saveConfiguration();
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Test Site",
 			layoutName = "Test Page",
 			widgetName = "Documents and Media");
@@ -122,8 +131,6 @@ definition {
 		Navigator.gotoSitePage(
 			pageName = "Test Page",
 			siteName = "Test Site");
-
-		DMDocument.enableActionsMenuOnPortlet();
 
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentTitle = "Document with sharing disabled",
@@ -158,9 +165,11 @@ definition {
 	}
 
 	@description = "This test ensures that users can Filter By AssetType in the Shared Content app."
-	@priority = "3"
+	@priority = 3
 	@refactordone
 	test CanFilterByAssetType {
+		property custom.properties = "dl.actions.visible=true";
+
 		JSONLayout.addWidgetToPublicLayout(
 			groupName = "Test Site",
 			layoutName = "Test Page",
@@ -169,8 +178,6 @@ definition {
 		Navigator.gotoSitePage(
 			pageName = "Test Page",
 			siteName = "Test Site");
-
-		DMDocument.enableActionsMenuOnPortlet();
 
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Document Description",
@@ -233,9 +240,11 @@ definition {
 	}
 
 	@description = "This test ensures that users can Order By Shared Date in the Shared Content app."
-	@priority = "3"
+	@priority = 3
 	@refactordone
 	test CanOrderBySharedDate {
+		property custom.properties = "dl.actions.visible=true";
+
 		JSONLayout.addWidgetToPublicLayout(
 			groupName = "Test Site",
 			layoutName = "Test Page",
@@ -244,8 +253,6 @@ definition {
 		Navigator.gotoSitePage(
 			pageName = "Test Page",
 			siteName = "Test Site");
-
-		DMDocument.enableActionsMenuOnPortlet();
 
 		for (var num : list "1,2") {
 			JSONDocument.addFileWithUploadedFile(

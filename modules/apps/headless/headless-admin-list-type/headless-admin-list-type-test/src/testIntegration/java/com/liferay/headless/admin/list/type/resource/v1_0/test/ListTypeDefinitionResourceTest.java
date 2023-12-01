@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.list.type.resource.v1_0.test;
@@ -18,6 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.headless.admin.list.type.client.dto.v1_0.ListTypeDefinition;
 import com.liferay.headless.admin.list.type.client.dto.v1_0.ListTypeEntry;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.odata.entity.EntityField;
 
 import java.util.Collections;
 
@@ -32,10 +24,46 @@ import org.junit.runner.RunWith;
 public class ListTypeDefinitionResourceTest
 	extends BaseListTypeDefinitionResourceTestCase {
 
+	@Override
+	@Test
+	public void testGetListTypeDefinitionsPageWithSortInteger()
+		throws Exception {
+
+		testGetListTypeDefinitionsPageWithSort(
+			EntityField.Type.INTEGER,
+			(entityField, listTypeDefinition1, listTypeDefinition2) -> {
+				if (BeanTestUtil.hasProperty(
+						listTypeDefinition1, entityField.getName())) {
+
+					BeanTestUtil.setProperty(
+						listTypeDefinition1, entityField.getName(), 0);
+				}
+
+				if (BeanTestUtil.hasProperty(
+						listTypeDefinition2, entityField.getName())) {
+
+					BeanTestUtil.setProperty(
+						listTypeDefinition2, entityField.getName(), 1);
+				}
+			});
+	}
+
 	@Ignore
 	@Override
 	@Test
 	public void testGraphQLGetListTypeDefinition() throws Exception {
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLGetListTypeDefinitionByExternalReferenceCode() {
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLGetListTypeDefinitionByExternalReferenceCodeNotFound() {
 	}
 
 	@Ignore
@@ -57,6 +85,7 @@ public class ListTypeDefinitionResourceTest
 
 		listTypeDefinition.setName_i18n(
 			Collections.singletonMap("en-US", RandomTestUtil.randomString()));
+		listTypeDefinition.setSystem(false);
 
 		ListTypeEntry listTypeEntry = new ListTypeEntry();
 
@@ -88,6 +117,14 @@ public class ListTypeDefinitionResourceTest
 
 	@Override
 	protected ListTypeDefinition
+			testGetListTypeDefinitionByExternalReferenceCode_addListTypeDefinition()
+		throws Exception {
+
+		return _addListTypeDefinition(randomListTypeDefinition());
+	}
+
+	@Override
+	protected ListTypeDefinition
 			testGetListTypeDefinitionsPage_addListTypeDefinition(
 				ListTypeDefinition listTypeDefinition)
 		throws Exception {
@@ -105,6 +142,14 @@ public class ListTypeDefinitionResourceTest
 
 	@Override
 	protected ListTypeDefinition
+			testPatchListTypeDefinition_addListTypeDefinition()
+		throws Exception {
+
+		return _addListTypeDefinition(randomListTypeDefinition());
+	}
+
+	@Override
+	protected ListTypeDefinition
 			testPostListTypeDefinition_addListTypeDefinition(
 				ListTypeDefinition listTypeDefinition)
 		throws Exception {
@@ -115,6 +160,22 @@ public class ListTypeDefinitionResourceTest
 	@Override
 	protected ListTypeDefinition
 			testPutListTypeDefinition_addListTypeDefinition()
+		throws Exception {
+
+		return _addListTypeDefinition(randomListTypeDefinition());
+	}
+
+	@Override
+	protected ListTypeDefinition
+			testPutListTypeDefinitionByExternalReferenceCode_addListTypeDefinition()
+		throws Exception {
+
+		return _addListTypeDefinition(randomListTypeDefinition());
+	}
+
+	@Override
+	protected ListTypeDefinition
+			testPutListTypeDefinitionByExternalReferenceCode_createListTypeDefinition()
 		throws Exception {
 
 		return _addListTypeDefinition(randomListTypeDefinition());

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service;
@@ -60,10 +51,12 @@ public class AccountGroupLocalServiceUtil {
 	}
 
 	public static AccountGroup addAccountGroup(
-			long userId, String description, String name)
+			long userId, String description, String name,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
-		return getService().addAccountGroup(userId, description, name);
+		return getService().addAccountGroup(
+			userId, description, name, serviceContext);
 	}
 
 	public static AccountGroup checkGuestAccountGroup(long companyId)
@@ -225,29 +218,25 @@ public class AccountGroupLocalServiceUtil {
 		return getService().fetchAccountGroup(accountGroupId);
 	}
 
-	/**
-	 * Returns the account group with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the account group's external reference code
-	 * @return the matching account group, or <code>null</code> if a matching account group could not be found
-	 */
 	public static AccountGroup fetchAccountGroupByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
 		return getService().fetchAccountGroupByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchAccountGroupByExternalReferenceCode(long, String)}
+	 * Returns the account group with the matching UUID and company.
+	 *
+	 * @param uuid the account group's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching account group, or <code>null</code> if a matching account group could not be found
 	 */
-	@Deprecated
-	public static AccountGroup fetchAccountGroupByReferenceCode(
-		long companyId, String externalReferenceCode) {
+	public static AccountGroup fetchAccountGroupByUuidAndCompanyId(
+		String uuid, long companyId) {
 
-		return getService().fetchAccountGroupByReferenceCode(
-			companyId, externalReferenceCode);
+		return getService().fetchAccountGroupByUuidAndCompanyId(
+			uuid, companyId);
 	}
 
 	/**
@@ -263,20 +252,31 @@ public class AccountGroupLocalServiceUtil {
 		return getService().getAccountGroup(accountGroupId);
 	}
 
-	/**
-	 * Returns the account group with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the account group's external reference code
-	 * @return the matching account group
-	 * @throws PortalException if a matching account group could not be found
-	 */
 	public static AccountGroup getAccountGroupByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getAccountGroupByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the account group with the matching UUID and company.
+	 *
+	 * @param uuid the account group's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching account group
+	 * @throws PortalException if a matching account group could not be found
+	 */
+	public static AccountGroup getAccountGroupByUuidAndCompanyId(
+			String uuid, long companyId)
+		throws PortalException {
+
+		return getService().getAccountGroupByUuidAndCompanyId(uuid, companyId);
+	}
+
+	public static long[] getAccountGroupIds(long accountEntryId) {
+		return getService().getAccountGroupIds(accountEntryId);
 	}
 
 	/**
@@ -302,6 +302,21 @@ public class AccountGroupLocalServiceUtil {
 			companyId, start, end, orderByComparator);
 	}
 
+	public static List<AccountGroup> getAccountGroups(
+		long companyId, String name, int start, int end,
+		OrderByComparator<AccountGroup> orderByComparator) {
+
+		return getService().getAccountGroups(
+			companyId, name, start, end, orderByComparator);
+	}
+
+	public static List<AccountGroup> getAccountGroupsByAccountEntryId(
+		long accountEntryId, int start, int end) {
+
+		return getService().getAccountGroupsByAccountEntryId(
+			accountEntryId, start, end);
+	}
+
 	public static List<AccountGroup> getAccountGroupsByAccountGroupId(
 		long[] accountGroupIds) {
 
@@ -321,6 +336,17 @@ public class AccountGroupLocalServiceUtil {
 		return getService().getAccountGroupsCount(companyId);
 	}
 
+	public static long getAccountGroupsCount(long companyId, String name) {
+		return getService().getAccountGroupsCount(companyId, name);
+	}
+
+	public static int getAccountGroupsCountByAccountEntryId(
+		long accountEntryId) {
+
+		return getService().getAccountGroupsCountByAccountEntryId(
+			accountEntryId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -329,6 +355,14 @@ public class AccountGroupLocalServiceUtil {
 
 	public static AccountGroup getDefaultAccountGroup(long companyId) {
 		return getService().getDefaultAccountGroup(companyId);
+	}
+
+	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return getService().getExportActionableDynamicQuery(portletDataContext);
 	}
 
 	public static
@@ -394,15 +428,36 @@ public class AccountGroupLocalServiceUtil {
 	}
 
 	public static AccountGroup updateAccountGroup(
-			long accountGroupId, String description, String name)
+			long accountGroupId, String description, String name,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateAccountGroup(
-			accountGroupId, description, name);
+			accountGroupId, description, name, serviceContext);
+	}
+
+	public static AccountGroup updateExternalReferenceCode(
+			AccountGroup accountGroup, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			accountGroup, externalReferenceCode);
+	}
+
+	public static AccountGroup updateExternalReferenceCode(
+			long accountGroupId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			accountGroupId, externalReferenceCode);
 	}
 
 	public static AccountGroupLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(AccountGroupLocalService service) {
+		_service = service;
 	}
 
 	private static volatile AccountGroupLocalService _service;

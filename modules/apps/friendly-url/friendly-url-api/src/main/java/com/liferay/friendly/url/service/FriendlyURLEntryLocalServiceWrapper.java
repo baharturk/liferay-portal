@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.service;
@@ -17,6 +8,7 @@ package com.liferay.friendly.url.service;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -357,10 +349,28 @@ public class FriendlyURLEntryLocalServiceWrapper
 	@Override
 	public com.liferay.friendly.url.model.FriendlyURLEntryLocalization
 		fetchFriendlyURLEntryLocalization(
+			long groupId, long classNameId, String languageId,
+			String urlTitle) {
+
+		return _friendlyURLEntryLocalService.fetchFriendlyURLEntryLocalization(
+			groupId, classNameId, languageId, urlTitle);
+	}
+
+	@Override
+	public com.liferay.friendly.url.model.FriendlyURLEntryLocalization
+		fetchFriendlyURLEntryLocalization(
 			long friendlyURLEntryId, String languageId) {
 
 		return _friendlyURLEntryLocalService.fetchFriendlyURLEntryLocalization(
 			friendlyURLEntryId, languageId);
+	}
+
+	@Override
+	public FriendlyURLEntry fetchMainFriendlyURLEntry(
+		long classNameId, long classPK) {
+
+		return _friendlyURLEntryLocalService.fetchMainFriendlyURLEntry(
+			classNameId, classPK);
 	}
 
 	@Override
@@ -499,6 +509,18 @@ public class FriendlyURLEntryLocalServiceWrapper
 	@Override
 	public com.liferay.friendly.url.model.FriendlyURLEntryLocalization
 			getFriendlyURLEntryLocalization(
+				long groupId, long classNameId, String languageId,
+				String urlTitle)
+		throws com.liferay.friendly.url.exception.
+			NoSuchFriendlyURLEntryLocalizationException {
+
+		return _friendlyURLEntryLocalService.getFriendlyURLEntryLocalization(
+			groupId, classNameId, languageId, urlTitle);
+	}
+
+	@Override
+	public com.liferay.friendly.url.model.FriendlyURLEntryLocalization
+			getFriendlyURLEntryLocalization(
 				long friendlyURLEntryId, String languageId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -575,19 +597,6 @@ public class FriendlyURLEntryLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _friendlyURLEntryLocalService.getPersistedModel(primaryKeyObj);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getUniqueUrlTitle(long, long, long, String, String)}
-	 */
-	@Deprecated
-	@Override
-	public String getUniqueUrlTitle(
-		long groupId, long classNameId, long classPK, String urlTitle) {
-
-		return _friendlyURLEntryLocalService.getUniqueUrlTitle(
-			groupId, classNameId, classPK, urlTitle);
 	}
 
 	@Override
@@ -696,10 +705,25 @@ public class FriendlyURLEntryLocalServiceWrapper
 	}
 
 	@Override
+	public void validate(
+			long groupId, long classNameId, long classPK, String languageId,
+			String urlTitle)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_friendlyURLEntryLocalService.validate(
+			groupId, classNameId, classPK, languageId, urlTitle);
+	}
+
+	@Override
 	public void validate(long groupId, long classNameId, String urlTitle)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_friendlyURLEntryLocalService.validate(groupId, classNameId, urlTitle);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _friendlyURLEntryLocalService.getBasePersistence();
 	}
 
 	@Override

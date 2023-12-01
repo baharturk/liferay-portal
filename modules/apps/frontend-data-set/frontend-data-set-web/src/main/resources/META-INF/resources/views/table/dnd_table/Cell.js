@@ -1,60 +1,53 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayTable from '@clayui/table';
 import classNames from 'classnames';
 import {throttle} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useContext, useLayoutEffect, useMemo, useRef} from 'react';
 
+import ViewsContext from '../../ViewsContext';
+import {VIEWS_ACTION_TYPES} from '../../viewsReducer';
 import Context from './TableContext';
 
-function Cell({children, className, columnName, expand, heading, resizable}) {
-	const cellRef = useRef();
-	const clientXRef = useRef({current: null});
+function Cell({
+	children,
+	className,
+	columnName,
+	defaultWidth = 'auto',
+	heading,
+	resizable,
+}) {
 	const {
-		columnDefinitions,
 		draggingAllowed,
 		draggingColumnName,
 		isFixed,
-		registerColumn,
 		resizeColumn,
 		updateDraggingAllowed,
 		updateDraggingColumnName,
 	} = useContext(Context);
+	const [{modifiedFields}, viewsDispatch] = useContext(ViewsContext);
 
-	const intersectionObserverRef = useRef(
-		new IntersectionObserver(
-			(entries) => {
-				const cellWidth = entries[0].boundingClientRect.width;
-
-				if (cellWidth) {
-					registerColumn(columnName, cellWidth, resizable);
-					intersectionObserverRef.current.disconnect();
-				}
-			},
-			{
-				root: null,
-				threshold: 1,
-			}
-		)
-	);
+	const cellRef = useRef();
+	const clientXRef = useRef({current: null});
 
 	useLayoutEffect(() => {
 		if (columnName && heading && !isFixed) {
-			intersectionObserverRef.current.observe(cellRef.current);
+			const boundingClientRect = cellRef.current.getBoundingClientRect();
+
+			viewsDispatch({
+				type: VIEWS_ACTION_TYPES.UPDATE_FIELD,
+				value: {
+					name: columnName,
+					resizable,
+					width: boundingClientRect.width,
+				},
+			});
 		}
-	}, [columnName, isFixed, heading]);
+	}, [columnName, isFixed, heading, resizable, viewsDispatch]);
 
 	const handleDrag = useMemo(() => {
 		return throttle((event) => {
@@ -69,9 +62,9 @@ function Cell({children, className, columnName, expand, heading, resizable}) {
 			const {x: headerCellX} = cellRef.current.getClientRects()[0];
 			const newWidth = event.clientX - headerCellX;
 
-			resizeColumn(columnName, newWidth, resizable);
+			resizeColumn(columnName, newWidth);
 		}, 20);
-	}, [columnName, resizable, resizeColumn, updateDraggingColumnName]);
+	}, [columnName, resizeColumn, updateDraggingColumnName]);
 
 	function initializeDrag() {
 		window.addEventListener('mousemove', handleDrag);
@@ -87,23 +80,13 @@ function Cell({children, className, columnName, expand, heading, resizable}) {
 	}
 
 	const width = useMemo(() => {
-		const columnDetails = columnDefinitions.get(columnName);
+		const columnDetails = modifiedFields[columnName];
 
 		return columnDetails && isFixed && columnDetails.width;
-	}, [isFixed, columnDefinitions, columnName]);
+	}, [isFixed, modifiedFields, columnName]);
 
-	return (
-		<div
-			className={classNames(
-				heading ? 'dnd-th' : 'dnd-td',
-				expand && 'expand',
-				className
-			)}
-			ref={cellRef}
-			style={{
-				width,
-			}}
-		>
+	const content = (
+		<>
 			{children}
 
 			{resizable && (
@@ -115,12 +98,38 @@ function Cell({children, className, columnName, expand, heading, resizable}) {
 					onMouseDown={initializeDrag}
 				/>
 			)}
+		</>
+	);
+
+	if (Liferay.FeatureFlags['LPS-193005']) {
+		return (
+			<ClayTable.Cell
+				className={className}
+				headingCell={heading}
+				ref={cellRef}
+				style={{
+					width: width ?? defaultWidth,
+				}}
+			>
+				{content}
+			</ClayTable.Cell>
+		);
+	}
+
+	return (
+		<div
+			className={classNames(heading ? 'dnd-th' : 'dnd-td', className)}
+			ref={cellRef}
+			style={{
+				width,
+			}}
+		>
+			{content}
 		</div>
 	);
 }
 
 Cell.defaultProps = {
-	expand: false,
 	heading: false,
 	resizable: false,
 };
@@ -128,7 +137,6 @@ Cell.defaultProps = {
 Cell.propTypes = {
 	className: PropTypes.string,
 	columnName: PropTypes.string,
-	expand: PropTypes.bool,
 	heading: PropTypes.bool,
 	resizable: PropTypes.bool,
 };

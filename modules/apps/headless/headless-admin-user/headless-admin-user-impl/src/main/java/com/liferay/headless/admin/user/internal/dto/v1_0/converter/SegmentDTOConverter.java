@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.internal.dto.v1_0.converter;
@@ -17,7 +8,7 @@ package com.liferay.headless.admin.user.internal.dto.v1_0.converter;
 import com.liferay.headless.admin.user.dto.v1_0.Segment;
 import com.liferay.headless.admin.user.internal.constants.SegmentsSourceConstants;
 import com.liferay.portal.kernel.json.JSONException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -30,13 +21,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jürgen Kappler
  */
 @Component(
 	property = "dto.class.name=com.liferay.segments.model.SegmentsEntry",
-	service = {DTOConverter.class, SegmentDTOConverter.class}
+	service = DTOConverter.class
 )
 public class SegmentDTOConverter
 	implements DTOConverter<SegmentsEntry, Segment> {
@@ -75,12 +67,12 @@ public class SegmentDTOConverter
 						if (!criteria.isEmpty()) {
 							try {
 								return _toMap(
-									JSONFactoryUtil.createJSONObject(
+									_jsonFactory.createJSONObject(
 										segmentsEntry.getCriteria()));
 							}
 							catch (JSONException jsonException) {
 								if (_log.isWarnEnabled()) {
-									_log.warn(jsonException, jsonException);
+									_log.warn(jsonException);
 								}
 							}
 						}
@@ -127,5 +119,8 @@ public class SegmentDTOConverter
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SegmentDTOConverter.class);
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 }

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -24,7 +15,7 @@ boolean skipEditorLoading = ParamUtil.getBoolean(request, "skipEditorLoading");
 DiscussionRequestHelper discussionRequestHelper = new DiscussionRequestHelper(request);
 DiscussionTaglibHelper discussionTaglibHelper = new DiscussionTaglibHelper(request);
 
-DiscussionPermission discussionPermission = CommentManagerUtil.getDiscussionPermission(discussionRequestHelper.getPermissionChecker());
+DiscussionPermission discussionPermission = DiscussionPermissionUtil.getDiscussionPermission();
 
 Discussion discussion = (Discussion)request.getAttribute("liferay-comment:discussion:discussion");
 
@@ -56,7 +47,7 @@ StagingGroupHelper stagingGroupHelper = StagingGroupHelperUtil.getStagingGroupHe
 				<%
 				String contentURL = PortalUtil.getCanonicalURL(discussionTaglibHelper.getRedirect(), themeDisplay, layout);
 
-				contentURL = HttpUtil.removeParameter(contentURL, namespace + "skipEditorLoading");
+				contentURL = HttpComponentsUtil.removeParameter(contentURL, namespace + "skipEditorLoading");
 				%>
 
 				<input name="contentURL" type="hidden" value="<%= contentURL %>" />
@@ -85,7 +76,7 @@ StagingGroupHelper stagingGroupHelper = StagingGroupHelperUtil.getStagingGroupHe
 						<%
 						Group siteGroup = themeDisplay.getSiteGroup();
 
-						boolean canSubscribe = !stagingGroupHelper.isLocalStagingGroup(siteGroup) && !stagingGroupHelper.isRemoteStagingGroup(siteGroup) && themeDisplay.isSignedIn() && discussionPermission.hasSubscribePermission(company.getCompanyId(), siteGroup.getGroupId(), discussionTaglibHelper.getClassName(), discussionTaglibHelper.getClassPK());
+						boolean canSubscribe = !stagingGroupHelper.isLocalStagingGroup(siteGroup) && !stagingGroupHelper.isRemoteStagingGroup(siteGroup) && themeDisplay.isSignedIn() && discussionPermission.hasSubscribePermission(discussionRequestHelper.getPermissionChecker(), company.getCompanyId(), siteGroup.getGroupId(), discussionTaglibHelper.getClassName(), discussionTaglibHelper.getClassPK());
 
 						boolean subscribed = SubscriptionLocalServiceUtil.isSubscribed(company.getCompanyId(), user.getUserId(), discussionTaglibHelper.getSubscriptionClassName(), discussionTaglibHelper.getClassPK());
 
@@ -134,7 +125,7 @@ StagingGroupHelper stagingGroupHelper = StagingGroupHelperUtil.getStagingGroupHe
 											<clay:content-col
 												cssClass="lfr-discussion-details"
 											>
-												<liferay-ui:user-portrait
+												<liferay-user:user-portrait
 													user="<%= user %>"
 												/>
 											</clay:content-col>
@@ -154,10 +145,8 @@ StagingGroupHelper stagingGroupHelper = StagingGroupHelperUtil.getStagingGroupHe
 													skipEditorLoading="<%= skipEditorLoading %>"
 												/>
 
-												<aui:input name="postReplyBody0" type="hidden" />
-
 												<aui:button-row>
-													<aui:button cssClass="btn-comment btn-primary btn-sm" disabled="<%= true %>" id="postReplyButton0" onClick='<%= randomNamespace + "postReply(0);" %>' value='<%= themeDisplay.isSignedIn() ? "reply" : "reply-as" %>' />
+													<aui:button cssClass="btn-comment btn-sm" disabled="<%= true %>" id="postReplyButton0" onClick='<%= randomNamespace + "postReply(0);" %>' primary="<%= true %>" value='<%= themeDisplay.isSignedIn() ? "reply" : "reply-as" %>' />
 												</aui:button-row>
 											</clay:content-col>
 										</clay:content-row>
@@ -169,7 +158,7 @@ StagingGroupHelper stagingGroupHelper = StagingGroupHelperUtil.getStagingGroupHe
 											<div class="alert alert-info">
 												<span class="alert-indicator">
 													<svg class="lexicon-icon lexicon-icon-info-circle" focusable="false" role="presentation">
-														<use xlink:href="<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg#info-circle" />
+														<use xlink:href="<%= themeDisplay.getPathThemeSpritemap() %>#info-circle" />
 													</svg>
 												</span>
 
@@ -255,11 +244,11 @@ StagingGroupHelper stagingGroupHelper = StagingGroupHelperUtil.getStagingGroupHe
 
 		String editorURL = GetterUtil.getString(request.getAttribute("liferay-comment:discussion:editorURL"));
 
-		editorURL = HttpUtil.addParameter(editorURL, "namespace", namespace);
+		editorURL = HttpComponentsUtil.addParameter(editorURL, "namespace", namespace);
 
-		String paginationURL = HttpUtil.addParameter(discussionTaglibHelper.getPaginationURL(), "namespace", namespace);
+		String paginationURL = HttpComponentsUtil.addParameter(discussionTaglibHelper.getPaginationURL(), "namespace", namespace);
 
-		paginationURL = HttpUtil.addParameter(paginationURL, "skipEditorLoading", "true");
+		paginationURL = HttpComponentsUtil.addParameter(paginationURL, "skipEditorLoading", "true");
 		%>
 
 		<liferay-frontend:component

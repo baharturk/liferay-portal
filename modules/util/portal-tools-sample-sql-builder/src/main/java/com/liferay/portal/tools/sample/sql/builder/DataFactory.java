@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.sample.sql.builder;
@@ -31,8 +22,7 @@ import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.model.BlogsEntryModel;
 import com.liferay.blogs.model.impl.BlogsEntryModelImpl;
 import com.liferay.blogs.social.BlogsActivityKeys;
-import com.liferay.commerce.account.constants.CommerceAccountConstants;
-import com.liferay.commerce.account.model.CommerceAccount;
+import com.liferay.commerce.constants.CommerceConstants;
 import com.liferay.commerce.constants.CommerceOrderConstants;
 import com.liferay.commerce.currency.model.CommerceCurrencyModel;
 import com.liferay.commerce.currency.model.impl.CommerceCurrencyModelImpl;
@@ -53,6 +43,7 @@ import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommercePriceListModel;
 import com.liferay.commerce.price.list.model.impl.CommercePriceEntryModelImpl;
 import com.liferay.commerce.price.list.model.impl.CommercePriceListModelImpl;
+import com.liferay.commerce.product.constants.CommerceChannelConstants;
 import com.liferay.commerce.product.model.CPAttachmentFileEntryModel;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionLocalizationModel;
@@ -152,6 +143,7 @@ import com.liferay.fragment.model.FragmentEntryModel;
 import com.liferay.fragment.model.impl.FragmentCollectionModelImpl;
 import com.liferay.fragment.model.impl.FragmentEntryLinkModelImpl;
 import com.liferay.fragment.model.impl.FragmentEntryModelImpl;
+import com.liferay.friendly.url.internal.util.FriendlyURLNormalizerImpl;
 import com.liferay.friendly.url.model.FriendlyURLEntryLocalization;
 import com.liferay.friendly.url.model.FriendlyURLEntryLocalizationModel;
 import com.liferay.friendly.url.model.FriendlyURLEntryMappingModel;
@@ -167,11 +159,9 @@ import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalArticleLocalizationModel;
 import com.liferay.journal.model.JournalArticleModel;
 import com.liferay.journal.model.JournalArticleResourceModel;
-import com.liferay.journal.model.JournalContentSearchModel;
 import com.liferay.journal.model.impl.JournalArticleLocalizationModelImpl;
 import com.liferay.journal.model.impl.JournalArticleModelImpl;
 import com.liferay.journal.model.impl.JournalArticleResourceModelImpl;
-import com.liferay.journal.model.impl.JournalContentSearchModelImpl;
 import com.liferay.layout.model.LayoutClassedModelUsageModel;
 import com.liferay.layout.model.impl.LayoutClassedModelUsageModelImpl;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructureModel;
@@ -199,6 +189,7 @@ import com.liferay.message.boards.model.impl.MBMessageModelImpl;
 import com.liferay.message.boards.model.impl.MBThreadFlagModelImpl;
 import com.liferay.message.boards.model.impl.MBThreadModelImpl;
 import com.liferay.message.boards.social.MBActivityKeys;
+import com.liferay.normalizer.Normalizer;
 import com.liferay.petra.io.unsync.UnsyncBufferedReader;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.CharPool;
@@ -245,6 +236,7 @@ import com.liferay.portal.kernel.model.ResourcePermissionModel;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.RoleModel;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.model.UserModel;
 import com.liferay.portal.kernel.model.UserPersonalSite;
 import com.liferay.portal.kernel.model.VirtualHostModel;
@@ -259,7 +251,7 @@ import com.liferay.portal.kernel.theme.NavItem;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
-import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -292,11 +284,11 @@ import com.liferay.portal.model.impl.RoleModelImpl;
 import com.liferay.portal.model.impl.UserModelImpl;
 import com.liferay.portal.model.impl.VirtualHostModelImpl;
 import com.liferay.portal.search.web.constants.SearchBarPortletKeys;
+import com.liferay.portal.search.web.constants.SearchResultsPortletKeys;
 import com.liferay.portal.search.web.internal.category.facet.constants.CategoryFacetPortletKeys;
 import com.liferay.portal.search.web.internal.folder.facet.constants.FolderFacetPortletKeys;
 import com.liferay.portal.search.web.internal.modified.facet.constants.ModifiedFacetPortletKeys;
 import com.liferay.portal.search.web.internal.search.options.constants.SearchOptionsPortletKeys;
-import com.liferay.portal.search.web.internal.search.results.constants.SearchResultsPortletKeys;
 import com.liferay.portal.search.web.internal.site.facet.constants.SiteFacetPortletKeys;
 import com.liferay.portal.search.web.internal.suggestions.constants.SuggestionsPortletKeys;
 import com.liferay.portal.search.web.internal.tag.facet.constants.TagFacetPortletKeys;
@@ -381,10 +373,18 @@ public class DataFactory {
 		_simpleDateFormat = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd HH:mm:ss", TimeZone.getDefault());
 
-		_counter = new SimpleCounter(
+		int totalCompanyCount = BenchmarksPropsValues.MAX_COMPANY_COUNT + 1;
+
+		int groupCount =
 			BenchmarksPropsValues.MAX_GROUP_COUNT +
-				BenchmarksPropsValues.MAX_COMMERCE_GROUP_COUNT + 1);
-		_dLFileEntryIdCounter = new SimpleCounter();
+				BenchmarksPropsValues.MAX_COMMERCE_GROUP_COUNT;
+
+		int totalGroupCount = groupCount * totalCompanyCount;
+
+		_counter = new SimpleCounter(totalGroupCount + 1);
+
+		_dlFileEntryIdCounter = new SimpleCounter();
+		_groupCounter = new SimpleCounter(1);
 		_timeCounter = new SimpleCounter();
 		_futureDateCounter = new SimpleCounter();
 		_layoutPlidCounter = new SimpleCounter();
@@ -415,8 +415,6 @@ public class DataFactory {
 			getClassNameId(JournalArticle.class), getClassNameId(WikiPage.class)
 		};
 
-		_companyId = _counter.get();
-
 		_dlDDMStructureContent = _readFile(
 			"ddm_structure/ddm_structure_basic_document.json");
 		_dlDDMStructureLayoutContent = _readFile(
@@ -436,6 +434,13 @@ public class DataFactory {
 
 		_firstNames = _readLines("user_name/first_names.txt");
 		_lastNames = _readLines("user_name/last_names.txt");
+
+		_friendlyURLNormalizer = new FriendlyURLNormalizerImpl();
+
+		Field field = ReflectionUtil.getDeclaredField(
+			FriendlyURLNormalizerImpl.class, "_normalizer");
+
+		field.set(_friendlyURLNormalizer, (Normalizer)s -> s);
 	}
 
 	public RoleModel getAdministratorRoleModel() {
@@ -461,8 +466,9 @@ public class DataFactory {
 
 		if (_assetCategoryCounters == null) {
 			_assetCategoryCounters =
-				(Map<Long, SimpleCounter>[])
-					new HashMap<?, ?>[BenchmarksPropsValues.MAX_GROUP_COUNT];
+				(Map<Long, SimpleCounter>[])new HashMap<?, ?>
+					[(BenchmarksPropsValues.MAX_COMPANY_COUNT + 1) *
+						BenchmarksPropsValues.MAX_GROUP_COUNT];
 		}
 
 		SimpleCounter counter = getSimpleCounter(
@@ -503,9 +509,9 @@ public class DataFactory {
 		}
 
 		if (_assetTagCounters == null) {
-			_assetTagCounters =
-				(Map<Long, SimpleCounter>[])
-					new HashMap<?, ?>[BenchmarksPropsValues.MAX_GROUP_COUNT];
+			_assetTagCounters = (Map<Long, SimpleCounter>[])new HashMap<?, ?>
+				[(BenchmarksPropsValues.MAX_COMPANY_COUNT + 1) *
+					BenchmarksPropsValues.MAX_GROUP_COUNT];
 		}
 
 		SimpleCounter counter = getSimpleCounter(
@@ -573,6 +579,10 @@ public class DataFactory {
 		return getClassNameId(DLFileEntry.class);
 	}
 
+	public RoleModel getGuestRoleModel() {
+		return _guestRoleModel;
+	}
+
 	public long getJournalArticleClassNameId() {
 		return getClassNameId(JournalArticle.class);
 	}
@@ -590,6 +600,10 @@ public class DataFactory {
 		}
 
 		return sb.toString();
+	}
+
+	public int getMaxAccountEntryCommerceOrderCount() {
+		return BenchmarksPropsValues.MAX_ACCOUNT_ENTRY_COMMERCE_ORDER_COUNT;
 	}
 
 	public int getMaxAssetPublisherPageCount() {
@@ -757,6 +771,39 @@ public class DataFactory {
 		_journalArticleContent = new String(chars);
 	}
 
+	public List<CommerceOrderModel> newAccountEntryCommerceOrderModels(
+		long groupId, long accountEntryId, long commerceCurrencyId,
+		long billingAddressId, long shippingAddressId,
+		long commerceShippingMethodId, String commerceShippingOptionName,
+		int orderStatus) {
+
+		List<CommerceOrderModel> commerceOrderModels = new ArrayList<>(
+			BenchmarksPropsValues.MAX_ACCOUNT_ENTRY_COMMERCE_ORDER_COUNT);
+
+		for (int i = 1;
+			 i <= BenchmarksPropsValues.MAX_ACCOUNT_ENTRY_COMMERCE_ORDER_COUNT;
+			 i++) {
+
+			commerceOrderModels.add(
+				newCommerceOrderModel(
+					groupId, accountEntryId, commerceCurrencyId,
+					billingAddressId, shippingAddressId,
+					commerceShippingMethodId, commerceShippingOptionName,
+					orderStatus));
+		}
+
+		return commerceOrderModels;
+	}
+
+	public GroupModel newAccountEntryGroupModel(
+		AccountEntryModel accountEntryModel) {
+
+		return newGroupModel(
+			_counter.get(), getClassNameId(AccountEntry.class),
+			accountEntryModel.getAccountEntryId(), accountEntryModel.getName(),
+			GroupConstants.TYPE_SITE_PRIVATE, false);
+	}
+
 	public AccountEntryModel newAccountEntryModel(String type, int index) {
 		AccountEntryModel accountEntryModel = new AccountEntryModelImpl();
 
@@ -787,7 +834,27 @@ public class DataFactory {
 		accountEntryModel.setType("business");
 		accountEntryModel.setStatus(0);
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		accountEntryModel.setUuid(uuid);
+		accountEntryModel.setExternalReferenceCode(uuid);
+
 		return accountEntryModel;
+	}
+
+	public List<AccountEntryModel> newAccountEntryModels() {
+		List<AccountEntryModel> accountEntryModels = new ArrayList<>(
+			BenchmarksPropsValues.MAX_ACCOUNT_ENTRY_COUNT);
+
+		for (int i = 1; i <= BenchmarksPropsValues.MAX_ACCOUNT_ENTRY_COUNT;
+			 i++) {
+
+			accountEntryModels.add(newAccountEntryModel("business", i));
+		}
+
+		return accountEntryModels;
 	}
 
 	public AccountEntryUserRelModel newAccountEntryUserRelModel(
@@ -829,15 +896,26 @@ public class DataFactory {
 
 		// Other fields
 
-		addressModel.setClassNameId(getClassNameId(CommerceAccount.class));
+		addressModel.setClassNameId(getClassNameId(AccountEntry.class));
 		addressModel.setClassPK(accountEntryId);
-		addressModel.setName("Sample Address");
-		addressModel.setDescription(null);
-		addressModel.setStreet1("123 Sample Street");
-		addressModel.setCity("Los Angeles");
-		addressModel.setZip("1234");
 		addressModel.setCountryId(countryId);
-		addressModel.setTypeId(14001);
+		addressModel.setListTypeId(14001);
+		addressModel.setCity("Los Angeles");
+		addressModel.setDescription(null);
+		addressModel.setName("Sample Address");
+		addressModel.setStreet1("123 Sample Street");
+		addressModel.setZip("1234");
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		addressModel.setUuid(uuid);
+		addressModel.setExternalReferenceCode(uuid);
+
+		if (_firstAddressModel == null) {
+			_firstAddressModel = addressModel;
+		}
 
 		return addressModel;
 	}
@@ -904,23 +982,23 @@ public class DataFactory {
 	}
 
 	public AssetEntryModel newAssetEntryModel(
-		DLFileEntryModel dLFileEntryModel) {
+		DLFileEntryModel dlFileEntryModel) {
 
 		return newAssetEntryModel(
-			dLFileEntryModel.getGroupId(), dLFileEntryModel.getCreateDate(),
-			dLFileEntryModel.getModifiedDate(),
+			dlFileEntryModel.getGroupId(), dlFileEntryModel.getCreateDate(),
+			dlFileEntryModel.getModifiedDate(),
 			getClassNameId(DLFileEntry.class),
-			dLFileEntryModel.getFileEntryId(), dLFileEntryModel.getUuid(),
-			dLFileEntryModel.getFileEntryTypeId(), true, true,
-			dLFileEntryModel.getMimeType(), dLFileEntryModel.getTitle());
+			dlFileEntryModel.getFileEntryId(), dlFileEntryModel.getUuid(),
+			dlFileEntryModel.getFileEntryTypeId(), true, true,
+			dlFileEntryModel.getMimeType(), dlFileEntryModel.getTitle());
 	}
 
-	public AssetEntryModel newAssetEntryModel(DLFolderModel dLFolderModel) {
+	public AssetEntryModel newAssetEntryModel(DLFolderModel dlFolderModel) {
 		return newAssetEntryModel(
-			dLFolderModel.getGroupId(), dLFolderModel.getCreateDate(),
-			dLFolderModel.getModifiedDate(), getClassNameId(DLFolder.class),
-			dLFolderModel.getFolderId(), dLFolderModel.getUuid(), 0, true, true,
-			null, dLFolderModel.getName());
+			dlFolderModel.getGroupId(), dlFolderModel.getCreateDate(),
+			dlFolderModel.getModifiedDate(), getClassNameId(DLFolder.class),
+			dlFolderModel.getFolderId(), dlFolderModel.getUuid(), 0, true, true,
+			null, dlFolderModel.getName());
 	}
 
 	public AssetEntryModel newAssetEntryModel(MBMessageModel mbMessageModel) {
@@ -1097,17 +1175,31 @@ public class DataFactory {
 		for (int j = 0; j < BenchmarksPropsValues.MAX_ASSET_TAG_COUNT; j++) {
 			AssetTagModel assetTagModel = new AssetTagModelImpl();
 
-			assetTagModel.setUuid(SequentialUUID.generate());
+			// PK fields
+
 			assetTagModel.setTagId(_counter.get());
+
+			// Group instance
+
 			assetTagModel.setGroupId(groupId);
+
+			// Audit fields
+
 			assetTagModel.setCompanyId(_companyId);
 			assetTagModel.setUserId(_sampleUserId);
 			assetTagModel.setUserName(_SAMPLE_USER_NAME);
 			assetTagModel.setCreateDate(new Date());
 			assetTagModel.setModifiedDate(new Date());
+
+			// Other fields
+
 			assetTagModel.setName(
 				StringBundler.concat("TestTag_", groupId, "_", j));
 			assetTagModel.setLastPublishDate(new Date());
+
+			// Autogenerated fields
+
+			assetTagModel.setUuid(SequentialUUID.generate());
 
 			groupAssetTagModels.add(assetTagModel);
 
@@ -1165,34 +1257,12 @@ public class DataFactory {
 		return blogEntryModels;
 	}
 
-	public GroupModel newCommerceAccountEntryGroupModel(
-		AccountEntryModel accountEntryModel) {
-
-		return newGroupModel(
-			_counter.get(), getClassNameId(AccountEntry.class),
-			accountEntryModel.getAccountEntryId(), accountEntryModel.getName(),
-			GroupConstants.TYPE_SITE_PRIVATE, false);
-	}
-
-	public List<AccountEntryModel> newCommerceAccountEntryModels() {
-		List<AccountEntryModel> accountEntryModels = new ArrayList<>(
-			BenchmarksPropsValues.MAX_COMMERCE_ACCOUNT_ENTRY_COUNT);
-
-		for (int i = 1;
-			 i <= BenchmarksPropsValues.MAX_COMMERCE_ACCOUNT_ENTRY_COUNT; i++) {
-
-			accountEntryModels.add(newAccountEntryModel("business", i));
-		}
-
-		return accountEntryModels;
-	}
-
 	public PortletPreferencesModel
 		newCommerceB2BSiteTypePortletPreferencesModel(long ownerId) {
 
 		return newPortletPreferencesModel(
 			ownerId, PortletKeys.PREFS_OWNER_TYPE_GROUP, 0,
-			CommerceAccountConstants.SERVICE_NAME);
+			CommerceConstants.SERVICE_NAME_COMMERCE_ACCOUNT);
 	}
 
 	public PortletPreferenceValueModel
@@ -1201,7 +1271,7 @@ public class DataFactory {
 
 		return newPortletPreferenceValueModel(
 			portletPreferencesModel, "commerceSiteType", 0,
-			String.valueOf(CommerceAccountConstants.SITE_TYPE_B2B));
+			String.valueOf(CommerceChannelConstants.SITE_TYPE_B2B));
 	}
 
 	public GroupModel newCommerceCatalogGroupModel(
@@ -1238,6 +1308,13 @@ public class DataFactory {
 			commerceCurrencyModel.getCode());
 		commerceCatalogModel.setCatalogDefaultLanguageId("en_US");
 		commerceCatalogModel.setSystem(true);
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		commerceCatalogModel.setUuid(uuid);
+		commerceCatalogModel.setExternalReferenceCode(uuid);
 
 		return commerceCatalogModel;
 	}
@@ -1322,6 +1399,13 @@ public class DataFactory {
 		commerceChannelModel.setCommerceCurrencyCode(
 			commerceCurrencyModel.getCode());
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		commerceChannelModel.setUuid(uuid);
+		commerceChannelModel.setExternalReferenceCode(uuid);
+
 		return commerceChannelModel;
 	}
 
@@ -1391,23 +1475,18 @@ public class DataFactory {
 		// Other fields
 
 		commerceCurrencyModel.setCode("USD");
-
-		String name = StringBundler.concat(
-			"<?xml version=\"1.0\" encoding=\"UTF-8\"?><root available-locales",
-			"=\"en_US\" default-locale=\"en_US\"><Name language-id=\"en_US\">",
-			"US Dollar</Name></root>");
-
-		commerceCurrencyModel.setName(name);
-
+		commerceCurrencyModel.setName(
+			StringBundler.concat(
+				"<?xml version=\"1.0\" encoding=\"UTF-8\"?><root available-",
+				"locales=\"en_US\" default-locale=\"en_US\"><Name language-id=",
+				"\"en_US\">US Dollar</Name></root>"));
 		commerceCurrencyModel.setRate(BigDecimal.valueOf(1));
-
-		String formatPattern = StringBundler.concat(
-			"<?xml version=\"1.0\" encoding=\"UTF-8\"?><root available-locales",
-			"=\"en_US\" default-locale=\"en_US\"><FormatPattern language-id",
-			"=\"en_US\">$###,##0.00</FormatPattern></root>");
-
-		commerceCurrencyModel.setFormatPattern(formatPattern);
-
+		commerceCurrencyModel.setFormatPattern(
+			StringBundler.concat(
+				"<?xml version=\"1.0\" encoding=\"UTF-8\"?><root ",
+				"available-locales=\"en_US\" default-locale=\"en_US\">",
+				"<FormatPattern language-id=\"en_US\">$###,##0.00",
+				"</FormatPattern></root>"));
 		commerceCurrencyModel.setMaxFractionDigits(2);
 		commerceCurrencyModel.setMinFractionDigits(2);
 		commerceCurrencyModel.setRoundingMode("HALF_EVEN");
@@ -1415,6 +1494,10 @@ public class DataFactory {
 		commerceCurrencyModel.setPriority(1);
 		commerceCurrencyModel.setActive(true);
 		commerceCurrencyModel.setLastPublishDate(new Date());
+
+		// Autogenerated fields
+
+		commerceCurrencyModel.setUuid(SequentialUUID.generate());
 
 		return commerceCurrencyModel;
 	}
@@ -1465,9 +1548,18 @@ public class DataFactory {
 			commerceInventoryWarehouseModel.getCommerceInventoryWarehouseId());
 		commerceInventoryWarehouseItemModel.setSku(cpInstanceModel.getSku());
 		commerceInventoryWarehouseItemModel.setQuantity(
-			BenchmarksPropsValues.
-				MAX_COMMERCE_INVENTORY_WAREHOUSE_ITEM_QUANTITY);
-		commerceInventoryWarehouseItemModel.setReservedQuantity(0);
+			BigDecimal.valueOf(
+				BenchmarksPropsValues.
+					MAX_COMMERCE_INVENTORY_WAREHOUSE_ITEM_QUANTITY));
+		commerceInventoryWarehouseItemModel.setReservedQuantity(
+			BigDecimal.ZERO);
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		commerceInventoryWarehouseItemModel.setUuid(uuid);
+		commerceInventoryWarehouseItemModel.setExternalReferenceCode(uuid);
 
 		return commerceInventoryWarehouseItemModel;
 	}
@@ -1509,6 +1601,13 @@ public class DataFactory {
 		commerceInventoryWarehouseModel.setLatitude(0);
 		commerceInventoryWarehouseModel.setLongitude(0);
 		commerceInventoryWarehouseModel.setType(null);
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		commerceInventoryWarehouseModel.setUuid(uuid);
+		commerceInventoryWarehouseModel.setExternalReferenceCode(uuid);
 
 		return commerceInventoryWarehouseModel;
 	}
@@ -1655,7 +1754,7 @@ public class DataFactory {
 
 		// Other fields
 
-		commerceOrderItemModel.setBookedQuantityId(0);
+		commerceOrderItemModel.setCommerceInventoryBookedQuantityId(0);
 		commerceOrderItemModel.setCommerceOrderId(
 			commerceOrderModel.getCommerceOrderId());
 		commerceOrderItemModel.setCommercePriceListId(commercePriceListId);
@@ -1669,8 +1768,8 @@ public class DataFactory {
 
 		commerceOrderItemModel.setParentCommerceOrderItemId(0);
 		commerceOrderItemModel.setName("Commerce Order Item Name");
-		commerceOrderItemModel.setQuantity(1);
-		commerceOrderItemModel.setShippedQuantity(0);
+		commerceOrderItemModel.setQuantity(BigDecimal.ONE);
+		commerceOrderItemModel.setShippedQuantity(BigDecimal.ONE);
 		commerceOrderItemModel.setShipSeparately(true);
 		commerceOrderItemModel.setShippable(true);
 		commerceOrderItemModel.setDiscountAmount(BigDecimal.valueOf(0));
@@ -1707,6 +1806,13 @@ public class DataFactory {
 		commerceOrderItemModel.setRequestedDeliveryDate(null);
 		commerceOrderItemModel.setManuallyAdjusted(false);
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		commerceOrderItemModel.setUuid(uuid);
+		commerceOrderItemModel.setExternalReferenceCode(uuid);
+
 		return commerceOrderItemModel;
 	}
 
@@ -1717,10 +1823,6 @@ public class DataFactory {
 		int orderStatus) {
 
 		CommerceOrderModel commerceOrderModel = new CommerceOrderModelImpl();
-
-		// UUID
-
-		commerceOrderModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -1764,11 +1866,29 @@ public class DataFactory {
 		commerceOrderModel.setStatusByUserName(_SAMPLE_USER_NAME);
 		commerceOrderModel.setStatusDate(new Date());
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		commerceOrderModel.setUuid(uuid);
+		commerceOrderModel.setExternalReferenceCode(uuid);
+
 		return commerceOrderModel;
 	}
 
 	public List<CommerceOrderModel> newCommerceOrderModels(
-		long groupId, long commerceAccountId, long commerceCurrencyId,
+		long groupId, long accountEntryId, long commerceCurrencyId,
+		long commerceShippingMethodId, int orderStatus) {
+
+		return newCommerceOrderModels(
+			groupId, accountEntryId, commerceCurrencyId,
+			_firstAddressModel.getAddressId(),
+			_firstAddressModel.getAddressId(), commerceShippingMethodId,
+			"Standard Delivery", orderStatus);
+	}
+
+	public List<CommerceOrderModel> newCommerceOrderModels(
+		long groupId, long accountEntryId, long commerceCurrencyId,
 		long billingAddressId, long shippingAddressId,
 		long commerceShippingMethodId, String commerceShippingOptionName,
 		int orderStatus) {
@@ -1806,7 +1926,7 @@ public class DataFactory {
 		for (int i = 1; i <= maxCommerceOrderCount; i++) {
 			commerceOrderModels.add(
 				newCommerceOrderModel(
-					groupId, commerceAccountId, commerceCurrencyId,
+					groupId, accountEntryId, commerceCurrencyId,
 					billingAddressId, shippingAddressId,
 					commerceShippingMethodId, commerceShippingOptionName,
 					orderStatus));
@@ -1856,10 +1976,6 @@ public class DataFactory {
 		CommercePriceEntryModel commercePriceEntryModel =
 			new CommercePriceEntryModelImpl();
 
-		// UUID
-
-		commercePriceEntryModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		commercePriceEntryModel.setCommercePriceEntryId(_counter.get());
@@ -1886,6 +2002,13 @@ public class DataFactory {
 		commercePriceEntryModel.setStatusByUserName(_SAMPLE_USER_NAME);
 		commercePriceEntryModel.setStatusDate(new Date());
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		commercePriceEntryModel.setUuid(uuid);
+		commercePriceEntryModel.setExternalReferenceCode(uuid);
+
 		return commercePriceEntryModel;
 	}
 
@@ -1895,10 +2018,6 @@ public class DataFactory {
 
 		CommercePriceListModel commercePriceListModel =
 			new CommercePriceListModelImpl();
-
-		// UUID
-
-		commercePriceListModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -1933,7 +2052,33 @@ public class DataFactory {
 		commercePriceListModel.setStatusByUserName(_SAMPLE_USER_NAME);
 		commercePriceListModel.setStatusDate(new Date());
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		commercePriceListModel.setUuid(uuid);
+		commercePriceListModel.setExternalReferenceCode(uuid);
+
 		return commercePriceListModel;
+	}
+
+	public List<CommercePriceListModel> newCommercePriceListModels(
+		long groupId, long commerceCurrencyId, boolean catalogBasePriceList,
+		boolean netPrice, String type) {
+
+		List<CommercePriceListModel> commercePriceListModels = new ArrayList<>(
+			BenchmarksPropsValues.MAX_COMMERCE_PRICE_LIST_COUNT);
+
+		for (int i = 1;
+			 i <= BenchmarksPropsValues.MAX_COMMERCE_PRICE_LIST_COUNT; i++) {
+
+			commercePriceListModels.add(
+				newCommercePriceListModel(
+					groupId, commerceCurrencyId, catalogBasePriceList, netPrice,
+					type));
+		}
+
+		return commercePriceListModels;
 	}
 
 	public CommerceShippingFixedOptionModel newCommerceShippingFixedOptionModel(
@@ -1944,8 +2089,10 @@ public class DataFactory {
 
 		// PK fields
 
+		long commerceShippingFixedOptionId = _counter.get();
+
 		commerceShippingFixedOptionModel.setCommerceShippingFixedOptionId(
-			_counter.get());
+			commerceShippingFixedOptionId);
 
 		// Group instance
 
@@ -1970,6 +2117,8 @@ public class DataFactory {
 				"language-id=\"en_US\">Standard Delivery</Name></root>"));
 		commerceShippingFixedOptionModel.setDescription(null);
 		commerceShippingFixedOptionModel.setAmount(BigDecimal.valueOf(15));
+		commerceShippingFixedOptionModel.setKey(
+			StringUtil.randomString(3) + commerceShippingFixedOptionId);
 		commerceShippingFixedOptionModel.setPriority(0);
 
 		return commerceShippingFixedOptionModel;
@@ -2016,6 +2165,20 @@ public class DataFactory {
 		commerceShippingMethodModel.setActive(true);
 
 		return commerceShippingMethodModel;
+	}
+
+	public List<CommerceShippingMethodModel> newCommerceShippingMethodModels(
+		List<GroupModel> groupModels) {
+
+		List<CommerceShippingMethodModel> commerceShippingMethodModels =
+			new ArrayList<>();
+
+		for (GroupModel groupModel : groupModels) {
+			commerceShippingMethodModels.add(
+				newCommerceShippingMethodModel(groupModel.getGroupId()));
+		}
+
+		return commerceShippingMethodModels;
 	}
 
 	public List<DDMTemplateModel>
@@ -2096,27 +2259,18 @@ public class DataFactory {
 						"commerce/commerce_theme_portlet_settings.json"))));
 	}
 
-	public CompanyModel newCompanyModel() {
-		CompanyModel companyModel = new CompanyModelImpl();
+	public List<CompanyModel> newCompanyModels() {
+		List<CompanyModel> companyModels = new ArrayList<>(
+			BenchmarksPropsValues.MAX_COMPANY_COUNT + 1);
 
-		// PK fields
+		companyModels.add(_newCompanyModel("liferay.com"));
 
-		companyModel.setCompanyId(_companyId);
+		for (int i = 1; i <= BenchmarksPropsValues.MAX_COMPANY_COUNT; i++) {
+			companyModels.add(
+				_newCompanyModel(StringBundler.concat("liferay", i, ".com")));
+		}
 
-		// Audit fields
-
-		companyModel.setCreateDate(new Date());
-		companyModel.setModifiedDate(new Date());
-
-		// Other fields
-
-		companyModel.setWebId("liferay.com");
-		companyModel.setMx("liferay.com");
-		companyModel.setActive(true);
-		companyModel.setName("Liferay");
-		companyModel.setLegalName("Liferay, Inc.");
-
-		return companyModel;
+		return companyModels;
 	}
 
 	public ContactModel newContactModel(UserModel userModel) {
@@ -2166,10 +2320,6 @@ public class DataFactory {
 
 		LayoutModel layoutModel = new LayoutModelImpl();
 
-		// UUID
-
-		layoutModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		layoutModel.setPlid(_layoutPlidCounter.get());
@@ -2192,19 +2342,20 @@ public class DataFactory {
 		layoutModel.setName(
 			"<?xml version=\"1.0\"?><root><name>" + name + "</name></root>");
 		layoutModel.setType(LayoutConstants.TYPE_CONTENT);
-
-		UnicodeProperties typeSettingsUnicodeProperties = new UnicodeProperties(
-			true);
-
-		typeSettingsUnicodeProperties.setProperty(
-			"fragmentEntries", fragmentEntries);
-
 		layoutModel.setTypeSettings(
 			StringUtil.replace(
-				typeSettingsUnicodeProperties.toString(), '\n', "\\n"));
-
+				UnicodePropertiesBuilder.create(
+					true
+				).put(
+					"fragmentEntries", fragmentEntries
+				).buildString(),
+				'\n', "\\n"));
 		layoutModel.setFriendlyURL(StringPool.FORWARD_SLASH + name);
 		layoutModel.setLastPublishDate(new Date());
+
+		// Autogenerated fields
+
+		layoutModel.setUuid(SequentialUUID.generate());
 
 		return layoutModel;
 	}
@@ -2252,7 +2403,7 @@ public class DataFactory {
 				DDMFieldAttribute.class.getName(), _counter.get()));
 		counterModels.add(
 			_newCounterModel(
-				DLFileEntry.class.getName(), _dLFileEntryIdCounter.get()));
+				DLFileEntry.class.getName(), _dlFileEntryIdCounter.get()));
 		counterModels.add(
 			_newCounterModel(
 				FriendlyURLEntryLocalization.class.getName(), _counter.get()));
@@ -2291,10 +2442,6 @@ public class DataFactory {
 	public CountryModel newCountryModel() {
 		CountryModel countryModel = new CountryModelImpl();
 
-		// UUID
-
-		countryModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		countryModel.setCountryId(_counter.get());
@@ -2318,6 +2465,10 @@ public class DataFactory {
 		countryModel.setNumber("0");
 		countryModel.setShippingAllowed(true);
 
+		// Autogenerated fields
+
+		countryModel.setUuid(SequentialUUID.generate());
+
 		return countryModel;
 	}
 
@@ -2326,10 +2477,6 @@ public class DataFactory {
 
 		CPAttachmentFileEntryModel cpAttachmentFileEntryModel =
 			new CPAttachmentFileEntryModelImpl();
-
-		// UUID
-
-		cpAttachmentFileEntryModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -2355,14 +2502,12 @@ public class DataFactory {
 		cpAttachmentFileEntryModel.setFileEntryId(_counter.get());
 		cpAttachmentFileEntryModel.setDisplayDate(null);
 		cpAttachmentFileEntryModel.setExpirationDate(null);
-
-		String title = StringBundler.concat(
-			"<?xml version=\"1.0\" encoding=\"UTF-8\"?><root available-locales",
-			"=\"en_US\" default-locale=\"en_US\"><Title language-id=\"en_US\">",
-			"Attachment file Entry  ", index, "</Title></root>");
-
-		cpAttachmentFileEntryModel.setTitle(title);
-
+		cpAttachmentFileEntryModel.setTitle(
+			StringBundler.concat(
+				"<?xml version=\"1.0\" encoding=\"UTF-8\"?><root ",
+				"available-locales=\"en_US\" default-locale=\"en_US\"><Title ",
+				"language-id=\"en_US\">Attachment file Entry  ", index,
+				"</Title></root>"));
 		cpAttachmentFileEntryModel.setPriority(0);
 		cpAttachmentFileEntryModel.setType(type);
 		cpAttachmentFileEntryModel.setLastPublishDate(new Date());
@@ -2370,6 +2515,13 @@ public class DataFactory {
 		cpAttachmentFileEntryModel.setStatusByUserId(_sampleUserId);
 		cpAttachmentFileEntryModel.setStatusByUserName(_SAMPLE_USER_NAME);
 		cpAttachmentFileEntryModel.setStatusDate(new Date());
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		cpAttachmentFileEntryModel.setUuid(uuid);
+		cpAttachmentFileEntryModel.setExternalReferenceCode(uuid);
 
 		return cpAttachmentFileEntryModel;
 	}
@@ -2413,10 +2565,6 @@ public class DataFactory {
 		int version) {
 
 		CPDefinitionModel cpDefinitionModel = new CPDefinitionModelImpl();
-
-		// UUID
-
-		cpDefinitionModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -2477,6 +2625,10 @@ public class DataFactory {
 		cpDefinitionModel.setStatusByUserName(_SAMPLE_USER_NAME);
 		cpDefinitionModel.setStatusDate(new Date());
 
+		// Autogenerated fields
+
+		cpDefinitionModel.setUuid(SequentialUUID.generate());
+
 		return cpDefinitionModel;
 	}
 
@@ -2516,11 +2668,6 @@ public class DataFactory {
 			cpDefinitionSpecificationOptionValueModel =
 				new CPDefinitionSpecificationOptionValueModelImpl();
 
-		// UUID
-
-		cpDefinitionSpecificationOptionValueModel.setUuid(
-			SequentialUUID.generate());
-
 		// PK fields
 
 		cpDefinitionSpecificationOptionValueModel.
@@ -2551,6 +2698,11 @@ public class DataFactory {
 				"</Value></root>"));
 		cpDefinitionSpecificationOptionValueModel.setPriority(index - 1);
 		cpDefinitionSpecificationOptionValueModel.setLastPublishDate(null);
+
+		// Autogenerated fields
+
+		cpDefinitionSpecificationOptionValueModel.setUuid(
+			SequentialUUID.generate());
 
 		return cpDefinitionSpecificationOptionValueModel;
 	}
@@ -2584,10 +2736,6 @@ public class DataFactory {
 		CPDefinitionModel cpDefinitionModel, int index) {
 
 		CPInstanceModel cpInstanceModel = new CPInstanceModelImpl();
-
-		// UUID
-
-		cpInstanceModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -2642,6 +2790,13 @@ public class DataFactory {
 		cpInstanceModel.setStatusByUserName(_SAMPLE_USER_NAME);
 		cpInstanceModel.setStatusDate(new Date());
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		cpInstanceModel.setUuid(uuid);
+		cpInstanceModel.setExternalReferenceCode(uuid);
+
 		_cpInstanceModels.put(cpDefinitionId, cpInstanceModel);
 
 		return cpInstanceModel;
@@ -2690,6 +2845,10 @@ public class DataFactory {
 		cpOptionCategoryModel.setKey("key" + index);
 		cpOptionCategoryModel.setLastPublishDate(null);
 
+		// Autogenerated fields
+
+		cpOptionCategoryModel.setUuid(SequentialUUID.generate());
+
 		return cpOptionCategoryModel;
 	}
 
@@ -2710,13 +2869,9 @@ public class DataFactory {
 	}
 
 	public CPOptionModel newCPOptionModel(
-		String ddmFormFieldTypeName, int index) {
+		String commerceOptionTypeKey, int index) {
 
 		CPOptionModel cpOptionModel = new CPOptionModelImpl();
-
-		// UUID
-
-		cpOptionModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -2739,11 +2894,18 @@ public class DataFactory {
 				"<Name language-id=\"en_US\">Option Name ", index,
 				"</Name></root>"));
 		cpOptionModel.setDescription("Option Description");
-		cpOptionModel.setDDMFormFieldTypeName(ddmFormFieldTypeName);
+		cpOptionModel.setCommerceOptionTypeKey(commerceOptionTypeKey);
 		cpOptionModel.setFacetable(true);
 		cpOptionModel.setRequired(true);
 		cpOptionModel.setSkuContributor(true);
 		cpOptionModel.setKey("option-name-" + index);
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		cpOptionModel.setUuid(uuid);
+		cpOptionModel.setExternalReferenceCode(uuid);
 
 		return cpOptionModel;
 	}
@@ -2752,10 +2914,6 @@ public class DataFactory {
 		long cpOptionId, int index) {
 
 		CPOptionValueModel cpOptionValueModel = new CPOptionValueModelImpl();
-
-		// UUID
-
-		cpOptionValueModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -2780,15 +2938,18 @@ public class DataFactory {
 		cpOptionValueModel.setPriority(index - 1);
 		cpOptionValueModel.setKey("option-value-" + index);
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		cpOptionValueModel.setUuid(uuid);
+		cpOptionValueModel.setExternalReferenceCode(uuid);
+
 		return cpOptionValueModel;
 	}
 
 	public CProductModel newCProductModel(long groupId) {
 		CProductModel cProductModel = new CProductModelImpl();
-
-		// UUID
-
-		cProductModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -2811,6 +2972,13 @@ public class DataFactory {
 		cProductModel.setPublishedCPDefinitionId(_counter.get());
 		cProductModel.setLatestVersion(
 			BenchmarksPropsValues.MAX_COMMERCE_PRODUCT_DEFINITION_COUNT);
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		cProductModel.setUuid(uuid);
+		cProductModel.setExternalReferenceCode(uuid);
 
 		return cProductModel;
 	}
@@ -2868,6 +3036,10 @@ public class DataFactory {
 		cpSpecificationOptionModel.setKey("specification-option-" + index);
 		cpSpecificationOptionModel.setLastPublishDate(null);
 
+		// Autogenerated fields
+
+		cpSpecificationOptionModel.setUuid(SequentialUUID.generate());
+
 		return cpSpecificationOptionModel;
 	}
 
@@ -2918,8 +3090,14 @@ public class DataFactory {
 				"<?xml version=\"1.0\" encoding=\"UTF-8\"?><root ",
 				"available-locales=\"en_US\" default-locale=\"en_US\"><Name ",
 				"language-id=\"en_US\">Normal Product</Name></root>"));
-
 		cpTaxCategoryModel.setDescription(null);
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		cpTaxCategoryModel.setUuid(uuid);
+		cpTaxCategoryModel.setExternalReferenceCode(uuid);
 
 		return cpTaxCategoryModel;
 	}
@@ -2950,7 +3128,7 @@ public class DataFactory {
 		sb.append("\"single-page\"}");
 
 		return newDDMStructureLayoutModel(
-			_globalGroupId, _defaultUserId,
+			_globalGroupId, _guestUserId,
 			ddmStructureVersionModel.getStructureVersionId(), sb.toString());
 	}
 
@@ -3016,10 +3194,6 @@ public class DataFactory {
 
 		DDLRecordModel ddlRecordModel = new DDLRecordModelImpl();
 
-		// UUID
-
-		ddlRecordModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		ddlRecordModel.setRecordId(_counter.get());
@@ -3047,6 +3221,10 @@ public class DataFactory {
 			DDLRecordConstants.DISPLAY_INDEX_DEFAULT);
 		ddlRecordModel.setLastPublishDate(new Date());
 
+		// Autogenerated fields
+
+		ddlRecordModel.setUuid(SequentialUUID.generate());
+
 		return ddlRecordModel;
 	}
 
@@ -3054,10 +3232,6 @@ public class DataFactory {
 		DDMStructureModel ddmStructureModel, int currentIndex) {
 
 		DDLRecordSetModel ddlRecordSetModel = new DDLRecordSetModelImpl();
-
-		// UUID
-
-		ddlRecordSetModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -3079,19 +3253,21 @@ public class DataFactory {
 
 		ddlRecordSetModel.setDDMStructureId(ddmStructureModel.getStructureId());
 		ddlRecordSetModel.setRecordSetKey(String.valueOf(_counter.get()));
-
 		ddlRecordSetModel.setName(
 			StringBundler.concat(
 				"<?xml version=\"1.0\"?><root available-locales=\"en_US\" ",
 				"default-locale=\"en_US\"><Name language-id=\"en_US\">",
 				"Test DDL Record Set ", currentIndex, "</Name></root>"));
-
 		ddlRecordSetModel.setMinDisplayRows(
 			DDLRecordSetConstants.MIN_DISPLAY_ROWS_DEFAULT);
 		ddlRecordSetModel.setScope(
 			DDLRecordSetConstants.SCOPE_DYNAMIC_DATA_LISTS);
 		ddlRecordSetModel.setSettings(StringPool.BLANK);
 		ddlRecordSetModel.setLastPublishDate(new Date());
+
+		// Autogenerated fields
+
+		ddlRecordSetModel.setUuid(SequentialUUID.generate());
 
 		return ddlRecordSetModel;
 	}
@@ -3288,10 +3464,6 @@ public class DataFactory {
 
 		DDMStorageLinkModel ddmStorageLinkModel = new DDMStorageLinkModelImpl();
 
-		// UUID
-
-		ddmStorageLinkModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		ddmStorageLinkModel.setStorageLinkId(_counter.get());
@@ -3304,6 +3476,10 @@ public class DataFactory {
 		ddmStorageLinkModel.setStructureId(structureId);
 		ddmStorageLinkModel.setStructureVersionId(
 			_defaultJournalDDMStructureVersionId);
+
+		// Autogenerated fields
+
+		ddmStorageLinkModel.setUuid(SequentialUUID.generate());
 
 		return ddmStorageLinkModel;
 	}
@@ -3318,12 +3494,12 @@ public class DataFactory {
 	}
 
 	public DDMStructureLinkModel newDDMStructureLinkModel(
-		DLFileEntryMetadataModel dLFileEntryMetadataModel) {
+		DLFileEntryMetadataModel dlFileEntryMetadataModel) {
 
 		return newDDMStructureLinkModel(
 			getClassNameId(DLFileEntryMetadata.class),
-			dLFileEntryMetadataModel.getFileEntryMetadataId(),
-			dLFileEntryMetadataModel.getDDMStructureId());
+			dlFileEntryMetadataModel.getFileEntryMetadataId(),
+			dlFileEntryMetadataModel.getDDMStructureId());
 	}
 
 	public DDMStructureVersionModel newDDMStructureVersionModel(
@@ -3359,13 +3535,11 @@ public class DataFactory {
 			ddmStructureModel.getStructureId());
 		ddmStructureVersionModel.setVersion(
 			DDMStructureConstants.VERSION_DEFAULT);
-
 		ddmStructureVersionModel.setName(
 			StringBundler.concat(
 				"<?xml version=\"1.0\"?><root available-locales=\"en_US\" ",
 				"default-locale=\"en_US\"><name language-id=\"en_US\">",
 				ddmStructureModel.getStructureKey(), "</name></root>"));
-
 		ddmStructureVersionModel.setDefinition(
 			ddmStructureModel.getDefinition());
 		ddmStructureVersionModel.setStorageType(StorageType.DEFAULT.toString());
@@ -3401,15 +3575,20 @@ public class DataFactory {
 		return ddmTemplateLinkModel;
 	}
 
+	public UserModel newDefaultAdminUserModel() {
+		return newUserModel(
+			_counter.get(), "Test", "Test", "Test", UserConstants.TYPE_REGULAR);
+	}
+
 	public AssetVocabularyModel newDefaultAssetVocabularyModel() {
 		return newAssetVocabularyModel(
-			_globalGroupId, _defaultUserId, null,
+			_globalGroupId, _guestUserId, null,
 			PropsValues.ASSET_VOCABULARY_DEFAULT);
 	}
 
 	public DDMStructureLayoutModel newDefaultDLDDMStructureLayoutModel() {
 		return newDDMStructureLayoutModel(
-			_globalGroupId, _defaultUserId, _defaultDLDDMStructureVersionId,
+			_globalGroupId, _guestUserId, _defaultDLDDMStructureVersionId,
 			_dlDDMStructureLayoutContent);
 	}
 
@@ -3417,7 +3596,7 @@ public class DataFactory {
 		_defaultDLDDMStructureId = _counter.get();
 
 		return newDDMStructureModel(
-			_globalGroupId, _defaultUserId, getClassNameId(DLFileEntry.class),
+			_globalGroupId, _guestUserId, getClassNameId(DLFileEntry.class),
 			RawMetadataProcessor.TIKA_RAW_METADATA, _dlDDMStructureContent,
 			_defaultDLDDMStructureId);
 	}
@@ -3433,8 +3612,7 @@ public class DataFactory {
 
 	public DDMStructureLayoutModel newDefaultJournalDDMStructureLayoutModel() {
 		return newDDMStructureLayoutModel(
-			_globalGroupId, _defaultUserId,
-			_defaultJournalDDMStructureVersionId,
+			_globalGroupId, _guestUserId, _defaultJournalDDMStructureVersionId,
 			_journalDDMStructureLayoutContent,
 			getClassNameId(JournalArticle.class), _JOURNAL_STRUCTURE_KEY);
 	}
@@ -3443,9 +3621,9 @@ public class DataFactory {
 		_defaultJournalDDMStructureId = _counter.get();
 
 		return newDDMStructureModel(
-			_globalGroupId, _defaultUserId,
-			getClassNameId(JournalArticle.class), _JOURNAL_STRUCTURE_KEY,
-			_journalDDMStructureContent, _defaultJournalDDMStructureId);
+			_globalGroupId, _guestUserId, getClassNameId(JournalArticle.class),
+			_JOURNAL_STRUCTURE_KEY, _journalDDMStructureContent,
+			_defaultJournalDDMStructureId);
 	}
 
 	public DDMStructureVersionModel newDefaultJournalDDMStructureVersionModel(
@@ -3461,7 +3639,7 @@ public class DataFactory {
 		_defaultJournalDDMTemplateId = _counter.get();
 
 		return newDDMTemplateModel(
-			_globalGroupId, _defaultUserId, _defaultJournalDDMStructureId,
+			_globalGroupId, _guestUserId, _defaultJournalDDMStructureId,
 			getClassNameId(JournalArticle.class), _defaultJournalDDMTemplateId);
 	}
 
@@ -3480,7 +3658,7 @@ public class DataFactory {
 		// Audit fields
 
 		ddmTemplateVersionModelImpl.setCompanyId(_companyId);
-		ddmTemplateVersionModelImpl.setUserId(_defaultUserId);
+		ddmTemplateVersionModelImpl.setUserId(_guestUserId);
 		ddmTemplateVersionModelImpl.setCreateDate(nextFutureDate());
 
 		// Other fields
@@ -3491,25 +3669,15 @@ public class DataFactory {
 		ddmTemplateVersionModelImpl.setTemplateId(_defaultJournalDDMTemplateId);
 		ddmTemplateVersionModelImpl.setVersion(
 			DDMTemplateConstants.VERSION_DEFAULT);
-
 		ddmTemplateVersionModelImpl.setName(
 			StringBundler.concat(
 				"<?xml version=\"1.0\"?><root available-locales=\"en_US\" ",
 				"default-locale=\"en_US\"><name language-id=\"en_US\">",
 				_JOURNAL_STRUCTURE_KEY, "</name></root>"));
-
-		ddmTemplateVersionModelImpl.setStatusByUserId(_defaultUserId);
+		ddmTemplateVersionModelImpl.setStatusByUserId(_guestUserId);
 		ddmTemplateVersionModelImpl.setStatusDate(nextFutureDate());
 
 		return ddmTemplateVersionModelImpl;
-	}
-
-	public UserModel newDefaultUserModel() {
-		_defaultUserId = _counter.get();
-
-		return newUserModel(
-			_defaultUserId, StringPool.BLANK, StringPool.BLANK,
-			StringPool.BLANK, true);
 	}
 
 	public DLFileEntryMetadataModel newDLFileEntryMetadataModel(
@@ -3518,10 +3686,6 @@ public class DataFactory {
 
 		DLFileEntryMetadataModel dlFileEntryMetadataModel =
 			new DLFileEntryMetadataModelImpl();
-
-		// UUID
-
-		dlFileEntryMetadataModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -3536,15 +3700,11 @@ public class DataFactory {
 		dlFileEntryMetadataModel.setFileVersionId(
 			dlFileVersionModel.getFileVersionId());
 
+		// Autogenerated fields
+
+		dlFileEntryMetadataModel.setUuid(SequentialUUID.generate());
+
 		return dlFileEntryMetadataModel;
-	}
-
-	public DLFileEntryModel newDlFileEntryModel(
-		DLFolderModel dlFolderModel, String name, String extension,
-		String mimeType) {
-
-		return newDlFileEntryModel(
-			dlFolderModel, name, extension, mimeType, _counter.get());
 	}
 
 	public DLFileEntryModel newDlFileEntryModel(
@@ -3552,10 +3712,6 @@ public class DataFactory {
 		String mimeType, long fileEntryId) {
 
 		DLFileEntryModel dlFileEntryModel = new DLFileEntryModelImpl();
-
-		// UUID
-
-		dlFileEntryModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -3578,7 +3734,7 @@ public class DataFactory {
 		dlFileEntryModel.setRepositoryId(dlFolderModel.getRepositoryId());
 		dlFileEntryModel.setFolderId(dlFolderModel.getFolderId());
 		dlFileEntryModel.setTreePath(dlFolderModel.getTreePath());
-		dlFileEntryModel.setName(String.valueOf(_dLFileEntryIdCounter.get()));
+		dlFileEntryModel.setName(String.valueOf(_dlFileEntryIdCounter.get()));
 		dlFileEntryModel.setFileName(name + "." + extension);
 		dlFileEntryModel.setExtension(extension);
 		dlFileEntryModel.setMimeType(mimeType);
@@ -3591,7 +3747,10 @@ public class DataFactory {
 
 		// Autogenerated fields
 
-		dlFileEntryModel.setExternalReferenceCode(String.valueOf(fileEntryId));
+		String uuid = SequentialUUID.generate();
+
+		dlFileEntryModel.setUuid(uuid);
+		dlFileEntryModel.setExternalReferenceCode(uuid);
 
 		return dlFileEntryModel;
 	}
@@ -3605,7 +3764,10 @@ public class DataFactory {
 		for (int i = 1; i <= BenchmarksPropsValues.MAX_DL_FILE_ENTRY_COUNT;
 			 i++) {
 
-			dlFileEntryModels.add(newDlFileEntryModel(dlFolderModel, i));
+			dlFileEntryModels.add(
+				newDlFileEntryModel(
+					dlFolderModel, "TestFile" + i, "txt",
+					ContentTypes.TEXT_PLAIN, _counter.get()));
 		}
 
 		return dlFileEntryModels;
@@ -3614,10 +3776,6 @@ public class DataFactory {
 	public DLFileEntryTypeModel newDLFileEntryTypeModel() {
 		DLFileEntryTypeModel defaultDLFileEntryTypeModel =
 			new DLFileEntryTypeModelImpl();
-
-		// UUID
-
-		defaultDLFileEntryTypeModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -3634,15 +3792,17 @@ public class DataFactory {
 		defaultDLFileEntryTypeModel.setFileEntryTypeKey(
 			StringUtil.toUpperCase(
 				DLFileEntryTypeConstants.NAME_BASIC_DOCUMENT));
-
 		defaultDLFileEntryTypeModel.setName(
 			StringBundler.concat(
 				"<?xml version=\"1.0\"?><root available-locales=\"en_US\" ",
 				"default-locale=\"en_US\"><name language-id=\"en_US\">",
 				DLFileEntryTypeConstants.NAME_BASIC_DOCUMENT,
 				"</name></root>"));
-
 		defaultDLFileEntryTypeModel.setLastPublishDate(nextFutureDate());
+
+		// Autogenerated fields
+
+		defaultDLFileEntryTypeModel.setUuid(SequentialUUID.generate());
 
 		return defaultDLFileEntryTypeModel;
 	}
@@ -3651,10 +3811,6 @@ public class DataFactory {
 		DLFileEntryModel dlFileEntryModel) {
 
 		DLFileVersionModel dlFileVersionModel = new DLFileVersionModelImpl();
-
-		// UUID
-
-		dlFileVersionModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -3686,6 +3842,10 @@ public class DataFactory {
 		dlFileVersionModel.setVersion(dlFileEntryModel.getVersion());
 		dlFileVersionModel.setSize(dlFileEntryModel.getSize());
 		dlFileVersionModel.setLastPublishDate(nextFutureDate());
+
+		// Autogenerated fields
+
+		dlFileVersionModel.setUuid(SequentialUUID.generate());
 
 		return dlFileVersionModel;
 	}
@@ -3741,10 +3901,6 @@ public class DataFactory {
 		FragmentCollectionModel fragmentCollectionModel =
 			new FragmentCollectionModelImpl();
 
-		// UUID
-
-		fragmentCollectionModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		fragmentCollectionModel.setFragmentCollectionId(_counter.get());
@@ -3765,6 +3921,10 @@ public class DataFactory {
 		fragmentCollectionModel.setFragmentCollectionKey("fragmentcollection");
 		fragmentCollectionModel.setName("fragmentcollection");
 
+		// Autogenerated fields
+
+		fragmentCollectionModel.setUuid(SequentialUUID.generate());
+
 		return fragmentCollectionModel;
 	}
 
@@ -3773,10 +3933,6 @@ public class DataFactory {
 
 		FragmentEntryLinkModel fragmentEntryLinkModel =
 			new FragmentEntryLinkModelImpl();
-
-		// UUID
-
-		fragmentEntryLinkModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -3806,6 +3962,10 @@ public class DataFactory {
 		fragmentEntryLinkModel.setEditableValues(StringPool.BLANK);
 		fragmentEntryLinkModel.setNamespace(StringUtil.randomId());
 		fragmentEntryLinkModel.setPosition(0);
+
+		// Autogenerated fields
+
+		fragmentEntryLinkModel.setUuid(SequentialUUID.generate());
 
 		return fragmentEntryLinkModel;
 	}
@@ -3875,10 +4035,6 @@ public class DataFactory {
 
 		FragmentEntryModel fragmentEntryModel = new FragmentEntryModelImpl();
 
-		// UUID
-
-		fragmentEntryModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		fragmentEntryModel.setFragmentEntryId(_counter.get());
@@ -3909,6 +4065,7 @@ public class DataFactory {
 
 		// Autogenerated fields
 
+		fragmentEntryModel.setUuid(SequentialUUID.generate());
 		fragmentEntryModel.setHeadId(_counter.get());
 
 		return fragmentEntryModel;
@@ -3983,10 +4140,6 @@ public class DataFactory {
 		FriendlyURLEntryModel friendlyURLEntryModel =
 			new FriendlyURLEntryModelImpl();
 
-		// UUID
-
-		friendlyURLEntryModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		friendlyURLEntryModel.setFriendlyURLEntryId(_counter.get());
@@ -4008,6 +4161,7 @@ public class DataFactory {
 
 		// Autogenerated fields
 
+		friendlyURLEntryModel.setUuid(SequentialUUID.generate());
 		friendlyURLEntryModel.setDefaultLanguageId("en_US");
 
 		return friendlyURLEntryModel;
@@ -4091,9 +4245,12 @@ public class DataFactory {
 			BenchmarksPropsValues.MAX_GROUP_COUNT);
 
 		for (int i = 1; i <= BenchmarksPropsValues.MAX_GROUP_COUNT; i++) {
+			long groupId = _groupCounter.get();
+
 			groupModels.add(
 				newGroupModel(
-					i, getClassNameId(Group.class), i, "Site " + i, true));
+					groupId, getClassNameId(Group.class), groupId, "Site " + i,
+					true));
 		}
 
 		return groupModels;
@@ -4114,7 +4271,11 @@ public class DataFactory {
 	}
 
 	public UserModel newGuestUserModel() {
-		return newUserModel(_counter.get(), "Test", "Test", "Test", false);
+		_guestUserId = _counter.get();
+
+		return newUserModel(
+			_guestUserId, StringPool.BLANK, StringPool.BLANK, StringPool.BLANK,
+			UserConstants.TYPE_GUEST);
 	}
 
 	public JournalArticleLocalizationModel newJournalArticleLocalizationModel(
@@ -4152,10 +4313,6 @@ public class DataFactory {
 
 		JournalArticleModel journalArticleModel = new JournalArticleModelImpl();
 
-		// UUID
-
-		journalArticleModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		journalArticleModel.setId(_counter.get());
@@ -4186,13 +4343,11 @@ public class DataFactory {
 		journalArticleModel.setArticleId(
 			journalArticleResourceModel.getArticleId());
 		journalArticleModel.setVersion(versionIndex);
-
 		journalArticleModel.setUrlTitle(
 			StringBundler.concat(
 				"TestJournalArticle_", articleIndex, StringPool.UNDERLINE,
 				versionIndex));
-
-		journalArticleModel.setDDMStructureKey(_JOURNAL_STRUCTURE_KEY);
+		journalArticleModel.setDDMStructureId(_defaultJournalDDMStructureId);
 		journalArticleModel.setDDMTemplateKey(_JOURNAL_STRUCTURE_KEY);
 		journalArticleModel.setDefaultLanguageId("en_US");
 		journalArticleModel.setDisplayDate(new Date());
@@ -4202,6 +4357,13 @@ public class DataFactory {
 		journalArticleModel.setLastPublishDate(new Date());
 		journalArticleModel.setStatusDate(new Date());
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		journalArticleModel.setUuid(uuid);
+		journalArticleModel.setExternalReferenceCode(uuid);
+
 		return journalArticleModel;
 	}
 
@@ -4210,10 +4372,6 @@ public class DataFactory {
 
 		JournalArticleResourceModel journalArticleResourceModel =
 			new JournalArticleResourceModelImpl();
-
-		// UUID
-
-		journalArticleResourceModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -4231,6 +4389,10 @@ public class DataFactory {
 
 		journalArticleResourceModel.setArticleId(
 			String.valueOf(_counter.get()));
+
+		// Autogenerated fields
+
+		journalArticleResourceModel.setUuid(SequentialUUID.generate());
 
 		_journalArticleResourceUUIDs.put(
 			journalArticleResourceModel.getPrimaryKey(),
@@ -4287,45 +4449,12 @@ public class DataFactory {
 			journalArticleModel.getArticleId());
 	}
 
-	public JournalContentSearchModel newJournalContentSearchModel(
-		JournalArticleModel journalArticleModel, long layoutId) {
-
-		JournalContentSearchModel journalContentSearchModel =
-			new JournalContentSearchModelImpl();
-
-		// PK fields
-
-		journalContentSearchModel.setContentSearchId(_counter.get());
-
-		// Group instance
-
-		journalContentSearchModel.setGroupId(journalArticleModel.getGroupId());
-
-		// Audit fields
-
-		journalContentSearchModel.setCompanyId(_companyId);
-
-		// Other fields
-
-		journalContentSearchModel.setLayoutId(layoutId);
-		journalContentSearchModel.setPortletId(
-			JournalContentPortletKeys.JOURNAL_CONTENT);
-		journalContentSearchModel.setArticleId(
-			journalArticleModel.getArticleId());
-
-		return journalContentSearchModel;
-	}
-
 	public LayoutClassedModelUsageModel newLayoutClassedModelUsageModel(
 		long groupId, long plid, String containerKey,
 		JournalArticleResourceModel journalArticleResourceModel) {
 
 		LayoutClassedModelUsageModel layoutClassedModelUsageModel =
 			new LayoutClassedModelUsageModelImpl();
-
-		// UUID
-
-		layoutClassedModelUsageModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -4348,6 +4477,8 @@ public class DataFactory {
 			getClassNameId(JournalArticle.class));
 		layoutClassedModelUsageModel.setClassPK(
 			journalArticleResourceModel.getResourcePrimKey());
+		layoutClassedModelUsageModel.setClassedModelExternalReferenceCode(
+			StringPool.BLANK);
 		layoutClassedModelUsageModel.setContainerKey(containerKey);
 		layoutClassedModelUsageModel.setContainerType(
 			getClassNameId(Portlet.class));
@@ -4355,6 +4486,10 @@ public class DataFactory {
 		layoutClassedModelUsageModel.setType(
 			LayoutClassedModelUsageConstants.TYPE_LAYOUT);
 		layoutClassedModelUsageModel.setLastPublishDate(new Date());
+
+		// Autogenerated fields
+
+		layoutClassedModelUsageModel.setUuid(SequentialUUID.generate());
 
 		return layoutClassedModelUsageModel;
 	}
@@ -4364,10 +4499,6 @@ public class DataFactory {
 
 		LayoutFriendlyURLModel layoutFriendlyURLEntryModel =
 			new LayoutFriendlyURLModelImpl();
-
-		// UUID
-
-		layoutFriendlyURLEntryModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -4395,6 +4526,10 @@ public class DataFactory {
 		layoutFriendlyURLEntryModel.setLanguageId("en_US");
 		layoutFriendlyURLEntryModel.setLastPublishDate(new Date());
 
+		// Autogenerated fields
+
+		layoutFriendlyURLEntryModel.setUuid(SequentialUUID.generate());
+
 		return layoutFriendlyURLEntryModel;
 	}
 
@@ -4410,10 +4545,6 @@ public class DataFactory {
 
 		LayoutPageTemplateStructureModel layoutPageTemplateStructureModel =
 			new LayoutPageTemplateStructureModelImpl();
-
-		// UUID
-
-		layoutPageTemplateStructureModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -4434,9 +4565,11 @@ public class DataFactory {
 
 		// Other fields
 
-		layoutPageTemplateStructureModel.setClassNameId(
-			getClassNameId(Layout.class));
-		layoutPageTemplateStructureModel.setClassPK(layoutModel.getPlid());
+		layoutPageTemplateStructureModel.setPlid(layoutModel.getPlid());
+
+		// Autogenerated fields
+
+		layoutPageTemplateStructureModel.setUuid(SequentialUUID.generate());
 
 		return layoutPageTemplateStructureModel;
 	}
@@ -4452,10 +4585,6 @@ public class DataFactory {
 		LayoutPageTemplateStructureRelModel
 			layoutPageTemplateStructureRelModel =
 				new LayoutPageTemplateStructureRelModelImpl();
-
-		// UUID
-
-		layoutPageTemplateStructureRelModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -4487,6 +4616,10 @@ public class DataFactory {
 				String.valueOf(
 					fragmentEntryLinkModel.getFragmentEntryLinkId())));
 
+		// Autogenerated fields
+
+		layoutPageTemplateStructureRelModel.setUuid(SequentialUUID.generate());
+
 		return layoutPageTemplateStructureRelModel;
 	}
 
@@ -4512,10 +4645,6 @@ public class DataFactory {
 			layoutPageTemplateStructureRelModel =
 				new LayoutPageTemplateStructureRelModelImpl();
 
-		// UUID
-
-		layoutPageTemplateStructureRelModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		layoutPageTemplateStructureRelModel.setLayoutPageTemplateStructureRelId(
@@ -4540,9 +4669,12 @@ public class DataFactory {
 			layoutPageTemplateStructureModel.
 				getLayoutPageTemplateStructureId());
 		layoutPageTemplateStructureRelModel.setSegmentsExperienceId(0L);
-
 		layoutPageTemplateStructureRelModel.setData(
 			_generateJsonData(targetFragmentEntryLinkModels, templateFileName));
+
+		// Autogenerated fields
+
+		layoutPageTemplateStructureRelModel.setUuid(SequentialUUID.generate());
 
 		return layoutPageTemplateStructureRelModel;
 	}
@@ -4575,10 +4707,6 @@ public class DataFactory {
 
 		MBDiscussionModel mbDiscussionModel = new MBDiscussionModelImpl();
 
-		// UUID
-
-		mbDiscussionModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		mbDiscussionModel.setDiscussionId(_counter.get());
@@ -4602,6 +4730,10 @@ public class DataFactory {
 		mbDiscussionModel.setThreadId(threadId);
 		mbDiscussionModel.setLastPublishDate(new Date());
 
+		// Autogenerated fields
+
+		mbDiscussionModel.setUuid(SequentialUUID.generate());
+
 		return mbDiscussionModel;
 	}
 
@@ -4609,10 +4741,6 @@ public class DataFactory {
 		MBCategoryModel mbCategoryModel, UserModel sampleUserModel) {
 
 		MBMailingListModel mbMailingListModel = new MBMailingListModelImpl();
-
-		// UUID
-
-		mbMailingListModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -4639,6 +4767,10 @@ public class DataFactory {
 		mbMailingListModel.setInPassword(sampleUserModel.getPassword());
 		mbMailingListModel.setInReadInterval(5);
 		mbMailingListModel.setOutServerPort(25);
+
+		// Autogenerated fields
+
+		mbMailingListModel.setUuid(SequentialUUID.generate());
 
 		return mbMailingListModel;
 	}
@@ -4720,10 +4852,6 @@ public class DataFactory {
 	public MBThreadFlagModel newMBThreadFlagModel(MBThreadModel mbThreadModel) {
 		MBThreadFlagModel mbThreadFlagModel = new MBThreadFlagModelImpl();
 
-		// UUID
-
-		mbThreadFlagModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		mbThreadFlagModel.setThreadFlagId(_counter.get());
@@ -4744,6 +4872,10 @@ public class DataFactory {
 
 		mbThreadFlagModel.setThreadId(mbThreadModel.getThreadId());
 		mbThreadFlagModel.setLastPublishDate(new Date());
+
+		// Autogenerated fields
+
+		mbThreadFlagModel.setUuid(SequentialUUID.generate());
 
 		return mbThreadFlagModel;
 	}
@@ -4956,12 +5088,12 @@ public class DataFactory {
 	public List<ResourcePermissionModel> newResourcePermissionModels(
 		AssetVocabularyModel assetVocabularyModel) {
 
-		if (assetVocabularyModel.getUserId() == _defaultUserId) {
+		if (assetVocabularyModel.getUserId() == _guestUserId) {
 			return Collections.singletonList(
 				newResourcePermissionModel(
 					AssetVocabulary.class.getName(),
 					String.valueOf(assetVocabularyModel.getVocabularyId()),
-					_ownerRoleModel.getRoleId(), _defaultUserId));
+					_ownerRoleModel.getRoleId(), _guestUserId));
 		}
 
 		return newResourcePermissionModels(
@@ -5301,15 +5433,11 @@ public class DataFactory {
 
 		return newUserModel(
 			_sampleUserId, _SAMPLE_USER_NAME, _SAMPLE_USER_NAME,
-			_SAMPLE_USER_NAME, false);
+			_SAMPLE_USER_NAME, UserConstants.TYPE_REGULAR);
 	}
 
 	public SegmentsEntry newSegmentsEntry(long groupId, int index) {
 		SegmentsEntry segmentsEntry = new SegmentsEntryImpl();
-
-		// UUID
-
-		segmentsEntry.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -5330,13 +5458,11 @@ public class DataFactory {
 		// Other fields
 
 		segmentsEntry.setSegmentsEntryKey(_counter.getString());
-
 		segmentsEntry.setName(
 			StringBundler.concat(
 				"<?xml version=\"1.0\"?><root available-locales=\"en_US\" ",
 				"default-locale=\"en_US\"><Name language-id=\"en_US\">",
 				"SampleSegment", index, "</Name></root>"));
-
 		segmentsEntry.setActive(true);
 
 		Criteria criteria = new Criteria();
@@ -5355,6 +5481,10 @@ public class DataFactory {
 
 		segmentsEntry.setSource(SegmentsEntryConstants.SOURCE_DEFAULT);
 		segmentsEntry.setType(User.class.getName());
+
+		// Autogenerated fields
+
+		segmentsEntry.setUuid(SequentialUUID.generate());
 
 		return segmentsEntry;
 	}
@@ -5447,16 +5577,25 @@ public class DataFactory {
 	}
 
 	public List<UserModel> newUserModels() {
-		List<UserModel> userModels = new ArrayList<>(
-			BenchmarksPropsValues.MAX_USER_COUNT);
+		int userCount = 0;
 
-		for (int i = 0; i < BenchmarksPropsValues.MAX_USER_COUNT; i++) {
+		if (_webId.equals("liferay.com")) {
+			userCount = BenchmarksPropsValues.MAX_USER_COUNT;
+		}
+		else {
+			userCount = BenchmarksPropsValues.MAX_COMPANY_USER_COUNT;
+		}
+
+		List<UserModel> userModels = new ArrayList<>(userCount);
+
+		for (int i = 0; i < userCount; i++) {
 			String[] userName = nextUserName(i);
 
 			userModels.add(
 				newUserModel(
 					_counter.get(), userName[0], userName[1],
-					"test" + _userScreenNameCounter.get(), false));
+					"test" + _userScreenNameCounter.get(),
+					UserConstants.TYPE_REGULAR));
 		}
 
 		return userModels;
@@ -5465,7 +5604,7 @@ public class DataFactory {
 	public GroupModel newUserPersonalSiteGroupModel() {
 		return newGroupModel(
 			_counter.get(), getClassNameId(UserPersonalSite.class),
-			_defaultUserId, GroupConstants.USER_PERSONAL_SITE, false);
+			_guestUserId, GroupConstants.USER_PERSONAL_SITE, false);
 	}
 
 	public VirtualHostModel newVirtualHostModel() {
@@ -5481,7 +5620,13 @@ public class DataFactory {
 
 		// Other fields
 
-		virtualHostModel.setHostname(BenchmarksPropsValues.VIRTUAL_HOST_NAME);
+		if (_webId.equals("liferay.com")) {
+			virtualHostModel.setHostname(
+				BenchmarksPropsValues.VIRTUAL_HOST_NAME);
+		}
+		else {
+			virtualHostModel.setHostname(_webId);
+		}
 
 		return virtualHostModel;
 	}
@@ -5514,10 +5659,6 @@ public class DataFactory {
 		WikiPageResourceModel wikiPageResourceModel =
 			new WikiPageResourceModelImpl();
 
-		// UUID
-
-		wikiPageResourceModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		wikiPageResourceModel.setResourcePrimKey(
@@ -5527,6 +5668,10 @@ public class DataFactory {
 
 		wikiPageResourceModel.setNodeId(wikiPageModel.getNodeId());
 		wikiPageResourceModel.setTitle(wikiPageModel.getTitle());
+
+		// Autogenerated fields
+
+		wikiPageResourceModel.setUuid(SequentialUUID.generate());
 
 		return wikiPageResourceModel;
 	}
@@ -5539,6 +5684,14 @@ public class DataFactory {
 		userName[1] = _lastNames.get((int)(index % _lastNames.size()));
 
 		return userName;
+	}
+
+	public void setCompanyId(long companyId) {
+		_companyId = companyId;
+	}
+
+	public void setWebId(String webId) {
+		_webId = webId;
 	}
 
 	public String toInsertSQL(BaseModel<?> baseModel) {
@@ -5565,8 +5718,7 @@ public class DataFactory {
 				}
 				catch (NoSuchMethodException noSuchMethodException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(
-							noSuchMethodException, noSuchMethodException);
+						_log.debug(noSuchMethodException);
 					}
 				}
 			}
@@ -5710,10 +5862,6 @@ public class DataFactory {
 
 		AssetCategoryModel assetCategoryModel = new AssetCategoryModelImpl();
 
-		// UUID
-
-		assetCategoryModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		assetCategoryModel.setCategoryId(_counter.get());
@@ -5737,15 +5885,20 @@ public class DataFactory {
 		assetCategoryModel.setTreePath(
 			"/" + assetCategoryModel.getCategoryId() + "/");
 		assetCategoryModel.setName(name);
-
 		assetCategoryModel.setTitle(
 			StringBundler.concat(
 				"<?xml version=\"1.0\"?><root available-locales=\"en_US\" ",
 				"default-locale=\"en_US\"><Title language-id=\"en_US\">", name,
 				"</Title></root>"));
-
 		assetCategoryModel.setVocabularyId(vocabularyId);
 		assetCategoryModel.setLastPublishDate(new Date());
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		assetCategoryModel.setUuid(uuid);
+		assetCategoryModel.setExternalReferenceCode(uuid);
 
 		return assetCategoryModel;
 	}
@@ -5797,10 +5950,6 @@ public class DataFactory {
 		AssetVocabularyModel assetVocabularyModel =
 			new AssetVocabularyModelImpl();
 
-		// UUID
-
-		assetVocabularyModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		assetVocabularyModel.setVocabularyId(_counter.get());
@@ -5820,26 +5969,27 @@ public class DataFactory {
 		// Other fields
 
 		assetVocabularyModel.setName(name);
-
 		assetVocabularyModel.setTitle(
 			StringBundler.concat(
 				"<?xml version=\"1.0\"?><root available-locales=\"en_US\" ",
 				"default-locale=\"en_US\"><Title language-id=\"en_US\">", name,
 				"</Title></root>"));
-
 		assetVocabularyModel.setSettings(
 			"multiValued=true\\nselectedClassNameIds=0");
 		assetVocabularyModel.setLastPublishDate(new Date());
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		assetVocabularyModel.setUuid(uuid);
+		assetVocabularyModel.setExternalReferenceCode(uuid);
 
 		return assetVocabularyModel;
 	}
 
 	protected BlogsEntryModel newBlogsEntryModel(long groupId, int index) {
 		BlogsEntryModel blogsEntryModel = new BlogsEntryModelImpl();
-
-		// UUID
-
-		blogsEntryModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -5867,6 +6017,13 @@ public class DataFactory {
 		blogsEntryModel.setLastPublishDate(new Date());
 		blogsEntryModel.setStatusByUserId(_sampleUserId);
 		blogsEntryModel.setStatusDate(new Date());
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		blogsEntryModel.setUuid(uuid);
+		blogsEntryModel.setExternalReferenceCode(uuid);
 
 		return blogsEntryModel;
 	}
@@ -6001,10 +6158,6 @@ public class DataFactory {
 
 		DDMStorageLinkModel ddmStorageLinkModel = new DDMStorageLinkModelImpl();
 
-		// UUID
-
-		ddmStorageLinkModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		ddmStorageLinkModel.setStorageLinkId(ddmStorageLinkId);
@@ -6019,6 +6172,10 @@ public class DataFactory {
 		ddmStorageLinkModel.setClassPK(classPK);
 		ddmStorageLinkModel.setStructureId(structureId);
 		ddmStorageLinkModel.setStructureVersionId(versionId);
+
+		// Autogenerated fields
+
+		ddmStorageLinkModel.setUuid(SequentialUUID.generate());
 
 		return ddmStorageLinkModel;
 	}
@@ -6037,10 +6194,6 @@ public class DataFactory {
 
 		DDMStructureLayoutModel ddmStructureLayoutModel =
 			new DDMStructureLayoutModelImpl();
-
-		// UUID
-
-		ddmStructureLayoutModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -6064,6 +6217,10 @@ public class DataFactory {
 		ddmStructureLayoutModel.setStructureLayoutKey(structureLayoutKey);
 		ddmStructureLayoutModel.setStructureVersionId(structureVersionId);
 		ddmStructureLayoutModel.setDefinition(definition);
+
+		// Autogenerated fields
+
+		ddmStructureLayoutModel.setUuid(SequentialUUID.generate());
 
 		return ddmStructureLayoutModel;
 	}
@@ -6097,10 +6254,6 @@ public class DataFactory {
 
 		DDMStructureModel ddmStructureModel = new DDMStructureModelImpl();
 
-		// UUID
-
-		ddmStructureModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		ddmStructureModel.setStructureId(structureId);
@@ -6124,16 +6277,18 @@ public class DataFactory {
 		ddmStructureModel.setClassNameId(classNameId);
 		ddmStructureModel.setStructureKey(structureKey);
 		ddmStructureModel.setVersion(DDMStructureConstants.VERSION_DEFAULT);
-
 		ddmStructureModel.setName(
 			StringBundler.concat(
 				"<?xml version=\"1.0\"?><root available-locales=\"en_US\" ",
 				"default-locale=\"en_US\"><name language-id=\"en_US\">",
 				structureKey, "</name></root>"));
-
 		ddmStructureModel.setDefinition(definition);
 		ddmStructureModel.setStorageType(StorageType.DEFAULT.toString());
 		ddmStructureModel.setLastPublishDate(nextFutureDate());
+
+		// Autogenerated fields
+
+		ddmStructureModel.setUuid(SequentialUUID.generate());
 
 		return ddmStructureModel;
 	}
@@ -6155,10 +6310,6 @@ public class DataFactory {
 		long templateId, String templateKey) {
 
 		DDMTemplateModel ddmTemplateModel = new DDMTemplateModelImpl();
-
-		// UUID
-
-		ddmTemplateModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -6184,13 +6335,11 @@ public class DataFactory {
 		ddmTemplateModel.setResourceClassNameId(resourceClassNameId);
 		ddmTemplateModel.setTemplateKey(templateKey);
 		ddmTemplateModel.setVersion(DDMTemplateConstants.VERSION_DEFAULT);
-
 		ddmTemplateModel.setName(
 			StringBundler.concat(
 				"<?xml version=\"1.0\"?><root available-locales=\"en_US\" ",
 				"default-locale=\"en_US\"><name language-id=\"en_US\">", name,
 				"</name></root>"));
-
 		ddmTemplateModel.setType(DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY);
 		ddmTemplateModel.setMode(mode);
 		ddmTemplateModel.setLanguage(TemplateConstants.LANG_TYPE_FTL);
@@ -6199,14 +6348,11 @@ public class DataFactory {
 		ddmTemplateModel.setSmallImage(false);
 		ddmTemplateModel.setLastPublishDate(nextFutureDate());
 
+		// Autogenerated fields
+
+		ddmTemplateModel.setUuid(SequentialUUID.generate());
+
 		return ddmTemplateModel;
-	}
-
-	protected DLFileEntryModel newDlFileEntryModel(
-		DLFolderModel dlFolderModel, int index) {
-
-		return newDlFileEntryModel(
-			dlFolderModel, "TestFile" + index, "txt", ContentTypes.TEXT_PLAIN);
 	}
 
 	protected DLFolderModel newDLFolderModel(
@@ -6214,10 +6360,6 @@ public class DataFactory {
 		String name) {
 
 		DLFolderModel dlFolderModel = new DLFolderModelImpl();
-
-		// UUID
-
-		dlFolderModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -6246,6 +6388,13 @@ public class DataFactory {
 		dlFolderModel.setLastPublishDate(nextFutureDate());
 		dlFolderModel.setStatusDate(nextFutureDate());
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		dlFolderModel.setUuid(uuid);
+		dlFolderModel.setExternalReferenceCode(uuid);
+
 		return dlFolderModel;
 	}
 
@@ -6256,10 +6405,6 @@ public class DataFactory {
 
 		FragmentEntryLinkModel fragmentEntryLinkModel =
 			new FragmentEntryLinkModelImpl();
-
-		// UUID
-
-		fragmentEntryLinkModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -6292,6 +6437,10 @@ public class DataFactory {
 		fragmentEntryLinkModel.setNamespace(nameSpace);
 		fragmentEntryLinkModel.setPosition(position);
 
+		// Autogenerated fields
+
+		fragmentEntryLinkModel.setUuid(SequentialUUID.generate());
+
 		return fragmentEntryLinkModel;
 	}
 
@@ -6317,10 +6466,6 @@ public class DataFactory {
 
 		GroupModel groupModel = new GroupModelImpl();
 
-		// UUID
-
-		groupModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		groupModel.setGroupId(groupId);
@@ -6344,10 +6489,16 @@ public class DataFactory {
 		groupModel.setMembershipRestriction(
 			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION);
 		groupModel.setFriendlyURL(
-			StringPool.FORWARD_SLASH +
-				FriendlyURLNormalizerUtil.normalize(name));
+			StringPool.FORWARD_SLASH + _friendlyURLNormalizer.normalize(name));
 		groupModel.setSite(site);
 		groupModel.setActive(true);
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		groupModel.setUuid(uuid);
+		groupModel.setExternalReferenceCode(uuid);
 
 		return groupModel;
 	}
@@ -6361,10 +6512,6 @@ public class DataFactory {
 			counterName -> new SimpleCounter());
 
 		LayoutModel layoutModel = new LayoutModelImpl();
-
-		// UUID
-
-		layoutModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -6392,11 +6539,12 @@ public class DataFactory {
 		layoutModel.setType(LayoutConstants.TYPE_PORTLET);
 		layoutModel.setHidden(hidden);
 
-		UnicodeProperties typeSettingsUnicodeProperties = new UnicodeProperties(
-			true);
-
-		typeSettingsUnicodeProperties.setProperty(
-			LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, layoutTemplateId);
+		UnicodeProperties typeSettingsUnicodeProperties =
+			UnicodePropertiesBuilder.create(
+				true
+			).put(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, layoutTemplateId
+			).build();
 
 		for (int i = 0; i < columns.length; i++) {
 			if (!columns[i].equals("")) {
@@ -6415,8 +6563,11 @@ public class DataFactory {
 				typeSettingsUnicodeProperties.toString(), '\n', "\\n"));
 
 		layoutModel.setFriendlyURL(StringPool.FORWARD_SLASH + name);
-
 		layoutModel.setLastPublishDate(new Date());
+
+		// Autogenerated fields
+
+		layoutModel.setUuid(SequentialUUID.generate());
 
 		return layoutModel;
 	}
@@ -6467,10 +6618,6 @@ public class DataFactory {
 	protected MBCategoryModel newMBCategoryModel(long groupId, int index) {
 		MBCategoryModel mbCategoryModel = new MBCategoryModelImpl();
 
-		// UUID
-
-		mbCategoryModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		mbCategoryModel.setCategoryId(_counter.get());
@@ -6491,11 +6638,21 @@ public class DataFactory {
 
 		mbCategoryModel.setParentCategoryId(
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID);
-		mbCategoryModel.setName("Test Category " + index);
+
+		String name = "Test Category " + index;
+
+		mbCategoryModel.setName(name);
+
 		mbCategoryModel.setDisplayStyle(
 			MBCategoryConstants.DEFAULT_DISPLAY_STYLE);
+		mbCategoryModel.setFriendlyURL(
+			StringUtil.replace(name, CharPool.SPACE, StringPool.DASH));
 		mbCategoryModel.setLastPublishDate(new Date());
 		mbCategoryModel.setStatusDate(new Date());
+
+		// Autogenerated fields
+
+		mbCategoryModel.setUuid(SequentialUUID.generate());
 
 		return mbCategoryModel;
 	}
@@ -6506,10 +6663,6 @@ public class DataFactory {
 		String subject, String urlSubject, String body) {
 
 		MBMessageModel mBMessageModel = new MBMessageModelImpl();
-
-		// UUID
-
-		mBMessageModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -6542,6 +6695,13 @@ public class DataFactory {
 		mBMessageModel.setLastPublishDate(new Date());
 		mBMessageModel.setStatusDate(new Date());
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		mBMessageModel.setUuid(uuid);
+		mBMessageModel.setExternalReferenceCode(uuid);
+
 		return mBMessageModel;
 	}
 
@@ -6549,10 +6709,6 @@ public class DataFactory {
 		long threadId, long groupId, long categoryId, long rootMessageId) {
 
 		MBThreadModel mbThreadModel = new MBThreadModelImpl();
-
-		// UUID
-
-		mbThreadModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -6579,6 +6735,10 @@ public class DataFactory {
 		mbThreadModel.setLastPostDate(new Date());
 		mbThreadModel.setLastPublishDate(new Date());
 		mbThreadModel.setStatusDate(new Date());
+
+		// Autogenerated fields
+
+		mbThreadModel.setUuid(SequentialUUID.generate());
 
 		return mbThreadModel;
 	}
@@ -6676,10 +6836,6 @@ public class DataFactory {
 	protected RoleModel newRoleModel(String name, int type) {
 		RoleModel roleModel = new RoleModelImpl();
 
-		// UUID
-
-		roleModel.setUuid(SequentialUUID.generate());
-
 		// PK fields
 
 		roleModel.setRoleId(_counter.get());
@@ -6698,6 +6854,10 @@ public class DataFactory {
 		roleModel.setClassPK(roleModel.getRoleId());
 		roleModel.setName(name);
 		roleModel.setType(type);
+
+		// Autogenerated fields
+
+		roleModel.setUuid(SequentialUUID.generate());
 
 		return roleModel;
 	}
@@ -6760,17 +6920,13 @@ public class DataFactory {
 
 	protected UserModel newUserModel(
 		long userId, String firstName, String lastName, String screenName,
-		boolean defaultUser) {
+		int type) {
 
 		if (Validator.isNull(screenName)) {
 			screenName = String.valueOf(userId);
 		}
 
 		UserModel userModel = new UserModelImpl();
-
-		// UUID
-
-		userModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -6784,7 +6940,6 @@ public class DataFactory {
 
 		// Other fields
 
-		userModel.setDefaultUser(defaultUser);
 		userModel.setContactId(_counter.get());
 		userModel.setPassword("test");
 		userModel.setPasswordModifiedDate(new Date());
@@ -6802,16 +6957,20 @@ public class DataFactory {
 		userModel.setLockoutDate(new Date());
 		userModel.setAgreedToTermsOfUse(true);
 		userModel.setEmailAddressVerified(true);
+		userModel.setType(type);
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		userModel.setUuid(uuid);
+		userModel.setExternalReferenceCode(uuid);
 
 		return userModel;
 	}
 
 	protected WikiNodeModel newWikiNodeModel(long groupId, int index) {
 		WikiNodeModel wikiNodeModel = new WikiNodeModelImpl();
-
-		// UUID
-
-		wikiNodeModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -6836,6 +6995,13 @@ public class DataFactory {
 		wikiNodeModel.setLastPublishDate(new Date());
 		wikiNodeModel.setStatusDate(new Date());
 
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		wikiNodeModel.setUuid(uuid);
+		wikiNodeModel.setExternalReferenceCode(uuid);
+
 		return wikiNodeModel;
 	}
 
@@ -6843,10 +7009,6 @@ public class DataFactory {
 		WikiNodeModel wikiNodeModel, int index) {
 
 		WikiPageModel wikiPageModel = new WikiPageModelImpl();
-
-		// UUID
-
-		wikiPageModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -6880,6 +7042,13 @@ public class DataFactory {
 		wikiPageModel.setFormat("creole");
 		wikiPageModel.setHead(true);
 		wikiPageModel.setLastPublishDate(new Date());
+
+		// Autogenerated fields
+
+		String uuid = SequentialUUID.generate();
+
+		wikiPageModel.setUuid(uuid);
+		wikiPageModel.setExternalReferenceCode(uuid);
 
 		return wikiPageModel;
 	}
@@ -6919,6 +7088,18 @@ public class DataFactory {
 				if (name.endsWith(StringPool.UNDERLINE)) {
 					name = name.substring(0, name.length() - 1);
 				}
+				else if (name.equals("CdnEnabled")) {
+					name = "CDNEnabled";
+				}
+				else if (name.equals("CdnURL")) {
+					name = "CDNURL";
+				}
+				else if (name.equals("CmExternalReferenceCode")) {
+					name = "ClassedModelExternalReferenceCode";
+				}
+				else if (name.equals("CIBookedQuantityId")) {
+					name = "CommerceInventoryBookedQuantityId";
+				}
 				else if (name.equals("CIWarehouseId")) {
 					name = "CommerceInventoryWarehouseId";
 				}
@@ -6928,11 +7109,8 @@ public class DataFactory {
 				else if (name.equals("CPDSpecificationOptionValueId")) {
 					name = "CPDefinitionSpecificationOptionValueId";
 				}
-				else if (name.equals("CdnEnabled")) {
-					name = "CDNEnabled";
-				}
-				else if (name.equals("CdnURL")) {
-					name = "CDNURL";
+				else if (name.equals("DeliveryCTermEntryDescription")) {
+					name = "DeliveryCommerceTermEntryDescription";
 				}
 				else if (name.equals("DeliverySubTypeSettings")) {
 					name = "DeliverySubscriptionTypeSettings";
@@ -6952,17 +7130,8 @@ public class DataFactory {
 				else if (name.equals("LPageTemplateStructureRelId")) {
 					name = "LayoutPageTemplateStructureRelId";
 				}
-				else if (name.equals("ShippingDiscountPercentLevel1")) {
-					name = "ShippingDiscountPercentageLevel1";
-				}
-				else if (name.equals("ShippingDiscountPercentLevel2")) {
-					name = "ShippingDiscountPercentageLevel2";
-				}
-				else if (name.equals("ShippingDiscountPercentLevel3")) {
-					name = "ShippingDiscountPercentageLevel3";
-				}
-				else if (name.equals("ShippingDiscountPercentLevel4")) {
-					name = "ShippingDiscountPercentageLevel4";
+				else if (name.equals("PaymentCTermEntryDescription")) {
+					name = "PaymentCommerceTermEntryDescription";
 				}
 				else if (name.equals("ShippingDiscountPctLev1WithTax")) {
 					name = "ShippingDiscountPercentageLevel1WithTaxAmount";
@@ -6976,17 +7145,17 @@ public class DataFactory {
 				else if (name.equals("ShippingDiscountPctLev4WithTax")) {
 					name = "ShippingDiscountPercentageLevel4WithTaxAmount";
 				}
-				else if (name.equals("SubtotalDiscountPercentLevel1")) {
-					name = "SubtotalDiscountPercentageLevel1";
+				else if (name.equals("ShippingDiscountPercentLevel1")) {
+					name = "ShippingDiscountPercentageLevel1";
 				}
-				else if (name.equals("SubtotalDiscountPercentLevel2")) {
-					name = "SubtotalDiscountPercentageLevel2";
+				else if (name.equals("ShippingDiscountPercentLevel2")) {
+					name = "ShippingDiscountPercentageLevel2";
 				}
-				else if (name.equals("SubtotalDiscountPercentLevel3")) {
-					name = "SubtotalDiscountPercentageLevel3";
+				else if (name.equals("ShippingDiscountPercentLevel3")) {
+					name = "ShippingDiscountPercentageLevel3";
 				}
-				else if (name.equals("SubtotalDiscountPercentLevel4")) {
-					name = "SubtotalDiscountPercentageLevel4";
+				else if (name.equals("ShippingDiscountPercentLevel4")) {
+					name = "ShippingDiscountPercentageLevel4";
 				}
 				else if (name.equals("SubtotalDiscountPctLev1WithTax")) {
 					name = "SubtotalDiscountPercentageLevel1WithTaxAmount";
@@ -7000,6 +7169,18 @@ public class DataFactory {
 				else if (name.equals("SubtotalDiscountPctLev4WithTax")) {
 					name = "SubtotalDiscountPercentageLevel4WithTaxAmount";
 				}
+				else if (name.equals("SubtotalDiscountPercentLevel1")) {
+					name = "SubtotalDiscountPercentageLevel1";
+				}
+				else if (name.equals("SubtotalDiscountPercentLevel2")) {
+					name = "SubtotalDiscountPercentageLevel2";
+				}
+				else if (name.equals("SubtotalDiscountPercentLevel3")) {
+					name = "SubtotalDiscountPercentageLevel3";
+				}
+				else if (name.equals("SubtotalDiscountPercentLevel4")) {
+					name = "SubtotalDiscountPercentageLevel4";
+				}
 				else if (name.equals("TotalDiscountPctLev1WithTax")) {
 					name = "TotalDiscountPercentageLevel1WithTaxAmount";
 				}
@@ -7011,6 +7192,9 @@ public class DataFactory {
 				}
 				else if (name.equals("TotalDiscountPctLev4WithTax")) {
 					name = "TotalDiscountPercentageLevel4WithTaxAmount";
+				}
+				else if (name.equals("UOMIncrementalOrderQuantity")) {
+					name = "UnitOfMeasureIncrementalOrderQuantity";
 				}
 
 				int type = (int)tableColumn[1];
@@ -7131,6 +7315,29 @@ public class DataFactory {
 		return sb.toString();
 	}
 
+	private CompanyModel _newCompanyModel(String webId) {
+		CompanyModel companyModel = new CompanyModelImpl();
+
+		// PK fields
+
+		companyModel.setCompanyId(_counter.get());
+
+		// Audit fields
+
+		companyModel.setCreateDate(new Date());
+		companyModel.setModifiedDate(new Date());
+
+		// Other fields
+
+		companyModel.setWebId(webId);
+		companyModel.setMx("liferay.com");
+		companyModel.setActive(true);
+		companyModel.setName(webId);
+		companyModel.setLegalName("Liferay, Inc.");
+
+		return companyModel;
+	}
+
 	private LayoutModel _newContentPageLayoutModel(
 		long groupId, String name, long classNameId, long classPK) {
 
@@ -7139,10 +7346,6 @@ public class DataFactory {
 			counterName -> new SimpleCounter());
 
 		LayoutModel layoutModel = new LayoutModelImpl();
-
-		// UUID
-
-		layoutModel.setUuid(SequentialUUID.generate());
 
 		// PK fields
 
@@ -7175,16 +7378,19 @@ public class DataFactory {
 			layoutModel.setSystem(true);
 		}
 
-		UnicodeProperties typeSettingsUnicodeProperties = new UnicodeProperties(
-			true);
-
-		typeSettingsUnicodeProperties.setProperty("published", "true");
-
 		layoutModel.setTypeSettings(
 			StringUtil.replace(
-				typeSettingsUnicodeProperties.toString(), '\n', "\\n"));
-
+				UnicodePropertiesBuilder.create(
+					true
+				).put(
+					"published", "true"
+				).buildString(),
+				'\n', "\\n"));
 		layoutModel.setLastPublishDate(new Date());
+
+		// Autogenerated fields
+
+		layoutModel.setUuid(SequentialUUID.generate());
 
 		return layoutModel;
 	}
@@ -7273,8 +7479,9 @@ public class DataFactory {
 	private Map<Long, SimpleCounter>[] _assetCategoryCounters;
 	private final Map<Long, List<AssetCategoryModel>>[]
 		_assetCategoryModelsMaps =
-			(Map<Long, List<AssetCategoryModel>>[])
-				new HashMap<?, ?>[BenchmarksPropsValues.MAX_GROUP_COUNT];
+			(Map<Long, List<AssetCategoryModel>>[])new HashMap<?, ?>
+				[(BenchmarksPropsValues.MAX_COMPANY_COUNT + 1) *
+					BenchmarksPropsValues.MAX_GROUP_COUNT];
 	private final long[] _assetClassNameIds;
 	private final Map<Long, Integer> _assetClassNameIdsIndexes =
 		new HashMap<>();
@@ -7282,11 +7489,12 @@ public class DataFactory {
 		new HashMap<>();
 	private Map<Long, SimpleCounter>[] _assetTagCounters;
 	private final Map<Long, List<AssetTagModel>>[] _assetTagModelsMaps =
-		(Map<Long, List<AssetTagModel>>[])
-			new HashMap<?, ?>[BenchmarksPropsValues.MAX_GROUP_COUNT];
+		(Map<Long, List<AssetTagModel>>[])new HashMap<?, ?>
+			[(BenchmarksPropsValues.MAX_COMPANY_COUNT + 1) *
+				BenchmarksPropsValues.MAX_GROUP_COUNT];
 	private final Map<String, ClassNameModel> _classNameModels =
 		new HashMap<>();
-	private final long _companyId;
+	private long _companyId;
 	private final SimpleCounter _counter;
 	private final Map<Long, CPInstanceModel> _cpInstanceModels =
 		new HashMap<>();
@@ -7297,15 +7505,18 @@ public class DataFactory {
 	private long _defaultJournalDDMStructureId;
 	private long _defaultJournalDDMStructureVersionId;
 	private long _defaultJournalDDMTemplateId;
-	private long _defaultUserId;
 	private final String _dlDDMStructureContent;
 	private final String _dlDDMStructureLayoutContent;
-	private final SimpleCounter _dLFileEntryIdCounter;
+	private final SimpleCounter _dlFileEntryIdCounter;
+	private AddressModel _firstAddressModel;
 	private final List<String> _firstNames;
+	private final FriendlyURLNormalizer _friendlyURLNormalizer;
 	private final SimpleCounter _futureDateCounter;
 	private long _globalGroupId;
+	private final SimpleCounter _groupCounter;
 	private long _guestGroupId;
 	private RoleModel _guestRoleModel;
+	private long _guestUserId;
 	private String _journalArticleContent;
 	private final Map<Long, String> _journalArticleResourceUUIDs =
 		new HashMap<>();
@@ -7330,5 +7541,6 @@ public class DataFactory {
 		new HashMap<>();
 	private RoleModel _userRoleModel;
 	private final SimpleCounter _userScreenNameCounter;
+	private String _webId;
 
 }

@@ -1,35 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
 import com.liferay.info.exception.NoSuchInfoItemException;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
+import com.liferay.info.pagination.InfoPage;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
 import com.liferay.layout.content.page.editor.web.internal.util.LayoutObjectReferenceUtil;
 import com.liferay.layout.list.retriever.DefaultLayoutListRetrieverContext;
 import com.liferay.layout.list.retriever.LayoutListRetriever;
-import com.liferay.layout.list.retriever.LayoutListRetrieverTracker;
+import com.liferay.layout.list.retriever.LayoutListRetrieverRegistry;
 import com.liferay.layout.list.retriever.ListObjectReference;
 import com.liferay.layout.list.retriever.ListObjectReferenceFactory;
-import com.liferay.layout.list.retriever.ListObjectReferenceFactoryTracker;
+import com.liferay.layout.list.retriever.ListObjectReferenceFactoryRegistry;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
@@ -52,7 +44,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Verónica González
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/get_collection_item_count"
@@ -67,7 +58,7 @@ public class GetCollectionItemCountMVCResourceCommand
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws Exception {
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -85,7 +76,7 @@ public class GetCollectionItemCountMVCResourceCommand
 
 			jsonObject.put(
 				"error",
-				LanguageUtil.get(
+				_language.get(
 					themeDisplay.getRequest(), "an-unexpected-error-occurred"));
 		}
 
@@ -97,20 +88,21 @@ public class GetCollectionItemCountMVCResourceCommand
 			HttpServletRequest httpServletRequest, String layoutObjectReference)
 		throws PortalException {
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
 		JSONObject layoutObjectReferenceJSONObject =
-			JSONFactoryUtil.createJSONObject(layoutObjectReference);
+			_jsonFactory.createJSONObject(layoutObjectReference);
 
 		String type = layoutObjectReferenceJSONObject.getString("type");
 
 		LayoutListRetriever<?, ListObjectReference> layoutListRetriever =
 			(LayoutListRetriever<?, ListObjectReference>)
-				_layoutListRetrieverTracker.getLayoutListRetriever(type);
+				_layoutListRetrieverRegistry.getLayoutListRetriever(type);
 
 		if (layoutListRetriever != null) {
 			ListObjectReferenceFactory<?> listObjectReferenceFactory =
-				_listObjectReferenceFactoryTracker.getListObjectReference(type);
+				_listObjectReferenceFactoryRegistry.getListObjectReference(
+					type);
 
 			if (listObjectReferenceFactory != null) {
 				DefaultLayoutListRetrieverContext
@@ -128,15 +120,12 @@ public class GetCollectionItemCountMVCResourceCommand
 						infoItem);
 				}
 
-				ListObjectReference listObjectReference =
+				InfoPage<?> infoPage = layoutListRetriever.getInfoPage(
 					listObjectReferenceFactory.getListObjectReference(
-						layoutObjectReferenceJSONObject);
+						layoutObjectReferenceJSONObject),
+					defaultLayoutListRetrieverContext);
 
-				jsonObject.put(
-					"totalNumberOfItems",
-					layoutListRetriever.getListCount(
-						listObjectReference,
-						defaultLayoutListRetrieverContext));
+				jsonObject.put("totalNumberOfItems", infoPage.getTotalCount());
 			}
 		}
 
@@ -153,24 +142,22 @@ public class GetCollectionItemCountMVCResourceCommand
 
 		InfoItemObjectProvider<Object> infoItemObjectProvider =
 			(InfoItemObjectProvider<Object>)
-				_infoItemServiceTracker.getFirstInfoItemService(
+				_infoItemServiceRegistry.getFirstInfoItemService(
 					InfoItemObjectProvider.class,
-					_portal.getClassName(classNameId));
+					_portal.getClassName(classNameId),
+					ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
 		if (infoItemObjectProvider == null) {
 			return null;
 		}
 
-		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
-			new ClassPKInfoItemIdentifier(classPK);
-
 		try {
 			return infoItemObjectProvider.getInfoItem(
-				classPKInfoItemIdentifier);
+				new ClassPKInfoItemIdentifier(classPK));
 		}
 		catch (NoSuchInfoItemException noSuchInfoItemException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchInfoItemException, noSuchInfoItemException);
+				_log.debug(noSuchInfoItemException);
 			}
 		}
 
@@ -181,14 +168,20 @@ public class GetCollectionItemCountMVCResourceCommand
 		GetCollectionItemCountMVCResourceCommand.class);
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Reference
-	private LayoutListRetrieverTracker _layoutListRetrieverTracker;
+	private JSONFactory _jsonFactory;
 
 	@Reference
-	private ListObjectReferenceFactoryTracker
-		_listObjectReferenceFactoryTracker;
+	private Language _language;
+
+	@Reference
+	private LayoutListRetrieverRegistry _layoutListRetrieverRegistry;
+
+	@Reference
+	private ListObjectReferenceFactoryRegistry
+		_listObjectReferenceFactoryRegistry;
 
 	@Reference
 	private Portal _portal;

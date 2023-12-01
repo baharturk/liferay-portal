@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.test.util.filter.groupid;
@@ -21,6 +12,7 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.internal.spi.model.query.contributor.GroupIdQueryPreFilterContributor;
 import com.liferay.portal.search.test.util.DocumentsAssert;
 import com.liferay.portal.search.test.util.indexing.BaseIndexingTestCase;
@@ -32,9 +24,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Tibor Lipusz
@@ -47,8 +37,6 @@ public abstract class BaseGroupIdQueryPreFilterContributorTestCase
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-
-		MockitoAnnotations.initMocks(this);
 
 		Mockito.doReturn(
 			Arrays.asList(INACTIVE_GROUP_ID1, INACTIVE_GROUP_ID2)
@@ -165,7 +153,7 @@ public abstract class BaseGroupIdQueryPreFilterContributorTestCase
 					searchResponse ->
 						DocumentsAssert.assertValuesIgnoreRelevance(
 							searchResponse.getRequestString(),
-							searchResponse.getDocumentsStream(), Field.GROUP_ID,
+							searchResponse.getDocuments(), Field.GROUP_ID,
 							expected));
 			});
 	}
@@ -174,7 +162,8 @@ public abstract class BaseGroupIdQueryPreFilterContributorTestCase
 		GroupIdQueryPreFilterContributor contributor =
 			new GroupIdQueryPreFilterContributor();
 
-		contributor.setGroupLocalService(groupLocalService);
+		ReflectionTestUtil.setFieldValue(
+			contributor, "_groupLocalService", groupLocalService);
 
 		BooleanFilter booleanFilter = new BooleanFilter();
 
@@ -187,7 +176,7 @@ public abstract class BaseGroupIdQueryPreFilterContributorTestCase
 
 	protected static final long INACTIVE_GROUP_ID2 = 5L;
 
-	@Mock
-	protected GroupLocalService groupLocalService;
+	protected GroupLocalService groupLocalService = Mockito.mock(
+		GroupLocalService.class);
 
 }

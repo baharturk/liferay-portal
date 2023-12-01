@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.frontend.internal.util;
 
 import com.liferay.commerce.constants.CPDefinitionInventoryConstants;
+import com.liferay.commerce.constants.CommercePriceConstants;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.model.CommerceMoney;
@@ -23,7 +15,6 @@ import com.liferay.commerce.discount.CommerceDiscountValue;
 import com.liferay.commerce.frontend.model.PriceModel;
 import com.liferay.commerce.frontend.model.ProductSettingsModel;
 import com.liferay.commerce.frontend.util.ProductHelper;
-import com.liferay.commerce.inventory.CPDefinitionInventoryEngineRegistry;
 import com.liferay.commerce.model.CPDefinitionInventory;
 import com.liferay.commerce.percentage.PercentageFormatter;
 import com.liferay.commerce.price.CommerceProductPrice;
@@ -34,13 +25,11 @@ import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.option.CommerceOptionValue;
 import com.liferay.commerce.product.option.CommerceOptionValueHelper;
-import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CPDefinitionInventoryLocalService;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -59,11 +48,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, service = ProductHelper.class)
+@Component(service = ProductHelper.class)
 public class ProductHelperImpl implements ProductHelper {
 
 	@Override
-	public PriceModel getMinPrice(
+	public PriceModel getMinPriceModel(
 			long cpDefinitionId, CommerceContext commerceContext, Locale locale)
 		throws PortalException {
 
@@ -71,52 +60,43 @@ public class ProductHelperImpl implements ProductHelper {
 			_commerceProductPriceCalculation.getCPDefinitionMinimumPrice(
 				cpDefinitionId, commerceContext);
 
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			"content.Language", locale, getClass());
+		PriceModel priceModel = null;
 
-		return new PriceModel(
-			LanguageUtil.format(
-				resourceBundle, "from-x",
-				cpDefinitionMinimumPriceCommerceMoney.format(locale), false));
-	}
+		if (cpDefinitionMinimumPriceCommerceMoney.isPriceOnApplication()) {
+			priceModel = new PriceModel(
+				CommercePriceConstants.PRICE_VALUE_PRICE_ON_APPLICATION);
+		}
+		else {
+			ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
+				"content.Language", locale, getClass());
 
-	/**
-	 * @param      cpInstanceId
-	 * @param      quantity
-	 * @param      commerceContext
-	 * @param      locale
-	 * @return
-	 *
-	 * @throws     PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link
-	 *             #getPriceModel(long, int, CommerceContext, String, Locale)}
-	 */
-	@Deprecated
-	@Override
-	public PriceModel getPrice(
-			long cpInstanceId, int quantity, CommerceContext commerceContext,
-			Locale locale)
-		throws PortalException {
+			priceModel = new PriceModel(
+				_language.format(
+					resourceBundle, "from-x",
+					cpDefinitionMinimumPriceCommerceMoney.format(locale),
+					false));
+		}
 
-		return getPriceModel(
-			cpInstanceId, quantity, commerceContext, StringPool.BLANK, locale);
+		return priceModel;
 	}
 
 	@Override
 	public PriceModel getPriceModel(
-			long cpInstanceId, int quantity, CommerceContext commerceContext,
-			String commerceOptionValuesJSON, Locale locale)
+			long cpInstanceId, String commerceOptionValuesJSON,
+			BigDecimal quantity, String unitOfMeasureKey,
+			CommerceContext commerceContext, Locale locale)
 		throws PortalException {
 
 		CommerceProductPriceRequest commerceProductPriceRequest =
 			new CommerceProductPriceRequest();
 
-		commerceProductPriceRequest.setCpInstanceId(cpInstanceId);
-		commerceProductPriceRequest.setQuantity(quantity);
 		commerceProductPriceRequest.setCommerceContext(commerceContext);
 		commerceProductPriceRequest.setCommerceOptionValues(
 			_getCommerceOptionValues(cpInstanceId, commerceOptionValuesJSON));
+		commerceProductPriceRequest.setCpInstanceId(cpInstanceId);
+		commerceProductPriceRequest.setQuantity(quantity);
 		commerceProductPriceRequest.setSecure(true);
+		commerceProductPriceRequest.setUnitOfMeasureKey(unitOfMeasureKey);
 
 		boolean taxIncludedInPrice = _isTaxIncludedInPrice(
 			commerceContext.getCommerceChannelId());
@@ -147,36 +127,28 @@ public class ProductHelperImpl implements ProductHelper {
 	}
 
 	@Override
-	public ProductSettingsModel getProductSettingsModel(long cpInstanceId)
+	public ProductSettingsModel getProductSettingsModel(long cpDefinitionId)
 		throws PortalException {
 
 		ProductSettingsModel productSettingsModel = new ProductSettingsModel();
 
-		int minOrderQuantity =
+		BigDecimal minOrderQuantity =
 			CPDefinitionInventoryConstants.DEFAULT_MIN_ORDER_QUANTITY;
-		int maxOrderQuantity =
+		BigDecimal maxOrderQuantity =
 			CPDefinitionInventoryConstants.DEFAULT_MAX_ORDER_QUANTITY;
-		int multipleQuantity =
+		BigDecimal multipleQuantity =
 			CPDefinitionInventoryConstants.DEFAULT_MULTIPLE_ORDER_QUANTITY;
 
-		CPDefinitionInventory cpDefinitionInventory = null;
-
-		CPInstance cpInstance = _cpInstanceLocalService.fetchCPInstance(
-			cpInstanceId);
-
-		if (cpInstance != null) {
-			cpDefinitionInventory =
-				_cpDefinitionInventoryLocalService.
-					fetchCPDefinitionInventoryByCPDefinitionId(
-						cpInstance.getCPDefinitionId());
-		}
+		CPDefinitionInventory cpDefinitionInventory =
+			_cpDefinitionInventoryLocalService.
+				fetchCPDefinitionInventoryByCPDefinitionId(cpDefinitionId);
 
 		if (cpDefinitionInventory != null) {
 			minOrderQuantity = cpDefinitionInventory.getMinOrderQuantity();
 			maxOrderQuantity = cpDefinitionInventory.getMaxOrderQuantity();
 			multipleQuantity = cpDefinitionInventory.getMultipleOrderQuantity();
 
-			int[] allowedOrderQuantitiesArray =
+			BigDecimal[] allowedOrderQuantitiesArray =
 				cpDefinitionInventory.getAllowedOrderQuantitiesArray();
 
 			if ((allowedOrderQuantitiesArray != null) &&
@@ -202,10 +174,10 @@ public class ProductHelperImpl implements ProductHelper {
 	}
 
 	private List<CommerceOptionValue> _getCommerceOptionValues(
-			long cpInstanceId, String ddmFormValues)
+			long cpInstanceId, String formFieldValues)
 		throws PortalException {
 
-		if (Validator.isNull(ddmFormValues)) {
+		if (Validator.isNull(formFieldValues)) {
 			return Collections.emptyList();
 		}
 
@@ -213,7 +185,7 @@ public class ProductHelperImpl implements ProductHelper {
 			cpInstanceId);
 
 		return _commerceOptionValueHelper.getCPDefinitionCommerceOptionValues(
-			cpInstance.getCPDefinitionId(), ddmFormValues);
+			cpInstance.getCPDefinitionId(), formFieldValues);
 	}
 
 	private String[] _getFormattedDiscountPercentages(
@@ -241,18 +213,33 @@ public class ProductHelperImpl implements ProductHelper {
 			CommerceDiscountValue commerceDiscountValue, Locale locale)
 		throws PortalException {
 
-		PriceModel priceModel = new PriceModel(
-			unitPriceCommerceMoney.format(locale));
+		PriceModel priceModel = null;
+
+		if (unitPriceCommerceMoney.isPriceOnApplication()) {
+			priceModel = new PriceModel(
+				CommercePriceConstants.PRICE_VALUE_PRICE_ON_APPLICATION);
+		}
+		else {
+			priceModel = new PriceModel(unitPriceCommerceMoney.format(locale));
+		}
 
 		if (!unitPromoPriceCommerceMoney.isEmpty()) {
+			BigDecimal unitPrice = unitPriceCommerceMoney.getPrice();
 			BigDecimal unitPromoPrice = unitPromoPriceCommerceMoney.getPrice();
 
 			if ((unitPromoPrice.compareTo(BigDecimal.ZERO) > 0) &&
-				(unitPromoPrice.compareTo(unitPriceCommerceMoney.getPrice()) <
-					0)) {
+				((unitPromoPrice.compareTo(unitPrice) < 0) ||
+				 unitPriceCommerceMoney.isPriceOnApplication())) {
 
-				priceModel.setPromoPrice(
-					unitPromoPriceCommerceMoney.format(locale));
+				if (unitPromoPriceCommerceMoney.isPriceOnApplication()) {
+					priceModel.setPromoPrice(
+						CommercePriceConstants.
+							PRICE_VALUE_PRICE_ON_APPLICATION);
+				}
+				else {
+					priceModel.setPromoPrice(
+						unitPromoPriceCommerceMoney.format(locale));
+				}
 			}
 		}
 
@@ -303,7 +290,6 @@ public class ProductHelperImpl implements ProductHelper {
 		priceModel.setDiscountPercentages(
 			_getFormattedDiscountPercentages(
 				commerceDiscountValue.getPercentages(), locale));
-
 		priceModel.setFinalPrice(finalPriceCommerceMoney.format(locale));
 
 		return priceModel;
@@ -322,18 +308,14 @@ public class ProductHelperImpl implements ProductHelper {
 	private CommerceProductPriceCalculation _commerceProductPriceCalculation;
 
 	@Reference
-	private CPDefinitionInventoryEngineRegistry
-		_cpDefinitionInventoryEngineRegistry;
-
-	@Reference
 	private CPDefinitionInventoryLocalService
 		_cpDefinitionInventoryLocalService;
 
 	@Reference
-	private CPDefinitionLocalService _cpDefinitionLocalService;
+	private CPInstanceLocalService _cpInstanceLocalService;
 
 	@Reference
-	private CPInstanceLocalService _cpInstanceLocalService;
+	private Language _language;
 
 	@Reference
 	private PercentageFormatter _percentageFormatter;

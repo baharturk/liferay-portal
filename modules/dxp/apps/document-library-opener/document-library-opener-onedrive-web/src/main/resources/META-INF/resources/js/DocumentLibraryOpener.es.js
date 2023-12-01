@@ -1,19 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {getSpritemap} from '@liferay/frontend-icons-web';
 import {
 	fetch,
+	getWindow,
 	navigate,
 	openSimpleInputModal,
 	openToast,
+	openWindow,
 } from 'frontend-js-web';
 
 const TIME_POLLING = 500;
@@ -29,7 +26,7 @@ class DocumentLibraryOpener {
 	}
 
 	_hideLoading() {
-		Liferay.Util.getWindow(this._dialogLoadingId).hide();
+		getWindow(this._dialogLoadingId).hide();
 	}
 
 	_openExternal({externalURL}) {
@@ -52,13 +49,13 @@ class DocumentLibraryOpener {
 				return response.json();
 			})
 			.then((response) => {
-				if (response.complete) {
+				if (response.error) {
+					throw response.errorMessage || DEFAULT_ERROR;
+				}
+				else if (response.complete) {
 					this._openExternal({
 						externalURL: response.office365EditURL,
 					});
-				}
-				else if (response.error) {
-					throw DEFAULT_ERROR;
 				}
 				else {
 					return new Promise((resolve) => {
@@ -74,6 +71,7 @@ class DocumentLibraryOpener {
 	}
 
 	_showError(message) {
+		this._hideLoading();
 		openToast({
 			message,
 			type: 'danger',
@@ -82,7 +80,7 @@ class DocumentLibraryOpener {
 
 	_showLoading({dialogMessage}) {
 		return new Promise((resolve) => {
-			Liferay.Util.openWindow(
+			openWindow(
 				{
 					dialog: {
 						bodyContent: `<p>${dialogMessage}</p><div aria-hidden="true" class="loading-animation"></div>`,
@@ -106,7 +104,7 @@ class DocumentLibraryOpener {
 		openSimpleInputModal({
 			alert: {
 				message: Liferay.Language.get(
-					'the-document-has-been-checked-out-please-on-finish-editing-check-in-the-document-to-save-changes-into-the-document-library'
+					'the-document-has-been-checked-out-.please-check-in-the-document-after-edits-are-made-to-save-the-changes-into-the-document-library'
 				),
 				style: 'info',
 				title: Liferay.Language.get('info'),
@@ -126,8 +124,7 @@ class DocumentLibraryOpener {
 					});
 				}
 			},
-			spritemap:
-				Liferay.ThemeDisplay.getPathThemeImages() + '/clay/icons.svg',
+			spritemap: getSpritemap(),
 		});
 	}
 

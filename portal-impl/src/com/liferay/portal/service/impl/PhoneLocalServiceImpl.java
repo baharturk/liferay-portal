@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -44,7 +35,7 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 	@Override
 	public Phone addPhone(
 			long userId, String className, long classPK, String number,
-			String extension, long typeId, boolean primary,
+			String extension, long listTypeId, boolean primary,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -53,7 +44,7 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 
 		validate(
 			0, user.getCompanyId(), classNameId, classPK, number, extension,
-			typeId, primary);
+			listTypeId, primary);
 
 		long phoneId = counterLocalService.increment();
 
@@ -67,7 +58,7 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 		phone.setClassPK(classPK);
 		phone.setNumber(number);
 		phone.setExtension(extension);
-		phone.setTypeId(typeId);
+		phone.setListTypeId(listTypeId);
 		phone.setPrimary(primary);
 
 		return phonePersistence.update(phone);
@@ -118,17 +109,17 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 
 	@Override
 	public Phone updatePhone(
-			long phoneId, String number, String extension, long typeId,
+			long phoneId, String number, String extension, long listTypeId,
 			boolean primary)
 		throws PortalException {
 
-		validate(phoneId, 0, 0, 0, number, extension, typeId, primary);
+		validate(phoneId, 0, 0, 0, number, extension, listTypeId, primary);
 
 		Phone phone = phonePersistence.findByPrimaryKey(phoneId);
 
 		phone.setNumber(number);
 		phone.setExtension(extension);
-		phone.setTypeId(typeId);
+		phone.setListTypeId(listTypeId);
 		phone.setPrimary(primary);
 
 		return phonePersistence.update(phone);
@@ -157,7 +148,7 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 
 	protected void validate(
 			long phoneId, long companyId, long classNameId, long classPK,
-			String number, String extension, long typeId, boolean primary)
+			String number, String extension, long listTypeId, boolean primary)
 		throws PortalException {
 
 		if (!PhoneNumberFormatUtil.validate(number)) {
@@ -188,7 +179,7 @@ public class PhoneLocalServiceImpl extends PhoneLocalServiceBaseImpl {
 				Organization.class))) {
 
 			_listTypeLocalService.validate(
-				typeId, classNameId, ListTypeConstants.PHONE);
+				listTypeId, classNameId, ListTypeConstants.PHONE);
 		}
 
 		validate(phoneId, companyId, classNameId, classPK, primary);

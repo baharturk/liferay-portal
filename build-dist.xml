@@ -290,7 +290,10 @@
 		</app-server-properties-update>
 
 		<if>
-			<equals arg1="${app.server.weblogic.version}" arg2="12.2.1" />
+			<or>
+				<equals arg1="${app.server.weblogic.version}" arg2="12.2.1" />
+				<equals arg1="${app.server.weblogic.version}" arg2="14.1.1" />
+			</or>
 			<then>
 				<antcall target="unzip-weblogic-custom" />
 			</then>
@@ -332,6 +335,71 @@
 		<ant inheritAll="false" target="deploy" />
 
 		<app-server-properties-reset />
+	</target>
+
+	<target name="create-weblogic-domain">
+		<property name="app.server.weblogic.template.dir" value="${app.server.weblogic.wlserver.dir}/common/templates/wls" />
+
+		<echo file="${app.server.weblogic.dir}/remove-domain.sh">
+#/bin/sh
+
+if [ -d "${app.server.weblogic.instance.dir}" ]; then
+	rm -r ${app.server.weblogic.instance.dir}
+fi
+		</echo>
+
+		<exec executable="/bin/bash">
+			<arg value="${app.server.weblogic.dir}/remove-domain.sh" />
+		</exec>
+
+		<echo file="${app.server.weblogic.dir}/create-weblogic-domain.py"><![CDATA[
+readTemplate('${app.server.weblogic.template.dir}/wls.jar')
+
+set('Name', '${app.server.weblogic.instance.name}')
+
+cd('/Security/%s/User/%s' % ('${app.server.weblogic.instance.name}', 'weblogic'))
+
+set('UserPassword', 'testing123')
+
+cd('/Servers/AdminServer')
+
+set('ListenAddress', '')
+set('ListenPort', 8080)
+
+writeDomain('${app.server.weblogic.instance.dir}')
+
+closeTemplate()
+
+		]]></echo>
+
+		<var name="source.command" value="source" />
+
+		<echo file="${app.server.weblogic.dir}/create-weblogic-domain.sh">
+			<![CDATA[
+				#!/bin/sh
+
+				export MW_HOME="${app.server.weblogic.dir}"
+				export USER_MEM_ARGS="${app.server.weblogic.jvm.mem}"
+				export WL_HOME="${app.server.weblogic.wlserver.dir}"
+
+				${source.command} ${MW_HOME}/oracle/oracle_common/common/bin/commEnv.sh
+
+				export CLASSPATH=${FMWCONFIG_CLASSPATH}
+
+				${env.JAVA_HOME}/bin/java weblogic.WLST create-weblogic-domain.py
+
+				echo finished executing create-weblogic-domain.py..
+			]]>
+		</echo>
+
+		<chmod
+			file="${app.server.weblogic.dir}/create-weblogic-domain.sh"
+			perm="744"
+		/>
+
+		<exec dir="${app.server.weblogic.dir}" executable="sh">
+			<arg value="create-weblogic-domain.sh" />
+		</exec>
 	</target>
 
 	<target name="dist">
@@ -440,14 +508,103 @@ release was successful.</echo>
 	</target>
 
 	<target name="generate-tomcat-setenv">
-		<echo file="tools/servers/tomcat/bin/setenv.sh">CATALINA_OPTS="$CATALINA_OPTS ${app.server.tomcat.jvm.args} ${app.server.tomcat.jvm.mem}"</echo>
+		<echo file="tools/servers/tomcat/bin/setenv.sh">CATALINA_OPTS="$CATALINA_OPTS ${app.server.tomcat.jvm.args} ${app.server.tomcat.jvm.mem}"
+
+JDK_JAVA_OPTIONS="$JDK_JAVA_OPTIONS --add-opens=jdk.zipfs/jdk.nio.zipfs=ALL-UNNAMED"</echo>
 
 		<chmod
 			file="tools/servers/tomcat/bin/setenv.sh"
 			perm="a+x"
 		/>
 
-		<echo file="tools/servers/tomcat/bin/setenv.bat">set "CATALINA_OPTS=%CATALINA_OPTS% ${app.server.tomcat.jvm.args} ${app.server.tomcat.jvm.mem}"</echo>
+		<echo file="tools/servers/tomcat/bin/setenv.bat">set "CATALINA_OPTS=%CATALINA_OPTS% ${app.server.tomcat.jvm.args} ${app.server.tomcat.jvm.mem}"
+
+set "JDK_JAVA_OPTIONS=%JDK_JAVA_OPTIONS% --add-opens=jdk.zipfs/jdk.nio.zipfs=ALL-UNNAMED"</echo>
+	</target>
+
+	<target name="install-weblogic14-setup-files">
+		<echo file="${app.server.weblogic.dir}/oraInst.loc">
+inventory_loc=${app.server.weblogic.dir}/oraInventory
+inst_group=appserver
+		</echo>
+
+		<echo file="${app.server.weblogic.dir}/create_swap.sh">
+			<![CDATA[
+#!/bin/sh
+
+swapsize=1024
+
+grep -q "swapfile" /etc/fstab
+
+if [ $? -ne 0 ]
+then
+	echo "Adding swapfile."
+
+	fallocate -l ${swapsize}M /swapfile
+
+	chmod 600 /swapfile
+
+	mkswap /swapfile
+
+	swapon /swapfile
+
+	echo "/swapfile none swap defaults 0 0" >> /etc/fstab
+fi
+
+cat /proc/swaps
+cat /proc/meminfo | grep Swap
+]]>
+		</echo>
+
+		<echo file="${app.server.weblogic.dir}/create_user.sh">
+			<![CDATA[
+#!/bin/bash
+
+if ! id appserver &>/dev/null
+then
+	echo "Adding user appserver."
+
+	sudo useradd appserver
+
+	echo -e "liferay123\nliferay123" | sudo passwd appserver
+fi
+			]]>
+		</echo>
+
+		<echo file="${app.server.weblogic.dir}/install_weblogic.sh">
+			<![CDATA[
+#!/bin/bash
+
+export JAVA_HOME=/opt/java/jdk8-x64
+export PATH=$JAVA_HOME/bin:$PATH
+
+java -jar ${app.server.weblogic.dir}/${app.server.weblogic.jar.name} -ignoreSysPrereqs -silent ORACLE_BASE=${app.server.weblogic.dir} ORACLE_HOME=${app.server.weblogic.dir}/oracle JAVA_HOME=/opt/java/jdk8-x64 INVENTORY_LOCATION=${app.server.weblogic.dir}/oraInventory INSTALL_TYPE='Complete with Examples' -invPtrLoc ${app.server.weblogic.dir}/oraInst.loc
+			]]>
+		</echo>
+
+		<exec executable="/bin/bash">
+			<arg value="${app.server.weblogic.dir}/create_swap.sh" />
+		</exec>
+
+		<exec executable="/bin/bash">
+			<arg value="${app.server.weblogic.dir}/create_user.sh" />
+		</exec>
+
+		<execute dir="${app.server.weblogic.dir}">
+			<![CDATA[
+				rm -fr ${app.server.weblogic.dir}/oraInventory
+
+				mkdir ${app.server.weblogic.dir}/oraInventory
+
+				rm -fr ${app.server.weblogic.dir}/oracle
+
+				mkdir ${app.server.weblogic.dir}/oracle
+
+				sudo chown -R appserver: ${app.server.weblogic.dir}
+
+				su appserver -c "/bin/sh install_weblogic.sh"
+			]]>
+		</execute>
 	</target>
 
 	<target name="prepare-generated-files">
@@ -459,7 +616,6 @@ release was successful.</echo>
 		<ant dir="portal-impl" inheritAll="false" target="build-iw" />
 		<ant dir="portal-impl" inheritAll="false" target="build-lib-versions" />
 		<ant dir="portal-impl" inheritAll="false" target="build-services" />
-		<ant dir="portal-impl" inheritAll="false" target="build-wsdds" />
 
 		<delete file="portal-impl/classes/META-INF/javadocs-all.xml" />
 		<delete file="portal-impl/classes/META-INF/javadocs-rt.xml" />
@@ -543,6 +699,110 @@ release was successful.</echo>
 		<delete file="prepare-generated-files.txt" />
 
 		<echo file="prepare-generated-files.tstamp">${prepare-generated-files.tstamp}</echo>
+	</target>
+
+	<target name="unzip-glowroot">
+		<delete dir="${app.server.parent.dir}/glowroot" />
+
+		<if>
+			<not>
+				<available file="${app.server.parent.dir}/${glowroot.zip.name}" />
+			</not>
+			<then>
+				<mkdir dir="${app.server.parent.dir}" />
+
+				<mirrors-get
+					dest="${app.server.parent.dir}/${glowroot.zip.name}"
+					src="${glowroot.zip.url}"
+					verbose="true"
+				/>
+			</then>
+		</if>
+
+		<unzip
+			dest="${app.server.parent.dir}"
+			src="${app.server.parent.dir}/${glowroot.zip.name}"
+		/>
+
+		<var name="glowroot.agent" value="-javaagent:${CATALINA_HOME}/../glowroot/glowroot.jar" />
+
+		<if>
+			<not>
+				<resourcecontains
+					resource="${app.server.tomcat.dir}/bin/setenv.sh"
+					substring="${glowroot.agent}"
+				/>
+			</not>
+			<then>
+				<echo append="true" file="${app.server.tomcat.dir}/bin/setenv.sh">
+					<![CDATA[
+if [ "$1" = "glowroot" ]
+then
+	GLOWROOT_OPTS="${glowroot.agent}"
+
+	CATALINA_OPTS="${CATALINA_OPTS} ${GLOWROOT_OPTS}"
+
+	shift
+fi
+
+if [ "$GLOWROOT_ENABLED" = "true" ]
+then
+	GLOWROOT_OPTS="${glowroot.agent}"
+
+	CATALINA_OPTS="${CATALINA_OPTS} ${GLOWROOT_OPTS}"
+fi
+					]]>
+				</echo>
+			</then>
+		</if>
+
+		<echo file="${liferay.home}/glowroot/admin.json"><![CDATA[{
+	"roles": [
+		{
+			"name": "Administrator",
+			"permissions": [
+				"admin",
+				"agent:config",
+				"agent:error",
+				"agent:incident",
+				"agent:jvm",
+				"agent:transaction"
+			]
+		}
+	],
+	"storage": {
+		"fullQueryTextExpirationHours": 336,
+		"rollupCappedDatabaseSizesMb": [
+			500,
+			500,
+			500,
+			500
+		],
+		"rollupExpirationHours": [
+			72,
+			336,
+			2160,
+			2160
+		],
+		"traceCappedDatabaseSizeMb": 500,
+		"traceExpirationHours": 336
+	},
+	"users": [
+		{
+			"roles": [
+				"Administrator"
+			],
+			"username": "anonymous"
+		}
+	],
+	"web": {
+		"bindAddress": "127.0.0.1",
+		"contextPath": "/o/glowroot",
+		"port": 4000,
+		"sessionCookieName": "GLOWROOT_SESSION_ID",
+		"sessionTimeoutMinutes": 30
+	}
+}]]></echo>
 	</target>
 
 	<target name="unzip-jboss">
@@ -678,7 +938,7 @@ this task.
 		<replace
 			file="${app.server.jboss.dir}/standalone/configuration/standalone.xml"
 		>
-			<replacetoken><![CDATA[<jsp-config/>]]></replacetoken>
+			<replacetoken><![CDATA[<jsp-config />]]></replacetoken>
 			<replacevalue>
 				<![CDATA[<jsp-config development="true" source-vm="1.8" target-vm="1.8" />]]>
 			</replacevalue>
@@ -928,7 +1188,9 @@ org.apache.level=WARNING]]>
 			file="${app.server.tomcat.dir}/conf/server.xml"
 		>
 			<replacetoken><![CDATA[pattern="%h %l %u %t &quot;%r&quot; %s %b" />]]></replacetoken>
-			<replacevalue><![CDATA[pattern="%h %l %u %t &quot;%r&quot; %s %b" /> -->]]></replacevalue>
+			<replacevalue><![CDATA[pattern="%h %l %u %t &quot;%r&quot; %s %b" />-->
+				<Valve className="org.apache.catalina.valves.ErrorReportValve" showReport="false" showServerInfo="false" />]]>
+			</replacevalue>
 		</replace>
 
 		<replace
@@ -959,6 +1221,8 @@ org.apache.level=WARNING]]>
 				<include name="*.sh" />
 			</fileset>
 		</chmod>
+
+		<antcall target="unzip-glowroot" />
 	</target>
 
 	<target name="unzip-weblogic">
@@ -996,7 +1260,10 @@ rerun this task.
 		<delete dir="${app.server.weblogic.dir}" />
 
 		<if>
-			<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+			<or>
+				<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+				<equals arg1="${app.server.weblogic.version.build}" arg2="14110" />
+			</or>
 			<then>
 				<unzip
 					dest="${app.server.weblogic.dir}-temp"
@@ -1012,7 +1279,10 @@ rerun this task.
 		</if>
 
 		<if>
-			<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+			<or>
+				<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+				<equals arg1="${app.server.weblogic.version.build}" arg2="14110" />
+			</or>
 			<then>
 				<java
 					fork="true"
@@ -1084,7 +1354,10 @@ closeTemplate()
 				</pathconvert>
 
 				<if>
-					<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+					<or>
+						<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+						<equals arg1="${app.server.weblogic.version.build}" arg2="14110" />
+					</or>
 					<then>
 						<exec dir="${app.server.weblogic.dir}/wlserver/server/bin" executable="cmd">
 							<env key="MW_HOME" value="${app.server.weblogic.dir.windows}" />
@@ -1182,7 +1455,10 @@ closeTemplate()
 					<os family="unix" />
 					<then>
 						<if>
-							<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+							<or>
+								<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+								<equals arg1="${app.server.weblogic.version.build}" arg2="14110" />
+							</or>
 							<then>
 								<replace
 									file="${app.server.weblogic.dir}/wlserver/server/bin/setWLSEnv.sh"
@@ -1212,7 +1488,10 @@ closeTemplate()
 				</if>
 
 				<if>
-					<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+					<or>
+						<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+						<equals arg1="${app.server.weblogic.version.build}" arg2="14110" />
+					</or>
 					<then>
 						<chmod
 							dir="${app.server.weblogic.dir}/wlserver/server/bin"
@@ -1233,7 +1512,10 @@ closeTemplate()
 					<os family="unix" />
 					<then>
 						<if>
-							<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+							<or>
+								<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+								<equals arg1="${app.server.weblogic.version.build}" arg2="14110" />
+							</or>
 							<then>
 								<exec dir="${app.server.weblogic.dir}/wlserver/server/bin" executable="./setWLSEnv.sh">
 									<env file="${app.server.weblogic.dir}" key="MW_HOME" />
@@ -1250,7 +1532,10 @@ closeTemplate()
 					</then>
 					<else>
 						<if>
-							<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+							<or>
+								<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+								<equals arg1="${app.server.weblogic.version.build}" arg2="14110" />
+							</or>
 							<then>
 								<exec dir="${app.server.weblogic.dir}/wlserver/server/bin" executable="sh">
 									<env file="${app.server.weblogic.dir}" key="MW_HOME" />
@@ -1268,7 +1553,10 @@ closeTemplate()
 				</if>
 
 				<if>
-					<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+					<or>
+						<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+						<equals arg1="${app.server.weblogic.version.build}" arg2="14110" />
+					</or>
 					<then>
 						<echo file="${tstamp.value}/create-weblogic-domain.sh">
 							#!/bin/sh
@@ -1370,41 +1658,11 @@ closeTemplate()
 	</target>
 
 	<target name="unzip-weblogic-custom">
-		<if>
-			<not>
-				<available file="${app.server.parent.dir}/${app.server.weblogic.custom.zip.name}" />
-			</not>
-			<then>
-				<trycatch>
-					<try>
-						<mkdir dir="${app.server.parent.dir}" />
+		<antcall target="unzip-weblogic-custom-${app.server.weblogic.version.build}" />
+	</target>
 
-						<mirrors-get
-							dest="${app.server.parent.dir}/${app.server.weblogic.custom.zip.name}"
-							src="http://files.liferay.com/private/apps/oracle/weblogicas/12/${app.server.weblogic.custom.zip.name}"
-							verbose="true"
-						/>
-					</try>
-					<catch>
-						<fail>
-.
-
-Please download the Weblogic custom zip file from
-http://mirrors/files.liferay.com/private/apps/oracle/weblogicas/12 and
-place it here: ${app.server.parent.dir}/${app.server.weblogic.custom.zip.name}. Then rerun
-this task.
-						</fail>
-					</catch>
-				</trycatch>
-			</then>
-		</if>
-
-		<delete dir="${app.server.weblogic.dir}" />
-
-		<unzip
-			dest="${app.server.weblogic.dir}"
-			src="${app.server.parent.dir}/${app.server.weblogic.custom.zip.name}"
-		/>
+	<target name="unzip-weblogic-custom-12213">
+		<antcall target="unzip-weblogic-zip-files" />
 
 		<if>
 			<os family="unix" />
@@ -1507,6 +1765,129 @@ this task.
 		</if>
 
 		<set-weblogic-log-levels />
+	</target>
+
+	<target name="unzip-weblogic-custom-14110">
+		<antcall target="unzip-weblogic-zip-files" />
+
+		<antcall target="install-weblogic14-setup-files" />
+
+		<antcall target="create-weblogic-domain" />
+
+		<execute dir="${app.server.weblogic.instance.dir}/nodemanager">
+			sed -i "s;SecureListener=.*;SecureListener=false;g" nodemanager.properties
+
+			sed -i "s;NativeVersionManager=.*;NativeVersionManager=false;g" nodemanager.properties
+		</execute>
+
+		<replace
+			file="${app.server.weblogic.instance.dir}/startWebLogic.sh"
+		>
+			<replacetoken><![CDATA[# Any changes to this script may be lost when adding extensions to this configuration.]]></replacetoken>
+			<replacevalue expandProperties="true">
+				<![CDATA[
+					# Any changes to this script may be lost when adding extensions to this configuration.
+					export DERBY_FLAG="false"
+					export JAVA_OPTIONS="${JAVA_OPTIONS} ${app.server.weblogic.jvm.args} -da:org.apache.lucene... -da:org.aspectj... "
+					export MW_HOME="${app.server.weblogic.dir}"
+					export USER_MEM_ARGS="${app.server.weblogic.jvm.mem}"
+				]]>
+			</replacevalue>
+		</replace>
+
+		<replace
+			file="${app.server.weblogic.instance.dir}/startWebLogic.sh"
+		>
+			<replacefilter
+				token="$${app.server.weblogic.dir}"
+				value="${app.server.weblogic.dir}"
+			/>
+		</replace>
+
+		<copy
+			file="${app.server.weblogic.instance.dir}/startWebLogic.sh"
+			tofile="${app.server.weblogic.instance.dir}/stopWebLogic.sh"
+		/>
+
+		<replace
+			file="${app.server.weblogic.instance.dir}/stopWebLogic.sh"
+		>
+			<replacefilter
+				token="startWebLogic"
+				value="stopWebLogic"
+			/>
+		</replace>
+
+		<chmod
+			perm="a+x"
+		>
+			<fileset
+				dir="${app.server.weblogic.bin.dir}"
+			>
+				<include name="**/*.sh" />
+			</fileset>
+		</chmod>
+
+		<replace
+			file="${app.server.weblogic.instance.dir}/bin/setDomainEnv.sh"
+		>
+			<replacetoken><![CDATA[JAVA_PROPERTIES="${JAVA_PROPERTIES} ${CLUSTER_PROPERTIES}"]]></replacetoken>
+			<replacevalue><![CDATA[JAVA_PROPERTIES="-Dfile.encoding=utf8 ${JAVA_PROPERTIES} ${CLUSTER_PROPERTIES}"]]></replacevalue>
+		</replace>
+
+		<chmod
+			dir="${app.server.weblogic.instance.dir}"
+			includes="**/*.sh"
+			perm="744"
+		/>
+
+		<set-weblogic-log-levels />
+	</target>
+
+	<target name="unzip-weblogic-zip-files">
+		<if>
+			<equals arg1="${app.server.weblogic.version.build}" arg2="12213" />
+			<then>
+				<property name="app.server.zip" value="${app.server.weblogic.custom.zip.name}" />
+			</then>
+			<else>
+				<property name="app.server.zip" value="${app.server.weblogic.zip.name}" />
+			</else>
+		</if>
+
+		<if>
+			<not>
+				<available file="${app.server.parent.dir}/${app.server.weblogic.custom.zip.name}" />
+			</not>
+			<then>
+				<trycatch>
+					<try>
+						<mkdir dir="${app.server.parent.dir}" />
+
+						<mirrors-get
+							dest="${app.server.parent.dir}/${app.server.weblogic.custom.zip.name}"
+							src="http://files.liferay.com/private/apps/oracle/weblogicas/${app.server.weblogic.version.number}/${app.server.zip}"
+							verbose="true"
+						/>
+					</try>
+					<catch>
+						<fail>
+Please download the Weblogic custom zip file from
+http://mirrors/files.liferay.com/private/apps/oracle/weblogicas/${app.server.weblogic.version.number} and
+place it here: ${app.server.parent.dir}/${app.server.weblogic.custom.zip.name}. Then rerun
+this task.
+						</fail>
+					</catch>
+				</trycatch>
+			</then>
+		</if>
+
+		<delete dir="${app.server.weblogic.dir}" />
+
+		<unzip
+			dest="${app.server.weblogic.dir}"
+			src="${app.server.parent.dir}/${app.server.weblogic.custom.zip.name}"
+		/>
 	</target>
 
 	<target name="unzip-websphere">
@@ -2253,7 +2634,7 @@ this task.
 		<replace
 			file="${app.server.wildfly.instance.dir}/configuration/standalone.xml"
 		>
-			<replacetoken><![CDATA[<jsp-config/>]]></replacetoken>
+			<replacetoken><![CDATA[<jsp-config />]]></replacetoken>
 			<replacevalue>
 				<![CDATA[<jsp-config development="true" source-vm="1.8" target-vm="1.8" />]]>
 			</replacevalue>
@@ -2331,7 +2712,7 @@ plugins.includes=</echo>
 		</antelope:stringutil>
 
 		<if>
-			<available file="${zip.executable.dir}/../data" />
+			<available file="${zip.executable.dir}/../osgi" />
 			<then>
 				<copy
 					preservelastmodified="true"
@@ -2374,14 +2755,19 @@ plugins.includes=</echo>
 					/>
 				</copy>
 
-				<copy
-					preservelastmodified="true"
-					todir="dist/${tstamp.value}/liferay-portal-${lp.version}/data"
-				>
-					<fileset
-						dir="${zip.executable.dir}/../data"
-					/>
-				</copy>
+				<if>
+					<available file="${zip.executable.dir}/../data" />
+					<then>
+						<copy
+							preservelastmodified="true"
+							todir="dist/${tstamp.value}/liferay-portal-${lp.version}/data"
+						>
+							<fileset
+								dir="${zip.executable.dir}/../data"
+							/>
+						</copy>
+					</then>
+				</if>
 
 				<if>
 					<available file="${zip.executable.dir}/../deploy" />
@@ -2406,6 +2792,20 @@ plugins.includes=</echo>
 						>
 							<fileset
 								dir="${zip.executable.dir}/../elasticsearch-sidecar"
+							/>
+						</copy>
+					</then>
+				</if>
+
+				<if>
+					<available file="${zip.executable.dir}/../glowroot" />
+					<then>
+						<copy
+							preservelastmodified="true"
+							todir="dist/${tstamp.value}/liferay-portal-${lp.version}/glowroot"
+						>
+							<fileset
+								dir="${zip.executable.dir}/../glowroot"
 							/>
 						</copy>
 					</then>
@@ -2508,6 +2908,7 @@ plugins.includes=</echo>
 								<arg value="catalina.sh" />
 								<arg value="run" />
 								<env key="LIFERAY_CLEAN_OSGI_STATE" value="true" />
+								<redirector alwayslog="true" errorproperty="portal.startup.error" outputproperty="portal.startup.output" />
 							</exec>
 
 							<sequential>
@@ -2515,7 +2916,10 @@ plugins.includes=</echo>
 									<http url="http://localhost:8080" />
 								</waitfor>
 
-								<sleep seconds="5" />
+								<get
+									dest="${zip.executable.dir}/../homepage.html"
+									src="http://localhost:8080"
+								/>
 
 								<exec dir="dist/${tstamp.value}/liferay-portal-${lp.version}/tomcat-${app.server.tomcat.version}/bin" executable="sh">
 									<arg value="shutdown.sh" />
@@ -2530,6 +2934,15 @@ plugins.includes=</echo>
 								</delete>
 							</sequential>
 						</parallel>
+
+						<echo />
+						<echo>Portal Startup Output:</echo>
+						<echo />
+						<echo>${portal.startup.output}</echo>
+						<echo />
+						<echo>Portal Startup Error Output:</echo>
+						<echo />
+						<echo>${portal.startup.error}</echo>
 					</then>
 				</if>
 
@@ -2555,6 +2968,22 @@ plugins.includes=</echo>
 						prefix="liferay-portal-${lp.version}"
 					/>
 				</tar>
+
+				<zip
+					destfile="dist/${zip.executable.file}-${lp.version}.zip"
+				>
+					<zipfileset
+						dir="dist/${tstamp.value}/liferay-portal-${lp.version}"
+						excludes="**/*.sh"
+						prefix="liferay-portal-${lp.version}"
+					/>
+					<zipfileset
+						dir="dist/${tstamp.value}/liferay-portal-${lp.version}"
+						filemode="744"
+						includes="**/*.sh"
+						prefix="liferay-portal-${lp.version}"
+					/>
+				</zip>
 
 				<delete dir="dist/${tstamp.value}" />
 			</then>
@@ -2691,79 +3120,6 @@ plugins.includes=</echo>
 
 	<target name="zip-portal-war">
 		<antcall target="zip-portal-war-2.4" />
-		<!--<antcall target="zip-portal-war-2.3" />
-		<antcall target="zip-portal-war-2.4-with-dependencies" />
-		<antcall target="zip-portal-war-2.3-with-dependencies" />-->
-	</target>
-
-	<target name="zip-portal-war-2.3">
-		<tstamp>
-			<format pattern="yyyyMMddkkmmssSSS" property="tstamp.value" />
-		</tstamp>
-
-		<java
-			classname="com.liferay.portal.tools.WebXML23Converter"
-			classpathref="project.classpath"
-			fork="true"
-			maxmemory="128m"
-			newenvironment="true"
-		>
-			<jvmarg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
-			<jvmarg value="-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.Log4JLogger" />
-			<arg value="${app.server.portal.dir}/WEB-INF/web.xml" />
-			<arg value="${tstamp.value}/WEB-INF/web.xml" />
-		</java>
-
-		<delete failonerror="false" file="dist/liferay-portal-${lp.version}-servlet23.war" />
-
-		<copy
-			file="dist/liferay-portal-${lp.version}.war"
-			overwrite="true"
-			tofile="dist/liferay-portal-${lp.version}-servlet23.war"
-		/>
-
-		<zip
-			basedir="${tstamp.value}"
-			destfile="dist/liferay-portal-${lp.version}-servlet23.war"
-			update="yes"
-		/>
-
-		<delete dir="${tstamp.value}" />
-	</target>
-
-	<target name="zip-portal-war-2.3-with-dependencies">
-		<tstamp>
-			<format pattern="yyyyMMddkkmmssSSS" property="tstamp.value" />
-		</tstamp>
-
-		<copy
-			todir="${tstamp.value}/WEB-INF/lib"
-		>
-			<fileset
-				dir="${app.server.lib.global.dir}"
-				includes="annotations.jar"
-			/>
-			<fileset
-				dir="${app.server.lib.portal.dir}"
-				includes="portlet.jar"
-			/>
-		</copy>
-
-		<delete failonerror="false" file="dist/liferay-portal-${lp.version}-servlet23-with-dependencies.war" />
-
-		<copy
-			file="dist/liferay-portal-${lp.version}-servlet23.war"
-			overwrite="true"
-			tofile="dist/liferay-portal-${lp.version}-servlet23-with-dependencies.war"
-		/>
-
-		<zip
-			basedir="${tstamp.value}"
-			destfile="dist/liferay-portal-${lp.version}-servlet23-with-dependencies.war"
-			update="yes"
-		/>
-
-		<delete dir="${tstamp.value}" />
 	</target>
 
 	<target name="zip-portal-war-2.4">
@@ -2773,41 +3129,6 @@ plugins.includes=</echo>
 			basedir="${app.server.portal.dir}"
 			destfile="dist/liferay-portal-${lp.version}.war"
 		/>
-	</target>
-
-	<target name="zip-portal-war-2.4-with-dependencies">
-		<tstamp>
-			<format pattern="yyyyMMddkkmmssSSS" property="tstamp.value" />
-		</tstamp>
-
-		<copy
-			todir="${tstamp.value}/WEB-INF/lib"
-		>
-			<fileset
-				dir="${app.server.lib.global.dir}"
-				includes="annotations.jar"
-			/>
-			<fileset
-				dir="${app.server.lib.portal.dir}"
-				includes="portlet.jar"
-			/>
-		</copy>
-
-		<delete failonerror="false" file="dist/liferay-portal-${lp.version}-with-dependencies.war" />
-
-		<copy
-			file="dist/liferay-portal-${lp.version}.war"
-			overwrite="true"
-			tofile="dist/liferay-portal-${lp.version}-with-dependencies.war"
-		/>
-
-		<zip
-			basedir="${tstamp.value}"
-			destfile="dist/liferay-portal-${lp.version}-with-dependencies.war"
-			update="yes"
-		/>
-
-		<delete dir="${tstamp.value}" />
 	</target>
 
 	<target name="zip-sql">

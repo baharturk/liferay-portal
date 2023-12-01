@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -20,6 +11,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -43,6 +36,7 @@ public class AddressWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("addressId", getAddressId());
@@ -54,8 +48,8 @@ public class AddressWrapper
 		attributes.put("classNameId", getClassNameId());
 		attributes.put("classPK", getClassPK());
 		attributes.put("countryId", getCountryId());
+		attributes.put("listTypeId", getListTypeId());
 		attributes.put("regionId", getRegionId());
-		attributes.put("typeId", getTypeId());
 		attributes.put("city", getCity());
 		attributes.put("description", getDescription());
 		attributes.put("latitude", getLatitude());
@@ -79,6 +73,12 @@ public class AddressWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
 		}
 
 		String uuid = (String)attributes.get("uuid");
@@ -148,16 +148,16 @@ public class AddressWrapper
 			setCountryId(countryId);
 		}
 
+		Long listTypeId = (Long)attributes.get("listTypeId");
+
+		if (listTypeId != null) {
+			setListTypeId(listTypeId);
+		}
+
 		Long regionId = (Long)attributes.get("regionId");
 
 		if (regionId != null) {
 			setRegionId(regionId);
-		}
-
-		Long typeId = (Long)attributes.get("typeId");
-
-		if (typeId != null) {
-			setTypeId(typeId);
 		}
 
 		String city = (String)attributes.get("city");
@@ -330,6 +330,16 @@ public class AddressWrapper
 	}
 
 	/**
+	 * Returns the ct collection ID of this address.
+	 *
+	 * @return the ct collection ID of this address
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
+	}
+
+	/**
 	 * Returns the description of this address.
 	 *
 	 * @return the description of this address
@@ -357,6 +367,21 @@ public class AddressWrapper
 	@Override
 	public double getLatitude() {
 		return model.getLatitude();
+	}
+
+	@Override
+	public ListType getListType() {
+		return model.getListType();
+	}
+
+	/**
+	 * Returns the list type ID of this address.
+	 *
+	 * @return the list type ID of this address
+	 */
+	@Override
+	public long getListTypeId() {
+		return model.getListTypeId();
 	}
 
 	/**
@@ -477,21 +502,6 @@ public class AddressWrapper
 	@Override
 	public String getStreet3() {
 		return model.getStreet3();
-	}
-
-	@Override
-	public ListType getType() {
-		return model.getType();
-	}
-
-	/**
-	 * Returns the type ID of this address.
-	 *
-	 * @return the type ID of this address
-	 */
-	@Override
-	public long getTypeId() {
-		return model.getTypeId();
 	}
 
 	/**
@@ -665,6 +675,16 @@ public class AddressWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this address.
+	 *
+	 * @param ctCollectionId the ct collection ID of this address
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
 	 * Sets the description of this address.
 	 *
 	 * @param description the description of this address
@@ -692,6 +712,16 @@ public class AddressWrapper
 	@Override
 	public void setLatitude(double latitude) {
 		model.setLatitude(latitude);
+	}
+
+	/**
+	 * Sets the list type ID of this address.
+	 *
+	 * @param listTypeId the list type ID of this address
+	 */
+	@Override
+	public void setListTypeId(long listTypeId) {
+		model.setListTypeId(listTypeId);
 	}
 
 	/**
@@ -805,16 +835,6 @@ public class AddressWrapper
 	}
 
 	/**
-	 * Sets the type ID of this address.
-	 *
-	 * @param typeId the type ID of this address
-	 */
-	@Override
-	public void setTypeId(long typeId) {
-		model.setTypeId(typeId);
-	}
-
-	/**
 	 * Sets the user ID of this address.
 	 *
 	 * @param userId the user ID of this address
@@ -882,6 +902,25 @@ public class AddressWrapper
 	@Override
 	public void setZip(String zip) {
 		model.setZip(zip);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<Address, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<Address, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

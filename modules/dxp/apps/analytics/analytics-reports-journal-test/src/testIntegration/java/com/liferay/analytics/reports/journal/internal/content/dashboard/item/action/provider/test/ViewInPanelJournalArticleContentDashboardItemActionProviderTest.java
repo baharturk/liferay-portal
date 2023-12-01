@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.reports.journal.internal.content.dashboard.item.action.provider.test;
@@ -17,7 +8,9 @@ package com.liferay.analytics.reports.journal.internal.content.dashboard.item.ac
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalService;
+import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.asset.util.LinkedAssetEntryIdsUtil;
 import com.liferay.content.dashboard.item.action.ContentDashboardItemAction;
 import com.liferay.content.dashboard.item.action.provider.ContentDashboardItemActionProvider;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
@@ -42,6 +35,7 @@ import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -51,7 +45,7 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -61,6 +55,7 @@ import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -93,26 +88,31 @@ public class ViewInPanelJournalArticleContentDashboardItemActionProviderTest {
 
 		DDMStructure ddmStructure = _journalArticle.getDDMStructure();
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
+		_serviceContext = ServiceContextTestUtil.getServiceContext(
+			_group.getGroupId());
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
 				_group.getCreatorUserId(), _group.getGroupId(), 0,
 				_portal.getClassNameId(JournalArticle.class.getName()),
 				ddmStructure.getStructureId(), RandomTestUtil.randomString(),
-				LayoutPageTemplateEntryTypeConstants.TYPE_DISPLAY_PAGE, 0, true,
-				0, 0, 0, 0, serviceContext);
+				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true, 0,
+				0, 0, 0, _serviceContext);
 
 		_assetDisplayPageEntryLocalService.addAssetDisplayPageEntry(
 			_journalArticle.getUserId(), _group.getGroupId(),
 			_portal.getClassNameId(JournalArticle.class.getName()),
 			_journalArticle.getResourcePrimKey(),
 			layoutPageTemplateEntry.getLayoutPageTemplateEntryId(),
-			AssetDisplayPageConstants.TYPE_DEFAULT, serviceContext);
+			AssetDisplayPageConstants.TYPE_DEFAULT, _serviceContext);
 
 		_layout = _layoutLocalService.getLayout(
 			layoutPageTemplateEntry.getPlid());
+	}
+
+	@After
+	public void tearDown() {
+		ServiceContextThreadLocal.popServiceContext();
 	}
 
 	@Test
@@ -140,16 +140,15 @@ public class ViewInPanelJournalArticleContentDashboardItemActionProviderTest {
 							LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER);
 
 		Assert.assertEquals(
-			_portal.getClassName(
-				layoutDisplayPageObjectProvider.getClassNameId()),
-			_http.getParameter(
+			layoutDisplayPageObjectProvider.getClassName(),
+			HttpComponentsUtil.getParameter(
 				contentDashboardItemAction.getURL(),
 				"_com_liferay_analytics_reports_web_internal_portlet_" +
 					"AnalyticsReportsPortlet_className",
 				false));
 		Assert.assertEquals(
 			String.valueOf(layoutDisplayPageObjectProvider.getClassPK()),
-			_http.getParameter(
+			HttpComponentsUtil.getParameter(
 				contentDashboardItemAction.getURL(),
 				"_com_liferay_analytics_reports_web_internal_portlet_" +
 					"AnalyticsReportsPortlet_classPK",
@@ -157,7 +156,7 @@ public class ViewInPanelJournalArticleContentDashboardItemActionProviderTest {
 
 		Assert.assertEquals(
 			"%2Fanalytics_reports_panel.jsp",
-			_http.getParameter(
+			HttpComponentsUtil.getParameter(
 				contentDashboardItemAction.getURL(),
 				"_com_liferay_analytics_reports_web_internal_portlet_" +
 					"AnalyticsReportsPortlet_mvcPath",
@@ -227,11 +226,15 @@ public class ViewInPanelJournalArticleContentDashboardItemActionProviderTest {
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
+		AssetEntry assetEntry = _assetEntryLocalService.getEntry(
+			JournalArticle.class.getName(),
+			_journalArticle.getResourcePrimKey());
+
 		mockHttpServletRequest.setAttribute(
-			WebKeys.LAYOUT_ASSET_ENTRY,
-			_assetEntryLocalService.getEntry(
-				JournalArticle.class.getName(),
-				_journalArticle.getResourcePrimKey()));
+			WebKeys.LAYOUT_ASSET_ENTRY, assetEntry);
+
+		LinkedAssetEntryIdsUtil.addLinkedAssetEntryId(
+			mockHttpServletRequest, assetEntry.getEntryId());
 
 		mockHttpServletRequest.setAttribute(
 			LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER,
@@ -242,6 +245,10 @@ public class ViewInPanelJournalArticleContentDashboardItemActionProviderTest {
 		mockHttpServletRequest.setAttribute(
 			WebKeys.THEME_DISPLAY,
 			_getThemeDisplay(mockHttpServletRequest, user));
+
+		_serviceContext.setRequest(mockHttpServletRequest);
+
+		ServiceContextThreadLocal.pushServiceContext(_serviceContext);
 
 		return mockHttpServletRequest;
 	}
@@ -256,10 +263,8 @@ public class ViewInPanelJournalArticleContentDashboardItemActionProviderTest {
 			_companyLocalService.getCompany(TestPropsValues.getCompanyId()));
 		themeDisplay.setLayout(_layout);
 		themeDisplay.setLocale(LocaleUtil.US);
-
 		themeDisplay.setPermissionChecker(
 			PermissionCheckerFactoryUtil.create(user));
-
 		themeDisplay.setRequest(httpServletRequest);
 		themeDisplay.setScopeGroupId(_group.getGroupId());
 		themeDisplay.setSiteGroupId(_group.getGroupId());
@@ -287,9 +292,6 @@ public class ViewInPanelJournalArticleContentDashboardItemActionProviderTest {
 	@DeleteAfterTestRun
 	private Group _group;
 
-	@Inject
-	private Http _http;
-
 	private JournalArticle _journalArticle;
 
 	@Inject
@@ -297,7 +299,9 @@ public class ViewInPanelJournalArticleContentDashboardItemActionProviderTest {
 
 	private Layout _layout;
 
-	@Inject(filter = "component.name=*.JournalArticleLayoutDisplayPageProvider")
+	@Inject(
+		filter = "component.name=com.liferay.journal.web.internal.layout.display.page.JournalArticleLayoutDisplayPageProvider"
+	)
 	private LayoutDisplayPageProvider<JournalArticle>
 		_layoutDisplayPageProvider;
 
@@ -310,6 +314,8 @@ public class ViewInPanelJournalArticleContentDashboardItemActionProviderTest {
 
 	@Inject
 	private Portal _portal;
+
+	private ServiceContext _serviceContext;
 
 	@Inject
 	private UserLocalService _userLocalService;

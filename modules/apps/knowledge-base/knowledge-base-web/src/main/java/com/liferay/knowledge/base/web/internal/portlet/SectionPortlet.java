@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.web.internal.portlet;
@@ -45,7 +36,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=knowledge-base-portlet knowledge-base-portlet-section",
 		"com.liferay.portlet.display-category=category.cms",
@@ -59,13 +49,14 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.expiration-cache=0",
 		"javax.portlet.init-param.always-send-redirect=true",
 		"javax.portlet.init-param.copy-request-parameters=true",
-		"javax.portlet.init-param.template-path=/section/",
-		"javax.portlet.init-param.view-template=/section/view.jsp",
+		"javax.portlet.init-param.template-path=/META-INF/resources/",
+		"javax.portlet.init-param.view-template=/knowledge_base/view",
 		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_SECTION,
 		"javax.portlet.resource-bundle=content.Language",
 		"javax.portlet.security-role-ref=administrator,guest,power-user,user",
 		"javax.portlet.supported-public-render-parameter=categoryId",
-		"javax.portlet.supported-public-render-parameter=tag"
+		"javax.portlet.supported-public-render-parameter=tag",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -85,7 +76,7 @@ public class SectionPortlet extends BaseKBPortlet {
 			SessionErrors.contains(
 				renderRequest, PrincipalException.getNestedClasses())) {
 
-			include(templatePath + "error.jsp", renderRequest, renderResponse);
+			include("/admin/common/error.jsp", renderRequest, renderResponse);
 		}
 		else {
 			super.doDispatch(renderRequest, renderResponse);
@@ -98,28 +89,22 @@ public class SectionPortlet extends BaseKBPortlet {
 		throws IOException, PortletException {
 
 		try {
-			KBArticle kbArticle = getKBArticle(renderRequest);
-
 			renderRequest.setAttribute(
-				KBWebKeys.KNOWLEDGE_BASE_KB_ARTICLE, kbArticle);
-
+				KBWebKeys.KNOWLEDGE_BASE_KB_ARTICLE,
+				_getKBArticle(renderRequest));
 			renderRequest.setAttribute(
 				KBWebKeys.KNOWLEDGE_BASE_STATUS,
 				WorkflowConstants.STATUS_APPROVED);
 		}
-		catch (Exception exception) {
-			if (exception instanceof NoSuchArticleException ||
-				exception instanceof PrincipalException) {
-
-				SessionErrors.add(renderRequest, exception.getClass());
-			}
-			else {
-				throw new PortletException(exception);
-			}
+		catch (NoSuchArticleException | PrincipalException exception) {
+			SessionErrors.add(renderRequest, exception.getClass());
+		}
+		catch (PortalException portalException) {
+			throw new PortletException(portalException);
 		}
 	}
 
-	protected KBArticle getKBArticle(RenderRequest renderRequest)
+	private KBArticle _getKBArticle(RenderRequest renderRequest)
 		throws PortalException {
 
 		long resourcePrimKey = ParamUtil.getLong(
@@ -150,20 +135,12 @@ public class SectionPortlet extends BaseKBPortlet {
 			groupId, KBFolderConstants.DEFAULT_PARENT_FOLDER_ID, urlTitle);
 	}
 
-	@Reference(unbind = "-")
-	protected void setKBArticleLocalService(
-		KBArticleLocalService kbArticleLocalService) {
-
-		_kbArticleLocalService = kbArticleLocalService;
-	}
+	@Reference
+	private KBArticleLocalService _kbArticleLocalService;
 
 	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.knowledge.base.web)(&(release.schema.version>=1.2.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
+		target = "(&(release.bundle.symbolic.name=com.liferay.knowledge.base.web)(&(release.schema.version>=1.2.0)(!(release.schema.version>=2.0.0))))"
 	)
-	protected void setRelease(Release release) {
-	}
-
-	private KBArticleLocalService _kbArticleLocalService;
+	private Release _release;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.web.internal.display.context;
@@ -19,7 +10,6 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItemList;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.DisplayTerms;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -29,6 +19,7 @@ import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
@@ -38,17 +29,17 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowDefinition;
-import com.liferay.portal.kernel.workflow.WorkflowDefinitionManagerUtil;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
 import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
 import com.liferay.portal.kernel.workflow.WorkflowInstance;
 import com.liferay.portal.kernel.workflow.WorkflowInstanceManagerUtil;
 import com.liferay.portal.kernel.workflow.WorkflowLog;
-import com.liferay.portal.kernel.workflow.WorkflowLogManagerUtil;
-import com.liferay.portal.kernel.workflow.comparator.WorkflowComparatorFactoryUtil;
 import com.liferay.portal.kernel.workflow.search.WorkflowModelSearchResult;
+import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
 import com.liferay.portal.workflow.constants.WorkflowPortletKeys;
 import com.liferay.portal.workflow.constants.WorkflowWebKeys;
+import com.liferay.portal.workflow.manager.WorkflowLogManager;
+import com.liferay.portal.workflow.util.WorkflowDefinitionManagerUtil;
 import com.liferay.portal.workflow.web.internal.search.WorkflowInstanceSearch;
 import com.liferay.portal.workflow.web.internal.util.WorkflowInstancePortletUtil;
 
@@ -73,10 +64,17 @@ public class WorkflowInstanceViewDisplayContext
 
 	public WorkflowInstanceViewDisplayContext(
 			LiferayPortletRequest liferayPortletRequest,
-			LiferayPortletResponse liferayPortletResponse)
+			LiferayPortletResponse liferayPortletResponse,
+			WorkflowComparatorFactory workflowComparatorFactory,
+			WorkflowLogManager workflowLogManager)
 		throws PortalException {
 
 		super(liferayPortletRequest, liferayPortletResponse);
+
+		_liferayPortletRequest = liferayPortletRequest;
+
+		_workflowComparatorFactory = workflowComparatorFactory;
+		_workflowLogManager = workflowLogManager;
 	}
 
 	public String getAssetIconCssClass(WorkflowInstance workflowInstance) {
@@ -163,7 +161,6 @@ public class WorkflowInstanceViewDisplayContext
 					).add(
 						_getFilterNavigationDropdownItem("completed")
 					).build());
-
 				dropdownGroupItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "filter"));
 			}
@@ -175,7 +172,6 @@ public class WorkflowInstanceViewDisplayContext
 					).add(
 						_getOrderByDropdownItem("end-date")
 					).build());
-
 				dropdownGroupItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "order-by"));
 			}
@@ -267,18 +263,19 @@ public class WorkflowInstanceViewDisplayContext
 		_searchContainer = new WorkflowInstanceSearch(
 			liferayPortletRequest,
 			PortletURLUtil.getCurrent(
-				liferayPortletRequest, liferayPortletResponse));
+				liferayPortletRequest, liferayPortletResponse),
+			_workflowComparatorFactory);
 
 		WorkflowModelSearchResult<WorkflowInstance> workflowModelSearchResult =
 			getWorkflowModelSearchResult(
 				_searchContainer.getStart(), _searchContainer.getEnd(),
 				_searchContainer.getOrderByComparator());
 
-		_searchContainer.setResults(
-			workflowModelSearchResult.getWorkflowModels());
-		_searchContainer.setTotal(workflowModelSearchResult.getLength());
-
 		setSearchContainerEmptyResultsMessage(_searchContainer);
+
+		_searchContainer.setResultsAndTotal(
+			workflowModelSearchResult::getWorkflowModels,
+			workflowModelSearchResult.getLength());
 
 		return _searchContainer;
 	}
@@ -357,7 +354,6 @@ public class WorkflowInstanceViewDisplayContext
 		return new ViewTypeItemList(getViewPortletURL(), getDisplayStyle()) {
 			{
 				addListViewTypeItem();
-
 				addTableViewTypeItem();
 			}
 		};
@@ -410,14 +406,33 @@ public class WorkflowInstanceViewDisplayContext
 		return false;
 	}
 
+	public boolean isShowExtraInfo() {
+		if (_showExtraInfo != null) {
+			return _showExtraInfo;
+		}
+
+		if (Objects.equals(
+				ParamUtil.getString(_liferayPortletRequest, "type"),
+				"document")) {
+
+			_showExtraInfo = true;
+		}
+		else {
+			_showExtraInfo = false;
+		}
+
+		return _showExtraInfo;
+	}
+
 	protected String getAssetType(String keywords) {
 		for (WorkflowHandler<?> workflowHandler :
 				getSearchableAssetsWorkflowHandlers()) {
 
-			String assetType = workflowHandler.getType(
-				workflowInstanceRequestHelper.getLocale());
+			if (StringUtil.equalsIgnoreCase(
+					keywords,
+					workflowHandler.getType(
+						workflowInstanceRequestHelper.getLocale()))) {
 
-			if (StringUtil.equalsIgnoreCase(keywords, assetType)) {
 				return workflowHandler.getClassName();
 			}
 		}
@@ -509,10 +524,10 @@ public class WorkflowInstanceViewDisplayContext
 		throws PortalException {
 
 		List<WorkflowLog> workflowLogs =
-			WorkflowLogManagerUtil.getWorkflowLogsByWorkflowInstance(
+			_workflowLogManager.getWorkflowLogsByWorkflowInstance(
 				workflowInstanceRequestHelper.getCompanyId(),
 				workflowInstance.getWorkflowInstanceId(), null, 0, 1,
-				WorkflowComparatorFactoryUtil.getLogCreateDateComparator());
+				_workflowComparatorFactory.getLogCreateDateComparator(false));
 
 		if (workflowLogs.isEmpty()) {
 			return null;
@@ -536,9 +551,13 @@ public class WorkflowInstanceViewDisplayContext
 
 	private String _displayStyle;
 	private String _keywords;
+	private final LiferayPortletRequest _liferayPortletRequest;
 	private String _navigation;
 	private String _orderByCol;
 	private String _orderByType;
 	private WorkflowInstanceSearch _searchContainer;
+	private Boolean _showExtraInfo;
+	private final WorkflowComparatorFactory _workflowComparatorFactory;
+	private final WorkflowLogManager _workflowLogManager;
 
 }

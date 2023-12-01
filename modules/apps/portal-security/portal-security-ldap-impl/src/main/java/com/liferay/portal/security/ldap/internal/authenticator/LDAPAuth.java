@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.ldap.internal.authenticator;
 
-import com.liferay.admin.kernel.util.Omniadmin;
 import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -49,6 +39,7 @@ import com.liferay.portal.security.ldap.exportimport.LDAPUserImporter;
 import com.liferay.portal.security.ldap.exportimport.configuration.LDAPImportConfiguration;
 import com.liferay.portal.security.ldap.util.LDAPUtil;
 import com.liferay.portal.security.ldap.validator.LDAPFilterValidator;
+import com.liferay.portlet.admin.util.OmniadminUtil;
 
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -78,10 +69,7 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
  * @author Scott Lee
  * @author Josef Sustacek
  */
-@Component(
-	immediate = true, property = "key=auth.pipeline.pre",
-	service = Authenticator.class
-)
+@Component(property = "key=auth.pipeline.pre", service = Authenticator.class)
 public class LDAPAuth implements Authenticator {
 
 	public static final String RESULT_PASSWORD_EXP_WARNING =
@@ -101,7 +89,7 @@ public class LDAPAuth implements Authenticator {
 				companyId, emailAddress, StringPool.BLANK, 0, password);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw new AuthException(exception);
 		}
@@ -118,7 +106,7 @@ public class LDAPAuth implements Authenticator {
 				companyId, StringPool.BLANK, screenName, 0, password);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw new AuthException(exception);
 		}
@@ -136,7 +124,7 @@ public class LDAPAuth implements Authenticator {
 				password);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw new AuthException(exception);
 		}
@@ -146,75 +134,6 @@ public class LDAPAuth implements Authenticator {
 	protected void activate(Map<String, Object> properties) {
 		_authPipelineEnableLiferayCheck = GetterUtil.getBoolean(
 			_props.get(PropsKeys.AUTH_PIPELINE_ENABLE_LIFERAY_CHECK));
-	}
-
-	@Reference(
-		target = "(factoryPid=com.liferay.portal.security.ldap.authenticator.configuration.LDAPAuthConfiguration)",
-		unbind = "-"
-	)
-	protected void setConfigurationProvider(
-		ConfigurationProvider<LDAPAuthConfiguration>
-			ldapAuthConfigurationProvider) {
-
-		_ldapAuthConfigurationProvider = ldapAuthConfigurationProvider;
-	}
-
-	@Reference(
-		target = "(factoryPid=com.liferay.portal.security.ldap.exportimport.configuration.LDAPImportConfiguration)",
-		unbind = "-"
-	)
-	protected void setLDAPImportConfigurationProvider(
-		ConfigurationProvider<LDAPImportConfiguration>
-			ldapImportConfigurationProvider) {
-
-		_ldapImportConfigurationProvider = ldapImportConfigurationProvider;
-	}
-
-	@Reference(
-		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration)",
-		unbind = "-"
-	)
-	protected void setLDAPServerConfigurationProvider(
-		ConfigurationProvider<LDAPServerConfiguration>
-			ldapServerConfigurationProvider) {
-
-		_ldapServerConfigurationProvider = ldapServerConfigurationProvider;
-	}
-
-	@Reference(unbind = "-")
-	protected void setLdapSettings(LDAPSettings ldapSettings) {
-		_ldapSettings = ldapSettings;
-	}
-
-	@Reference(unbind = "-")
-	protected void setOmniadmin(Omniadmin omniadmin) {
-		_omniadmin = omniadmin;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPasswordEncryptor(PasswordEncryptor passwordEncryptor) {
-		_passwordEncryptor = passwordEncryptor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setProps(Props props) {
-		_props = props;
-	}
-
-	@Reference(
-		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.SystemLDAPConfiguration)",
-		unbind = "-"
-	)
-	protected void setSystemLDAPConfigurationProvider(
-		ConfigurationProvider<SystemLDAPConfiguration>
-			systemLDAPConfigurationProvider) {
-
-		_systemLDAPConfigurationProvider = systemLDAPConfigurationProvider;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
 	}
 
 	private LDAPAuthResult _authenticate(
@@ -323,11 +242,11 @@ public class LDAPAuth implements Authenticator {
 						ldapAuthConfiguration.passwordEncryptionAlgorithm()) &&
 					!Objects.equals(
 						ldapAuthConfiguration.passwordEncryptionAlgorithm(),
-						PasswordEncryptorUtil.TYPE_NONE)) {
+						PasswordEncryptor.TYPE_NONE)) {
 
 					ldapPassword = _removeEncryptionAlgorithm(ldapPassword);
 
-					encryptedPassword = _passwordEncryptor.encrypt(
+					encryptedPassword = PasswordEncryptorUtil.encrypt(
 						ldapAuthConfiguration.passwordEncryptionAlgorithm(),
 						password, ldapPassword);
 				}
@@ -502,6 +421,19 @@ public class LDAPAuth implements Authenticator {
 				return FAILURE;
 			}
 
+			if (user == null) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						StringBundler.concat(
+							"Rejecting authenticated user ", fullUserDN,
+							" because of failed import from LDAP server ",
+							ldapServerId, ", company ", companyId,
+							", and LDAP context ", safeLdapContext));
+				}
+
+				return FAILURE;
+			}
+
 			// Process LDAP success codes
 
 			String resultCode = ldapAuthResult.getResponseControl();
@@ -668,7 +600,7 @@ public class LDAPAuth implements Authenticator {
 		}
 
 		if (userId > 0) {
-			if (_omniadmin.isOmniadmin(userId)) {
+			if (OmniadminUtil.isOmniadmin(userId)) {
 				return SUCCESS;
 			}
 		}
@@ -676,7 +608,7 @@ public class LDAPAuth implements Authenticator {
 			User user = _userLocalService.fetchUserByEmailAddress(
 				companyId, emailAddress);
 
-			if ((user != null) && _omniadmin.isOmniadmin(user)) {
+			if ((user != null) && OmniadminUtil.isOmniadmin(user)) {
 				return SUCCESS;
 			}
 		}
@@ -684,7 +616,7 @@ public class LDAPAuth implements Authenticator {
 			User user = _userLocalService.fetchUserByScreenName(
 				companyId, screenName);
 
-			if ((user != null) && _omniadmin.isOmniadmin(user)) {
+			if ((user != null) && OmniadminUtil.isOmniadmin(user)) {
 				return SUCCESS;
 			}
 		}
@@ -820,6 +752,10 @@ public class LDAPAuth implements Authenticator {
 	private final ThreadLocal<Map<String, LDAPAuthResult>>
 		_failedLDAPAuthResults = new CentralizedThreadLocal<>(
 			LDAPAuth.class + "._failedLDAPAuthResultCache", HashMap::new);
+
+	@Reference(
+		target = "(factoryPid=com.liferay.portal.security.ldap.authenticator.configuration.LDAPAuthConfiguration)"
+	)
 	private ConfigurationProvider<LDAPAuthConfiguration>
 		_ldapAuthConfigurationProvider;
 
@@ -829,10 +765,19 @@ public class LDAPAuth implements Authenticator {
 	)
 	private volatile LDAPFilterValidator _ldapFilterValidator;
 
+	@Reference(
+		target = "(factoryPid=com.liferay.portal.security.ldap.exportimport.configuration.LDAPImportConfiguration)"
+	)
 	private ConfigurationProvider<LDAPImportConfiguration>
 		_ldapImportConfigurationProvider;
+
+	@Reference(
+		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration)"
+	)
 	private ConfigurationProvider<LDAPServerConfiguration>
 		_ldapServerConfigurationProvider;
+
+	@Reference
 	private LDAPSettings _ldapSettings;
 
 	@Reference(
@@ -841,18 +786,22 @@ public class LDAPAuth implements Authenticator {
 	)
 	private volatile LDAPUserImporter _ldapUserImporter;
 
-	private Omniadmin _omniadmin;
-	private PasswordEncryptor _passwordEncryptor;
-
 	@Reference(
 		policy = ReferencePolicy.DYNAMIC,
 		policyOption = ReferencePolicyOption.GREEDY
 	)
 	private volatile SafePortalLDAP _portalLDAP;
 
+	@Reference
 	private Props _props;
+
+	@Reference(
+		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.SystemLDAPConfiguration)"
+	)
 	private ConfigurationProvider<SystemLDAPConfiguration>
 		_systemLDAPConfigurationProvider;
+
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

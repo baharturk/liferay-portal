@@ -1,60 +1,52 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSelectionModal} from 'frontend-js-web';
+import {
+	fetch,
+	navigate,
+	objectToFormData,
+	openSelectionModal,
+} from 'frontend-js-web';
+
+import openDeleteVocabularyModal from './openDeleteVocabularyModal';
 
 const ACTIONS = {
-	deleteVocabularies({
-		deleteVocabulariesURL,
-		portletNamespace,
-		viewVocabulariesURL,
-	}) {
-		const vocabulariesForm = document.createElement('form');
-
-		vocabulariesForm.setAttribute('method', 'post');
-
+	deleteVocabularies(itemData, portletNamespace) {
 		openSelectionModal({
 			buttonAddLabel: Liferay.Language.get('delete'),
 			multiple: true,
 			onSelect: (selectedItems) => {
 				if (selectedItems.length) {
-					if (
-						confirm(
-							Liferay.Language.get(
-								'are-you-sure-you-want-to-delete-the-selected-entries'
-							)
-						)
-					) {
-						const input = document.createElement('input');
+					openDeleteVocabularyModal({
+						multiple: true,
+						onDelete: () => {
+							fetch(itemData.deleteVocabulariesURL, {
+								body: objectToFormData({
+									[`${portletNamespace}rowIds`]: selectedItems
+										.map((item) => {
+											const selectedValue = JSON.parse(
+												item.value
+											);
 
-						input.name = `${portletNamespace}rowIds`;
-						input.value = selectedItems.map((item) => item.value);
-
-						vocabulariesForm.appendChild(input);
-
-						submitForm(vocabulariesForm, deleteVocabulariesURL);
-					}
+											return selectedValue.vocabularyId;
+										})
+										.join(','),
+								}),
+								method: 'POST',
+							}).then((response) => navigate(response.url));
+						},
+					});
 				}
 			},
 			title: Liferay.Language.get('delete-vocabulary'),
-			url: viewVocabulariesURL,
+			url: itemData.viewVocabulariesURL,
 		});
 	},
 };
 
 export default function propsTransformer({
-	additionalProps: {deleteVocabulariesURL, viewVocabulariesURL},
 	items,
 	portletNamespace,
 	...otherProps
@@ -70,11 +62,7 @@ export default function propsTransformer({
 					if (action) {
 						event.preventDefault();
 
-						ACTIONS[action]({
-							deleteVocabulariesURL,
-							portletNamespace,
-							viewVocabulariesURL,
-						});
+						ACTIONS[action](item.data, portletNamespace);
 					}
 				},
 			};

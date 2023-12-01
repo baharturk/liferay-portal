@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.dto.v1_0;
@@ -186,6 +177,36 @@ public class Configuration implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected HighlightConfiguration highlightConfiguration;
+
+	@Schema
+	@Valid
+	public IndexConfiguration getIndexConfiguration() {
+		return indexConfiguration;
+	}
+
+	public void setIndexConfiguration(IndexConfiguration indexConfiguration) {
+		this.indexConfiguration = indexConfiguration;
+	}
+
+	@JsonIgnore
+	public void setIndexConfiguration(
+		UnsafeSupplier<IndexConfiguration, Exception>
+			indexConfigurationUnsafeSupplier) {
+
+		try {
+			indexConfiguration = indexConfigurationUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected IndexConfiguration indexConfiguration;
 
 	@Schema
 	@Valid
@@ -379,6 +400,16 @@ public class Configuration implements Serializable {
 			sb.append(String.valueOf(highlightConfiguration));
 		}
 
+		if (indexConfiguration != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"indexConfiguration\": ");
+
+			sb.append(String.valueOf(indexConfiguration));
+		}
+
 		if (parameterConfiguration != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -513,5 +544,7 @@ public class Configuration implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

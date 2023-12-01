@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.model.impl;
@@ -29,7 +20,6 @@ import com.liferay.saml.persistence.model.SamlSpAuthRequestModel;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -214,92 +204,81 @@ public class SamlSpAuthRequestModelImpl
 	public Map<String, Function<SamlSpAuthRequest, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<SamlSpAuthRequest, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, SamlSpAuthRequest>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			SamlSpAuthRequest.class.getClassLoader(), SamlSpAuthRequest.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<SamlSpAuthRequest, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<SamlSpAuthRequest> constructor =
-				(Constructor<SamlSpAuthRequest>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<SamlSpAuthRequest, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<SamlSpAuthRequest, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"samlSpAuthnRequestId",
+				SamlSpAuthRequest::getSamlSpAuthnRequestId);
+			attributeGetterFunctions.put(
+				"companyId", SamlSpAuthRequest::getCompanyId);
+			attributeGetterFunctions.put(
+				"createDate", SamlSpAuthRequest::getCreateDate);
+			attributeGetterFunctions.put(
+				"samlIdpEntityId", SamlSpAuthRequest::getSamlIdpEntityId);
+			attributeGetterFunctions.put(
+				"samlSpAuthRequestKey",
+				SamlSpAuthRequest::getSamlSpAuthRequestKey);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<SamlSpAuthRequest, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<SamlSpAuthRequest, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<SamlSpAuthRequest, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<SamlSpAuthRequest, Object>>();
-		Map<String, BiConsumer<SamlSpAuthRequest, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<SamlSpAuthRequest, ?>>();
+		private static final Map<String, BiConsumer<SamlSpAuthRequest, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"samlSpAuthnRequestId", SamlSpAuthRequest::getSamlSpAuthnRequestId);
-		attributeSetterBiConsumers.put(
-			"samlSpAuthnRequestId",
-			(BiConsumer<SamlSpAuthRequest, Long>)
-				SamlSpAuthRequest::setSamlSpAuthnRequestId);
-		attributeGetterFunctions.put(
-			"companyId", SamlSpAuthRequest::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<SamlSpAuthRequest, Long>)
-				SamlSpAuthRequest::setCompanyId);
-		attributeGetterFunctions.put(
-			"createDate", SamlSpAuthRequest::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<SamlSpAuthRequest, Date>)
-				SamlSpAuthRequest::setCreateDate);
-		attributeGetterFunctions.put(
-			"samlIdpEntityId", SamlSpAuthRequest::getSamlIdpEntityId);
-		attributeSetterBiConsumers.put(
-			"samlIdpEntityId",
-			(BiConsumer<SamlSpAuthRequest, String>)
-				SamlSpAuthRequest::setSamlIdpEntityId);
-		attributeGetterFunctions.put(
-			"samlSpAuthRequestKey", SamlSpAuthRequest::getSamlSpAuthRequestKey);
-		attributeSetterBiConsumers.put(
-			"samlSpAuthRequestKey",
-			(BiConsumer<SamlSpAuthRequest, String>)
-				SamlSpAuthRequest::setSamlSpAuthRequestKey);
+		static {
+			Map<String, BiConsumer<SamlSpAuthRequest, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<SamlSpAuthRequest, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"samlSpAuthnRequestId",
+				(BiConsumer<SamlSpAuthRequest, Long>)
+					SamlSpAuthRequest::setSamlSpAuthnRequestId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<SamlSpAuthRequest, Long>)
+					SamlSpAuthRequest::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<SamlSpAuthRequest, Date>)
+					SamlSpAuthRequest::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"samlIdpEntityId",
+				(BiConsumer<SamlSpAuthRequest, String>)
+					SamlSpAuthRequest::setSamlIdpEntityId);
+			attributeSetterBiConsumers.put(
+				"samlSpAuthRequestKey",
+				(BiConsumer<SamlSpAuthRequest, String>)
+					SamlSpAuthRequest::setSamlSpAuthRequestKey);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -657,41 +636,12 @@ public class SamlSpAuthRequestModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<SamlSpAuthRequest, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<SamlSpAuthRequest, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<SamlSpAuthRequest, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((SamlSpAuthRequest)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, SamlSpAuthRequest>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					SamlSpAuthRequest.class, ModelWrapper.class);
 
 	}
 
@@ -703,7 +653,8 @@ public class SamlSpAuthRequestModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<SamlSpAuthRequest, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

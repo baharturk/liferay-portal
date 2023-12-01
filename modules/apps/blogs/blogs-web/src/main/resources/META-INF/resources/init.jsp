@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -38,6 +29,7 @@ taglib uri="http://liferay.com/tld/template" prefix="liferay-template" %><%@
 taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/trash" prefix="liferay-trash" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %><%@
+taglib uri="http://liferay.com/tld/user" prefix="liferay-user" %><%@
 taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 
 <%@ page import="com.liferay.asset.constants.AssetWebKeys" %><%@
@@ -46,10 +38,9 @@ page import="com.liferay.asset.kernel.model.AssetRenderer" %><%@
 page import="com.liferay.asset.kernel.model.AssetTag" %><%@
 page import="com.liferay.asset.kernel.model.AssetVocabularyConstants" %><%@
 page import="com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil" %><%@
-page import="com.liferay.asset.kernel.service.AssetEntryServiceUtil" %><%@
 page import="com.liferay.asset.kernel.service.AssetTagLocalServiceUtil" %><%@
 page import="com.liferay.asset.util.AssetHelper" %><%@
-page import="com.liferay.blogs.configuration.BlogsFileUploadsConfiguration" %><%@
+page import="com.liferay.asset.util.LinkedAssetEntryIdsUtil" %><%@
 page import="com.liferay.blogs.configuration.BlogsGroupServiceOverriddenConfiguration" %><%@
 page import="com.liferay.blogs.constants.BlogsConstants" %><%@
 page import="com.liferay.blogs.constants.BlogsPortletKeys" %><%@
@@ -63,43 +54,32 @@ page import="com.liferay.blogs.exception.EntryUrlTitleException" %><%@
 page import="com.liferay.blogs.exception.NoSuchEntryException" %><%@
 page import="com.liferay.blogs.model.BlogsEntry" %><%@
 page import="com.liferay.blogs.service.BlogsEntryLocalServiceUtil" %><%@
-page import="com.liferay.blogs.service.BlogsEntryServiceUtil" %><%@
 page import="com.liferay.blogs.settings.BlogsGroupServiceSettings" %><%@
-page import="com.liferay.blogs.util.comparator.EntryModifiedDateComparator" %><%@
 page import="com.liferay.blogs.web.internal.configuration.BlogsPortletInstanceConfiguration" %><%@
 page import="com.liferay.blogs.web.internal.constants.BlogsWebConstants" %><%@
-page import="com.liferay.blogs.web.internal.constants.BlogsWebKeys" %><%@
-page import="com.liferay.blogs.web.internal.display.context.BlogEntriesDisplayContext" %><%@
-page import="com.liferay.blogs.web.internal.display.context.BlogEntriesManagementToolbarDisplayContext" %><%@
-page import="com.liferay.blogs.web.internal.display.context.BlogImagesDisplayContext" %><%@
-page import="com.liferay.blogs.web.internal.display.context.BlogImagesManagementToolbarDisplayContext" %><%@
+page import="com.liferay.blogs.web.internal.display.context.BlogsAggregatorViewDisplayContext" %><%@
+page import="com.liferay.blogs.web.internal.display.context.BlogsConfigurationDisplayContext" %><%@
+page import="com.liferay.blogs.web.internal.display.context.BlogsEditEntryDisplayContext" %><%@
+page import="com.liferay.blogs.web.internal.display.context.BlogsManagementToolbarDisplayContext" %><%@
+page import="com.liferay.blogs.web.internal.display.context.BlogsViewDisplayContext" %><%@
+page import="com.liferay.blogs.web.internal.display.context.BlogsViewEntriesDisplayContext" %><%@
+page import="com.liferay.blogs.web.internal.display.context.BlogsViewImagesDisplayContext" %><%@
 page import="com.liferay.blogs.web.internal.display.context.helper.BlogsPortletInstanceSettingsHelper" %><%@
-page import="com.liferay.blogs.web.internal.helper.BlogsItemSelectorHelper" %><%@
 page import="com.liferay.blogs.web.internal.security.permission.resource.BlogsEntryPermission" %><%@
-page import="com.liferay.blogs.web.internal.servlet.taglib.clay.BlogsEntryImageVerticalCard" %><%@
-page import="com.liferay.blogs.web.internal.servlet.taglib.clay.BlogsEntryVerticalCard" %><%@
 page import="com.liferay.blogs.web.internal.servlet.taglib.util.BlogsEntryActionDropdownItemsProvider" %><%@
-page import="com.liferay.blogs.web.internal.servlet.taglib.util.BlogsEntryImageActionDropdownItemsProvider" %><%@
 page import="com.liferay.blogs.web.internal.social.SocialBookmarksUtil" %><%@
 page import="com.liferay.blogs.web.internal.util.BlogsEntryAssetEntryUtil" %><%@
 page import="com.liferay.blogs.web.internal.util.BlogsEntryUtil" %><%@
 page import="com.liferay.blogs.web.internal.util.BlogsPortletInstanceConfigurationUtil" %><%@
 page import="com.liferay.blogs.web.internal.util.BlogsUtil" %><%@
 page import="com.liferay.document.library.kernel.exception.FileSizeException" %><%@
-page import="com.liferay.document.library.kernel.util.DLUtil" %><%@
-page import="com.liferay.document.library.kernel.util.DLValidatorUtil" %><%@
-page import="com.liferay.document.library.util.DLURLHelperUtil" %><%@
 page import="com.liferay.friendly.url.exception.DuplicateFriendlyURLEntryException" %><%@
 page import="com.liferay.frontend.taglib.clay.servlet.taglib.util.JSPNavigationItemList" %><%@
-page import="com.liferay.petra.portlet.url.builder.PortletURLBuilder" %><%@
 page import="com.liferay.petra.string.StringBundler" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
-page import="com.liferay.portal.kernel.bean.BeanParamUtil" %><%@
+page import="com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil" %><%@
 page import="com.liferay.portal.kernel.comment.CommentManagerUtil" %><%@
-page import="com.liferay.portal.kernel.comment.Discussion" %><%@
-page import="com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker" %><%@
 page import="com.liferay.portal.kernel.dao.search.SearchContainer" %><%@
-page import="com.liferay.portal.kernel.dao.search.SearchContainerResults" %><%@
 page import="com.liferay.portal.kernel.exception.ImageResolutionException" %><%@
 page import="com.liferay.portal.kernel.exception.PortalException" %><%@
 page import="com.liferay.portal.kernel.exception.SystemException" %><%@
@@ -110,28 +90,21 @@ page import="com.liferay.portal.kernel.model.ModelHintsUtil" %><%@
 page import="com.liferay.portal.kernel.model.Organization" %><%@
 page import="com.liferay.portal.kernel.model.Portlet" %><%@
 page import="com.liferay.portal.kernel.model.User" %><%@
-page import="com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil" %><%@
-page import="com.liferay.portal.kernel.portlet.LiferayWindowState" %><%@
-page import="com.liferay.portal.kernel.portlet.PortletProvider" %><%@
-page import="com.liferay.portal.kernel.portlet.PortletProviderUtil" %><%@
-page import="com.liferay.portal.kernel.portlet.PortletURLUtil" %><%@
-page import="com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory" %><%@
-page import="com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil" %><%@
-page import="com.liferay.portal.kernel.repository.model.FileEntry" %><%@
+page import="com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder" %><%@
 page import="com.liferay.portal.kernel.security.permission.ActionKeys" %><%@
 page import="com.liferay.portal.kernel.security.permission.ResourceActionsUtil" %><%@
 page import="com.liferay.portal.kernel.service.GroupLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.service.OrganizationLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.service.PortletLocalServiceUtil" %><%@
-page import="com.liferay.portal.kernel.service.ServiceContextFunction" %><%@
 page import="com.liferay.portal.kernel.service.UserLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.settings.GroupServiceSettingsLocator" %><%@
 page import="com.liferay.portal.kernel.settings.ParameterMapSettingsLocator" %><%@
 page import="com.liferay.portal.kernel.settings.PortletInstanceSettingsLocator" %><%@
+page import="com.liferay.portal.kernel.upload.FileItem" %><%@
 page import="com.liferay.portal.kernel.upload.LiferayFileItemException" %><%@
 page import="com.liferay.portal.kernel.upload.UploadRequestSizeException" %><%@
-page import="com.liferay.portal.kernel.upload.UploadServletRequestConfigurationHelperUtil" %><%@
+page import="com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProviderUtil" %><%@
 page import="com.liferay.portal.kernel.util.Constants" %><%@
 page import="com.liferay.portal.kernel.util.DateUtil" %><%@
 page import="com.liferay.portal.kernel.util.FastDateFormatFactoryUtil" %><%@
@@ -140,16 +113,13 @@ page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
 page import="com.liferay.portal.kernel.util.ListUtil" %><%@
 page import="com.liferay.portal.kernel.util.ParamUtil" %><%@
-page import="com.liferay.portal.kernel.util.Portal" %><%@
 page import="com.liferay.portal.kernel.util.PortalUtil" %><%@
 page import="com.liferay.portal.kernel.util.PropsUtil" %><%@
 page import="com.liferay.portal.kernel.util.StringUtil" %><%@
 page import="com.liferay.portal.kernel.util.URLCodec" %><%@
-page import="com.liferay.portal.kernel.util.UnicodeFormatter" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %><%@
 page import="com.liferay.portal.kernel.workflow.WorkflowConstants" %><%@
-page import="com.liferay.portal.upload.LiferayFileItem" %><%@
 page import="com.liferay.portal.util.PropsValues" %><%@
 page import="com.liferay.ratings.kernel.model.RatingsEntry" %><%@
 page import="com.liferay.ratings.kernel.model.RatingsStats" %><%@
@@ -181,7 +151,7 @@ page import="javax.portlet.WindowState" %>
 <%
 AssetHelper assetHelper = (AssetHelper)request.getAttribute(AssetWebKeys.ASSET_HELPER);
 
-Format dateFormatDate = FastDateFormatFactoryUtil.getDate(locale, timeZone);
+Format dateFormat = FastDateFormatFactoryUtil.getDate(locale, timeZone);
 %>
 
 <%@ include file="/init-ext.jsp" %>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.microblogs.web.internal.portlet;
@@ -42,7 +33,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Adolfo Pérez
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=microblogs-portlet",
@@ -58,7 +48,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.portlet-info.short-title=Microblogs",
 		"javax.portlet.portlet-info.title=Microblogs",
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,guest,power-user,user"
+		"javax.portlet.security-role-ref=administrator,guest,power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -127,37 +118,19 @@ public class MicroblogsPortlet extends MVCPortlet {
 			microblogsEntryId, 1);
 	}
 
-	@Reference(unbind = "-")
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
+	@Reference
+	protected AssetEntryLocalService assetEntryLocalService;
 
-		this.assetEntryLocalService = assetEntryLocalService;
-	}
+	@Reference
+	protected MicroblogsEntryLocalService microblogsEntryLocalService;
 
-	@Reference(unbind = "-")
-	protected void setMicroblogsEntryLocalService(
-		MicroblogsEntryLocalService microblogsEntryLocalService) {
-
-		this.microblogsEntryLocalService = microblogsEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMicroblogsEntryService(
-		MicroblogsEntryService microblogsEntryService) {
-
-		this.microblogsEntryService = microblogsEntryService;
-	}
+	@Reference
+	protected MicroblogsEntryService microblogsEntryService;
 
 	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.microblogs.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
+		target = "(&(release.bundle.symbolic.name=com.liferay.microblogs.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))"
 	)
-	protected void setRelease(Release release) {
-	}
-
-	protected AssetEntryLocalService assetEntryLocalService;
-	protected MicroblogsEntryLocalService microblogsEntryLocalService;
-	protected MicroblogsEntryService microblogsEntryService;
+	protected Release release;
 
 	private String[] _getAssetTagNames(String content) {
 		List<String> assetTagNames = new ArrayList<>();

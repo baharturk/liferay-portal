@@ -1,19 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useModal} from '@clayui/modal';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import CheckinModal from './CheckinModal.es';
 
@@ -24,7 +15,6 @@ export default function Checkin({
 }) {
 	const [showModal, setShowModal] = useState(false);
 	const [callback, setCallback] = useState();
-	const bridgeComponentId = `${portletNamespace}DocumentLibraryCheckinModal`;
 
 	const handleOnClose = () => {
 		setShowModal(false);
@@ -34,20 +24,27 @@ export default function Checkin({
 		onClose: handleOnClose,
 	});
 
-	if (!Liferay.component(bridgeComponentId)) {
-		Liferay.component(
-			bridgeComponentId,
-			{
-				open: (callback) => {
-					setCallback(() => callback);
-					setShowModal(true);
+	useEffect(() => {
+		const bridgeComponentId = `${portletNamespace}DocumentLibraryCheckinModal`;
+		if (!Liferay.component(bridgeComponentId)) {
+			Liferay.component(
+				bridgeComponentId,
+				{
+					open: (callback) => {
+						setCallback(() => callback);
+						setShowModal(true);
+					},
 				},
-			},
-			{
-				destroyOnNavigate: true,
-			}
-		);
-	}
+				{
+					destroyOnNavigate: true,
+				}
+			);
+		}
+
+		return () => {
+			Liferay.destroyComponent(bridgeComponentId);
+		};
+	}, [portletNamespace]);
 
 	return (
 		<>

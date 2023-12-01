@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.fieldset;
@@ -26,7 +17,6 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -41,8 +31,6 @@ import com.liferay.portal.kernel.util.Validator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,12 +39,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Carlos Lancha
  */
 @Component(
-	immediate = true,
 	property = "ddm.form.field.type.name=" + DDMFormFieldTypeConstants.FIELDSET,
-	service = {
-		DDMFormFieldTemplateContextContributor.class,
-		FieldSetDDMFormFieldTemplateContextContributor.class
-	}
+	service = DDMFormFieldTemplateContextContributor.class
 )
 public class FieldSetDDMFormFieldTemplateContextContributor
 	implements DDMFormFieldTemplateContextContributor {
@@ -104,6 +88,10 @@ public class FieldSetDDMFormFieldTemplateContextContributor
 		).put(
 			"nestedFields", nestedFields
 		).put(
+			"normalizedStructure",
+			GetterUtil.getBoolean(
+				ddmFormField.getProperty("normalizedStructure"))
+		).put(
 			"rows", rowsJSONArray
 		).put(
 			"upgradedStructure",
@@ -120,7 +108,7 @@ public class FieldSetDDMFormFieldTemplateContextContributor
 		}
 		catch (JSONException jsonException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException, jsonException);
+				_log.debug(jsonException);
 			}
 		}
 
@@ -137,13 +125,8 @@ public class FieldSetDDMFormFieldTemplateContextContributor
 			rowsJSONArray.put(_createRowJSONObject(visibleNestedFields));
 		}
 
-		Stream<Object> invisibleNestedFieldsStream = nestedFields.stream();
-
-		List<Object> invisibleNestedFields = invisibleNestedFieldsStream.filter(
-			nestedField -> !_isNestedFieldVisible(nestedField)
-		).collect(
-			Collectors.toList()
-		);
+		List<Object> invisibleNestedFields = ListUtil.filter(
+			nestedFields, nestedField -> !_isNestedFieldVisible(nestedField));
 
 		if (!invisibleNestedFields.isEmpty()) {
 			rowsJSONArray.put(_createRowJSONObject(invisibleNestedFields));
@@ -154,7 +137,7 @@ public class FieldSetDDMFormFieldTemplateContextContributor
 
 	protected JSONArray getRowsJSONArray(String definition) {
 		try {
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+			JSONObject jsonObject = jsonFactory.createJSONObject(
 				StringUtil.replace(definition, "fieldNames", "fields"));
 
 			JSONArray pagesJSONArray = jsonObject.getJSONArray("pages");
@@ -165,7 +148,7 @@ public class FieldSetDDMFormFieldTemplateContextContributor
 		}
 		catch (JSONException jsonException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException, jsonException);
+				_log.debug(jsonException);
 			}
 		}
 
@@ -206,7 +189,7 @@ public class FieldSetDDMFormFieldTemplateContextContributor
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -214,13 +197,7 @@ public class FieldSetDDMFormFieldTemplateContextContributor
 	}
 
 	private List<Object> _getVisibleNestedFields(List<Object> nestedFields) {
-		Stream<Object> visibleNestedFieldsStream = nestedFields.stream();
-
-		return visibleNestedFieldsStream.filter(
-			this::_isNestedFieldVisible
-		).collect(
-			Collectors.toList()
-		);
+		return ListUtil.filter(nestedFields, this::_isNestedFieldVisible);
 	}
 
 	private boolean _isNestedFieldVisible(Object nestedField) {

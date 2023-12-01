@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayIcon from '@clayui/icon';
@@ -25,23 +19,40 @@ let connectionNodeId = '';
 let handleConnect = false;
 
 export default function BaseNode({
+	actions,
+	assignments,
 	className,
 	description,
 	descriptionSidebar,
+	dragHandle,
 	icon,
 	id,
+	isConnectable,
+	isDragging,
 	label,
 	newNode,
+	nodeTypeClassName,
+	notifications,
+	script,
+	scriptLanguage,
+	sourcePosition,
+	targetPosition,
+	taskTimers,
 	type,
+	xPos,
+	yPos,
 	...otherProps
 }) {
 	const sourcehandlesRef = useRef();
 	const targethandlesRef = useRef();
 	const {selectedLanguageId} = useContext(DefinitionBuilderContext);
 
-	const {collidingElements, selectedItem, setSelectedItem} = useContext(
-		DiagramBuilderContext
-	);
+	const {
+		collidingElements,
+		selectedItem,
+		setCollidingElements,
+		setSelectedItem,
+	} = useContext(DiagramBuilderContext);
 
 	useEffect(() => {
 		if (sourcehandlesRef?.current && targethandlesRef?.current) {
@@ -93,21 +104,13 @@ export default function BaseNode({
 	}
 
 	if (selectedItem?.id === id) {
-		className = `${className} selected`;
+		nodeTypeClassName = `${nodeTypeClassName} selected`;
 	}
 
-	let nodeLabel;
+	let nodeLabel = label[defaultLanguageId];
 
-	if (selectedLanguageId) {
-		if (!label[selectedLanguageId]) {
-			nodeLabel = label[defaultLanguageId];
-		}
-		else {
-			nodeLabel = label[selectedLanguageId];
-		}
-	}
-	else {
-		nodeLabel = label[defaultLanguageId];
+	if (selectedLanguageId && label[selectedLanguageId]) {
+		nodeLabel = label[selectedLanguageId];
 	}
 
 	const displaySourceHandles = (display) => () => {
@@ -129,9 +132,15 @@ export default function BaseNode({
 	if (newNode) {
 		setSelectedItem({
 			data: {
+				actions,
+				assignments,
 				description,
 				label,
 				newNode: false,
+				notifications,
+				script,
+				scriptLanguage,
+				taskTimers,
 			},
 			id,
 			type,
@@ -139,7 +148,7 @@ export default function BaseNode({
 	}
 
 	return (
-		<div className="base-node">
+		<div className={`base-node ${className}`}>
 			{displayBorderArea && (
 				<div className={`node-border-area ${borderAreaColor}`} />
 			)}
@@ -147,6 +156,7 @@ export default function BaseNode({
 			{!descriptionSidebar && (
 				<div
 					className="node-handle-area"
+					onDragLeave={() => setCollidingElements(null)}
 					onMouseEnter={displaySourceHandles(true)}
 					onMouseLeave={displaySourceHandles(false)}
 				>
@@ -182,22 +192,35 @@ export default function BaseNode({
 			)}
 
 			<div
-				className={`node ${className}`}
+				className={`node ${nodeTypeClassName}`}
+				draghandle={dragHandle}
+				isconnectable={isConnectable?.toString()}
+				isdragging={isDragging?.toString()}
 				onClick={() => {
 					if (!descriptionSidebar) {
 						setSelectedItem({
 							data: {
+								actions,
+								assignments,
 								description,
 								label,
+								notifications,
+								script,
+								scriptLanguage,
+								taskTimers,
 							},
 							id,
 							type,
 						});
 					}
 				}}
+				sourceposition={sourcePosition}
 				style={{
 					position: displayBorderArea ? 'absolute' : 'unset',
 				}}
+				targetposition={targetPosition}
+				xpos={xPos}
+				ypos={yPos}
 				{...otherProps}
 			>
 				{descriptionSidebar && (
@@ -229,7 +252,8 @@ BaseNode.propTypes = {
 	description: PropTypes.string,
 	descriptionSidebar: PropTypes.string,
 	icon: PropTypes.string.isRequired,
-	id: PropTypes.string.isRequired,
+	id: PropTypes.string,
 	label: PropTypes.object,
+	nodeTypeClassName: PropTypes.string,
 	type: PropTypes.string.isRequired,
 };

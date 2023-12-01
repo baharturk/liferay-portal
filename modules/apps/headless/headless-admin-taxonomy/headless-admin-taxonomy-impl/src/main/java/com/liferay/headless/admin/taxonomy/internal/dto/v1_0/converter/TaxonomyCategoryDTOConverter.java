@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.taxonomy.internal.dto.v1_0.converter;
@@ -27,14 +18,20 @@ import com.liferay.headless.admin.taxonomy.dto.v1_0.ParentTaxonomyVocabulary;
 import com.liferay.headless.admin.taxonomy.dto.v1_0.TaxonomyCategory;
 import com.liferay.headless.admin.taxonomy.dto.v1_0.TaxonomyCategoryProperty;
 import com.liferay.headless.admin.taxonomy.internal.dto.v1_0.util.CreatorUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.vulcan.dto.action.DTOActionProvider;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
+import com.liferay.portal.vulcan.fields.NestedFieldsSupplier;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
+
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,8 +41,12 @@ import org.osgi.service.component.annotations.Reference;
  * @author Víctor Galán
  */
 @Component(
-	property = "dto.class.name=com.liferay.asset.kernel.model.AssetCategory",
-	service = {DTOConverter.class, TaxonomyCategoryDTOConverter.class}
+	property = {
+		"application.name=Liferay.Headless.Admin.Taxonomy",
+		"dto.class.name=com.liferay.asset.kernel.model.AssetCategory",
+		"version=v1.0"
+	},
+	service = DTOConverter.class
 )
 public class TaxonomyCategoryDTOConverter
 	implements DTOConverter<AssetCategory, TaxonomyCategory> {
@@ -95,7 +96,10 @@ public class TaxonomyCategoryDTOConverter
 
 		return new TaxonomyCategory() {
 			{
-				actions = dtoConverterContext.getActions();
+				actions = _dtoActionProvider.getActions(
+					assetCategory.getGroupId(), assetCategory.getCategoryId(),
+					dtoConverterContext.getUriInfo(),
+					dtoConverterContext.getUserId());
 				availableLanguages = LocaleUtil.toW3cLanguageIds(
 					assetCategory.getAvailableLanguageIds());
 				creator = CreatorUtil.toCreator(
@@ -118,25 +122,6 @@ public class TaxonomyCategoryDTOConverter
 				numberOfTaxonomyCategories =
 					_assetCategoryService.getChildCategoriesCount(
 						assetCategory.getCategoryId());
-				parentTaxonomyVocabulary = new ParentTaxonomyVocabulary() {
-					{
-						id = assetCategory.getVocabularyId();
-
-						setName(
-							() -> {
-								if (assetCategory.getVocabularyId() == 0) {
-									return null;
-								}
-
-								AssetVocabulary assetVocabulary =
-									_assetVocabularyService.getVocabulary(
-										assetCategory.getVocabularyId());
-
-								return assetVocabulary.getTitle(
-									dtoConverterContext.getLocale());
-							});
-					}
-				};
 				siteId = assetCategory.getGroupId();
 				taxonomyCategoryProperties = TransformUtil.transformToArray(
 					_assetCategoryPropertyLocalService.getCategoryProperties(
@@ -145,19 +130,39 @@ public class TaxonomyCategoryDTOConverter
 						assetCategoryProperties),
 					TaxonomyCategoryProperty.class);
 				taxonomyCategoryUsageCount =
-					(int)_assetEntryLocalService.searchCount(
-						assetCategory.getCompanyId(),
-						new long[] {assetCategory.getGroupId()},
-						assetCategory.getUserId(), null, 0, null,
-						String.valueOf(assetCategory.getCategoryId()), null,
-						false, false,
-						new int[] {
-							WorkflowConstants.STATUS_APPROVED,
-							WorkflowConstants.STATUS_PENDING,
-							WorkflowConstants.STATUS_SCHEDULED
-						},
-						false);
+					NestedFieldsSupplier.<Integer>supply(
+						"taxonomyCategoryUsageCount",
+						fieldName -> {
+							UriInfo uriInfo = dtoConverterContext.getUriInfo();
+
+							if (uriInfo != null) {
+								MultivaluedMap<String, String> queryParameters =
+									uriInfo.getQueryParameters();
+
+								if (StringUtil.contains(
+										queryParameters.getFirst(
+											"restrictFields"),
+										"taxonomyCategoryUsageCount")) {
+
+									return null;
+								}
+							}
+
+							return (int)_assetEntryLocalService.searchCount(
+								assetCategory.getCompanyId(),
+								new long[] {assetCategory.getGroupId()},
+								assetCategory.getUserId(), null, -1, null,
+								String.valueOf(assetCategory.getCategoryId()),
+								null, false, false,
+								new int[] {
+									WorkflowConstants.STATUS_APPROVED,
+									WorkflowConstants.STATUS_PENDING,
+									WorkflowConstants.STATUS_SCHEDULED
+								},
+								false);
+						});
 				taxonomyVocabularyId = assetCategory.getVocabularyId();
+
 				setParentTaxonomyCategory(
 					() -> {
 						if (assetCategory.getParentCategory() == null) {
@@ -167,6 +172,28 @@ public class TaxonomyCategoryDTOConverter
 						return _toParentTaxonomyCategory(
 							assetCategory.getParentCategory(),
 							dtoConverterContext);
+					});
+				setParentTaxonomyVocabulary(
+					() -> {
+						if (assetCategory.getVocabularyId() == 0) {
+							return null;
+						}
+
+						AssetVocabulary assetVocabulary =
+							_assetVocabularyService.fetchVocabulary(
+								assetCategory.getVocabularyId());
+
+						if (assetVocabulary == null) {
+							return null;
+						}
+
+						return new ParentTaxonomyVocabulary() {
+							{
+								id = assetCategory.getVocabularyId();
+								name = assetVocabulary.getTitle(
+									dtoConverterContext.getLocale());
+							}
+						};
 					});
 			}
 		};
@@ -198,6 +225,11 @@ public class TaxonomyCategoryDTOConverter
 
 	@Reference
 	private AssetVocabularyService _assetVocabularyService;
+
+	@Reference(
+		target = "(dto.class.name=com.liferay.headless.admin.taxonomy.dto.v1_0.TaxonomyCategory)"
+	)
+	private DTOActionProvider _dtoActionProvider;
 
 	@Reference
 	private Portal _portal;

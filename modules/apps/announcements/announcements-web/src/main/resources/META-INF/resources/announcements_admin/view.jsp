@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,26 +10,9 @@
 <%
 String navigation = ParamUtil.getString(request, "navigation", "announcements");
 
-String distributionScope = ParamUtil.getString(request, "distributionScope");
+AnnouncementsAdminViewManagementToolbarDisplayContext announcementsAdminViewManagementToolbarDisplayContext = new AnnouncementsAdminViewManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, renderRequest);
 
-long classNameId = 0;
-long classPK = 0;
-
-String[] distributionScopeArray = StringUtil.split(distributionScope);
-
-if (distributionScopeArray.length == 2) {
-	classNameId = GetterUtil.getLong(distributionScopeArray[0]);
-	classPK = GetterUtil.getLong(distributionScopeArray[1]);
-}
-
-SearchContainer<AnnouncementsEntry> announcementsEntriesSearchContainer = new SearchContainer(renderRequest, null, null, SearchContainer.DEFAULT_CUR_PARAM, SearchContainer.DEFAULT_DELTA, currentURLObj, null, "no-entries-were-found");
-
-announcementsEntriesSearchContainer.setRowChecker(new AnnouncementsEntryChecker(liferayPortletRequest, liferayPortletResponse));
-
-announcementsEntriesSearchContainer.setTotal(AnnouncementsEntryLocalServiceUtil.getEntriesCount(themeDisplay.getCompanyId(), classNameId, classPK, navigation.equals("alerts")));
-announcementsEntriesSearchContainer.setResults(AnnouncementsEntryLocalServiceUtil.getEntries(themeDisplay.getCompanyId(), classNameId, classPK, navigation.equals("alerts"), announcementsEntriesSearchContainer.getStart(), announcementsEntriesSearchContainer.getEnd()));
-
-AnnouncementsAdminViewManagementToolbarDisplayContext announcementsAdminViewManagementToolbarDisplayContext = new AnnouncementsAdminViewManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, announcementsEntriesSearchContainer);
+SearchContainer<AnnouncementsEntry> announcementsEntriesSearchContainer = announcementsAdminViewManagementToolbarDisplayContext.getSearchContainer();
 %>
 
 <clay:navigation-bar
@@ -80,7 +54,7 @@ AnnouncementsAdminViewManagementToolbarDisplayContext announcementsAdminViewMana
 	disabled="<%= announcementsAdminViewManagementToolbarDisplayContext.isDisabled() %>"
 	filterDropdownItems="<%= announcementsAdminViewManagementToolbarDisplayContext.getFilterDropdownItems() %>"
 	filterLabelItems="<%= announcementsAdminViewManagementToolbarDisplayContext.getFilterLabelItems() %>"
-	itemsTotal="<%= announcementsAdminViewManagementToolbarDisplayContext.getTotal() %>"
+	itemsTotal="<%= announcementsEntriesSearchContainer.getTotal() %>"
 	propsTransformer="announcements_admin/js/AnnouncementsManagementToolbarPropsTransformer"
 	searchContainerId="<%= announcementsAdminViewManagementToolbarDisplayContext.getSearchContainerId() %>"
 	selectable="<%= true %>"

@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {isProductPurchasable} from 'commerce-frontend-js/utilities/index';
@@ -139,11 +133,7 @@ export function formatMappedProductForTable(mappedProducts, isAdmin) {
 }
 
 export function formatProductOptions(skuOptions, productOptions) {
-	const optionsData = Object.entries(skuOptions);
-
-	return optionsData.reduce((formattedOptions, optionData) => {
-		const [optionId, optionValueId] = optionData;
-
+	return skuOptions.map(({key: optionId, value: optionValueId}) => {
 		const option = productOptions.find(
 			(productOption) => String(productOption.id) === String(optionId)
 		);
@@ -155,11 +145,8 @@ export function formatProductOptions(skuOptions, productOptions) {
 					String(productOptionValue.id) === String(optionValueId)
 			);
 
-		return [
-			...formattedOptions,
-			{key: option.key, value: [optionValue.key]},
-		];
-	}, []);
+		return {key: option.key, value: [optionValue.key]};
+	});
 }
 
 export function getProductURL(productBaseURL, productURLs) {

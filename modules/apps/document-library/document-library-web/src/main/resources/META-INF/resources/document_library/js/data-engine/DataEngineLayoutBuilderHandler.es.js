@@ -1,16 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
+
+import {openToast, postForm, sub} from 'frontend-js-web';
 
 import {
 	getDataEngineStructure,
@@ -33,10 +26,14 @@ export default function DataEngineLayoutBuilderHandler({namespace}) {
 		if (
 			isElementInnerSelector(
 				target,
+				'.cke_dialog',
+				'.clay-color-dropdown-menu',
+				'.date-picker-dropdown-menu',
 				'.ddm-form-builder-wrapper',
-				'.multi-panel-sidebar',
+				'.ddm-select-dropdown',
+				'.input-localized-content',
 				'.lfr-icon-menu-open',
-				'.input-localized-content'
+				'.multi-panel-sidebar'
 			)
 		) {
 			const dataLayoutBuilder = await getDataLayoutBuilder();
@@ -48,7 +45,7 @@ export default function DataEngineLayoutBuilderHandler({namespace}) {
 		}
 	};
 
-	window.addEventListener('click', detectClickOutside, true);
+	window.addEventListener('mousedown', detectClickOutside, true);
 
 	const saveDataEngineStructure = async () => {
 		const dataLayoutBuilder = await getDataLayoutBuilder();
@@ -60,12 +57,12 @@ export default function DataEngineLayoutBuilderHandler({namespace}) {
 		} = dataLayoutBuilder.current.state.dataDefinition;
 
 		if (!nameInput.value || !name[defaultLanguageId]) {
-			Liferay.Util.openToast({
-				message: Liferay.Util.sub(
+			openToast({
+				message: sub(
 					Liferay.Language.get(
 						'please-enter-a-valid-title-for-the-default-language-x'
 					),
-					defaultLanguageId.replace('_', '-')
+					defaultLanguageId.replaceAll('_', '-')
 				),
 				title: Liferay.Language.get('error'),
 				type: 'danger',
@@ -76,7 +73,7 @@ export default function DataEngineLayoutBuilderHandler({namespace}) {
 			return;
 		}
 
-		Liferay.Util.postForm(form, {
+		postForm(form, {
 			data: getDataEngineStructure({dataLayoutBuilder, namespace}),
 		});
 	};
@@ -105,7 +102,7 @@ export default function DataEngineLayoutBuilderHandler({namespace}) {
 	return {
 		dispose() {
 			form.removeEventListener('submit', saveDataEngineStructure);
-			window.removeEventListener('click', detectClickOutside, true);
+			window.removeEventListener('mousedown', detectClickOutside, true);
 		},
 	};
 }

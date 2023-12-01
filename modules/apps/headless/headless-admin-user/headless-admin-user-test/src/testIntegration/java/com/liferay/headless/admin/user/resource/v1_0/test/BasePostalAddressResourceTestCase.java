@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.resource.v1_0.test;
@@ -27,8 +18,10 @@ import com.liferay.headless.admin.user.client.http.HttpInvoker;
 import com.liferay.headless.admin.user.client.pagination.Page;
 import com.liferay.headless.admin.user.client.resource.v1_0.PostalAddressResource;
 import com.liferay.headless.admin.user.client.serdes.v1_0.PostalAddressSerDes;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
@@ -48,24 +41,24 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtilsBean;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -181,6 +174,8 @@ public abstract class BasePostalAddressResourceTestCase {
 		postalAddress.setAddressLocality(regex);
 		postalAddress.setAddressRegion(regex);
 		postalAddress.setAddressType(regex);
+		postalAddress.setName(regex);
+		postalAddress.setPhoneNumber(regex);
 		postalAddress.setPostalCode(regex);
 		postalAddress.setStreetAddressLine1(regex);
 		postalAddress.setStreetAddressLine2(regex);
@@ -196,10 +191,122 @@ public abstract class BasePostalAddressResourceTestCase {
 		Assert.assertEquals(regex, postalAddress.getAddressLocality());
 		Assert.assertEquals(regex, postalAddress.getAddressRegion());
 		Assert.assertEquals(regex, postalAddress.getAddressType());
+		Assert.assertEquals(regex, postalAddress.getName());
+		Assert.assertEquals(regex, postalAddress.getPhoneNumber());
 		Assert.assertEquals(regex, postalAddress.getPostalCode());
 		Assert.assertEquals(regex, postalAddress.getStreetAddressLine1());
 		Assert.assertEquals(regex, postalAddress.getStreetAddressLine2());
 		Assert.assertEquals(regex, postalAddress.getStreetAddressLine3());
+	}
+
+	@Test
+	public void testGetAccountPostalAddressesPage() throws Exception {
+		Long accountId = testGetAccountPostalAddressesPage_getAccountId();
+		Long irrelevantAccountId =
+			testGetAccountPostalAddressesPage_getIrrelevantAccountId();
+
+		Page<PostalAddress> page =
+			postalAddressResource.getAccountPostalAddressesPage(accountId);
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantAccountId != null) {
+			PostalAddress irrelevantPostalAddress =
+				testGetAccountPostalAddressesPage_addPostalAddress(
+					irrelevantAccountId, randomIrrelevantPostalAddress());
+
+			page = postalAddressResource.getAccountPostalAddressesPage(
+				irrelevantAccountId);
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantPostalAddress, (List<PostalAddress>)page.getItems());
+			assertValid(
+				page,
+				testGetAccountPostalAddressesPage_getExpectedActions(
+					irrelevantAccountId));
+		}
+
+		PostalAddress postalAddress1 =
+			testGetAccountPostalAddressesPage_addPostalAddress(
+				accountId, randomPostalAddress());
+
+		PostalAddress postalAddress2 =
+			testGetAccountPostalAddressesPage_addPostalAddress(
+				accountId, randomPostalAddress());
+
+		page = postalAddressResource.getAccountPostalAddressesPage(accountId);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(postalAddress1, (List<PostalAddress>)page.getItems());
+		assertContains(postalAddress2, (List<PostalAddress>)page.getItems());
+		assertValid(
+			page,
+			testGetAccountPostalAddressesPage_getExpectedActions(accountId));
+
+		postalAddressResource.deletePostalAddress(postalAddress1.getId());
+
+		postalAddressResource.deletePostalAddress(postalAddress2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetAccountPostalAddressesPage_getExpectedActions(Long accountId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-admin-user/v1.0/accounts/{accountId}/postal-addresses/batch".
+				replace("{accountId}", String.valueOf(accountId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
+	}
+
+	protected PostalAddress testGetAccountPostalAddressesPage_addPostalAddress(
+			Long accountId, PostalAddress postalAddress)
+		throws Exception {
+
+		return postalAddressResource.postAccountPostalAddress(
+			accountId, postalAddress);
+	}
+
+	protected Long testGetAccountPostalAddressesPage_getAccountId()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long testGetAccountPostalAddressesPage_getIrrelevantAccountId()
+		throws Exception {
+
+		return null;
+	}
+
+	@Test
+	public void testPostAccountPostalAddress() throws Exception {
+		PostalAddress randomPostalAddress = randomPostalAddress();
+
+		PostalAddress postPostalAddress =
+			testPostAccountPostalAddress_addPostalAddress(randomPostalAddress);
+
+		assertEquals(randomPostalAddress, postPostalAddress);
+		assertValid(postPostalAddress);
+	}
+
+	protected PostalAddress testPostAccountPostalAddress_addPostalAddress(
+			PostalAddress postalAddress)
+		throws Exception {
+
+		return postalAddressResource.postAccountPostalAddress(
+			testGetAccountPostalAddressesPage_getAccountId(), postalAddress);
 	}
 
 	@Test
@@ -213,7 +320,7 @@ public abstract class BasePostalAddressResourceTestCase {
 			postalAddressResource.getOrganizationPostalAddressesPage(
 				organizationId);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantOrganizationId != null) {
 			PostalAddress irrelevantPostalAddress =
@@ -223,12 +330,14 @@ public abstract class BasePostalAddressResourceTestCase {
 			page = postalAddressResource.getOrganizationPostalAddressesPage(
 				irrelevantOrganizationId);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantPostalAddress),
-				(List<PostalAddress>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantPostalAddress, (List<PostalAddress>)page.getItems());
+			assertValid(
+				page,
+				testGetOrganizationPostalAddressesPage_getExpectedActions(
+					irrelevantOrganizationId));
 		}
 
 		PostalAddress postalAddress1 =
@@ -242,12 +351,28 @@ public abstract class BasePostalAddressResourceTestCase {
 		page = postalAddressResource.getOrganizationPostalAddressesPage(
 			organizationId);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(postalAddress1, postalAddress2),
-			(List<PostalAddress>)page.getItems());
-		assertValid(page);
+		assertContains(postalAddress1, (List<PostalAddress>)page.getItems());
+		assertContains(postalAddress2, (List<PostalAddress>)page.getItems());
+		assertValid(
+			page,
+			testGetOrganizationPostalAddressesPage_getExpectedActions(
+				organizationId));
+
+		postalAddressResource.deletePostalAddress(postalAddress1.getId());
+
+		postalAddressResource.deletePostalAddress(postalAddress2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetOrganizationPostalAddressesPage_getExpectedActions(
+				String organizationId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	protected PostalAddress
@@ -274,6 +399,70 @@ public abstract class BasePostalAddressResourceTestCase {
 	}
 
 	@Test
+	public void testDeletePostalAddress() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		PostalAddress postalAddress =
+			testDeletePostalAddress_addPostalAddress();
+
+		assertHttpResponseStatusCode(
+			204,
+			postalAddressResource.deletePostalAddressHttpResponse(
+				postalAddress.getId()));
+
+		assertHttpResponseStatusCode(
+			404,
+			postalAddressResource.getPostalAddressHttpResponse(
+				postalAddress.getId()));
+
+		assertHttpResponseStatusCode(
+			404, postalAddressResource.getPostalAddressHttpResponse(0L));
+	}
+
+	protected PostalAddress testDeletePostalAddress_addPostalAddress()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeletePostalAddress() throws Exception {
+		PostalAddress postalAddress =
+			testGraphQLDeletePostalAddress_addPostalAddress();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deletePostalAddress",
+						new HashMap<String, Object>() {
+							{
+								put("postalAddressId", postalAddress.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deletePostalAddress"));
+		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"postalAddress",
+					new HashMap<String, Object>() {
+						{
+							put("postalAddressId", postalAddress.getId());
+						}
+					},
+					new GraphQLField("id"))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray.length() > 0);
+	}
+
+	protected PostalAddress testGraphQLDeletePostalAddress_addPostalAddress()
+		throws Exception {
+
+		return testGraphQLPostalAddress_addPostalAddress();
+	}
+
+	@Test
 	public void testGetPostalAddress() throws Exception {
 		PostalAddress postPostalAddress =
 			testGetPostalAddress_addPostalAddress();
@@ -295,7 +484,7 @@ public abstract class BasePostalAddressResourceTestCase {
 	@Test
 	public void testGraphQLGetPostalAddress() throws Exception {
 		PostalAddress postalAddress =
-			testGraphQLPostalAddress_addPostalAddress();
+			testGraphQLGetPostalAddress_addPostalAddress();
 
 		Assert.assertTrue(
 			equals(
@@ -338,6 +527,70 @@ public abstract class BasePostalAddressResourceTestCase {
 				"Object/code"));
 	}
 
+	protected PostalAddress testGraphQLGetPostalAddress_addPostalAddress()
+		throws Exception {
+
+		return testGraphQLPostalAddress_addPostalAddress();
+	}
+
+	@Test
+	public void testPatchPostalAddress() throws Exception {
+		PostalAddress postPostalAddress =
+			testPatchPostalAddress_addPostalAddress();
+
+		PostalAddress randomPatchPostalAddress = randomPatchPostalAddress();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		PostalAddress patchPostalAddress =
+			postalAddressResource.patchPostalAddress(
+				postPostalAddress.getId(), randomPatchPostalAddress);
+
+		PostalAddress expectedPatchPostalAddress = postPostalAddress.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchPostalAddress, expectedPatchPostalAddress);
+
+		PostalAddress getPostalAddress = postalAddressResource.getPostalAddress(
+			patchPostalAddress.getId());
+
+		assertEquals(expectedPatchPostalAddress, getPostalAddress);
+		assertValid(getPostalAddress);
+	}
+
+	protected PostalAddress testPatchPostalAddress_addPostalAddress()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPutPostalAddress() throws Exception {
+		PostalAddress postPostalAddress =
+			testPutPostalAddress_addPostalAddress();
+
+		PostalAddress randomPostalAddress = randomPostalAddress();
+
+		PostalAddress putPostalAddress = postalAddressResource.putPostalAddress(
+			postPostalAddress.getId(), randomPostalAddress);
+
+		assertEquals(randomPostalAddress, putPostalAddress);
+		assertValid(putPostalAddress);
+
+		PostalAddress getPostalAddress = postalAddressResource.getPostalAddress(
+			putPostalAddress.getId());
+
+		assertEquals(randomPostalAddress, getPostalAddress);
+		assertValid(getPostalAddress);
+	}
+
+	protected PostalAddress testPutPostalAddress_addPostalAddress()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
 	@Test
 	public void testGetUserAccountPostalAddressesPage() throws Exception {
 		Long userAccountId =
@@ -349,7 +602,7 @@ public abstract class BasePostalAddressResourceTestCase {
 			postalAddressResource.getUserAccountPostalAddressesPage(
 				userAccountId);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantUserAccountId != null) {
 			PostalAddress irrelevantPostalAddress =
@@ -359,12 +612,14 @@ public abstract class BasePostalAddressResourceTestCase {
 			page = postalAddressResource.getUserAccountPostalAddressesPage(
 				irrelevantUserAccountId);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantPostalAddress),
-				(List<PostalAddress>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantPostalAddress, (List<PostalAddress>)page.getItems());
+			assertValid(
+				page,
+				testGetUserAccountPostalAddressesPage_getExpectedActions(
+					irrelevantUserAccountId));
 		}
 
 		PostalAddress postalAddress1 =
@@ -378,12 +633,28 @@ public abstract class BasePostalAddressResourceTestCase {
 		page = postalAddressResource.getUserAccountPostalAddressesPage(
 			userAccountId);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(postalAddress1, postalAddress2),
-			(List<PostalAddress>)page.getItems());
-		assertValid(page);
+		assertContains(postalAddress1, (List<PostalAddress>)page.getItems());
+		assertContains(postalAddress2, (List<PostalAddress>)page.getItems());
+		assertValid(
+			page,
+			testGetUserAccountPostalAddressesPage_getExpectedActions(
+				userAccountId));
+
+		postalAddressResource.deletePostalAddress(postalAddress1.getId());
+
+		postalAddressResource.deletePostalAddress(postalAddress2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetUserAccountPostalAddressesPage_getExpectedActions(
+				Long userAccountId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	protected PostalAddress
@@ -538,6 +809,22 @@ public abstract class BasePostalAddressResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("name", additionalAssertFieldName)) {
+				if (postalAddress.getName() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("phoneNumber", additionalAssertFieldName)) {
+				if (postalAddress.getPhoneNumber() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("postalCode", additionalAssertFieldName)) {
 				if (postalAddress.getPostalCode() == null) {
 					valid = false;
@@ -593,6 +880,13 @@ public abstract class BasePostalAddressResourceTestCase {
 	}
 
 	protected void assertValid(Page<PostalAddress> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<PostalAddress> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<PostalAddress> postalAddresses = page.getItems();
@@ -607,6 +901,25 @@ public abstract class BasePostalAddressResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -744,6 +1057,27 @@ public abstract class BasePostalAddressResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("name", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						postalAddress1.getName(), postalAddress2.getName())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("phoneNumber", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						postalAddress1.getPhoneNumber(),
+						postalAddress2.getPhoneNumber())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("postalCode", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						postalAddress1.getPostalCode(),
@@ -842,14 +1176,16 @@ public abstract class BasePostalAddressResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -866,6 +1202,10 @@ public abstract class BasePostalAddressResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -875,18 +1215,18 @@ public abstract class BasePostalAddressResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -903,9 +1243,47 @@ public abstract class BasePostalAddressResourceTestCase {
 		sb.append(" ");
 
 		if (entityFieldName.equals("addressCountry")) {
-			sb.append("'");
-			sb.append(String.valueOf(postalAddress.getAddressCountry()));
-			sb.append("'");
+			Object object = postalAddress.getAddressCountry();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -916,25 +1294,139 @@ public abstract class BasePostalAddressResourceTestCase {
 		}
 
 		if (entityFieldName.equals("addressLocality")) {
-			sb.append("'");
-			sb.append(String.valueOf(postalAddress.getAddressLocality()));
-			sb.append("'");
+			Object object = postalAddress.getAddressLocality();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("addressRegion")) {
-			sb.append("'");
-			sb.append(String.valueOf(postalAddress.getAddressRegion()));
-			sb.append("'");
+			Object object = postalAddress.getAddressRegion();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("addressType")) {
-			sb.append("'");
-			sb.append(String.valueOf(postalAddress.getAddressType()));
-			sb.append("'");
+			Object object = postalAddress.getAddressType();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -944,10 +1436,140 @@ public abstract class BasePostalAddressResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("name")) {
+			Object object = postalAddress.getName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("phoneNumber")) {
+			Object object = postalAddress.getPhoneNumber();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("postalCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(postalAddress.getPostalCode()));
-			sb.append("'");
+			Object object = postalAddress.getPostalCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -958,25 +1580,139 @@ public abstract class BasePostalAddressResourceTestCase {
 		}
 
 		if (entityFieldName.equals("streetAddressLine1")) {
-			sb.append("'");
-			sb.append(String.valueOf(postalAddress.getStreetAddressLine1()));
-			sb.append("'");
+			Object object = postalAddress.getStreetAddressLine1();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("streetAddressLine2")) {
-			sb.append("'");
-			sb.append(String.valueOf(postalAddress.getStreetAddressLine2()));
-			sb.append("'");
+			Object object = postalAddress.getStreetAddressLine2();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("streetAddressLine3")) {
-			sb.append("'");
-			sb.append(String.valueOf(postalAddress.getStreetAddressLine3()));
-			sb.append("'");
+			Object object = postalAddress.getStreetAddressLine3();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1034,6 +1770,9 @@ public abstract class BasePostalAddressResourceTestCase {
 				addressType = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
+				name = StringUtil.toLowerCase(RandomTestUtil.randomString());
+				phoneNumber = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				postalCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				primary = RandomTestUtil.randomBoolean();
@@ -1061,6 +1800,115 @@ public abstract class BasePostalAddressResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1136,18 +1984,6 @@ public abstract class BasePostalAddressResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BasePostalAddressResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property custom.properties = "jsonws.web.service.paths.excludes=";
 	property portal.release = "false";
 	property portal.upstream = "true";
@@ -59,33 +61,31 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			JSONGroup.deleteGroupByName(groupName = "Site Name");
 		}
 
-		JSONUser.tearDownNonAdminUsers();
-
 		ACUtils.tearDownAC();
 	}
 
-	@description = "Feature ID: LRAC-4265 | Automation ID: LRAC-10012 | Test Summary: Attributes name character limit (255 chars)"
-	@priority = "4"
-	test CreateAttributeNameBeyond255Characters {
-		var attributeName = "category";
+	@description = "Bug: LRAC-11366 | Automation ID: LRAC-11433 | Test Summary: Delete attribute description"
+	@priority = 3
+	test CanDeleteAttributeDescription {
+		var attributeName = "birthdate";
 
 		task ("Fill fields and create custom event") {
 			var customEventName = ACCustomEvents.generateCustomEventName();
 
 			ACCustomEvents.createCustomEvent(
-				customEventName = "${customEventName}",
-				timeToSendCustomEvent = "1");
+				customEventName = ${customEventName},
+				timeToSendCustomEvent = 1);
 		}
 
 		task ("Close sessions") {
@@ -95,7 +95,7 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${assignedPropertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigation to attributes tab") {
@@ -109,7 +109,81 @@ definition {
 		}
 
 		task ("Edit the new attribute") {
-			ACNavigation.openItem(itemName = "${attributeName}");
+			ACNavigation.openItem(itemName = ${attributeName});
+
+			ACUtils.clickAnyButton(button = "Edit");
+		}
+
+		task ("Change the description of the attribute") {
+			ACCustomEvents.changeCustomEventDisplayNameOrDescription(newDescription = "${attributeName} Description");
+		}
+
+		task ("Back to Event Attributes and Navigation to attributes tab") {
+			ACNavigation.backNavigation(pageName = "Event Attributes");
+
+			ACNavigation.openItem(itemName = "Attributes");
+		}
+
+		task ("Check if the description has been changed") {
+			ACCustomEvents.viewDisplayNameOrDescriptionList(nameValue = "${attributeName} Description");
+		}
+
+		task ("Edit the attribute") {
+			ACNavigation.openItem(itemName = ${attributeName});
+
+			ACUtils.clickAnyButton(button = "Edit");
+		}
+
+		task ("Delete the description of the attribute") {
+			ACCustomEvents.changeCustomEventDisplayNameOrDescription(newDescription = "");
+		}
+
+		task ("Back to Event Attributes and Navigation to attributes tab") {
+			ACNavigation.backNavigation(pageName = "Event Attributes");
+
+			ACNavigation.openItem(itemName = "Attributes");
+		}
+
+		task ("Check if the description is deleted") {
+			AssertTextNotPresent(value1 = "${attributeName} Description");
+		}
+	}
+
+	@description = "Feature ID: LRAC-4265 | Automation ID: LRAC-10012 | Test Summary: Attributes name character limit (255 chars)"
+	@priority = 4
+	test CreateAttributeNameBeyond255Characters {
+		var attributeName = "category";
+
+		task ("Fill fields and create custom event") {
+			var customEventName = ACCustomEvents.generateCustomEventName();
+
+			ACCustomEvents.createCustomEvent(
+				customEventName = ${customEventName},
+				timeToSendCustomEvent = 1);
+		}
+
+		task ("Close sessions") {
+			ACUtils.closeAllSessionsAndWait();
+		}
+
+		task ("Switch the property in AC") {
+			ACUtils.launchAC();
+
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
+		}
+
+		task ("Navigation to attributes tab") {
+			ACNavigation.goToSettings();
+
+			ACSettings.goToDefinitions();
+
+			ACSettings.goToEventAttributes();
+
+			ACNavigation.openItem(itemName = "Attributes");
+		}
+
+		task ("Edit the new attribute") {
+			ACNavigation.openItem(itemName = ${attributeName});
 
 			ACUtils.clickAnyButton(button = "Edit");
 		}
@@ -124,14 +198,14 @@ definition {
 	}
 
 	@description = "Feature ID: LRAC-4265 | Automation ID: LRAC-10011 | Test Summary: Attributes shown in AC"
-	@priority = "5"
+	@priority = 5
 	test CustomEventAttributeIsShownInACSettings {
 		task ("Fill fields and create custom event") {
 			var customEventName = ACCustomEvents.generateCustomEventName();
 
 			ACCustomEvents.createCustomEvent(
-				customEventName = "${customEventName}",
-				timeToSendCustomEvent = "1");
+				customEventName = ${customEventName},
+				timeToSendCustomEvent = 1);
 		}
 
 		task ("Close sessions") {
@@ -141,7 +215,7 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${assignedPropertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigation to attributes tab") {
@@ -163,7 +237,7 @@ definition {
 		task ("Check the data related to attribute appears") {
 			ACCustomEvents.viewDataAttribute(attributeValueList = "wetsuit");
 
-			ACCustomEvents.viewDataType(typeValue = "STRING");
+			ACCustomEvents.viewDataType(typeValue = "String");
 		}
 
 		task ("Back to Event Attributes and Navigation to attributes tab") {
@@ -181,7 +255,7 @@ definition {
 		task ("Check the data related to attribute appears") {
 			ACCustomEvents.viewDataAttribute(attributeValueList = "259.95");
 
-			ACCustomEvents.viewDataType(typeValue = "NUMBER");
+			ACCustomEvents.viewDataType(typeValue = "Number");
 		}
 
 		task ("Back to Event Attributes and Navigation to attributes tab") {
@@ -197,9 +271,9 @@ definition {
 		}
 
 		task ("Check the data related to attribute appears") {
-			ACCustomEvents.viewDataAttribute(attributeValueList = "11");
+			ACCustomEvents.viewDataAttribute(attributeValueList = 11);
 
-			ACCustomEvents.viewDataType(typeValue = "NUMBER");
+			ACCustomEvents.viewDataType(typeValue = "Number");
 		}
 
 		task ("Back to Event Attributes and Navigation to attributes tab") {
@@ -217,7 +291,7 @@ definition {
 		task ("Check the data related to attribute appears") {
 			ACCustomEvents.viewDataAttribute(attributeValueList = "2021-11-25T14:36:30.685Z");
 
-			ACCustomEvents.viewDataType(typeValue = "DATE");
+			ACCustomEvents.viewDataType(typeValue = "Date");
 		}
 
 		task ("Back to Event Attributes and Navigation to attributes tab") {
@@ -235,21 +309,24 @@ definition {
 		task ("Check the data related to attribute appears") {
 			ACCustomEvents.viewDataAttribute(attributeValueList = "true");
 
-			ACCustomEvents.viewDataType(typeValue = "BOOLEAN");
+			ACCustomEvents.viewDataType(typeValue = "Boolean");
 		}
 	}
 
 	@description = "Feature ID: LRAC-4265 | Automation ID: LRAC-10013 | Test Summary: Rename Attributes Display Name"
-	@priority = "4"
+	@priority = 4
 	test RenameAttributeDisplayName {
-		var attributeName = "category";
+		var attributeName = "team";
+		var attributeValue = "analytics cloud";
 
 		task ("Fill fields and create custom event") {
 			var customEventName = ACCustomEvents.generateCustomEventName();
 
 			ACCustomEvents.createCustomEvent(
-				customEventName = "${customEventName}",
-				timeToSendCustomEvent = "1");
+				attributesName = ${attributeName},
+				attributesValue = ${attributeValue},
+				customEventName = ${customEventName},
+				timeToSendCustomEvent = 1);
 		}
 
 		task ("Close sessions") {
@@ -259,7 +336,7 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${assignedPropertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigation to attributes tab") {
@@ -273,7 +350,7 @@ definition {
 		}
 
 		task ("Edit the new attribute") {
-			ACNavigation.openItem(itemName = "${attributeName}");
+			ACNavigation.openItem(itemName = ${attributeName});
 
 			ACUtils.clickAnyButton(button = "Edit");
 		}
@@ -294,11 +371,12 @@ definition {
 	}
 
 	@description = "Feature ID: LRAC-4265 | Automation ID: LRAC-10016 | Test Summary: Rename Attribute that already exists"
-	@priority = "4"
+	@priority = 4
 	test RenameToExistingAttributeName {
 		var attributeName1 = "color1";
 		var attributeName2 = "color2";
 		var attributeName3 = "color3";
+
 		var attributeNameList = "${attributeName1},${attributeName2},${attributeName3}";
 		var attributeValueList = "blue,red,black";
 
@@ -306,10 +384,10 @@ definition {
 			var customEventName = ACCustomEvents.generateCustomEventName();
 
 			ACCustomEvents.createCustomEvent(
-				attributesName = "${attributeNameList}",
-				attributesValue = "${attributeValueList}",
-				customEventName = "${customEventName}",
-				timeToSendCustomEvent = "1");
+				attributesName = ${attributeNameList},
+				attributesValue = ${attributeValueList},
+				customEventName = ${customEventName},
+				timeToSendCustomEvent = 1);
 		}
 
 		task ("Close sessions") {
@@ -319,7 +397,7 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${assignedPropertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigation to attributes tab") {
@@ -333,7 +411,7 @@ definition {
 		}
 
 		task ("Edit the new attribute") {
-			ACNavigation.openItem(itemName = "${attributeName2}");
+			ACNavigation.openItem(itemName = ${attributeName2});
 
 			ACUtils.clickAnyButton(button = "Edit");
 		}
@@ -349,13 +427,13 @@ definition {
 		}
 
 		task ("Edit the new attribute") {
-			ACNavigation.openItem(itemName = "${attributeName1}");
+			ACNavigation.openItem(itemName = ${attributeName1});
 
 			ACUtils.clickAnyButton(button = "Edit");
 		}
 
 		task ("Rename to an existing display name") {
-			ACCustomEvents.changeCustomEventDisplayNameOrDescription(newDisplayName = "${attributeName3}");
+			ACCustomEvents.changeCustomEventDisplayNameOrDescription(newDisplayName = ${attributeName3});
 		}
 
 		task ("Check that the display name cannot be renamed to an existing one") {
@@ -372,17 +450,16 @@ definition {
 	}
 
 	@description = "Feature ID: LRAC-4265 | Automation ID: LRAC-10017 | Test Summary: Search for Attributes"
-	@priority = "3"
+	@priority = 3
 	test SearchForAttribute {
-		var attributesNameList = "category,price,temp,birthdate,like";
+		var attributesNameList = "category,price,temp,birthdate,like,duration";
 
 		task ("Fill fields and create custom event") {
 			var customEventName = ACCustomEvents.generateCustomEventName();
 
 			ACCustomEvents.createCustomEvent(
-				attributesName = "${attributesNameList}",
-				customEventName = "${customEventName}",
-				timeToSendCustomEvent = "1");
+				customEventName = ${customEventName},
+				timeToSendCustomEvent = 1);
 		}
 
 		task ("Close sessions") {
@@ -392,7 +469,7 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${assignedPropertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigation to attributes tab") {
@@ -406,22 +483,22 @@ definition {
 		}
 
 		task ("Search for the name of the attributes and verify that it was found") {
-			for (var attributesName : list "${attributesNameList}") {
-				ACUtils.searchBar(searchItem = "${attributesName}");
+			for (var attributesName : list ${attributesNameList}) {
+				ACUtils.searchBar(searchItem = ${attributesName});
 
-				ACUtils.viewNameList(nameList = "${attributesName}");
+				ACUtils.viewNameList(nameList = ${attributesName});
 			}
 		}
 
 		task ("Search for the name of attribute that doesn't exist and verify that it didn't find anything") {
 			ACUtils.searchBar(searchItem = "acqa");
 
-			ACUtils.viewNoResultsMessage(noResultMessage = "There are no attributes found.");
+			ACUtils.viewNoResultsMessage(noResultMessage = "There are no results found.");
 		}
 	}
 
 	@description = "Feature ID: LRAC-4265 | Automation ID: LRAC-10015 | Test Summary: Update Attributes Data Type"
-	@priority = "4"
+	@priority = 4
 	test UpdateAttributeDataType {
 		var attributeName = "color";
 		var attributeValue = "blue";
@@ -430,10 +507,10 @@ definition {
 			var customEventName = ACCustomEvents.generateCustomEventName();
 
 			ACCustomEvents.createCustomEvent(
-				attributesName = "${attributeName}",
-				attributesValue = "${attributeValue}",
-				customEventName = "${customEventName}",
-				timeToSendCustomEvent = "1");
+				attributesName = ${attributeName},
+				attributesValue = ${attributeValue},
+				customEventName = ${customEventName},
+				timeToSendCustomEvent = 1);
 		}
 
 		task ("Close sessions") {
@@ -443,7 +520,7 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${assignedPropertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigation to attributes tab") {
@@ -457,7 +534,7 @@ definition {
 		}
 
 		task ("Edit the new attribute") {
-			ACNavigation.openItem(itemName = "${attributeName}");
+			ACNavigation.openItem(itemName = ${attributeName});
 
 			ACUtils.clickAnyButton(button = "Edit");
 		}
@@ -474,13 +551,13 @@ definition {
 
 		task ("Check if the type has been changed") {
 			ACCustomEvents.viewDataTypeList(
-				attributeName = "${attributeName}",
-				typeValue = "NUMBER");
+				attributeName = ${attributeName},
+				typeValue = "Number");
 		}
 	}
 
 	@description = "Feature ID: LRAC-4265 | Automation ID: LRAC-10014 | Test Summary: Update Attributes description"
-	@priority = "4"
+	@priority = 4
 	test UpdateAttributeDescription {
 		var attributeName = "category";
 
@@ -488,8 +565,8 @@ definition {
 			var customEventName = ACCustomEvents.generateCustomEventName();
 
 			ACCustomEvents.createCustomEvent(
-				customEventName = "${customEventName}",
-				timeToSendCustomEvent = "1");
+				customEventName = ${customEventName},
+				timeToSendCustomEvent = 1);
 		}
 
 		task ("Close sessions") {
@@ -499,7 +576,7 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${assignedPropertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigation to attributes tab") {
@@ -513,7 +590,7 @@ definition {
 		}
 
 		task ("Edit the new attribute") {
-			ACNavigation.openItem(itemName = "${attributeName}");
+			ACNavigation.openItem(itemName = ${attributeName});
 
 			ACUtils.clickAnyButton(button = "Edit");
 		}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.service.persistence.impl;
@@ -39,7 +30,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -53,7 +43,6 @@ import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -85,7 +74,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {FriendlyURLEntryPersistence.class, BasePersistence.class})
+@Component(service = FriendlyURLEntryPersistence.class)
 public class FriendlyURLEntryPersistenceImpl
 	extends BasePersistenceImpl<FriendlyURLEntry>
 	implements FriendlyURLEntryPersistence {
@@ -205,7 +194,7 @@ public class FriendlyURLEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<FriendlyURLEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (FriendlyURLEntry friendlyURLEntry : list) {
@@ -599,7 +588,7 @@ public class FriendlyURLEntryPersistenceImpl
 
 			finderArgs = new Object[] {uuid};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -722,21 +711,21 @@ public class FriendlyURLEntryPersistenceImpl
 
 		uuid = Objects.toString(uuid, "");
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FriendlyURLEntry.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {uuid, groupId};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			FriendlyURLEntry.class);
 
 		if (result instanceof FriendlyURLEntry) {
 			FriendlyURLEntry friendlyURLEntry = (FriendlyURLEntry)result;
@@ -746,6 +735,15 @@ public class FriendlyURLEntryPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						FriendlyURLEntry.class,
+						friendlyURLEntry.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -855,7 +853,7 @@ public class FriendlyURLEntryPersistenceImpl
 
 			finderArgs = new Object[] {uuid, groupId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1027,7 +1025,7 @@ public class FriendlyURLEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<FriendlyURLEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (FriendlyURLEntry friendlyURLEntry : list) {
@@ -1453,7 +1451,7 @@ public class FriendlyURLEntryPersistenceImpl
 
 			finderArgs = new Object[] {uuid, companyId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1630,7 +1628,7 @@ public class FriendlyURLEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<FriendlyURLEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (FriendlyURLEntry friendlyURLEntry : list) {
@@ -2053,7 +2051,7 @@ public class FriendlyURLEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId, classNameId, classPK};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2500,7 +2498,9 @@ public class FriendlyURLEntryPersistenceImpl
 	 */
 	@Override
 	public FriendlyURLEntry fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(FriendlyURLEntry.class)) {
+		if (ctPersistenceHelper.isProductionMode(
+				FriendlyURLEntry.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -2720,7 +2720,7 @@ public class FriendlyURLEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<FriendlyURLEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2796,7 +2796,7 @@ public class FriendlyURLEntryPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -3000,30 +3000,14 @@ public class FriendlyURLEntryPersistenceImpl
 			},
 			new String[] {"groupId", "classNameId", "classPK"}, false);
 
-		_setFriendlyURLEntryUtilPersistence(this);
+		FriendlyURLEntryUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setFriendlyURLEntryUtilPersistence(null);
+		FriendlyURLEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(FriendlyURLEntryImpl.class.getName());
-	}
-
-	private void _setFriendlyURLEntryUtilPersistence(
-		FriendlyURLEntryPersistence friendlyURLEntryPersistence) {
-
-		try {
-			Field field = FriendlyURLEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, friendlyURLEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -3095,9 +3079,5 @@ public class FriendlyURLEntryPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private FriendlyURLEntryModelArgumentsResolver
-		_friendlyURLEntryModelArgumentsResolver;
 
 }

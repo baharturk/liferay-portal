@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
 
+import com.liferay.asset.auto.tagger.configuration.AssetAutoTaggerConfiguration;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryServiceUtil;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
+import com.liferay.document.library.configuration.DLFileOrderConfigurationProvider;
 import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.kernel.exception.NoSuchFolderException;
 import com.liferay.document.library.kernel.model.DLFileEntry;
@@ -29,36 +22,48 @@ import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalServiceUtil;
 import com.liferay.document.library.kernel.util.DLUtil;
-import com.liferay.document.library.kernel.util.comparator.RepositoryModelModifiedDateComparator;
 import com.liferay.document.library.kernel.versioning.VersioningStrategy;
 import com.liferay.document.library.web.internal.display.context.helper.DLPortletInstanceSettingsHelper;
 import com.liferay.document.library.web.internal.display.context.helper.DLRequestHelper;
 import com.liferay.document.library.web.internal.settings.DLPortletInstanceSettings;
 import com.liferay.document.library.web.internal.util.DLFolderUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.item.selector.criteria.FolderItemSelectorReturnType;
+import com.liferay.item.selector.criteria.folder.criterion.FolderItemSelectorCriterion;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.capabilities.TrashCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.repository.model.RepositoryEntry;
+import com.liferay.portal.kernel.search.BooleanClause;
+import com.liferay.portal.kernel.search.BooleanClauseFactoryUtil;
+import com.liferay.portal.kernel.search.BooleanClauseOccur;
+import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.RelatedSearchResult;
 import com.liferay.portal.kernel.search.SearchContext;
@@ -66,30 +71,44 @@ import com.liferay.portal.kernel.search.SearchContextFactory;
 import com.liferay.portal.kernel.search.SearchResult;
 import com.liferay.portal.kernel.search.SearchResultUtil;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.search.SortFactoryUtil;
+import com.liferay.portal.kernel.search.filter.BooleanFilter;
+import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.search.filter.TermsFilter;
+import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.RepositoryLocalServiceUtil;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.trash.TrashHelper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+import javax.portlet.PortletPreferences;
 import javax.portlet.PortletURL;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 /**
  * @author Alejandro Tardín
@@ -97,29 +116,33 @@ import javax.servlet.http.HttpServletRequest;
 public class DLAdminDisplayContext {
 
 	public DLAdminDisplayContext(
+		AssetAutoTaggerConfiguration assetAutoTaggerConfiguration,
+		DLFileOrderConfigurationProvider dlFileOrderConfigurationProvider,
 		HttpServletRequest httpServletRequest,
 		LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse,
-		VersioningStrategy versioningStrategy, TrashHelper trashHelper) {
+		LiferayPortletResponse liferayPortletResponse, TrashHelper trashHelper,
+		VersioningStrategy versioningStrategy) {
 
+		_assetAutoTaggerConfiguration = assetAutoTaggerConfiguration;
+		_dlFileOrderConfigurationProvider = dlFileOrderConfigurationProvider;
 		_httpServletRequest = httpServletRequest;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
-		_versioningStrategy = versioningStrategy;
 		_trashHelper = trashHelper;
+		_versioningStrategy = versioningStrategy;
 
 		_dlRequestHelper = new DLRequestHelper(_httpServletRequest);
 
 		_dlPortletInstanceSettings =
 			_dlRequestHelper.getDLPortletInstanceSettings();
-
 		_dlPortletInstanceSettingsHelper = new DLPortletInstanceSettingsHelper(
 			_dlRequestHelper);
 
+		_httpSession = httpServletRequest.getSession();
 		_portalPreferences = PortletPreferencesFactoryUtil.getPortalPreferences(
 			httpServletRequest);
 
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
 		_permissionChecker = _themeDisplay.getPermissionChecker();
@@ -127,39 +150,58 @@ public class DLAdminDisplayContext {
 		_computeFolders();
 	}
 
+	public long[] getAssetCategoryIds() {
+		if (_assetCategoryIds == null) {
+			_assetCategoryIds = ParamUtil.getLongValues(
+				_httpServletRequest, "assetCategoryId");
+		}
+
+		return _assetCategoryIds;
+	}
+
+	public String[] getAssetTagIds() {
+		if (_assetTagIds == null) {
+			_assetTagIds = ParamUtil.getStringValues(
+				_httpServletRequest, "assetTagId");
+		}
+
+		return _assetTagIds;
+	}
+
+	public PortletURL getCurrentRenderURL() {
+		if (isSearch()) {
+			return getSearchRenderURL();
+		}
+
+		return getViewRenderURL();
+	}
+
 	public String getDisplayStyle() {
 		if (_displayStyle != null) {
 			return _displayStyle;
 		}
 
-		String displayStyle = ParamUtil.getString(
-			_httpServletRequest, "displayStyle");
-
-		String[] displayViews = _dlPortletInstanceSettings.getDisplayViews();
-
-		if (Validator.isNull(displayStyle)) {
-			displayStyle = _portalPreferences.getValue(
-				DLPortletKeys.DOCUMENT_LIBRARY, "display-style",
-				PropsValues.DL_DEFAULT_DISPLAY_VIEW);
-		}
-		else {
-			if (ArrayUtil.contains(displayViews, displayStyle)) {
-				_portalPreferences.setValue(
-					DLPortletKeys.DOCUMENT_LIBRARY, "display-style",
-					displayStyle);
-
-				_httpServletRequest.setAttribute(
-					WebKeys.SINGLE_PAGE_APPLICATION_CLEAR_CACHE, Boolean.TRUE);
-			}
-		}
-
-		if (!ArrayUtil.contains(displayViews, displayStyle)) {
-			displayStyle = displayViews[0];
-		}
-
-		_displayStyle = displayStyle;
+		_displayStyle = _getDisplayStyle(PropsValues.DL_DEFAULT_DISPLAY_VIEW);
 
 		return _displayStyle;
+	}
+
+	public String[] getExtensions() {
+		if (_extensions == null) {
+			_extensions = ParamUtil.getStringValues(
+				_httpServletRequest, "extension");
+		}
+
+		return _extensions;
+	}
+
+	public long getFileEntryTypeId() {
+		if (_fileEntryTypeId == null) {
+			_fileEntryTypeId = ParamUtil.getLong(
+				_httpServletRequest, "fileEntryTypeId", -1);
+		}
+
+		return _fileEntryTypeId;
 	}
 
 	public Folder getFolder() {
@@ -170,13 +212,21 @@ public class DLAdminDisplayContext {
 		return _folderId;
 	}
 
-	public String getNavigation() {
-		if (_navigation != null) {
-			return _navigation;
+	public List<Folder> getMountFolders() throws PortalException {
+		if (_mountFolders == null) {
+			_mountFolders = DLAppServiceUtil.getMountFolders(
+				_themeDisplay.getScopeGroupId(),
+				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 		}
 
-		_navigation = ParamUtil.getString(
-			_httpServletRequest, "navigation", "home");
+		return _mountFolders;
+	}
+
+	public String getNavigation() {
+		if (_navigation == null) {
+			_navigation = ParamUtil.getString(
+				_httpServletRequest, "navigation", "home");
+		}
 
 		return _navigation;
 	}
@@ -186,23 +236,25 @@ public class DLAdminDisplayContext {
 			return _orderByCol;
 		}
 
+		if (isNavigationRecent()) {
+			return "modifiedDate";
+		}
+
 		String orderByCol = ParamUtil.getString(
 			_httpServletRequest, "orderByCol");
 
-		long fileEntryTypeId = ParamUtil.getLong(
-			_httpServletRequest, "fileEntryTypeId", -1);
-
-		if (orderByCol.equals("downloads") && (fileEntryTypeId >= 0)) {
+		if (orderByCol.equals("downloads") && (getFileEntryTypeId() >= 0)) {
 			orderByCol = "modifiedDate";
 		}
 
-		if (Validator.isNotNull(orderByCol)) {
-			_portalPreferences.setValue(
-				DLPortletKeys.DOCUMENT_LIBRARY, "order-by-col", orderByCol);
+		if (Validator.isNull(orderByCol)) {
+			orderByCol = _getPortletPreference(
+				"order-by-col",
+				_dlFileOrderConfigurationProvider.getGroupOrderByColumn(
+					_themeDisplay.getScopeGroupId()));
 		}
 		else {
-			orderByCol = _portalPreferences.getValue(
-				DLPortletKeys.DOCUMENT_LIBRARY, "order-by-col", "modifiedDate");
+			_setPortletPreference("order-by-col", orderByCol);
 		}
 
 		_orderByCol = orderByCol;
@@ -215,8 +267,24 @@ public class DLAdminDisplayContext {
 			return _orderByType;
 		}
 
-		_orderByType = SearchOrderByUtil.getOrderByType(
-			_httpServletRequest, DLPortletKeys.DOCUMENT_LIBRARY, "desc");
+		if (isNavigationRecent()) {
+			return "desc";
+		}
+
+		String orderByType = ParamUtil.getString(
+			_httpServletRequest, "orderByType");
+
+		if (Validator.isNull(orderByType)) {
+			orderByType = _getPortletPreference(
+				"order-by-type",
+				_dlFileOrderConfigurationProvider.getGroupSortBy(
+					_themeDisplay.getScopeGroupId()));
+		}
+		else {
+			_setPortletPreference("order-by-type", orderByType);
+		}
+
+		_orderByType = orderByType;
 
 		return _orderByType;
 	}
@@ -246,16 +314,24 @@ public class DLAdminDisplayContext {
 			return _repositoryId;
 		}
 
+		long repositoryId = 0;
+
 		Folder folder = getFolder();
 
 		if (folder != null) {
-			_repositoryId = folder.getRepositoryId();
+			repositoryId = folder.getRepositoryId();
 		}
 		else {
-			_repositoryId = ParamUtil.getLong(
+			repositoryId = _dlPortletInstanceSettings.getSelectedRepositoryId();
+		}
+
+		if (repositoryId == 0) {
+			repositoryId = ParamUtil.getLong(
 				_httpServletRequest, "repositoryId",
 				_themeDisplay.getScopeGroupId());
 		}
+
+		_repositoryId = repositoryId;
 
 		return _repositoryId;
 	}
@@ -286,19 +362,24 @@ public class DLAdminDisplayContext {
 		return _searchContainer;
 	}
 
-	public PortletURL getSearchSearchContainerURL() {
-		return PortletURLBuilder.createRenderURL(
+	public String getSearchDisplayStyle() {
+		return _getDisplayStyle("descriptive");
+	}
+
+	public PortletURL getSearchRenderURL() {
+		PortletURL renderURL = PortletURLBuilder.createRenderURL(
 			_liferayPortletResponse
 		).setMVCRenderCommandName(
 			"/document_library/search"
-		).setRedirect(
-			ParamUtil.getString(_httpServletRequest, "redirect")
-		).setKeywords(
-			ParamUtil.getString(_httpServletRequest, "keywords")
 		).setParameter(
-			"searchFolderId",
-			ParamUtil.getLong(_httpServletRequest, "searchFolderId")
+			"folderId", ParamUtil.getLong(_httpServletRequest, "folderId")
 		).buildPortletURL();
+
+		_setFilterParameters(renderURL);
+
+		_setSearchParameters(renderURL);
+
+		return renderURL;
 	}
 
 	public long getSelectedRepositoryId() {
@@ -320,8 +401,104 @@ public class DLAdminDisplayContext {
 		return _selectedRepositoryId;
 	}
 
+	public PortletURL getSelectFolderURL(HttpServletRequest httpServletRequest)
+		throws PortalException {
+
+		ItemSelector itemSelector =
+			(ItemSelector)httpServletRequest.getAttribute(
+				ItemSelector.class.getName());
+
+		FolderItemSelectorCriterion folderItemSelectorCriterion =
+			new FolderItemSelectorCriterion();
+
+		folderItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new FolderItemSelectorReturnType());
+		folderItemSelectorCriterion.setFolderId(getRootFolderId());
+		folderItemSelectorCriterion.setIgnoreRootFolder(true);
+		folderItemSelectorCriterion.setRepositoryId(getSelectedRepositoryId());
+		folderItemSelectorCriterion.setSelectedFolderId(getRootFolderId());
+		folderItemSelectorCriterion.setSelectedRepositoryId(
+			getSelectedRepositoryId());
+		folderItemSelectorCriterion.setShowGroupSelector(true);
+		folderItemSelectorCriterion.setShowMountFolder(false);
+
+		PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
+
+		long groupId = getSelectedRepositoryId();
+
+		Repository repository = RepositoryLocalServiceUtil.fetchRepository(
+			getSelectedRepositoryId());
+
+		if (repository != null) {
+			groupId = repository.getGroupId();
+		}
+
+		return itemSelector.getItemSelectorURL(
+			RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
+			GroupLocalServiceUtil.getGroup(
+				GetterUtil.getLong(groupId, _themeDisplay.getScopeGroupId())),
+			_themeDisplay.getScopeGroupId(),
+			portletDisplay.getNamespace() + "folderSelected",
+			folderItemSelectorCriterion);
+	}
+
+	public PortletURL getViewRenderURL() {
+		PortletURL renderURL = PortletURLBuilder.createRenderURL(
+			_liferayPortletResponse
+		).setMVCRenderCommandName(
+			_getViewMvcRenderCommandName()
+		).setParameter(
+			"folderId", getFolderId()
+		).buildPortletURL();
+
+		_setFilterParameters(renderURL);
+
+		return renderURL;
+	}
+
+	public boolean hasFilterParameters() {
+		if (ArrayUtil.isNotEmpty(getAssetCategoryIds()) ||
+			(getFileEntryTypeId() >= 0) ||
+			ArrayUtil.isNotEmpty(getAssetTagIds()) ||
+			ArrayUtil.isNotEmpty(getExtensions()) || isNavigationMine() ||
+			isNavigationRecent()) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isAutoTaggingEnabled() {
+		return _assetAutoTaggerConfiguration.isEnabled();
+	}
+
 	public boolean isDefaultFolderView() {
 		return _defaultFolderView;
+	}
+
+	public boolean isNavigationHome() {
+		if (Objects.equals(getNavigation(), "home")) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isNavigationMine() {
+		if (Objects.equals(getNavigation(), "mine")) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isNavigationRecent() {
+		if (Objects.equals(getNavigation(), "recent")) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public boolean isRootFolderInTrash() {
@@ -333,10 +510,15 @@ public class DLAdminDisplayContext {
 	}
 
 	public boolean isSearch() {
-		String mvcRenderCommandName = ParamUtil.getString(
-			_httpServletRequest, "mvcRenderCommandName");
+		if (Validator.isBlank(_getKeywords())) {
+			return false;
+		}
 
-		return mvcRenderCommandName.equals("/document_library/search");
+		return true;
+	}
+
+	public boolean isUpdateAutoTags() {
+		return _assetAutoTaggerConfiguration.isUpdateAutoTags();
 	}
 
 	public boolean isVersioningStrategyOverridable() {
@@ -433,317 +615,415 @@ public class DLAdminDisplayContext {
 		}
 	}
 
-	private SearchContainer<RepositoryEntry> _getDLSearchContainer()
-		throws PortalException {
-
-		String navigation = ParamUtil.getString(
-			_httpServletRequest, "navigation", "home");
-
-		String currentFolder = ParamUtil.getString(
-			_httpServletRequest, "curFolder");
-		String deltaFolder = ParamUtil.getString(
-			_httpServletRequest, "deltaFolder");
-
-		long fileEntryTypeId = ParamUtil.getLong(
-			_httpServletRequest, "fileEntryTypeId", -1);
-
-		String dlFileEntryTypeName = LanguageUtil.get(
-			_httpServletRequest, "basic-document");
-
-		int status = WorkflowConstants.STATUS_APPROVED;
-
-		User user = _themeDisplay.getUser();
-
-		if (_permissionChecker.isContentReviewer(
-				user.getCompanyId(), _themeDisplay.getScopeGroupId())) {
-
-			status = WorkflowConstants.STATUS_ANY;
+	private Filter _getAssetCategoryIdsFilter(long[] assetCategoryIds) {
+		if (ArrayUtil.isEmpty(assetCategoryIds)) {
+			return null;
 		}
 
-		long categoryId = ParamUtil.getLong(_httpServletRequest, "categoryId");
-		String tagName = ParamUtil.getString(_httpServletRequest, "tag");
+		BooleanFilter booleanFilter = new BooleanFilter();
 
-		boolean useAssetEntryQuery = false;
-
-		if ((categoryId > 0) || Validator.isNotNull(tagName)) {
-			useAssetEntryQuery = true;
+		for (long assetCategoryId : assetCategoryIds) {
+			booleanFilter.addTerm(
+				Field.ASSET_CATEGORY_IDS, String.valueOf(assetCategoryId),
+				BooleanClauseOccur.MUST);
 		}
 
-		PortletURL portletURL = _liferayPortletResponse.createRenderURL();
+		return booleanFilter;
+	}
 
-		long folderId = getFolderId();
-
-		if (folderId == DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
-			portletURL.setParameter(
-				"mvcRenderCommandName", "/document_library/view");
-		}
-		else {
-			portletURL.setParameter(
-				"mvcRenderCommandName", "/document_library/view_folder");
+	private Filter _getAssetTagNamesFilter(String[] assetTagNames) {
+		if (ArrayUtil.isEmpty(assetTagNames)) {
+			return null;
 		}
 
-		portletURL.setParameter("navigation", navigation);
-		portletURL.setParameter("curFolder", currentFolder);
-		portletURL.setParameter("deltaFolder", deltaFolder);
-		portletURL.setParameter("folderId", String.valueOf(folderId));
+		BooleanFilter booleanFilter = new BooleanFilter();
+
+		for (String assetTagName : assetTagNames) {
+			booleanFilter.addTerm(
+				Field.ASSET_TAG_NAMES + ".raw", assetTagName,
+				BooleanClauseOccur.MUST);
+		}
+
+		return booleanFilter;
+	}
+
+	private BooleanClause<Query>[] _getBooleanClauses(
+		long[] assetCategoryIds, String[] assetTagNames, String[] extensions,
+		long fileEntryTypeId, long userId) {
+
+		BooleanQuery booleanQuery = new BooleanQueryImpl();
+
+		BooleanFilter booleanFilter = new BooleanFilter();
+
+		if (ArrayUtil.isNotEmpty(assetCategoryIds)) {
+			booleanFilter.add(
+				_getAssetCategoryIdsFilter(assetCategoryIds),
+				BooleanClauseOccur.MUST);
+		}
+
+		if (ArrayUtil.isNotEmpty(assetTagNames)) {
+			booleanFilter.add(
+				_getAssetTagNamesFilter(assetTagNames),
+				BooleanClauseOccur.MUST);
+		}
+
+		if (ArrayUtil.isNotEmpty(extensions)) {
+			booleanFilter.add(
+				_getExtensionsFilter(extensions), BooleanClauseOccur.MUST);
+		}
 
 		if (fileEntryTypeId >= 0) {
-			portletURL.setParameter(
-				"fileEntryTypeId", String.valueOf(fileEntryTypeId));
+			booleanFilter.addTerm(
+				"fileEntryTypeId", String.valueOf(fileEntryTypeId),
+				BooleanClauseOccur.MUST);
+		}
 
-			if (fileEntryTypeId > 0) {
-				DLFileEntryType dlFileEntryType =
-					DLFileEntryTypeLocalServiceUtil.getFileEntryType(
-						fileEntryTypeId);
+		if (userId > 0) {
+			booleanFilter.addTerm(
+				Field.USER_ID, String.valueOf(userId), BooleanClauseOccur.MUST);
+		}
 
-				dlFileEntryTypeName = dlFileEntryType.getName(
-					_httpServletRequest.getLocale());
+		booleanQuery.setPreBooleanFilter(booleanFilter);
+
+		return new BooleanClause[] {
+			BooleanClauseFactoryUtil.create(
+				booleanQuery, BooleanClauseOccur.MUST.getName())
+		};
+	}
+
+	private String _getDisplayStyle(String defaultValue) {
+		String displayStyle = ParamUtil.getString(
+			_httpServletRequest, "displayStyle");
+
+		String[] displayViews = _dlPortletInstanceSettings.getDisplayViews();
+
+		if (Validator.isNull(displayStyle)) {
+			displayStyle = _getPortletPreference("display-style", defaultValue);
+		}
+		else {
+			if (ArrayUtil.contains(displayViews, displayStyle)) {
+				_setPortletPreference("display-style", displayStyle);
+
+				_httpServletRequest.setAttribute(
+					WebKeys.SINGLE_PAGE_APPLICATION_CLEAR_CACHE, Boolean.TRUE);
 			}
 		}
+
+		if (!ArrayUtil.contains(displayViews, displayStyle)) {
+			displayStyle = displayViews[0];
+		}
+
+		return displayStyle;
+	}
+
+	private SearchContainer<RepositoryEntry> _getDLSearchContainer()
+		throws PortalException {
 
 		SearchContainer<RepositoryEntry> dlSearchContainer =
 			new SearchContainer<>(
 				_liferayPortletRequest, null, null, "curEntry",
-				_dlPortletInstanceSettings.getEntriesPerPage(), portletURL,
-				null, null);
-
-		if (fileEntryTypeId >= 0) {
-			dlSearchContainer.setEmptyResultsMessage(
-				LanguageUtil.format(
-					_httpServletRequest,
-					"there-are-no-documents-or-media-files-of-type-x",
-					HtmlUtil.escape(dlFileEntryTypeName)));
-		}
-		else {
-			dlSearchContainer.setEmptyResultsMessage(
-				"there-are-no-documents-or-media-files-in-this-folder");
-		}
+				_dlPortletInstanceSettings.getEntriesPerPage(),
+				getViewRenderURL(), null, _getFilterEmptyResultsMessage());
 
 		dlSearchContainer.setHeaderNames(
 			ListUtil.fromArray(
 				_dlPortletInstanceSettingsHelper.getEntryColumns()));
+		dlSearchContainer.setOrderByCol(getOrderByCol());
+		dlSearchContainer.setOrderByType(getOrderByType());
 
-		String orderByCol = getOrderByCol();
-		String orderByType = getOrderByType();
+		if (hasFilterParameters()) {
+			SearchContext searchContext = _getSearchContext(
+				dlSearchContainer, "none");
 
-		boolean orderByModel = false;
+			_initializeFilterSearchContext(searchContext);
 
-		if (navigation.equals("home")) {
-			orderByModel = true;
-		}
-
-		OrderByComparator<RepositoryEntry> orderByComparator =
-			DLUtil.getRepositoryModelOrderByComparator(
-				orderByCol, orderByType, orderByModel);
-
-		if (navigation.equals("recent")) {
-			orderByComparator = new RepositoryModelModifiedDateComparator();
-		}
-
-		dlSearchContainer.setOrderByCol(orderByCol);
-		dlSearchContainer.setOrderByComparator(orderByComparator);
-		dlSearchContainer.setOrderByType(orderByType);
-
-		List<RepositoryEntry> results = new ArrayList<>();
-		int total = 0;
-
-		if (fileEntryTypeId >= 0) {
 			Indexer<?> indexer = IndexerRegistryUtil.getIndexer(
 				DLFileEntryConstants.getClassName());
 
-			SearchContext searchContext = SearchContextFactory.getInstance(
-				_httpServletRequest);
-
-			searchContext.setAttribute("paginationType", "none");
-			searchContext.setEnd(dlSearchContainer.getEnd());
-
-			if (folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
-				searchContext.setFolderIds(new long[] {folderId});
-			}
-
-			int type = Sort.STRING_TYPE;
-			String fieldName = orderByCol;
-
-			if (orderByCol.equals("creationDate")) {
-				fieldName = Field.CREATE_DATE;
-				type = Sort.LONG_TYPE;
-			}
-			else if (orderByCol.equals("modifiedDate")) {
-				fieldName = Field.MODIFIED_DATE;
-				type = Sort.LONG_TYPE;
-			}
-			else if (orderByCol.equals("size")) {
-				type = Sort.LONG_TYPE;
-			}
-
-			Sort sort = new Sort(
-				fieldName, type,
-				!StringUtil.equalsIgnoreCase(orderByType, "asc"));
-
-			searchContext.setSorts(sort);
-
-			searchContext.setStart(dlSearchContainer.getStart());
-
 			Hits hits = indexer.search(searchContext);
 
-			total = hits.getLength();
+			dlSearchContainer.setResultsAndTotal(
+				() -> _getRepositoryEntries(hits), hits.getLength());
 
-			dlSearchContainer.setTotal(total);
-
-			for (Document doc : hits.getDocs()) {
-				long fileEntryId = GetterUtil.getLong(
-					doc.get(Field.ENTRY_CLASS_PK));
-
-				FileEntry fileEntry = null;
-
-				try {
-					fileEntry = DLAppLocalServiceUtil.getFileEntry(fileEntryId);
-				}
-				catch (Exception exception) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							StringBundler.concat(
-								"Documents and Media search index is stale ",
-								"and contains file entry {", fileEntryId, "}"),
-							exception);
-					}
-
-					continue;
-				}
-
-				results.add(fileEntry);
-			}
+			return dlSearchContainer;
 		}
-		else {
-			if (navigation.equals("home")) {
-				if (useAssetEntryQuery) {
-					long[] classNameIds = {
-						PortalUtil.getClassNameId(
-							DLFileEntryConstants.getClassName()),
-						PortalUtil.getClassNameId(
-							DLFileShortcutConstants.getClassName())
-					};
 
-					AssetEntryQuery assetEntryQuery = new AssetEntryQuery(
-						classNameIds, dlSearchContainer);
+		dlSearchContainer.setOrderByComparator(
+			DLUtil.getRepositoryModelOrderByComparator(
+				getOrderByCol(), getOrderByType(), true));
 
-					assetEntryQuery.setEnablePermissions(true);
-					assetEntryQuery.setExcludeZeroViewCount(false);
+		long folderId = getFolderId();
+		long repositoryId = getRepositoryId();
 
-					total = AssetEntryServiceUtil.getEntriesCount(
-						assetEntryQuery);
+		long categoryId = ParamUtil.getLong(_httpServletRequest, "categoryId");
+		String tagName = ParamUtil.getString(_httpServletRequest, "tag");
 
-					dlSearchContainer.setTotal(total);
+		if ((categoryId > 0) || Validator.isNotNull(tagName)) {
+			long[] classNameIds = {
+				PortalUtil.getClassNameId(DLFileEntryConstants.getClassName()),
+				PortalUtil.getClassNameId(
+					DLFileShortcutConstants.getClassName())
+			};
 
-					for (AssetEntry assetEntry :
-							AssetEntryServiceUtil.getEntries(assetEntryQuery)) {
+			AssetEntryQuery assetEntryQuery = new AssetEntryQuery(
+				classNameIds, dlSearchContainer);
 
-						if (Objects.equals(
-								assetEntry.getClassName(),
-								DLFileEntryConstants.getClassName())) {
+			assetEntryQuery.setEnablePermissions(true);
+			assetEntryQuery.setExcludeZeroViewCount(false);
 
-							results.add(
-								DLAppLocalServiceUtil.getFileEntry(
-									assetEntry.getClassNameId()));
-						}
-						else {
-							results.add(
-								DLAppLocalServiceUtil.getFileShortcut(
-									assetEntry.getClassPK()));
-						}
+			List<RepositoryEntry> results = new ArrayList<>();
+
+			for (AssetEntry assetEntry :
+					AssetEntryServiceUtil.getEntries(assetEntryQuery)) {
+
+				if (Objects.equals(
+						assetEntry.getClassName(),
+						DLFileEntryConstants.getClassName())) {
+
+					FileEntry fileEntry = DLAppLocalServiceUtil.getFileEntry(
+						assetEntry.getClassPK());
+
+					if (_isAncestorFolder(folderId, fileEntry) ||
+						((folderId ==
+							DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) &&
+						 (fileEntry.getRepositoryId() == repositoryId))) {
+
+						results.add(fileEntry);
 					}
 				}
 				else {
-					long repositoryId = getRepositoryId();
+					results.add(
+						DLAppLocalServiceUtil.getFileShortcut(
+							assetEntry.getClassPK()));
+				}
+			}
 
-					total =
+			dlSearchContainer.setResultsAndTotal(
+				() -> results,
+				AssetEntryServiceUtil.getEntriesCount(assetEntryQuery));
+		}
+		else {
+			int dlAppStatus = _getStatus();
+
+			dlSearchContainer.setResultsAndTotal(
+				() ->
+					(List)
 						DLAppServiceUtil.
-							getFoldersAndFileEntriesAndFileShortcutsCount(
-								repositoryId, folderId, status, true);
-
-					dlSearchContainer.setTotal(total);
-
-					results =
-						(List)
-							DLAppServiceUtil.
-								getFoldersAndFileEntriesAndFileShortcuts(
-									repositoryId, folderId, status, true,
-									dlSearchContainer.getStart(),
-									dlSearchContainer.getEnd(),
-									dlSearchContainer.getOrderByComparator());
-				}
-			}
-			else if (navigation.equals("mine") || navigation.equals("recent")) {
-				long groupFileEntriesUserId = 0;
-
-				if (navigation.equals("mine") && _themeDisplay.isSignedIn()) {
-					groupFileEntriesUserId = _themeDisplay.getUserId();
-
-					status = WorkflowConstants.STATUS_ANY;
-				}
-
-				long repositoryId = getRepositoryId();
-
-				total = DLAppServiceUtil.getGroupFileEntriesCount(
-					repositoryId, groupFileEntriesUserId, folderId, null,
-					status);
-
-				dlSearchContainer.setTotal(total);
-
-				OrderByComparator<FileEntry> fileEntryOrderByComparator =
-					DLUtil.getRepositoryModelOrderByComparator(
-						orderByCol, orderByType, orderByModel);
-
-				results.addAll(
-					DLAppServiceUtil.getGroupFileEntries(
-						repositoryId, groupFileEntriesUserId, folderId, null,
-						status, dlSearchContainer.getStart(),
-						dlSearchContainer.getEnd(),
-						fileEntryOrderByComparator));
-			}
+							getFoldersAndFileEntriesAndFileShortcuts(
+								repositoryId, folderId, dlAppStatus, true,
+								dlSearchContainer.getStart(),
+								dlSearchContainer.getEnd(),
+								dlSearchContainer.getOrderByComparator()),
+				DLAppServiceUtil.getFoldersAndFileEntriesAndFileShortcutsCount(
+					repositoryId, folderId, dlAppStatus, true));
 		}
 
-		dlSearchContainer.setResults(results);
-
 		return dlSearchContainer;
+	}
+
+	private Filter _getExtensionsFilter(String[] extensions) {
+		if (ArrayUtil.isEmpty(extensions)) {
+			return null;
+		}
+
+		TermsFilter termsFilter = new TermsFilter("extension");
+
+		for (String extension : extensions) {
+			termsFilter.addValue(extension);
+		}
+
+		return termsFilter;
+	}
+
+	private String _getFilterEmptyResultsMessage() throws PortalException {
+		long fileEntryTypeId = getFileEntryTypeId();
+
+		if (fileEntryTypeId < 0) {
+			return "there-are-no-documents-or-media-files-in-this-folder";
+		}
+
+		String dlFileEntryTypeName = LanguageUtil.get(
+			_httpServletRequest, "basic-document");
+
+		if (fileEntryTypeId > 0) {
+			DLFileEntryType dlFileEntryType =
+				DLFileEntryTypeLocalServiceUtil.getFileEntryType(
+					fileEntryTypeId);
+
+			dlFileEntryTypeName = dlFileEntryType.getName(
+				_themeDisplay.getLocale());
+		}
+
+		return LanguageUtil.format(
+			_httpServletRequest,
+			"there-are-no-documents-or-media-files-of-type-x",
+			HtmlUtil.escape(dlFileEntryTypeName), false);
 	}
 
 	private Hits _getHits(SearchContainer<RepositoryEntry> searchContainer)
 		throws PortalException {
 
-		SearchContext searchContext = SearchContextFactory.getInstance(
-			_httpServletRequest);
+		SearchContext searchContext = _getSearchContext(
+			searchContainer, "regular");
 
-		searchContext.setAttribute("paginationType", "regular");
+		_initializeFilterSearchContext(searchContext);
 
-		long searchRepositoryId = ParamUtil.getLong(
-			_httpServletRequest, "searchRepositoryId");
-
-		if (searchRepositoryId == 0) {
-			searchRepositoryId = _themeDisplay.getScopeGroupId();
-		}
+		long searchRepositoryId = _getSearchRepositoryId();
 
 		searchContext.setAttribute("searchRepositoryId", searchRepositoryId);
-		searchContext.setEnd(searchContainer.getEnd());
 
-		long searchFolderId = ParamUtil.getLong(
-			_httpServletRequest, "searchFolderId");
+		searchContext.setFolderIds(new long[] {_getSearchFolderId()});
 
-		searchContext.setFolderIds(new long[] {searchFolderId});
+		Group group = GroupLocalServiceUtil.fetchGroup(searchRepositoryId);
+
+		if ((group != null) &&
+			GroupPermissionUtil.contains(
+				_themeDisplay.getPermissionChecker(), group, ActionKeys.VIEW)) {
+
+			searchContext.setGroupIds(new long[] {searchRepositoryId});
+		}
 
 		searchContext.setIncludeDiscussions(true);
 		searchContext.setIncludeInternalAssetCategories(true);
-		searchContext.setKeywords(
-			ParamUtil.getString(_httpServletRequest, "keywords"));
+		searchContext.setKeywords(_getKeywords());
 		searchContext.setLocale(_themeDisplay.getSiteDefaultLocale());
 
 		QueryConfig queryConfig = searchContext.getQueryConfig();
 
 		queryConfig.setSearchSubfolders(true);
 
+		return DLAppServiceUtil.search(searchRepositoryId, searchContext);
+	}
+
+	private String _getKeywords() {
+		if (_keywords == null) {
+			_keywords = ParamUtil.getString(_httpServletRequest, "keywords");
+		}
+
+		return _keywords;
+	}
+
+	private String _getPortletPreference(String name, String defaultValue) {
+		if (_themeDisplay.isSignedIn()) {
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				PortletPreferences portletPreferences =
+					_getPortletPreferences();
+
+				return portletPreferences.getValue(name, defaultValue);
+			}
+		}
+
+		return GetterUtil.getString(
+			_httpSession.getAttribute(
+				_dlRequestHelper.getPortletId() + StringPool.UNDERLINE + name),
+			defaultValue);
+	}
+
+	private PortletPreferences _getPortletPreferences() {
+		if (_portletPreferences != null) {
+			return _portletPreferences;
+		}
+
+		_portletPreferences =
+			PortletPreferencesFactoryUtil.getLayoutPortletSetup(
+				_themeDisplay.getCompanyId(), _themeDisplay.getUserId(),
+				PortletKeys.PREFS_OWNER_TYPE_USER, _themeDisplay.getPlid(),
+				_dlRequestHelper.getPortletId(), StringPool.BLANK);
+
+		return _portletPreferences;
+	}
+
+	private List<RepositoryEntry> _getRepositoryEntries(Hits hits) {
+		List<RepositoryEntry> results = new ArrayList<>();
+
+		for (Document doc : hits.getDocs()) {
+			long fileEntryId = GetterUtil.getLong(
+				doc.get(Field.ENTRY_CLASS_PK));
+
+			FileEntry fileEntry = null;
+
+			try {
+				fileEntry = DLAppLocalServiceUtil.getFileEntry(fileEntryId);
+			}
+			catch (Exception exception) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						StringBundler.concat(
+							"Documents and Media search index is stale and ",
+							"contains file entry ", fileEntryId),
+						exception);
+				}
+
+				continue;
+			}
+
+			results.add(fileEntry);
+		}
+
+		return results;
+	}
+
+	private SearchContext _getSearchContext(
+		SearchContainer<RepositoryEntry> searchContainer,
+		String paginationType) {
+
+		SearchContext searchContext = SearchContextFactory.getInstance(
+			new long[0], new String[0], new HashMap<>(),
+			_themeDisplay.getCompanyId(), null, _themeDisplay.getLayout(),
+			_themeDisplay.getLocale(), _themeDisplay.getScopeGroupId(),
+			_themeDisplay.getTimeZone(), _themeDisplay.getUserId());
+
+		searchContext.setAttribute("paginationType", paginationType);
+		searchContext.setEnd(searchContainer.getEnd());
+		searchContext.setSorts(
+			_getSort(
+				searchContainer.getOrderByCol(),
+				searchContainer.getOrderByType()));
+
 		searchContext.setStart(searchContainer.getStart());
 
-		return DLAppServiceUtil.search(searchRepositoryId, searchContext);
+		return searchContext;
+	}
+
+	private String _getSearchEmptyResultsMessage() {
+		String message = "no-documents-were-found-that-matched-the-keywords-x";
+
+		if (hasFilterParameters()) {
+			if (_isExternalRepositorySearch()) {
+				return "there-are-no-documents-or-media-files-that-matched-" +
+					"the-filters-in-this-repository";
+			}
+
+			message =
+				"no-documents-were-found-that-matched-the-filters-and-the-" +
+					"keywords-x";
+		}
+
+		return LanguageUtil.format(
+			_httpServletRequest, message, HtmlUtil.escape(_getKeywords()),
+			false);
+	}
+
+	private long _getSearchFolderId() {
+		if (_searchFolderId == null) {
+			_searchFolderId = ParamUtil.getLong(
+				_httpServletRequest, "searchFolderId",
+				ParamUtil.getLong(_httpServletRequest, "folderId"));
+		}
+
+		return _searchFolderId;
+	}
+
+	private long _getSearchRepositoryId() {
+		if (_searchRepositoryId == null) {
+			_searchRepositoryId = ParamUtil.getLong(
+				_httpServletRequest, "searchRepositoryId", getRepositoryId());
+		}
+
+		return _searchRepositoryId;
 	}
 
 	private List<RepositoryEntry> _getSearchResults(Hits hits)
@@ -771,18 +1051,16 @@ public class DLAdminDisplayContext {
 						 FileEntry.class.isAssignableFrom(
 							 Class.forName(className))) {
 
-					FileEntry fileEntry = DLAppLocalServiceUtil.getFileEntry(
-						searchResult.getClassPK());
-
-					searchResults.add(fileEntry);
+					searchResults.add(
+						DLAppLocalServiceUtil.getFileEntry(
+							searchResult.getClassPK()));
 				}
 				else if (className.equals(DLFolder.class.getName()) ||
 						 className.equals(Folder.class.getName())) {
 
-					Folder folder = DLAppLocalServiceUtil.getFolder(
-						searchResult.getClassPK());
-
-					searchResults.add(folder);
+					searchResults.add(
+						DLAppLocalServiceUtil.getFolder(
+							searchResult.getClassPK()));
 				}
 			}
 			catch (ClassNotFoundException classNotFoundException) {
@@ -798,42 +1076,203 @@ public class DLAdminDisplayContext {
 
 		SearchContainer<RepositoryEntry> searchContainer =
 			new SearchContainer<>(
-				_liferayPortletRequest, getSearchSearchContainerURL(), null,
-				null);
+				_liferayPortletRequest, getSearchRenderURL(), null,
+				_getSearchEmptyResultsMessage());
+
+		if (_isExternalRepositorySearch() && hasFilterParameters()) {
+			return searchContainer;
+		}
+
+		searchContainer.setOrderByCol(getOrderByCol());
+		searchContainer.setOrderByType(getOrderByType());
 
 		Hits hits = _getHits(searchContainer);
 
-		searchContainer.setResults(_getSearchResults(hits));
-		searchContainer.setTotal(hits.getLength());
+		searchContainer.setResultsAndTotal(
+			() -> _getSearchResults(hits), hits.getLength());
 
 		return searchContainer;
+	}
+
+	private Sort _getSort(String orderByCol, String orderByType) {
+		int type = Sort.STRING_TYPE;
+		String fieldName = orderByCol;
+
+		if (Objects.equals(orderByCol, "creationDate")) {
+			fieldName = Field.CREATE_DATE;
+			type = Sort.LONG_TYPE;
+		}
+		else if (Objects.equals(orderByCol, "modifiedDate")) {
+			fieldName = Field.MODIFIED_DATE;
+			type = Sort.LONG_TYPE;
+		}
+		else if (Objects.equals(orderByCol, "size")) {
+			type = Sort.LONG_TYPE;
+		}
+
+		return SortFactoryUtil.create(
+			fieldName, type, !StringUtil.equalsIgnoreCase(orderByType, "asc"));
+	}
+
+	private int _getStatus() {
+		int status = WorkflowConstants.STATUS_APPROVED;
+
+		User user = _themeDisplay.getUser();
+
+		if (_permissionChecker.isContentReviewer(
+				user.getCompanyId(), _themeDisplay.getScopeGroupId())) {
+
+			status = WorkflowConstants.STATUS_ANY;
+		}
+
+		return status;
+	}
+
+	private String _getViewMvcRenderCommandName() {
+		if (getFolderId() == DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+			return "/document_library/view";
+		}
+
+		return "/document_library/view_folder";
+	}
+
+	private void _initializeFilterSearchContext(SearchContext searchContext) {
+		int status = _getStatus();
+		long userId = 0;
+
+		if (isNavigationMine() && _themeDisplay.isSignedIn()) {
+			status = WorkflowConstants.STATUS_ANY;
+			userId = _themeDisplay.getUserId();
+		}
+
+		searchContext.setAttribute("status", status);
+		searchContext.setBooleanClauses(
+			_getBooleanClauses(
+				getAssetCategoryIds(), getAssetTagIds(), getExtensions(),
+				getFileEntryTypeId(), userId));
+
+		long folderId = ParamUtil.getLong(_httpServletRequest, "folderId");
+
+		if (folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+			searchContext.setFolderIds(new long[] {folderId});
+		}
+	}
+
+	private boolean _isAncestorFolder(long folderId, FileEntry fileEntry) {
+		LiferayFileEntry liferayFileEntry = (LiferayFileEntry)fileEntry;
+
+		DLFileEntry dlFileEntry = liferayFileEntry.getDLFileEntry();
+
+		List<String> treePaths = Arrays.asList(
+			StringUtil.split(
+				dlFileEntry.getTreePath(), CharPool.FORWARD_SLASH));
+
+		return treePaths.contains(String.valueOf(folderId));
+	}
+
+	private boolean _isExternalRepositorySearch() {
+		if (_getSearchRepositoryId() != _themeDisplay.getScopeGroupId()) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private void _setFilterParameters(PortletURL portletURL) {
+		portletURL.setParameter(
+			"assetCategoryId", ArrayUtil.toStringArray(getAssetCategoryIds()));
+		portletURL.setParameter(
+			"assetTagId", ArrayUtil.toStringArray(getAssetTagIds()));
+		portletURL.setParameter("extension", getExtensions());
+
+		long fileEntryTypeId = getFileEntryTypeId();
+
+		if (fileEntryTypeId != -1) {
+			portletURL.setParameter(
+				"fileEntryTypeId", String.valueOf(fileEntryTypeId));
+		}
+
+		portletURL.setParameter(
+			"navigation", HtmlUtil.escapeJS(getNavigation()));
+	}
+
+	private void _setPortletPreference(String name, String value) {
+		if (_themeDisplay.isSignedIn()) {
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				PortletPreferences portletPreferences =
+					_getPortletPreferences();
+
+				try {
+					portletPreferences.setValue(name, value);
+
+					portletPreferences.store();
+				}
+				catch (Exception exception) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(exception);
+					}
+				}
+			}
+		}
+		else {
+			_httpSession.setAttribute(
+				_dlRequestHelper.getPortletId() + StringPool.UNDERLINE + name,
+				value);
+		}
+	}
+
+	private void _setSearchParameters(PortletURL portletURL) {
+		portletURL.setParameter("keywords", _getKeywords());
+		portletURL.setParameter(
+			"repositoryId", String.valueOf(getRepositoryId()));
+		portletURL.setParameter(
+			"searchFolderId", String.valueOf(_getSearchFolderId()));
+		portletURL.setParameter(
+			"searchRepositoryId", String.valueOf(_getSearchRepositoryId()));
+		portletURL.setParameter("showSearchInfo", Boolean.TRUE.toString());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLAdminDisplayContext.class);
 
+	private final AssetAutoTaggerConfiguration _assetAutoTaggerConfiguration;
+	private long[] _assetCategoryIds;
+	private String[] _assetTagIds;
 	private boolean _defaultFolderView;
 	private String _displayStyle;
+	private final DLFileOrderConfigurationProvider
+		_dlFileOrderConfigurationProvider;
 	private final DLPortletInstanceSettings _dlPortletInstanceSettings;
 	private final DLPortletInstanceSettingsHelper
 		_dlPortletInstanceSettingsHelper;
 	private final DLRequestHelper _dlRequestHelper;
+	private String[] _extensions;
+	private Long _fileEntryTypeId;
 	private Folder _folder;
 	private long _folderId;
 	private final HttpServletRequest _httpServletRequest;
+	private final HttpSession _httpSession;
+	private String _keywords;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
+	private List<Folder> _mountFolders;
 	private String _navigation;
 	private String _orderByCol;
 	private String _orderByType;
 	private final PermissionChecker _permissionChecker;
 	private final PortalPreferences _portalPreferences;
+	private PortletPreferences _portletPreferences;
 	private long _repositoryId;
 	private long _rootFolderId;
 	private boolean _rootFolderInTrash;
 	private String _rootFolderName;
 	private boolean _rootFolderNotFound;
 	private SearchContainer<RepositoryEntry> _searchContainer;
+	private Long _searchFolderId;
+	private Long _searchRepositoryId;
 	private long _selectedRepositoryId;
 	private final ThemeDisplay _themeDisplay;
 	private final TrashHelper _trashHelper;

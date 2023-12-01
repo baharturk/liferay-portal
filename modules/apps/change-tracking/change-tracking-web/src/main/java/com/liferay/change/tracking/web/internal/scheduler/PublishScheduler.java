@@ -1,31 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.web.internal.scheduler;
 
 import com.liferay.change.tracking.constants.CTActionKeys;
-import com.liferay.change.tracking.constants.CTConstants;
+import com.liferay.change.tracking.constants.CTDestinationNames;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTPreferencesLocalService;
-import com.liferay.change.tracking.web.internal.constants.CTDestinationNames;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.messaging.Message;
-import com.liferay.portal.kernel.messaging.proxy.ProxyModeThreadLocal;
 import com.liferay.portal.kernel.scheduler.SchedulerEngineHelper;
 import com.liferay.portal.kernel.scheduler.StorageType;
 import com.liferay.portal.kernel.scheduler.TriggerFactory;
@@ -118,8 +107,7 @@ public class PublishScheduler {
 		throws PortalException {
 
 		try (SafeCloseable safeCloseable =
-				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
-					CTConstants.CT_COLLECTION_ID_PRODUCTION)) {
+				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
 
 			TransactionInvokerUtil.invoke(
 				_transactionConfig,
@@ -164,13 +152,9 @@ public class PublishScheduler {
 
 		_ctCollectionLocalService.updateCTCollection(ctCollection);
 
-		try (SafeCloseable safeCloseable =
-				ProxyModeThreadLocal.setWithSafeCloseable(true)) {
-
-			_schedulerEngineHelper.delete(
-				jobName, CTDestinationNames.CT_COLLECTION_SCHEDULED_PUBLISH,
-				StorageType.PERSISTED);
-		}
+		_schedulerEngineHelper.delete(
+			jobName, CTDestinationNames.CT_COLLECTION_SCHEDULED_PUBLISH,
+			StorageType.PERSISTED);
 	}
 
 	private Void _schedulePublish(
@@ -201,7 +185,7 @@ public class PublishScheduler {
 				CTDestinationNames.CT_COLLECTION_SCHEDULED_PUBLISH, startDate,
 				null, 0, null),
 			StorageType.PERSISTED, String.valueOf(ctCollectionId),
-			CTDestinationNames.CT_COLLECTION_SCHEDULED_PUBLISH, message, 0);
+			CTDestinationNames.CT_COLLECTION_SCHEDULED_PUBLISH, message);
 
 		return null;
 	}

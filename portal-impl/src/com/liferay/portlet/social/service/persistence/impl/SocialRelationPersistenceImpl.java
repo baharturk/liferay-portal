@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.social.service.persistence.impl;
@@ -48,7 +39,6 @@ import com.liferay.social.kernel.service.persistence.SocialRelationUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -191,7 +181,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialRelation socialRelation : list) {
@@ -583,7 +573,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {uuid};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -748,7 +739,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialRelation socialRelation : list) {
@@ -1173,7 +1164,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {uuid, companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1338,7 +1330,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialRelation socialRelation : list) {
@@ -1706,7 +1698,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1848,7 +1841,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialRelation socialRelation : list) {
@@ -2216,7 +2209,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {userId1};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2358,7 +2352,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialRelation socialRelation : list) {
@@ -2726,7 +2720,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {userId2};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2865,7 +2860,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialRelation socialRelation : list) {
@@ -3231,7 +3226,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {type};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3379,7 +3375,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialRelation socialRelation : list) {
@@ -3778,7 +3774,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {companyId, type};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3934,7 +3931,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialRelation socialRelation : list) {
@@ -4333,7 +4330,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {userId1, userId2};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -4488,7 +4486,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialRelation socialRelation : list) {
@@ -4886,7 +4884,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {userId1, type};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -5041,7 +5040,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialRelation socialRelation : list) {
@@ -5439,7 +5438,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {userId2, type};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -5559,21 +5559,21 @@ public class SocialRelationPersistenceImpl
 	public SocialRelation fetchByU1_U2_T(
 		long userId1, long userId2, int type, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			SocialRelation.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {userId1, userId2, type};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByU1_U2_T, finderArgs);
+				_finderPathFetchByU1_U2_T, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialRelation.class);
 
 		if (result instanceof SocialRelation) {
 			SocialRelation socialRelation = (SocialRelation)result;
@@ -5584,6 +5584,14 @@ public class SocialRelationPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						SocialRelation.class, socialRelation.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -5686,7 +5694,8 @@ public class SocialRelationPersistenceImpl
 
 			finderArgs = new Object[] {userId1, userId2, type};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -6107,7 +6116,9 @@ public class SocialRelationPersistenceImpl
 	 */
 	@Override
 	public SocialRelation fetchByPrimaryKey(Serializable primaryKey) {
-		if (CTPersistenceHelperUtil.isProductionMode(SocialRelation.class)) {
+		if (CTPersistenceHelperUtil.isProductionMode(
+				SocialRelation.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -6326,7 +6337,7 @@ public class SocialRelationPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialRelation>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -6402,7 +6413,7 @@ public class SocialRelationPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -6731,29 +6742,13 @@ public class SocialRelationPersistenceImpl
 			},
 			new String[] {"userId1", "userId2", "type_"}, false);
 
-		_setSocialRelationUtilPersistence(this);
+		SocialRelationUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setSocialRelationUtilPersistence(null);
+		SocialRelationUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(SocialRelationImpl.class.getName());
-	}
-
-	private void _setSocialRelationUtilPersistence(
-		SocialRelationPersistence socialRelationPersistence) {
-
-		try {
-			Field field = SocialRelationUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, socialRelationPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_SOCIALRELATION =

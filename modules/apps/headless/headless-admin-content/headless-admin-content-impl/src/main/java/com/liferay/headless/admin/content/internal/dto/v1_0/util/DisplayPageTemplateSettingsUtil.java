@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.content.internal.dto.v1_0.util;
@@ -19,7 +10,7 @@ import com.liferay.headless.admin.content.dto.v1_0.DisplayPageTemplateSettings;
 import com.liferay.headless.admin.content.dto.v1_0.OpenGraphSettingsMapping;
 import com.liferay.headless.admin.content.dto.v1_0.SEOSettingsMapping;
 import com.liferay.info.item.InfoItemFormVariation;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFormVariationsProvider;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.portal.kernel.model.Layout;
@@ -37,13 +28,13 @@ public class DisplayPageTemplateSettingsUtil {
 
 	public static DisplayPageTemplateSettings getDisplayPageTemplateSettings(
 		DTOConverterContext dtoConverterContext,
-		InfoItemServiceTracker infoItemServiceTracker, Layout layout,
+		InfoItemServiceRegistry infoItemServiceRegistry, Layout layout,
 		LayoutPageTemplateEntry layoutPageTemplateEntry, Portal portal) {
 
 		return new DisplayPageTemplateSettings() {
 			{
 				contentAssociation = _getContentAssociation(
-					dtoConverterContext, infoItemServiceTracker,
+					dtoConverterContext, infoItemServiceRegistry,
 					layoutPageTemplateEntry, portal);
 				openGraphSettingsMapping = _getOpenGraphSettingsMapping(layout);
 				seoSettingsMapping = _getSEOSettingsMapping(
@@ -54,7 +45,7 @@ public class DisplayPageTemplateSettingsUtil {
 
 	private static ContentAssociation _getContentAssociation(
 		DTOConverterContext dtoConverterContext,
-		InfoItemServiceTracker infoItemServiceTracker,
+		InfoItemServiceRegistry infoItemServiceRegistry,
 		LayoutPageTemplateEntry layoutPageTemplateEntry, Portal portal) {
 
 		String className = portal.getClassName(
@@ -63,7 +54,7 @@ public class DisplayPageTemplateSettingsUtil {
 		return new ContentAssociation() {
 			{
 				contentSubtype = _getContentSubtype(
-					dtoConverterContext, infoItemServiceTracker,
+					dtoConverterContext, infoItemServiceRegistry,
 					layoutPageTemplateEntry);
 				contentType = _contentTypes.getOrDefault(className, className);
 			}
@@ -72,11 +63,11 @@ public class DisplayPageTemplateSettingsUtil {
 
 	private static String _getContentSubtype(
 		DTOConverterContext dtoConverterContext,
-		InfoItemServiceTracker infoItemServiceTracker,
+		InfoItemServiceRegistry infoItemServiceRegistry,
 		LayoutPageTemplateEntry layoutPageTemplateEntry) {
 
 		InfoItemFormVariationsProvider<?> infoItemFormVariationsProvider =
-			infoItemServiceTracker.getFirstInfoItemService(
+			infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFormVariationsProvider.class,
 				layoutPageTemplateEntry.getClassName());
 

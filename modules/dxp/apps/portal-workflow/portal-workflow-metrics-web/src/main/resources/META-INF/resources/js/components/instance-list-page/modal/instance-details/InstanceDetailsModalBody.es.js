@@ -1,13 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -15,6 +9,7 @@ import ClayIcon from '@clayui/icon';
 import ClayLayout from '@clayui/layout';
 import ClayLink from '@clayui/link';
 import ClayModal, {useModal} from '@clayui/modal';
+import {ClayTooltipProvider} from '@clayui/tooltip';
 import WorkflowInstanceTracker from '@liferay/portal-workflow-instance-tracker-web/js/components/WorkflowInstanceTracker';
 import React, {useState} from 'react';
 
@@ -89,7 +84,7 @@ function Body({
 						{Liferay.Language.get('due-date-by-sla')}
 					</Body.SectionTitle>
 
-					{slaResults.length === 0 && (
+					{!slaResults.length && (
 						<p>
 							<span className="font-weight-medium text-muted">
 								{Liferay.Language.get(
@@ -99,7 +94,7 @@ function Body({
 						</p>
 					)}
 
-					{SLAs.open.length > 0 && (
+					{!!SLAs.open.length && (
 						<Body.SectionSubTitle>
 							{`${Liferay.Language.get('open').toUpperCase()} (${
 								SLAs.open.length
@@ -111,7 +106,7 @@ function Body({
 						<Body.SLAResultItem key={item.id} {...item} />
 					))}
 
-					{SLAs.resolved.length > 0 && (
+					{!!SLAs.resolved.length && (
 						<Body.SectionSubTitle>
 							{`${Liferay.Language.get(
 								'resolved'
@@ -123,7 +118,7 @@ function Body({
 						<Body.SLAResultItem key={item.id} {...item} />
 					))}
 
-					{SLAs.notStarted.length > 0 && (
+					{!!SLAs.notStarted.length && (
 						<Body.SectionSubTitle>
 							{`${Liferay.Language.get(
 								'not-started'
@@ -147,14 +142,22 @@ function Body({
 									? Liferay.Language.get('completed')
 									: Liferay.Language.get('pending')}
 
-								<ClayLink
-									className="ml-1"
-									onClick={() =>
-										setShowInstanceTrackerModal(true)
-									}
-								>
-									({Liferay.Language.get('track-workflow')})
-								</ClayLink>
+								<ClayTooltipProvider>
+									<ClayLink
+										className="ml-1 tracker-tooltip"
+										data-tooltip-align="top"
+										onClick={() =>
+											setShowInstanceTrackerModal(true)
+										}
+										title={Liferay.Language.get(
+											'click-and-see'
+										)}
+									>
+										(
+										{Liferay.Language.get('track-workflow')}
+										)
+									</ClayLink>
+								</ClayTooltipProvider>
 							</>
 						}
 					/>
@@ -167,9 +170,9 @@ function Body({
 					{dateCreated && (
 						<Body.SectionAttribute
 							description={Liferay.Language.get('creation-date')}
-							detail={moment
-								.utc(dateCreated)
-								.format(Liferay.Language.get('mmm-dd-yyyy-lt'))}
+							detail={moment(dateCreated).format(
+								Liferay.Language.get('mmm-dd-yyyy-lt')
+							)}
 						/>
 					)}
 
@@ -193,9 +196,9 @@ function Body({
 					{completed && dateCompletion && (
 						<Body.SectionAttribute
 							description={Liferay.Language.get('end-date')}
-							detail={moment
-								.utc(dateCompletion)
-								.format(Liferay.Language.get('mmm-dd-yyyy-lt'))}
+							detail={moment(dateCompletion).format(
+								Liferay.Language.get('mmm-dd-yyyy-lt')
+							)}
 						/>
 					)}
 
@@ -204,9 +207,7 @@ function Body({
 							description={Liferay.Language.get(
 								'current-assignee'
 							)}
-							detail={assignees
-								.map((user) => user.name)
-								.join(', ')}
+							detail={assignees[0].name}
 						/>
 					)}
 
@@ -309,11 +310,9 @@ function SLAResultItem({dateOverdue, name, onTime, remainingTime, status}) {
 					remainingTime
 				);
 
-				return `${moment
-					.utc(dateOverdue)
-					.format(
-						Liferay.Language.get('mmm-dd-yyyy-lt')
-					)} (${durationText} ${onTimeText})`;
+				return `${moment(dateOverdue).format(
+					Liferay.Language.get('mmm-dd-yyyy-lt')
+				)} (${durationText} ${onTimeText})`;
 			}
 			default: {
 				if (status === 'STOPPED' && onTime) {

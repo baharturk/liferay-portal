@@ -1,11 +1,9 @@
 @import '../../../css/variables';
 @import 'atlas-variables';
 
-$controlMenuHeight: 48px;
 $defaultTransitionDuration: 0.5s;
-$desktopControlMenuHeight: 56px;
-$managementBarHeight: 64px;
-$toolbarHeight: 64px;
+$toolbarDesktopHeight: 64px;
+$toolbarHeight: 110px;
 
 // z-indexes for children of page-editor-sidebar (which is a stacking context).
 
@@ -14,10 +12,33 @@ $zIndexContent: 0;
 
 .multi-panel-sidebar {
 	display: flex;
-	height: calc(100vh - #{$toolbarHeight});
+	height: calc(
+		100vh - var(--control-menu-container-height) - #{$toolbarHeight}
+	);
 	position: fixed;
 	right: 0;
-	top: $toolbarHeight;
+	top: calc(var(--control-menu-container-height) + #{$toolbarHeight});
+
+	&-content {
+		height: calc(
+			100vh - var(--control-menu-container-height) - #{$toolbarHeight}
+		);
+	}
+
+	@include media-breakpoint-up(lg) {
+		height: calc(
+			100vh - var(--control-menu-container-height) - #{$toolbarDesktopHeight}
+		);
+		top: calc(
+			var(--control-menu-container-height) + #{$toolbarDesktopHeight}
+		);
+
+		&-content {
+			height: calc(
+				100vh - var(--control-menu-container-height) - #{$toolbarDesktopHeight}
+			);
+		}
+	}
 
 	&-buttons {
 		background-color: $white;
@@ -78,27 +99,18 @@ $zIndexContent: 0;
 	&-content {
 		background-color: $white;
 		border-left: 1px solid $gray-300;
-		height: calc(100vh - #{$controlMenuHeight + $toolbarHeight});
 		overflow-x: hidden;
 		position: fixed;
 		right: $multiPanelSidebarButtonWidth;
 		transform: translateX(100%);
 		transition: transform ease $defaultTransitionDuration;
+		visibility: hidden;
 		width: $multiPanelSidebarContentWidth;
 		z-index: $zIndexContent;
 
 		&-open {
 			transform: translateX(0);
-		}
-	}
-
-	body.has-control-menu & {
-		height: calc(100vh - #{$controlMenuHeight + $managementBarHeight});
-		top: $controlMenuHeight + $managementBarHeight;
-
-		@include media-breakpoint-up(lg) {
-			height: calc(100vh - #{$desktopControlMenuHeight + $toolbarHeight});
-			top: $desktopControlMenuHeight + $toolbarHeight;
+			visibility: visible;
 		}
 	}
 
@@ -125,25 +137,11 @@ $zIndexContent: 0;
 			}
 		}
 	}
-
-	&.menu-indicator-enabled {
-		top: 144px !important;
-
-		.data-layout-builder-sidebar {
-			.sidebar .sidebar-body {
-				height: calc(100vh - 248px);
-			}
-
-			&.display-settings .sidebar .sidebar-body {
-				height: calc(100vh - (248px - #{$displaySettingsHeight}));
-			}
-		}
-	}
 }
 
 .rtl .multi-panel-sidebar {
 	&-content {
-		transform: translateX(-100%);
+		transform: translateX(100%);
 
 		&-open {
 			transform: translateX(0);

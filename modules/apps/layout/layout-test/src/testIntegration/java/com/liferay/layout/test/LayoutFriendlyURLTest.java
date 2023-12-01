@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.test;
@@ -18,11 +9,13 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.LayoutFriendlyURLException;
 import com.liferay.portal.kernel.exception.LayoutFriendlyURLsException;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -34,7 +27,11 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.ArrayList;
@@ -315,6 +312,51 @@ public class LayoutFriendlyURLTest {
 	}
 
 	@Test
+	public void testMissingDefaultLocaleOnGroupDefaultLocaleChange()
+		throws Exception {
+
+		Map<Locale, String> friendlyURLMap = HashMapBuilder.put(
+			LocaleUtil.SPAIN, "/casa"
+		).put(
+			LocaleUtil.US, "/home"
+		).build();
+
+		Group group = GroupTestUtil.addGroup();
+
+		_groups.add(group);
+
+		Layout layout = addLayout(group.getGroupId(), false, friendlyURLMap);
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			group.getTypeSettingsProperties();
+
+		typeSettingsUnicodeProperties.setProperty(
+			"inheritLocales", Boolean.toString(false));
+		typeSettingsUnicodeProperties.setProperty(
+			"languageId", LocaleUtil.toLanguageId(LocaleUtil.GERMANY));
+		typeSettingsUnicodeProperties.setProperty(
+			PropsKeys.LOCALES,
+			StringUtil.merge(
+				LocaleUtil.toLanguageIds(LanguageUtil.getAvailableLocales())));
+
+		Locale originalDefaultLocale = LocaleThreadLocal.getDefaultLocale();
+
+		try {
+			LocaleThreadLocal.setDefaultLocale(LocaleUtil.GERMANY);
+
+			GroupLocalServiceUtil.updateGroup(
+				group.getGroupId(), typeSettingsUnicodeProperties.toString());
+		}
+		finally {
+			LocaleThreadLocal.setDefaultLocale(originalDefaultLocale);
+		}
+
+		friendlyURLMap = layout.getFriendlyURLMap();
+
+		Assert.assertNull(friendlyURLMap.get(LocaleUtil.GERMANY));
+	}
+
+	@Test
 	public void testMultipleInvalidFriendlyURLMapperURL() throws Exception {
 		Map<Locale, String> friendlyURLMap = HashMapBuilder.put(
 			LocaleUtil.SPAIN, "/tags/dos"
@@ -371,13 +413,12 @@ public class LayoutFriendlyURLTest {
 		}
 		catch (LayoutFriendlyURLsException layoutFriendlyURLsException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					layoutFriendlyURLsException, layoutFriendlyURLsException);
+				_log.debug(layoutFriendlyURLsException);
 			}
 		}
 	}
 
-	@Test(expected = LayoutFriendlyURLsException.class)
+	@Test
 	public void testSameFriendlyURLDifferentLocalePrivateLayout()
 		throws Exception {
 
@@ -390,7 +431,7 @@ public class LayoutFriendlyURLTest {
 			).build());
 	}
 
-	@Test(expected = LayoutFriendlyURLsException.class)
+	@Test
 	public void testSameFriendlyURLDifferentLocalePublicLayout()
 		throws Exception {
 
@@ -428,8 +469,7 @@ public class LayoutFriendlyURLTest {
 		}
 		catch (LayoutFriendlyURLsException layoutFriendlyURLsException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					layoutFriendlyURLsException, layoutFriendlyURLsException);
+				_log.debug(layoutFriendlyURLsException);
 			}
 		}
 	}
@@ -510,7 +550,7 @@ public class LayoutFriendlyURLTest {
 			).build());
 	}
 
-	protected void addLayout(
+	protected Layout addLayout(
 			long groupId, boolean privateLayout,
 			Map<Locale, String> friendlyURLMap)
 		throws Exception {
@@ -518,7 +558,7 @@ public class LayoutFriendlyURLTest {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(groupId);
 
-		LayoutLocalServiceUtil.addLayout(
+		return LayoutLocalServiceUtil.addLayout(
 			TestPropsValues.getUserId(), groupId, privateLayout,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
 			RandomTestUtil.randomLocaleStringMap(),

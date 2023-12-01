@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.internal.blueprint.search.request.enhancer;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
@@ -50,6 +42,8 @@ import com.liferay.portal.search.sort.FieldSort;
 import com.liferay.portal.search.sort.Sort;
 import com.liferay.portal.search.sort.SortOrder;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
+import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.search.experiences.blueprint.exception.InvalidElementInstanceException;
 import com.liferay.search.experiences.blueprint.exception.InvalidParameterException;
 import com.liferay.search.experiences.blueprint.exception.InvalidQueryEntryException;
@@ -80,6 +74,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -88,6 +83,8 @@ import org.mockito.Mockito;
 
 /**
  * @author André de Oliveira
+ * @author Gustavo Lima
+ * @author Wade Cao
  */
 public class SXPBlueprintSearchRequestEnhancerImplTest {
 
@@ -95,6 +92,71 @@ public class SXPBlueprintSearchRequestEnhancerImplTest {
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
+
+	@Before
+	public void setUp() throws Exception {
+		_sxpBlueprintSearchRequestEnhancerImpl =
+			new SXPBlueprintSearchRequestEnhancerImpl();
+
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl, "_aggregations",
+			new AggregationsImpl());
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl,
+			"_complexQueryPartBuilderFactory",
+			new ComplexQueryPartBuilderFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl, "_dtoConverterRegistry",
+			_dtoConverterRegistry);
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl,
+			"_fieldConfigBuilderFactory", new FieldConfigBuilderFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl, "_geoBuilders",
+			new GeoBuildersImpl());
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl, "_highlightBuilderFactory",
+			new HighlightBuilderFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl, "_jsonFactory",
+			new JSONFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl, "_queries",
+			new QueriesImpl());
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl, "_rescoreBuilderFactory",
+			new RescoreBuilderFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl, "_scripts",
+			new ScriptsImpl());
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl, "_sorts", new SortsImpl());
+
+		Language language = Mockito.mock(Language.class);
+
+		SXPParameterDataCreator sxpParameterDataCreator =
+			new SXPParameterDataCreator();
+
+		ReflectionTestUtil.setFieldValue(
+			sxpParameterDataCreator, "_sxpParameterContributors",
+			new SXPParameterContributor[] {
+				new ContextSXPParameterContributor(null, language)
+			});
+
+		ReflectionTestUtil.setFieldValue(
+			_sxpBlueprintSearchRequestEnhancerImpl, "_sxpParameterDataCreator",
+			sxpParameterDataCreator);
+
+		_sxpBlueprintSearchRequestEnhancerImpl.activate();
+
+		Mockito.doReturn(
+			"en_US"
+		).when(
+			language
+		).getLanguageId(
+			LocaleUtil.US
+		);
+	}
 
 	@Test
 	public void testAggregationConfiguration() throws Exception {
@@ -109,6 +171,14 @@ public class SXPBlueprintSearchRequestEnhancerImplTest {
 			aggregationsMap.toString(), 10, aggregationsMap.size());
 
 		_assert(sxpBlueprint);
+	}
+
+	@Test
+	public void testBoostAClause() throws Exception {
+		ComplexQueryPart complexQueryPart = _getComplexQueryPart(
+			SXPBlueprintUtil.toSXPBlueprint(_read()));
+
+		Assert.assertEquals("should", complexQueryPart.getOccur());
 	}
 
 	@Test
@@ -234,11 +304,7 @@ public class SXPBlueprintSearchRequestEnhancerImplTest {
 		Assert.assertTrue(MapUtil.isEmpty(searchRequest.getAggregationsMap()));
 		Assert.assertTrue(
 			ListUtil.isEmpty(searchRequest.getComplexQueryParts()));
-
-		Highlight highlight = searchRequest.getHighlight();
-
-		Assert.assertTrue(ListUtil.isEmpty(highlight.getFieldConfigs()));
-
+		Assert.assertNull(searchRequest.getHighlight());
 		Assert.assertTrue(ListUtil.isEmpty(searchRequest.getSorts()));
 
 		_assert(sxpBlueprint);
@@ -316,6 +382,22 @@ public class SXPBlueprintSearchRequestEnhancerImplTest {
 		Assert.assertArrayEquals(preTags, highlight.getPreTags());
 
 		_assert(sxpBlueprint);
+	}
+
+	@Test
+	public void testMustBeClause() throws Exception {
+		ComplexQueryPart complexQueryPart = _getComplexQueryPart(
+			SXPBlueprintUtil.toSXPBlueprint(_read()));
+
+		Assert.assertEquals("must", complexQueryPart.getOccur());
+	}
+
+	@Test
+	public void testMustNotBeClause() throws Exception {
+		ComplexQueryPart complexQueryPart = _getComplexQueryPart(
+			SXPBlueprintUtil.toSXPBlueprint(_read()));
+
+		Assert.assertEquals("must_not", complexQueryPart.getOccur());
 	}
 
 	@Test
@@ -593,6 +675,29 @@ public class SXPBlueprintSearchRequestEnhancerImplTest {
 		_assert(sxpBlueprint);
 	}
 
+	@Test
+	public void testTextMatch() throws Exception {
+		ComplexQueryPart complexQueryPart = _getComplexQueryPart(
+			SXPBlueprintUtil.toSXPBlueprint(_read()));
+
+		WrapperQuery wrapperQuery = (WrapperQuery)complexQueryPart.getQuery();
+
+		Assert.assertEquals(
+			_formatJSON(
+				JSONUtil.put(
+					"match",
+					JSONUtil.put(
+						"localized_title",
+						JSONUtil.put(
+							"boost", 2
+						).put(
+							"operator", "or"
+						).put(
+							"query", ""
+						)))),
+			_formatJSON(new String(wrapperQuery.getSource())));
+	}
+
 	private void _assert(SXPBlueprint sxpBlueprint) throws Exception {
 		Assert.assertEquals(
 			_formatJSON(sxpBlueprint),
@@ -608,32 +713,51 @@ public class SXPBlueprintSearchRequestEnhancerImplTest {
 		};
 	}
 
-	private SXPParameterDataCreator _createSXPParameterDataCreator() {
-		SXPParameterDataCreator sxpParameterDataCreator =
-			new SXPParameterDataCreator();
-
-		Language language = Mockito.mock(Language.class);
-
-		Mockito.doReturn(
-			"en_US"
-		).when(
-			language
-		).getLanguageId(
-			LocaleUtil.US
-		);
-
-		ReflectionTestUtil.setFieldValue(
-			sxpParameterDataCreator, "_sxpParameterContributors",
-			new SXPParameterContributor[] {
-				new ContextSXPParameterContributor(null, language)
-			});
-
-		return sxpParameterDataCreator;
-	}
-
 	private String _formatJSON(Object object) throws Exception {
 		return JSONUtil.toString(
 			JSONFactoryUtil.createJSONObject(String.valueOf(object)));
+	}
+
+	private ComplexQueryPart _getComplexQueryPart(SXPBlueprint sxpBlueprint)
+		throws Exception {
+
+		DTOConverter
+			<com.liferay.search.experiences.model.SXPBlueprint, SXPBlueprint>
+				dtoConverter = Mockito.mock(DTOConverter.class);
+
+		Mockito.doReturn(
+			sxpBlueprint
+		).when(
+			dtoConverter
+		).toDTO(
+			Mockito.any(com.liferay.search.experiences.model.SXPBlueprint.class)
+		);
+
+		Mockito.doReturn(
+			dtoConverter
+		).when(
+			_dtoConverterRegistry
+		).getDTOConverter(
+			Mockito.anyString()
+		);
+
+		SearchRequestBuilderFactory searchRequestBuilderFactory =
+			new SearchRequestBuilderFactoryImpl();
+
+		SearchRequest searchRequest = searchRequestBuilderFactory.builder(
+		).withSearchRequestBuilder(
+			searchRequestBuilder ->
+				_sxpBlueprintSearchRequestEnhancerImpl.enhance(
+					searchRequestBuilder,
+					Mockito.mock(
+						com.liferay.search.experiences.model.SXPBlueprint.
+							class))
+		).build();
+
+		List<ComplexQueryPart> complexQueryParts =
+			searchRequest.getComplexQueryParts();
+
+		return complexQueryParts.get(0);
 	}
 
 	private String _read() throws Exception {
@@ -659,51 +783,19 @@ public class SXPBlueprintSearchRequestEnhancerImplTest {
 		SearchRequestBuilderFactory searchRequestBuilderFactory =
 			new SearchRequestBuilderFactoryImpl();
 
-		SXPBlueprintSearchRequestEnhancerImpl
-			sxpBlueprintSearchRequestEnhancerImpl =
-				new SXPBlueprintSearchRequestEnhancerImpl();
-
-		ReflectionTestUtil.setFieldValue(
-			sxpBlueprintSearchRequestEnhancerImpl, "_aggregations",
-			new AggregationsImpl());
-		ReflectionTestUtil.setFieldValue(
-			sxpBlueprintSearchRequestEnhancerImpl,
-			"_complexQueryPartBuilderFactory",
-			new ComplexQueryPartBuilderFactoryImpl());
-		ReflectionTestUtil.setFieldValue(
-			sxpBlueprintSearchRequestEnhancerImpl, "_fieldConfigBuilderFactory",
-			new FieldConfigBuilderFactoryImpl());
-		ReflectionTestUtil.setFieldValue(
-			sxpBlueprintSearchRequestEnhancerImpl, "_geoBuilders",
-			new GeoBuildersImpl());
-		ReflectionTestUtil.setFieldValue(
-			sxpBlueprintSearchRequestEnhancerImpl, "_highlightBuilderFactory",
-			new HighlightBuilderFactoryImpl());
-		ReflectionTestUtil.setFieldValue(
-			sxpBlueprintSearchRequestEnhancerImpl, "_queries",
-			new QueriesImpl());
-		ReflectionTestUtil.setFieldValue(
-			sxpBlueprintSearchRequestEnhancerImpl, "_rescoreBuilderFactory",
-			new RescoreBuilderFactoryImpl());
-		ReflectionTestUtil.setFieldValue(
-			sxpBlueprintSearchRequestEnhancerImpl, "_scripts",
-			new ScriptsImpl());
-		ReflectionTestUtil.setFieldValue(
-			sxpBlueprintSearchRequestEnhancerImpl, "_sorts", new SortsImpl());
-		ReflectionTestUtil.setFieldValue(
-			sxpBlueprintSearchRequestEnhancerImpl, "_sxpParameterDataCreator",
-			_createSXPParameterDataCreator());
-
-		sxpBlueprintSearchRequestEnhancerImpl.activate();
-
 		return searchRequestBuilderFactory.builder(
 		).withSearchRequestBuilder(
 			searchRequestBuilderConsumers
 		).withSearchRequestBuilder(
 			searchRequestBuilder ->
-				sxpBlueprintSearchRequestEnhancerImpl.enhance(
+				_sxpBlueprintSearchRequestEnhancerImpl.enhance(
 					searchRequestBuilder, sxpBlueprint.toString())
 		).build();
 	}
+
+	private final DTOConverterRegistry _dtoConverterRegistry = Mockito.mock(
+		DTOConverterRegistry.class);
+	private SXPBlueprintSearchRequestEnhancerImpl
+		_sxpBlueprintSearchRequestEnhancerImpl;
 
 }

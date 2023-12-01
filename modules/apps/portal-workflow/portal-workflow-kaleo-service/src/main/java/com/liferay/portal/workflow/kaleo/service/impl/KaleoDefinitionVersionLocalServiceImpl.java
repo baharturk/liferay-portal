@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.impl;
@@ -26,9 +17,12 @@ import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -74,18 +68,16 @@ public class KaleoDefinitionVersionLocalServiceImpl
 
 		Date createDate = serviceContext.getCreateDate(new Date());
 		Date modifiedDate = serviceContext.getModifiedDate(new Date());
-		User user = userLocalService.getUser(serviceContext.getGuestOrUserId());
+		User user = _userLocalService.getUser(
+			serviceContext.getGuestOrUserId());
 
 		long kaleoDefinitionVersionId = counterLocalService.increment();
 
 		KaleoDefinitionVersion kaleoDefinitionVersion =
 			kaleoDefinitionVersionPersistence.create(kaleoDefinitionVersionId);
 
-		long groupId = _staging.getLiveGroupId(
-			serviceContext.getScopeGroupId());
-
-		kaleoDefinitionVersion.setGroupId(groupId);
-
+		kaleoDefinitionVersion.setGroupId(
+			_staging.getLiveGroupId(serviceContext.getScopeGroupId()));
 		kaleoDefinitionVersion.setCompanyId(user.getCompanyId());
 		kaleoDefinitionVersion.setUserId(user.getUserId());
 		kaleoDefinitionVersion.setUserName(user.getFullName());
@@ -97,18 +89,23 @@ public class KaleoDefinitionVersionLocalServiceImpl
 		kaleoDefinitionVersion.setDescription(description);
 		kaleoDefinitionVersion.setContent(content);
 		kaleoDefinitionVersion.setVersion(version);
-
-		int status = GetterUtil.getInteger(
-			serviceContext.getAttribute("status"),
-			WorkflowConstants.STATUS_APPROVED);
-
-		kaleoDefinitionVersion.setStatus(status);
-
+		kaleoDefinitionVersion.setStatus(
+			GetterUtil.getInteger(
+				serviceContext.getAttribute("status"),
+				WorkflowConstants.STATUS_APPROVED));
 		kaleoDefinitionVersion.setStatusByUserId(user.getUserId());
 		kaleoDefinitionVersion.setStatusByUserName(user.getFullName());
 		kaleoDefinitionVersion.setStatusDate(modifiedDate);
 
-		return kaleoDefinitionVersionPersistence.update(kaleoDefinitionVersion);
+		kaleoDefinitionVersion = kaleoDefinitionVersionPersistence.update(
+			kaleoDefinitionVersion);
+
+		// Resources
+
+		_resourceLocalService.addModelResources(
+			kaleoDefinitionVersion, serviceContext);
+
+		return kaleoDefinitionVersion;
 	}
 
 	@Override
@@ -128,6 +125,11 @@ public class KaleoDefinitionVersionLocalServiceImpl
 		}
 
 		kaleoDefinitionVersionPersistence.remove(kaleoDefinitionVersion);
+
+		// Resources
+
+		_resourceLocalService.deleteResource(
+			kaleoDefinitionVersion, ResourceConstants.SCOPE_INDIVIDUAL);
 
 		// Kaleo condition
 
@@ -327,7 +329,7 @@ public class KaleoDefinitionVersionLocalServiceImpl
 		long companyId, String keywords, int status, int start, int end,
 		OrderByComparator<KaleoDefinitionVersion> orderByComparator) {
 
-		List<Long> kaleoDefinitionVersionIds = getKaleoDefinitionVersionIds(
+		List<Long> kaleoDefinitionVersionIds = _getKaleoDefinitionVersionIds(
 			companyId, keywords, status);
 
 		if (kaleoDefinitionVersionIds.isEmpty()) {
@@ -349,13 +351,13 @@ public class KaleoDefinitionVersionLocalServiceImpl
 	public int getLatestKaleoDefinitionVersionsCount(
 		long companyId, String keywords, int status) {
 
-		List<Long> kaleoDefinitionVersionIds = getKaleoDefinitionVersionIds(
+		List<Long> kaleoDefinitionVersionIds = _getKaleoDefinitionVersionIds(
 			companyId, keywords, status);
 
 		return kaleoDefinitionVersionIds.size();
 	}
 
-	protected void addKeywordsCriterion(
+	private void _addKeywordsCriterion(
 		DynamicQuery dynamicQuery, String keywords) {
 
 		if (Validator.isNull(keywords)) {
@@ -373,7 +375,7 @@ public class KaleoDefinitionVersionLocalServiceImpl
 		dynamicQuery.add(junction);
 	}
 
-	protected void addStatusCriterion(DynamicQuery dynamicQuery, int status) {
+	private void _addStatusCriterion(DynamicQuery dynamicQuery, int status) {
 		if (status != WorkflowConstants.STATUS_ANY) {
 			Junction junction = RestrictionsFactoryUtil.disjunction();
 
@@ -383,7 +385,7 @@ public class KaleoDefinitionVersionLocalServiceImpl
 		}
 	}
 
-	protected List<Long> getKaleoDefinitionVersionIds(
+	private List<Long> _getKaleoDefinitionVersionIds(
 		long companyId, String keywords, int status) {
 
 		List<Long> kaleoDefinitionVersionIds = new ArrayList<>();
@@ -395,9 +397,9 @@ public class KaleoDefinitionVersionLocalServiceImpl
 
 		dynamicQuery.add(companyIdProperty.eq(companyId));
 
-		addKeywordsCriterion(dynamicQuery, keywords);
+		_addKeywordsCriterion(dynamicQuery, keywords);
 
-		addStatusCriterion(dynamicQuery, status);
+		_addStatusCriterion(dynamicQuery, status);
 
 		ProjectionList projectionList = ProjectionFactoryUtil.projectionList();
 
@@ -435,6 +437,12 @@ public class KaleoDefinitionVersionLocalServiceImpl
 	private KaleoTransitionLocalService _kaleoTransitionLocalService;
 
 	@Reference
+	private ResourceLocalService _resourceLocalService;
+
+	@Reference
 	private Staging _staging;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

@@ -1,43 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayIcon from '@clayui/icon';
 import ClayLink from '@clayui/link';
 import classNames from 'classnames';
+import {postForm, sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useContext, useEffect, useState} from 'react';
 
-import DataSetContext from '../../DataSetContext';
+import FrontendDataSetContext from '../../FrontendDataSetContext';
 import {OPEN_SIDE_PANEL} from '../../utils/eventsDefinitions';
-import {logError} from '../../utils/logError';
 import {getOpenedSidePanel} from '../../utils/sidePanels';
-
-function submit({action, data, formId, formName, formRef, namespace}) {
-	let form = formRef.current;
-
-	if (!form && (formId || (formName && namespace))) {
-		const namespacedId = formId || `${namespace}${formName}`;
-		form = document.getElementById(namespacedId);
-	}
-
-	if (form) {
-		Liferay.Util.postForm(form, {data, url: action || form.action});
-	}
-	else {
-		logError(`Form not found.`);
-	}
-}
 
 function getQueryString(key, values = []) {
 	return `?${key}=${values.join(',')}`;
@@ -56,11 +31,15 @@ function BulkActions({
 	bulkActions,
 	fluid,
 	selectAllItems,
+	selectedItems,
 	selectedItemsKey,
 	selectedItemsValue,
 	total,
 }) {
-	const {actionParameterName} = useContext(DataSetContext);
+	const {actionParameterName, onBulkActionItemClick} = useContext(
+		FrontendDataSetContext
+	);
+
 	const [
 		currentSidePanelActionPayload,
 		setCurrentSidePanelActionPayload,
@@ -70,7 +49,6 @@ function BulkActions({
 		actionDefinition,
 		formId,
 		formName,
-		formRef,
 		loadData,
 		namespace,
 		sidePanelId
@@ -96,20 +74,32 @@ function BulkActions({
 
 			setCurrentSidePanelActionPayload(sidePanelActionPayload);
 		}
-		else {
-			submit({
-				action: href,
-				data: {
-					...data,
-					[`${
-						actionParameterName || selectedItemsKey
-					}`]: selectedItemsValue.join(','),
+		else if (onBulkActionItemClick) {
+			onBulkActionItemClick({
+				action: actionDefinition,
+				loadData,
+				selectedData: {
+					items: selectedItems,
+					keyValues: selectedItemsValue,
 				},
-				formId,
-				formName,
-				formRef,
-				namespace,
 			});
+		}
+		else if (formId || (formName && namespace)) {
+			const namespacedId = formId || `${namespace}${formName}`;
+
+			const form = document.getElementById(namespacedId);
+
+			if (form) {
+				postForm(form, {
+					data: {
+						...data,
+						[`${
+							actionParameterName || selectedItemsKey
+						}`]: selectedItemsValue.join(','),
+					},
+					url: href || form.action,
+				});
+			}
 		}
 	}
 
@@ -142,15 +132,8 @@ function BulkActions({
 	);
 
 	return selectedItemsValue.length ? (
-		<DataSetContext.Consumer>
-			{({
-				formId,
-				formName,
-				formRef,
-				loadData,
-				namespace,
-				sidePanelId,
-			}) => (
+		<FrontendDataSetContext.Consumer>
+			{({formId, formName, loadData, namespace, sidePanelId}) => (
 				<nav className="management-bar management-bar-primary navbar navbar-expand-md pb-2 pt-2 subnav-tbar">
 					<div
 						className={classNames(
@@ -161,11 +144,13 @@ function BulkActions({
 						<ul className="navbar-nav">
 							<li className="nav-item">
 								<span className="text-truncate">
-									{`${
-										selectedItemsValue.length
-									} ${Liferay.Language.get(
-										'of'
-									)} ${total} Liferay.Language.get('items-selected')`}
+									{sub(
+										Liferay.Language.get(
+											'x-of-x-items-selected'
+										),
+										selectedItemsValue.length,
+										total
+									)}
 								</span>
 
 								<ClayLink
@@ -194,7 +179,6 @@ function BulkActions({
 											actionDefinition,
 											formId,
 											formName,
-											formRef,
 											loadData,
 											namespace,
 											sidePanelId
@@ -209,7 +193,7 @@ function BulkActions({
 					</div>
 				</nav>
 			)}
-		</DataSetContext.Consumer>
+		</FrontendDataSetContext.Consumer>
 	) : null;
 }
 

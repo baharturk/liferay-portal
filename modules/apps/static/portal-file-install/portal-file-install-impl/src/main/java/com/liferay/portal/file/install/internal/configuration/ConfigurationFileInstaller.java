@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.file.install.internal.configuration;
@@ -18,9 +9,10 @@ import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.file.install.FileInstaller;
-import com.liferay.portal.file.install.internal.DirectoryWatcher;
-import com.liferay.portal.file.install.internal.properties.ConfigurationProperties;
-import com.liferay.portal.file.install.internal.properties.ConfigurationPropertiesFactory;
+import com.liferay.portal.file.install.constants.FileInstallConstants;
+import com.liferay.portal.file.install.internal.Util;
+import com.liferay.portal.file.install.properties.ConfigurationProperties;
+import com.liferay.portal.file.install.properties.ConfigurationPropertiesFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
@@ -29,12 +21,12 @@ import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
 
-import java.net.URI;
 import java.net.URL;
 
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Objects;
+import java.util.Set;
 
 import org.osgi.framework.Constants;
 import org.osgi.service.cm.Configuration;
@@ -50,10 +42,19 @@ public class ConfigurationFileInstaller implements FileInstaller {
 
 		_configurationAdmin = configurationAdmin;
 		_encoding = encoding;
+
+		_configsDirPath = Util.getFilePath(
+			PropsValues.MODULE_FRAMEWORK_CONFIGS_DIR);
 	}
 
 	@Override
 	public boolean canTransformURL(File file) {
+		if (!Objects.equals(
+				_configsDirPath, Util.getFilePath(file.getParent()))) {
+
+			return false;
+		}
+
 		String name = file.getName();
 
 		if (name.endsWith(".config")) {
@@ -88,7 +89,17 @@ public class ConfigurationFileInstaller implements FileInstaller {
 		String[] pid = _parsePid(file.getName());
 
 		Configuration configuration = _getConfiguration(
-			_toConfigKey(file), pid[0], pid[1]);
+			file.getName(), pid[0], pid[1]);
+
+		Set<Configuration.ConfigurationAttribute> configurationAttributes =
+			configuration.getAttributes();
+
+		if (configurationAttributes.contains(
+				Configuration.ConfigurationAttribute.READ_ONLY)) {
+
+			configuration.removeAttributes(
+				Configuration.ConfigurationAttribute.READ_ONLY);
+		}
 
 		Dictionary<String, Object> properties = configuration.getProperties();
 
@@ -109,7 +120,8 @@ public class ConfigurationFileInstaller implements FileInstaller {
 		String oldFileName = null;
 
 		if (old != null) {
-			oldFileName = (String)old.remove(DirectoryWatcher.FILENAME);
+			oldFileName = (String)old.remove(
+				FileInstallConstants.FELIX_FILE_INSTALL_FILENAME);
 
 			old.remove(Constants.SERVICE_PID);
 			old.remove(ConfigurationAdmin.SERVICE_FACTORYPID);
@@ -124,12 +136,17 @@ public class ConfigurationFileInstaller implements FileInstaller {
 			}
 		}
 
-		String currentFileName = _toConfigKey(file);
+		String currentFileName = file.getName();
 
 		if (!_equals(dictionary, old) ||
-			!Objects.equals(oldFileName, currentFileName)) {
+			!Objects.equals(oldFileName, currentFileName) ||
+			configurationAttributes.contains(
+				Configuration.ConfigurationAttribute.READ_ONLY) ||
+			!file.canWrite()) {
 
-			dictionary.put(DirectoryWatcher.FILENAME, currentFileName);
+			dictionary.put(
+				FileInstallConstants.FELIX_FILE_INSTALL_FILENAME,
+				currentFileName);
 
 			String logString = StringPool.BLANK;
 
@@ -154,7 +171,17 @@ public class ConfigurationFileInstaller implements FileInstaller {
 				}
 			}
 
-			configuration.update(dictionary);
+			configuration.updateIfDifferent(dictionary);
+
+			if (!file.canWrite()) {
+				try {
+					configuration.addAttributes(
+						Configuration.ConfigurationAttribute.READ_ONLY);
+				}
+				catch (Throwable throwable) {
+					_log.error(throwable);
+				}
+			}
 		}
 
 		return null;
@@ -178,7 +205,7 @@ public class ConfigurationFileInstaller implements FileInstaller {
 		}
 
 		Configuration configuration = _getConfiguration(
-			_toConfigKey(file), pid[0], pid[1]);
+			file.getName(), pid[0], pid[1]);
 
 		configuration.delete();
 	}
@@ -226,7 +253,8 @@ public class ConfigurationFileInstaller implements FileInstaller {
 
 		Configuration[] configurations = _configurationAdmin.listConfigurations(
 			StringBundler.concat(
-				StringPool.OPEN_PARENTHESIS, DirectoryWatcher.FILENAME,
+				StringPool.OPEN_PARENTHESIS,
+				FileInstallConstants.FELIX_FILE_INSTALL_FILENAME,
 				StringPool.EQUAL, _escapeFilterValue(fileName),
 				StringPool.CLOSE_PARENTHESIS));
 
@@ -279,17 +307,10 @@ public class ConfigurationFileInstaller implements FileInstaller {
 		return new String[] {pid, null};
 	}
 
-	private String _toConfigKey(File file) {
-		file = file.getAbsoluteFile();
-
-		URI uri = file.toURI();
-
-		return uri.toString();
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		ConfigurationFileInstaller.class);
 
+	private final String _configsDirPath;
 	private final ConfigurationAdmin _configurationAdmin;
 	private final String _encoding;
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.portlet;
@@ -18,7 +9,6 @@ import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.util.Portal;
 
 import java.io.IOException;
 
@@ -42,8 +32,6 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.css-class-wrapper=portlet-document-library",
 		"com.liferay.portlet.display-category=category.cms",
 		"com.liferay.portlet.display-category=category.highlighted",
-		"com.liferay.portlet.footer-portlet-javascript=/document_library/js/legacy/main.js",
-		"com.liferay.portlet.footer-portlet-javascript=/document_library/js/legacy/upload.js",
 		"com.liferay.portlet.header-portlet-css=/document_library/css/main.css",
 		"com.liferay.portlet.icon=/document_library/icons/document_library.png",
 		"com.liferay.portlet.instanceable=true",
@@ -65,7 +53,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.security-role-ref=guest,power-user,user",
 		"javax.portlet.supported-public-render-parameter=categoryId",
 		"javax.portlet.supported-public-render-parameter=resetCur",
-		"javax.portlet.supported-public-render-parameter=tag"
+		"javax.portlet.supported-public-render-parameter=tag",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -81,17 +70,12 @@ public class DLPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.document.library.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
-	)
-	protected void setRelease(Release release) {
-	}
-
 	@Reference
 	private ItemSelector _itemSelector;
 
-	@Reference
-	private Portal _portal;
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.document.library.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))"
+	)
+	private Release _release;
 
 }

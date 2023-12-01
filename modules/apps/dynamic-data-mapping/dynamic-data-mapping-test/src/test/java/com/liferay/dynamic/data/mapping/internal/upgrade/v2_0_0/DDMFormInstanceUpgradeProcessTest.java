@@ -1,50 +1,49 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v2_0_0;
 
+import com.liferay.dynamic.data.mapping.BaseDDMTestCase;
 import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.model.impl.ResourceActionImpl;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.List;
 import java.util.function.Supplier;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Pedro Queiroz
  */
-@RunWith(PowerMockRunner.class)
-public class DDMFormInstanceUpgradeProcessTest extends PowerMockito {
+public class DDMFormInstanceUpgradeProcessTest extends BaseDDMTestCase {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
+	@Override
 	public void setUp() throws Exception {
+		setUpPropsUtil();
+
 		_setUpDDMFormInstanceUpgradeProcess();
 	}
 
 	@Test
-	public void testGetNewActionIds1() throws Exception {
+	public void testGetNewActionIds1() {
 		_mockResourceActionLocalService(
 			"RecordSet", this::_createRecorSetResourceActionList,
 			"FormInstance", this::_createFormInstanceResourceActionList);
@@ -60,7 +59,7 @@ public class DDMFormInstanceUpgradeProcessTest extends PowerMockito {
 	}
 
 	@Test
-	public void testGetNewActionIds2() throws Exception {
+	public void testGetNewActionIds2() {
 		_mockResourceActionLocalService(
 			"RecordSet", this::_createRecorSetResourceActionList,
 			"FormInstance", this::_createFormInstanceResourceActionList);
@@ -105,35 +104,32 @@ public class DDMFormInstanceUpgradeProcessTest extends PowerMockito {
 	}
 
 	private void _mockResourceActionLocalService(
-			String oldName,
-			Supplier<List<ResourceAction>> oldResourceActionListSupplier,
-			String newName,
-			Supplier<List<ResourceAction>> newResourceActionListSupplier)
-		throws Exception {
+		String oldName,
+		Supplier<List<ResourceAction>> oldResourceActionListSupplier,
+		String newName,
+		Supplier<List<ResourceAction>> newResourceActionListSupplier) {
 
-		ResourceActionLocalService resourceActionLocalService = mock(
+		ResourceActionLocalService resourceActionLocalService = Mockito.mock(
 			ResourceActionLocalService.class);
 
-		when(
-			resourceActionLocalService.getResourceActions(Matchers.eq(oldName))
+		Mockito.when(
+			resourceActionLocalService.getResourceActions(Mockito.eq(oldName))
 		).thenReturn(
 			oldResourceActionListSupplier.get()
 		);
 
-		when(
-			resourceActionLocalService.getResourceActions(Matchers.eq(newName))
+		Mockito.when(
+			resourceActionLocalService.getResourceActions(Mockito.eq(newName))
 		).thenReturn(
 			newResourceActionListSupplier.get()
 		);
 
-		field(
-			DDMFormInstanceUpgradeProcess.class, "_resourceActionLocalService"
-		).set(
-			_ddmFormInstanceUpgradeProcess, resourceActionLocalService
-		);
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormInstanceUpgradeProcess, "_resourceActionLocalService",
+			resourceActionLocalService);
 	}
 
-	private void _setUpDDMFormInstanceUpgradeProcess() throws Exception {
+	private void _setUpDDMFormInstanceUpgradeProcess() {
 		_ddmFormInstanceUpgradeProcess = new DDMFormInstanceUpgradeProcess(
 			null, null, null, null, null);
 	}

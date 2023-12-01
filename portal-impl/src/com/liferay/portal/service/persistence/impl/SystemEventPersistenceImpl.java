@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -48,7 +39,6 @@ import com.liferay.portal.model.impl.SystemEventModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -189,7 +179,7 @@ public class SystemEventPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SystemEvent>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SystemEvent systemEvent : list) {
@@ -556,7 +546,8 @@ public class SystemEventPersistenceImpl
 
 			finderArgs = new Object[] {groupId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -706,7 +697,7 @@ public class SystemEventPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SystemEvent>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SystemEvent systemEvent : list) {
@@ -1105,7 +1096,8 @@ public class SystemEventPersistenceImpl
 
 			finderArgs = new Object[] {groupId, systemEventSetKey};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1268,7 +1260,7 @@ public class SystemEventPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SystemEvent>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SystemEvent systemEvent : list) {
@@ -1688,7 +1680,8 @@ public class SystemEventPersistenceImpl
 
 			finderArgs = new Object[] {groupId, classNameId, classPK};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1866,7 +1859,7 @@ public class SystemEventPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SystemEvent>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SystemEvent systemEvent : list) {
@@ -2313,7 +2306,8 @@ public class SystemEventPersistenceImpl
 
 			finderArgs = new Object[] {groupId, classNameId, classPK, type};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2714,7 +2708,9 @@ public class SystemEventPersistenceImpl
 	 */
 	@Override
 	public SystemEvent fetchByPrimaryKey(Serializable primaryKey) {
-		if (CTPersistenceHelperUtil.isProductionMode(SystemEvent.class)) {
+		if (CTPersistenceHelperUtil.isProductionMode(
+				SystemEvent.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -2930,7 +2926,7 @@ public class SystemEventPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SystemEvent>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3006,7 +3002,7 @@ public class SystemEventPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -3224,29 +3220,13 @@ public class SystemEventPersistenceImpl
 			},
 			new String[] {"groupId", "classNameId", "classPK", "type_"}, false);
 
-		_setSystemEventUtilPersistence(this);
+		SystemEventUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setSystemEventUtilPersistence(null);
+		SystemEventUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(SystemEventImpl.class.getName());
-	}
-
-	private void _setSystemEventUtilPersistence(
-		SystemEventPersistence systemEventPersistence) {
-
-		try {
-			Field field = SystemEventUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, systemEventPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_SYSTEMEVENT =

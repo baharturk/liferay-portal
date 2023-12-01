@@ -1,28 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.configuration.admin.web.internal.util;
 
 import com.liferay.configuration.admin.definition.ConfigurationFieldOptionsProvider;
+import com.liferay.configuration.admin.web.internal.display.context.ConfigurationScopeDisplayContext;
 import com.liferay.configuration.admin.web.internal.model.ConfigurationModel;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldType;
+import com.liferay.dynamic.data.mapping.model.DDMFormFieldValidation;
+import com.liferay.dynamic.data.mapping.model.DDMFormFieldValidationExpression;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.storage.constants.FieldConstants;
 import com.liferay.dynamic.data.mapping.util.DDMFormFactory;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
@@ -36,6 +32,8 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -44,6 +42,9 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.function.Predicate;
 
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.metatype.AttributeDefinition;
 import org.osgi.service.metatype.ObjectClassDefinition;
 
@@ -53,6 +54,9 @@ import org.osgi.service.metatype.ObjectClassDefinition;
  * @author Marcellus Tavares
  */
 public class ConfigurationModelToDDMFormConverter {
+
+	public static final String NUMBER_TYPE_VALUE_VALIDATION_EXPRESSION_NAME =
+		"numberTypeValueValidation";
 
 	public ConfigurationModelToDDMFormConverter(
 		ConfigurationModel configurationModel, Locale locale,
@@ -76,6 +80,12 @@ public class ConfigurationModelToDDMFormConverter {
 		_addRequiredDDMFormFields(ddmForm);
 		_addOptionalDDMFormFields(ddmForm);
 
+		if (_configurationModel.isReadOnly()) {
+			for (DDMFormField ddmFormField : ddmForm.getDDMFormFields()) {
+				ddmFormField.setReadOnly(true);
+			}
+		}
+
 		return ddmForm;
 	}
 
@@ -90,8 +100,7 @@ public class ConfigurationModelToDDMFormConverter {
 			}
 			catch (IllegalArgumentException illegalArgumentException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(
-						illegalArgumentException, illegalArgumentException);
+					_log.debug(illegalArgumentException);
 				}
 			}
 		}
@@ -109,9 +118,8 @@ public class ConfigurationModelToDDMFormConverter {
 			pid = _configurationModel.getFactoryPid();
 		}
 
-		return ConfigurationFieldOptionsProviderUtil.
-			getConfigurationFieldOptionsProvider(
-				pid, attributeDefinition.getID());
+		return _serviceTrackerMap.getService(
+			_getKey(pid, attributeDefinition.getID()));
 	}
 
 	protected String getDDMFormFieldDataType(
@@ -170,13 +178,38 @@ public class ConfigurationModelToDDMFormConverter {
 		ConfigurationFieldOptionsProvider configurationFieldOptionsProvider =
 			getConfigurationFieldOptionsProvider(attributeDefinition);
 
-		if (!SetUtil.isEmpty(ddmFormFieldOptions.getOptionsValues()) ||
+		if (SetUtil.isNotEmpty(ddmFormFieldOptions.getOptionsValues()) ||
 			(configurationFieldOptionsProvider != null)) {
 
 			return DDMFormFieldType.SELECT;
 		}
 
 		return DDMFormFieldType.TEXT;
+	}
+
+	private static String _getKey(String configurationPid, String fieldName) {
+		return StringBundler.concat(
+			configurationPid, StringPool.POUND, fieldName);
+	}
+
+	private static Collection<String> _getPropertyValues(
+		ServiceReference<?> serviceReference, String name) {
+
+		Object propertyValue = serviceReference.getProperty(name);
+
+		if (propertyValue == null) {
+			return Collections.emptyList();
+		}
+
+		if (propertyValue instanceof Collection) {
+			return (Collection<String>)propertyValue;
+		}
+
+		if (propertyValue instanceof Object[]) {
+			return Arrays.asList((String[])propertyValue);
+		}
+
+		return Arrays.asList((String)propertyValue);
 	}
 
 	private void _addDDMFormFields(
@@ -192,10 +225,8 @@ public class ConfigurationModelToDDMFormConverter {
 
 		for (AttributeDefinition attributeDefinition : attributeDefinitions) {
 			if (!ddmFormFieldsMap.containsKey(attributeDefinition.getID())) {
-				DDMFormField ddmFormField = _getDDMFormField(
-					attributeDefinition, required);
-
-				ddmForm.addDDMFormField(ddmFormField);
+				ddmForm.addDDMFormField(
+					_getDDMFormField(attributeDefinition, required));
 			}
 		}
 	}
@@ -265,7 +296,9 @@ public class ConfigurationModelToDDMFormConverter {
 			attributeDefinition, ddmFormFieldOptions);
 
 		DDMFormField ddmFormField = new DDMFormField(
-			attributeDefinition.getID(), type);
+			DDMFormFieldNameUtil.normalizeFieldName(
+				attributeDefinition.getID()),
+			type);
 
 		_setDDMFormFieldDataType(attributeDefinition, ddmFormField);
 		_setDDMFormFieldLabel(attributeDefinition, ddmFormField);
@@ -274,8 +307,10 @@ public class ConfigurationModelToDDMFormConverter {
 		_setDDMFormFieldReadOnly(attributeDefinition, ddmFormField);
 		_setDDMFormFieldRequired(ddmFormField, required);
 		_setDDMFormFieldTip(attributeDefinition, ddmFormField);
+		_setDDMFormFieldValidation(ddmFormField);
 		_setDDMFormFieldVisibilityExpression(attributeDefinition, ddmFormField);
 
+		ddmFormField.setFieldReference(attributeDefinition.getID());
 		ddmFormField.setLocalizable(true);
 		ddmFormField.setShowLabel(true);
 
@@ -442,6 +477,60 @@ public class ConfigurationModelToDDMFormConverter {
 		ddmFormField.setTip(tip);
 	}
 
+	private void _setDDMFormFieldValidation(DDMFormField ddmFormField) {
+		String dataType = ddmFormField.getDataType();
+
+		String maxNumericValue = null;
+
+		if (dataType.equals(FieldConstants.DOUBLE)) {
+			maxNumericValue = String.valueOf(Double.MAX_VALUE);
+		}
+		else if (dataType.equals(FieldConstants.FLOAT)) {
+			maxNumericValue = String.valueOf(Float.MAX_VALUE);
+		}
+		else if (dataType.equals(FieldConstants.INTEGER)) {
+			maxNumericValue = String.valueOf(Integer.MAX_VALUE);
+		}
+		else if (dataType.equals(FieldConstants.LONG)) {
+			maxNumericValue = String.valueOf(Long.MAX_VALUE);
+		}
+		else if (dataType.equals(FieldConstants.SHORT)) {
+			maxNumericValue = String.valueOf(Short.MAX_VALUE);
+		}
+
+		if (maxNumericValue == null) {
+			return;
+		}
+
+		DDMFormFieldValidation ddmFormFieldValidation =
+			new DDMFormFieldValidation();
+
+		LocalizedValue errorMessageLocalizedValue = new LocalizedValue();
+
+		errorMessageLocalizedValue.addString(
+			_locale,
+			LanguageUtil.format(
+				_locale, "please-enter-a-value-less-than-or-equal-to-x",
+				maxNumericValue));
+
+		ddmFormFieldValidation.setErrorMessageLocalizedValue(
+			errorMessageLocalizedValue);
+
+		DDMFormFieldValidationExpression ddmFormFieldValidationExpression =
+			new DDMFormFieldValidationExpression();
+
+		ddmFormFieldValidationExpression.setName(
+			NUMBER_TYPE_VALUE_VALIDATION_EXPRESSION_NAME);
+		ddmFormFieldValidationExpression.setValue(
+			StringBundler.concat(
+				"(", ddmFormField.getName(), "<=", maxNumericValue, ")"));
+
+		ddmFormFieldValidation.setDDMFormFieldValidationExpression(
+			ddmFormFieldValidationExpression);
+
+		ddmFormField.setDDMFormFieldValidation(ddmFormFieldValidation);
+	}
+
 	private void _setDDMFormFieldVisibilityExpression(
 		AttributeDefinition attributeDefinition, DDMFormField ddmFormField) {
 
@@ -453,6 +542,27 @@ public class ConfigurationModelToDDMFormConverter {
 		if (ArrayUtil.contains(hiddenFieldKeys, attributeDefinition.getID()) ||
 			ArrayUtil.contains(
 				hiddenFieldKeys, attributeDefinition.getName())) {
+
+			ddmFormField.setVisibilityExpression("FALSE");
+
+			return;
+		}
+
+		ConfigurationScopeDisplayContext configurationScopeDisplayContext =
+			_configurationModel.getConfigurationScopeDisplayContext();
+
+		Map<String, String> extensionAttributes = _getExtensionAttributes(
+			attributeDefinition);
+
+		if ((configurationScopeDisplayContext != null) &&
+			(!ConfigurationVisibilityUtil.isVisibleByFeatureFlagKey(
+				extensionAttributes.get("featureFlagKey"),
+				configurationScopeDisplayContext.getScope(),
+				configurationScopeDisplayContext.getScopePK()) ||
+			 !ConfigurationVisibilityUtil.isVisibleByVisibilityControllerKey(
+				 extensionAttributes.get("visibility-controller-key"),
+				 configurationScopeDisplayContext.getScope(),
+				 configurationScopeDisplayContext.getScopePK()))) {
 
 			ddmFormField.setVisibilityExpression("FALSE");
 		}
@@ -486,6 +596,35 @@ public class ConfigurationModelToDDMFormConverter {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ConfigurationModelToDDMFormConverter.class);
+
+	private static final ServiceTrackerMap
+		<String, ConfigurationFieldOptionsProvider> _serviceTrackerMap;
+
+	static {
+		Bundle bundle = FrameworkUtil.getBundle(
+			ConfigurationModelToDDMFormConverter.class);
+
+		_serviceTrackerMap =
+			(ServiceTrackerMap<String, ConfigurationFieldOptionsProvider>)
+				(ServiceTrackerMap)ServiceTrackerMapFactory.openSingleValueMap(
+					bundle.getBundleContext(),
+					ConfigurationFieldOptionsProvider.class, null,
+					(serviceReference, emitter) -> {
+						for (String configurationPid :
+								_getPropertyValues(
+									serviceReference, "configuration.pid")) {
+
+							for (String fieldName :
+									_getPropertyValues(
+										serviceReference,
+										"configuration.field.name")) {
+
+								emitter.emit(
+									_getKey(configurationPid, fieldName));
+							}
+						}
+					});
+	}
 
 	private final ConfigurationModel _configurationModel;
 	private final Locale _locale;

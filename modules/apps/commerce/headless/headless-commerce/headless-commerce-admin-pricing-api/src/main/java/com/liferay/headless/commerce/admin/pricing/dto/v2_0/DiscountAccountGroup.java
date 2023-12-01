@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.dto.v2_0;
@@ -49,7 +40,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Generated("")
 @GraphQLName("DiscountAccountGroup")
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"accountGroupId", "discountId"})
+@Schema(requiredProperties = {"accountGroupId"})
 @XmlRootElement(name = "DiscountAccountGroup")
 public class DiscountAccountGroup implements Serializable {
 
@@ -64,17 +55,18 @@ public class DiscountAccountGroup implements Serializable {
 
 	@Schema
 	@Valid
-	public AccountGroup getAccountGroup() {
+	public PricingAccountGroup getAccountGroup() {
 		return accountGroup;
 	}
 
-	public void setAccountGroup(AccountGroup accountGroup) {
+	public void setAccountGroup(PricingAccountGroup accountGroup) {
 		this.accountGroup = accountGroup;
 	}
 
 	@JsonIgnore
 	public void setAccountGroup(
-		UnsafeSupplier<AccountGroup, Exception> accountGroupUnsafeSupplier) {
+		UnsafeSupplier<PricingAccountGroup, Exception>
+			accountGroupUnsafeSupplier) {
 
 		try {
 			accountGroup = accountGroupUnsafeSupplier.get();
@@ -89,9 +81,9 @@ public class DiscountAccountGroup implements Serializable {
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
-	protected AccountGroup accountGroup;
+	protected PricingAccountGroup accountGroup;
 
-	@Schema
+	@Schema(example = "PAB-34098-789-N")
 	public String getAccountGroupExternalReferenceCode() {
 		return accountGroupExternalReferenceCode;
 	}
@@ -125,7 +117,7 @@ public class DiscountAccountGroup implements Serializable {
 	protected String accountGroupExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getAccountGroupId() {
 		return accountGroupId;
 	}
@@ -185,7 +177,7 @@ public class DiscountAccountGroup implements Serializable {
 	protected Map<String, Map<String, String>> actions;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30643")
 	public Long getDiscountAccountGroupId() {
 		return discountAccountGroupId;
 	}
@@ -213,7 +205,7 @@ public class DiscountAccountGroup implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long discountAccountGroupId;
 
-	@Schema
+	@Schema(example = "DAB-34098-789-N")
 	public String getDiscountExternalReferenceCode() {
 		return discountExternalReferenceCode;
 	}
@@ -246,7 +238,7 @@ public class DiscountAccountGroup implements Serializable {
 	protected String discountExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30324")
 	public Long getDiscountId() {
 		return discountId;
 	}
@@ -271,8 +263,7 @@ public class DiscountAccountGroup implements Serializable {
 	}
 
 	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	@NotNull
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long discountId;
 
 	@Override
@@ -475,5 +466,7 @@ public class DiscountAccountGroup implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

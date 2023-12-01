@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.search;
@@ -36,17 +27,17 @@ import org.apache.lucene.search.FuzzyQuery;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.xcontent.ToXContent;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.search.MatchQueryParser;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.profile.ProfileShardResult;
+import org.elasticsearch.search.profile.SearchProfileShardResult;
 import org.elasticsearch.search.profile.query.QueryProfileShardResult;
+import org.elasticsearch.xcontent.ToXContent;
+import org.elasticsearch.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentFactory;
+import org.elasticsearch.xcontent.XContentType;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -66,6 +57,8 @@ public class CommonSearchResponseAssemblerImpl
 
 		_setExecutionProfile(searchResponse, baseSearchResponse);
 		_setExecutionTime(searchResponse, baseSearchResponse);
+		_setPointInTimeId(searchResponse, baseSearchResponse);
+		_setScrollId(searchResponse, baseSearchResponse);
 		_setSearchRequestString(searchSourceBuilder, baseSearchResponse);
 		setSearchResponseString(
 			searchResponse, baseSearchRequest, baseSearchResponse);
@@ -87,18 +80,13 @@ public class CommonSearchResponseAssemblerImpl
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setStatsTranslator(StatsTranslator statsTranslator) {
-		_statsTranslator = statsTranslator;
-	}
-
 	protected String toString(SearchSourceBuilder searchSourceBuilder) {
 		try {
 			return searchSourceBuilder.toString();
 		}
 		catch (ElasticsearchException elasticsearchException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(elasticsearchException, elasticsearchException);
+				_log.debug(elasticsearchException);
 			}
 
 			return elasticsearchException.getMessage();
@@ -134,15 +122,15 @@ public class CommonSearchResponseAssemblerImpl
 		",\"zero_terms_query\":\"" + MatchQueryParser.DEFAULT_ZERO_TERMS_QUERY +
 			"\"";
 
-	private String _getProfileShardResultString(
-			ProfileShardResult profileShardResult)
+	private String _getSearchProfileShardResultString(
+			SearchProfileShardResult searchProfileShardResult)
 		throws IOException {
 
 		XContentBuilder xContentBuilder = XContentFactory.contentBuilder(
 			XContentType.JSON);
 
 		List<QueryProfileShardResult> queryProfileShardResults =
-			profileShardResult.getQueryProfileResults();
+			searchProfileShardResult.getQueryProfileResults();
 
 		queryProfileShardResults.forEach(
 			queryProfileShardResult -> {
@@ -156,7 +144,7 @@ public class CommonSearchResponseAssemblerImpl
 				}
 				catch (IOException ioException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(ioException, ioException);
+						_log.debug(ioException);
 					}
 				}
 			});
@@ -167,25 +155,26 @@ public class CommonSearchResponseAssemblerImpl
 	private void _setExecutionProfile(
 		SearchResponse searchResponse, BaseSearchResponse baseSearchResponse) {
 
-		Map<String, ProfileShardResult> profileShardResults =
+		Map<String, SearchProfileShardResult> searchProfileShardResults =
 			searchResponse.getProfileResults();
 
-		if (MapUtil.isEmpty(profileShardResults)) {
+		if (MapUtil.isEmpty(searchProfileShardResults)) {
 			return;
 		}
 
 		Map<String, String> executionProfile = new HashMap<>();
 
-		profileShardResults.forEach(
-			(shardKey, profileShardResult) -> {
+		searchProfileShardResults.forEach(
+			(shardKey, searchProfileShardResult) -> {
 				try {
 					executionProfile.put(
 						shardKey,
-						_getProfileShardResultString(profileShardResult));
+						_getSearchProfileShardResultString(
+							searchProfileShardResult));
 				}
 				catch (IOException ioException) {
 					if (_log.isInfoEnabled()) {
-						_log.info(ioException, ioException);
+						_log.info(ioException);
 					}
 				}
 			});
@@ -199,6 +188,22 @@ public class CommonSearchResponseAssemblerImpl
 		TimeValue tookTimeValue = searchResponse.getTook();
 
 		baseSearchResponse.setExecutionTime(tookTimeValue.getMillis());
+	}
+
+	private void _setPointInTimeId(
+		SearchResponse searchResponse, BaseSearchResponse baseSearchResponse) {
+
+		if (searchResponse.pointInTimeId() != null) {
+			baseSearchResponse.setPointInTimeId(searchResponse.pointInTimeId());
+		}
+	}
+
+	private void _setScrollId(
+		SearchResponse searchResponse, BaseSearchResponse baseSearchResponse) {
+
+		if (searchResponse.getScrollId() != null) {
+			baseSearchResponse.setScrollId(searchResponse.getScrollId());
+		}
 	}
 
 	private void _setSearchRequestString(
@@ -261,6 +266,7 @@ public class CommonSearchResponseAssemblerImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommonSearchResponseAssemblerImpl.class);
 
+	@Reference
 	private StatsTranslator _statsTranslator;
 
 }

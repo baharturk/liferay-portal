@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.order.resource.v1_0.test;
@@ -28,6 +19,8 @@ import com.liferay.headless.commerce.admin.order.client.pagination.Page;
 import com.liferay.headless.commerce.admin.order.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderItemResource;
 import com.liferay.headless.commerce.admin.order.client.serdes.v1_0.OrderItemSerDes;
+import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -42,32 +35,35 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 
-import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
@@ -186,9 +182,11 @@ public abstract class BaseOrderItemResourceTestCase {
 		orderItem.setOptions(regex);
 		orderItem.setOrderExternalReferenceCode(regex);
 		orderItem.setPrintedNote(regex);
+		orderItem.setReplacedSku(regex);
 		orderItem.setSku(regex);
 		orderItem.setSkuExternalReferenceCode(regex);
 		orderItem.setUnitOfMeasure(regex);
+		orderItem.setUnitOfMeasureKey(regex);
 
 		String json = OrderItemSerDes.toJSON(orderItem);
 
@@ -202,9 +200,347 @@ public abstract class BaseOrderItemResourceTestCase {
 		Assert.assertEquals(regex, orderItem.getOptions());
 		Assert.assertEquals(regex, orderItem.getOrderExternalReferenceCode());
 		Assert.assertEquals(regex, orderItem.getPrintedNote());
+		Assert.assertEquals(regex, orderItem.getReplacedSku());
 		Assert.assertEquals(regex, orderItem.getSku());
 		Assert.assertEquals(regex, orderItem.getSkuExternalReferenceCode());
 		Assert.assertEquals(regex, orderItem.getUnitOfMeasure());
+		Assert.assertEquals(regex, orderItem.getUnitOfMeasureKey());
+	}
+
+	@Test
+	public void testGetOrderItemsPage() throws Exception {
+		Page<OrderItem> page = orderItemResource.getOrderItemsPage(
+			null, null, Pagination.of(1, 10), null);
+
+		long totalCount = page.getTotalCount();
+
+		OrderItem orderItem1 = testGetOrderItemsPage_addOrderItem(
+			randomOrderItem());
+
+		OrderItem orderItem2 = testGetOrderItemsPage_addOrderItem(
+			randomOrderItem());
+
+		page = orderItemResource.getOrderItemsPage(
+			null, null, Pagination.of(1, 10), null);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(orderItem1, (List<OrderItem>)page.getItems());
+		assertContains(orderItem2, (List<OrderItem>)page.getItems());
+		assertValid(page, testGetOrderItemsPage_getExpectedActions());
+
+		orderItemResource.deleteOrderItem(orderItem1.getId());
+
+		orderItemResource.deleteOrderItem(orderItem2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetOrderItemsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	@Test
+	public void testGetOrderItemsPageWithFilterDateTimeEquals()
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(
+			EntityField.Type.DATE_TIME);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		OrderItem orderItem1 = randomOrderItem();
+
+		orderItem1 = testGetOrderItemsPage_addOrderItem(orderItem1);
+
+		for (EntityField entityField : entityFields) {
+			Page<OrderItem> page = orderItemResource.getOrderItemsPage(
+				null, getFilterString(entityField, "between", orderItem1),
+				Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(orderItem1),
+				(List<OrderItem>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetOrderItemsPageWithFilterDoubleEquals() throws Exception {
+		testGetOrderItemsPageWithFilter("eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetOrderItemsPageWithFilterStringContains()
+		throws Exception {
+
+		testGetOrderItemsPageWithFilter("contains", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetOrderItemsPageWithFilterStringEquals() throws Exception {
+		testGetOrderItemsPageWithFilter("eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetOrderItemsPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetOrderItemsPageWithFilter("startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetOrderItemsPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		OrderItem orderItem1 = testGetOrderItemsPage_addOrderItem(
+			randomOrderItem());
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OrderItem orderItem2 = testGetOrderItemsPage_addOrderItem(
+			randomOrderItem());
+
+		for (EntityField entityField : entityFields) {
+			Page<OrderItem> page = orderItemResource.getOrderItemsPage(
+				null, getFilterString(entityField, operator, orderItem1),
+				Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(orderItem1),
+				(List<OrderItem>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetOrderItemsPageWithPagination() throws Exception {
+		Page<OrderItem> orderItemPage = orderItemResource.getOrderItemsPage(
+			null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(orderItemPage.getTotalCount());
+
+		OrderItem orderItem1 = testGetOrderItemsPage_addOrderItem(
+			randomOrderItem());
+
+		OrderItem orderItem2 = testGetOrderItemsPage_addOrderItem(
+			randomOrderItem());
+
+		OrderItem orderItem3 = testGetOrderItemsPage_addOrderItem(
+			randomOrderItem());
+
+		Page<OrderItem> page1 = orderItemResource.getOrderItemsPage(
+			null, null, Pagination.of(1, totalCount + 2), null);
+
+		List<OrderItem> orderItems1 = (List<OrderItem>)page1.getItems();
+
+		Assert.assertEquals(
+			orderItems1.toString(), totalCount + 2, orderItems1.size());
+
+		Page<OrderItem> page2 = orderItemResource.getOrderItemsPage(
+			null, null, Pagination.of(2, totalCount + 2), null);
+
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+		List<OrderItem> orderItems2 = (List<OrderItem>)page2.getItems();
+
+		Assert.assertEquals(orderItems2.toString(), 1, orderItems2.size());
+
+		Page<OrderItem> page3 = orderItemResource.getOrderItemsPage(
+			null, null, Pagination.of(1, (int)totalCount + 3), null);
+
+		assertContains(orderItem1, (List<OrderItem>)page3.getItems());
+		assertContains(orderItem2, (List<OrderItem>)page3.getItems());
+		assertContains(orderItem3, (List<OrderItem>)page3.getItems());
+	}
+
+	@Test
+	public void testGetOrderItemsPageWithSortDateTime() throws Exception {
+		testGetOrderItemsPageWithSort(
+			EntityField.Type.DATE_TIME,
+			(entityField, orderItem1, orderItem2) -> {
+				BeanTestUtil.setProperty(
+					orderItem1, entityField.getName(),
+					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetOrderItemsPageWithSortDouble() throws Exception {
+		testGetOrderItemsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, orderItem1, orderItem2) -> {
+				BeanTestUtil.setProperty(
+					orderItem1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					orderItem2, entityField.getName(), 0.5);
+			});
+	}
+
+	@Test
+	public void testGetOrderItemsPageWithSortInteger() throws Exception {
+		testGetOrderItemsPageWithSort(
+			EntityField.Type.INTEGER,
+			(entityField, orderItem1, orderItem2) -> {
+				BeanTestUtil.setProperty(orderItem1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(orderItem2, entityField.getName(), 1);
+			});
+	}
+
+	@Test
+	public void testGetOrderItemsPageWithSortString() throws Exception {
+		testGetOrderItemsPageWithSort(
+			EntityField.Type.STRING,
+			(entityField, orderItem1, orderItem2) -> {
+				Class<?> clazz = orderItem1.getClass();
+
+				String entityFieldName = entityField.getName();
+
+				Method method = clazz.getMethod(
+					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
+
+				Class<?> returnType = method.getReturnType();
+
+				if (returnType.isAssignableFrom(Map.class)) {
+					BeanTestUtil.setProperty(
+						orderItem1, entityFieldName,
+						Collections.singletonMap("Aaa", "Aaa"));
+					BeanTestUtil.setProperty(
+						orderItem2, entityFieldName,
+						Collections.singletonMap("Bbb", "Bbb"));
+				}
+				else if (entityFieldName.contains("email")) {
+					BeanTestUtil.setProperty(
+						orderItem1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+					BeanTestUtil.setProperty(
+						orderItem2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+				}
+				else {
+					BeanTestUtil.setProperty(
+						orderItem1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+					BeanTestUtil.setProperty(
+						orderItem2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+				}
+			});
+	}
+
+	protected void testGetOrderItemsPageWithSort(
+			EntityField.Type type,
+			UnsafeTriConsumer<EntityField, OrderItem, OrderItem, Exception>
+				unsafeTriConsumer)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		OrderItem orderItem1 = randomOrderItem();
+		OrderItem orderItem2 = randomOrderItem();
+
+		for (EntityField entityField : entityFields) {
+			unsafeTriConsumer.accept(entityField, orderItem1, orderItem2);
+		}
+
+		orderItem1 = testGetOrderItemsPage_addOrderItem(orderItem1);
+
+		orderItem2 = testGetOrderItemsPage_addOrderItem(orderItem2);
+
+		Page<OrderItem> page = orderItemResource.getOrderItemsPage(
+			null, null, null, null);
+
+		for (EntityField entityField : entityFields) {
+			Page<OrderItem> ascPage = orderItemResource.getOrderItemsPage(
+				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
+				entityField.getName() + ":asc");
+
+			assertContains(orderItem1, (List<OrderItem>)ascPage.getItems());
+			assertContains(orderItem2, (List<OrderItem>)ascPage.getItems());
+
+			Page<OrderItem> descPage = orderItemResource.getOrderItemsPage(
+				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
+				entityField.getName() + ":desc");
+
+			assertContains(orderItem2, (List<OrderItem>)descPage.getItems());
+			assertContains(orderItem1, (List<OrderItem>)descPage.getItems());
+		}
+	}
+
+	protected OrderItem testGetOrderItemsPage_addOrderItem(OrderItem orderItem)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetOrderItemsPage() throws Exception {
+		GraphQLField graphQLField = new GraphQLField(
+			"orderItems",
+			new HashMap<String, Object>() {
+				{
+					put("page", 1);
+					put("pageSize", 10);
+				}
+			},
+			new GraphQLField("items", getGraphQLFields()),
+			new GraphQLField("page"), new GraphQLField("totalCount"));
+
+		JSONObject orderItemsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/orderItems");
+
+		long totalCount = orderItemsJSONObject.getLong("totalCount");
+
+		OrderItem orderItem1 = testGraphQLGetOrderItemsPage_addOrderItem();
+		OrderItem orderItem2 = testGraphQLGetOrderItemsPage_addOrderItem();
+
+		orderItemsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/orderItems");
+
+		Assert.assertEquals(
+			totalCount + 2, orderItemsJSONObject.getLong("totalCount"));
+
+		assertContains(
+			orderItem1,
+			Arrays.asList(
+				OrderItemSerDes.toDTOs(
+					orderItemsJSONObject.getString("items"))));
+		assertContains(
+			orderItem2,
+			Arrays.asList(
+				OrderItemSerDes.toDTOs(
+					orderItemsJSONObject.getString("items"))));
+	}
+
+	protected OrderItem testGraphQLGetOrderItemsPage_addOrderItem()
+		throws Exception {
+
+		return testGraphQLOrderItem_addOrderItem();
 	}
 
 	@Test
@@ -262,7 +598,8 @@ public abstract class BaseOrderItemResourceTestCase {
 	public void testGraphQLGetOrderItemByExternalReferenceCode()
 		throws Exception {
 
-		OrderItem orderItem = testGraphQLOrderItem_addOrderItem();
+		OrderItem orderItem =
+			testGraphQLGetOrderItemByExternalReferenceCode_addOrderItem();
 
 		Assert.assertTrue(
 			equals(
@@ -312,9 +649,70 @@ public abstract class BaseOrderItemResourceTestCase {
 				"Object/code"));
 	}
 
+	protected OrderItem
+			testGraphQLGetOrderItemByExternalReferenceCode_addOrderItem()
+		throws Exception {
+
+		return testGraphQLOrderItem_addOrderItem();
+	}
+
 	@Test
 	public void testPatchOrderItemByExternalReferenceCode() throws Exception {
 		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testPutOrderItemByExternalReferenceCode() throws Exception {
+		OrderItem postOrderItem =
+			testPutOrderItemByExternalReferenceCode_addOrderItem();
+
+		OrderItem randomOrderItem = randomOrderItem();
+
+		OrderItem putOrderItem =
+			orderItemResource.putOrderItemByExternalReferenceCode(
+				postOrderItem.getExternalReferenceCode(), randomOrderItem);
+
+		assertEquals(randomOrderItem, putOrderItem);
+		assertValid(putOrderItem);
+
+		OrderItem getOrderItem =
+			orderItemResource.getOrderItemByExternalReferenceCode(
+				putOrderItem.getExternalReferenceCode());
+
+		assertEquals(randomOrderItem, getOrderItem);
+		assertValid(getOrderItem);
+
+		OrderItem newOrderItem =
+			testPutOrderItemByExternalReferenceCode_createOrderItem();
+
+		putOrderItem = orderItemResource.putOrderItemByExternalReferenceCode(
+			newOrderItem.getExternalReferenceCode(), newOrderItem);
+
+		assertEquals(newOrderItem, putOrderItem);
+		assertValid(putOrderItem);
+
+		getOrderItem = orderItemResource.getOrderItemByExternalReferenceCode(
+			putOrderItem.getExternalReferenceCode());
+
+		assertEquals(newOrderItem, getOrderItem);
+
+		Assert.assertEquals(
+			newOrderItem.getExternalReferenceCode(),
+			putOrderItem.getExternalReferenceCode());
+	}
+
+	protected OrderItem
+			testPutOrderItemByExternalReferenceCode_createOrderItem()
+		throws Exception {
+
+		return randomOrderItem();
+	}
+
+	protected OrderItem testPutOrderItemByExternalReferenceCode_addOrderItem()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -340,7 +738,7 @@ public abstract class BaseOrderItemResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteOrderItem() throws Exception {
-		OrderItem orderItem = testGraphQLOrderItem_addOrderItem();
+		OrderItem orderItem = testGraphQLDeleteOrderItem_addOrderItem();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -353,7 +751,6 @@ public abstract class BaseOrderItemResourceTestCase {
 							}
 						})),
 				"JSONObject/data", "Object/deleteOrderItem"));
-
 		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
@@ -367,6 +764,12 @@ public abstract class BaseOrderItemResourceTestCase {
 			"JSONArray/errors");
 
 		Assert.assertTrue(errorsJSONArray.length() > 0);
+	}
+
+	protected OrderItem testGraphQLDeleteOrderItem_addOrderItem()
+		throws Exception {
+
+		return testGraphQLOrderItem_addOrderItem();
 	}
 
 	@Test
@@ -387,7 +790,7 @@ public abstract class BaseOrderItemResourceTestCase {
 
 	@Test
 	public void testGraphQLGetOrderItem() throws Exception {
-		OrderItem orderItem = testGraphQLOrderItem_addOrderItem();
+		OrderItem orderItem = testGraphQLGetOrderItem_addOrderItem();
 
 		Assert.assertTrue(
 			equals(
@@ -426,9 +829,39 @@ public abstract class BaseOrderItemResourceTestCase {
 				"Object/code"));
 	}
 
+	protected OrderItem testGraphQLGetOrderItem_addOrderItem()
+		throws Exception {
+
+		return testGraphQLOrderItem_addOrderItem();
+	}
+
 	@Test
 	public void testPatchOrderItem() throws Exception {
 		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testPutOrderItem() throws Exception {
+		OrderItem postOrderItem = testPutOrderItem_addOrderItem();
+
+		OrderItem randomOrderItem = randomOrderItem();
+
+		OrderItem putOrderItem = orderItemResource.putOrderItem(
+			postOrderItem.getId(), randomOrderItem);
+
+		assertEquals(randomOrderItem, putOrderItem);
+		assertValid(putOrderItem);
+
+		OrderItem getOrderItem = orderItemResource.getOrderItem(
+			putOrderItem.getId());
+
+		assertEquals(randomOrderItem, getOrderItem);
+		assertValid(getOrderItem);
+	}
+
+	protected OrderItem testPutOrderItem_addOrderItem() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -444,7 +877,7 @@ public abstract class BaseOrderItemResourceTestCase {
 			orderItemResource.getOrderByExternalReferenceCodeOrderItemsPage(
 				externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantExternalReferenceCode != null) {
 			OrderItem irrelevantOrderItem =
@@ -454,14 +887,17 @@ public abstract class BaseOrderItemResourceTestCase {
 
 			page =
 				orderItemResource.getOrderByExternalReferenceCodeOrderItemsPage(
-					irrelevantExternalReferenceCode, Pagination.of(1, 2));
+					irrelevantExternalReferenceCode,
+					Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantOrderItem),
-				(List<OrderItem>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantOrderItem, (List<OrderItem>)page.getItems());
+			assertValid(
+				page,
+				testGetOrderByExternalReferenceCodeOrderItemsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		OrderItem orderItem1 =
@@ -475,16 +911,28 @@ public abstract class BaseOrderItemResourceTestCase {
 		page = orderItemResource.getOrderByExternalReferenceCodeOrderItemsPage(
 			externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(orderItem1, orderItem2),
-			(List<OrderItem>)page.getItems());
-		assertValid(page);
+		assertContains(orderItem1, (List<OrderItem>)page.getItems());
+		assertContains(orderItem2, (List<OrderItem>)page.getItems());
+		assertValid(
+			page,
+			testGetOrderByExternalReferenceCodeOrderItemsPage_getExpectedActions(
+				externalReferenceCode));
 
 		orderItemResource.deleteOrderItem(orderItem1.getId());
 
 		orderItemResource.deleteOrderItem(orderItem2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetOrderByExternalReferenceCodeOrderItemsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -493,6 +941,12 @@ public abstract class BaseOrderItemResourceTestCase {
 
 		String externalReferenceCode =
 			testGetOrderByExternalReferenceCodeOrderItemsPage_getExternalReferenceCode();
+
+		Page<OrderItem> orderItemPage =
+			orderItemResource.getOrderByExternalReferenceCodeOrderItemsPage(
+				externalReferenceCode, null);
+
+		int totalCount = GetterUtil.getInteger(orderItemPage.getTotalCount());
 
 		OrderItem orderItem1 =
 			testGetOrderByExternalReferenceCodeOrderItemsPage_addOrderItem(
@@ -508,17 +962,18 @@ public abstract class BaseOrderItemResourceTestCase {
 
 		Page<OrderItem> page1 =
 			orderItemResource.getOrderByExternalReferenceCodeOrderItemsPage(
-				externalReferenceCode, Pagination.of(1, 2));
+				externalReferenceCode, Pagination.of(1, totalCount + 2));
 
 		List<OrderItem> orderItems1 = (List<OrderItem>)page1.getItems();
 
-		Assert.assertEquals(orderItems1.toString(), 2, orderItems1.size());
+		Assert.assertEquals(
+			orderItems1.toString(), totalCount + 2, orderItems1.size());
 
 		Page<OrderItem> page2 =
 			orderItemResource.getOrderByExternalReferenceCodeOrderItemsPage(
-				externalReferenceCode, Pagination.of(2, 2));
+				externalReferenceCode, Pagination.of(2, totalCount + 2));
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<OrderItem> orderItems2 = (List<OrderItem>)page2.getItems();
 
@@ -526,11 +981,11 @@ public abstract class BaseOrderItemResourceTestCase {
 
 		Page<OrderItem> page3 =
 			orderItemResource.getOrderByExternalReferenceCodeOrderItemsPage(
-				externalReferenceCode, Pagination.of(1, 3));
+				externalReferenceCode, Pagination.of(1, (int)totalCount + 3));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(orderItem1, orderItem2, orderItem3),
-			(List<OrderItem>)page3.getItems());
+		assertContains(orderItem1, (List<OrderItem>)page3.getItems());
+		assertContains(orderItem2, (List<OrderItem>)page3.getItems());
+		assertContains(orderItem3, (List<OrderItem>)page3.getItems());
 	}
 
 	protected OrderItem
@@ -588,7 +1043,7 @@ public abstract class BaseOrderItemResourceTestCase {
 		Page<OrderItem> page = orderItemResource.getOrderIdOrderItemsPage(
 			id, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantId != null) {
 			OrderItem irrelevantOrderItem =
@@ -596,14 +1051,15 @@ public abstract class BaseOrderItemResourceTestCase {
 					irrelevantId, randomIrrelevantOrderItem());
 
 			page = orderItemResource.getOrderIdOrderItemsPage(
-				irrelevantId, Pagination.of(1, 2));
+				irrelevantId, Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantOrderItem),
-				(List<OrderItem>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantOrderItem, (List<OrderItem>)page.getItems());
+			assertValid(
+				page,
+				testGetOrderIdOrderItemsPage_getExpectedActions(irrelevantId));
 		}
 
 		OrderItem orderItem1 = testGetOrderIdOrderItemsPage_addOrderItem(
@@ -615,21 +1071,34 @@ public abstract class BaseOrderItemResourceTestCase {
 		page = orderItemResource.getOrderIdOrderItemsPage(
 			id, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(orderItem1, orderItem2),
-			(List<OrderItem>)page.getItems());
-		assertValid(page);
+		assertContains(orderItem1, (List<OrderItem>)page.getItems());
+		assertContains(orderItem2, (List<OrderItem>)page.getItems());
+		assertValid(page, testGetOrderIdOrderItemsPage_getExpectedActions(id));
 
 		orderItemResource.deleteOrderItem(orderItem1.getId());
 
 		orderItemResource.deleteOrderItem(orderItem2.getId());
 	}
 
+	protected Map<String, Map<String, String>>
+			testGetOrderIdOrderItemsPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
 	@Test
 	public void testGetOrderIdOrderItemsPageWithPagination() throws Exception {
 		Long id = testGetOrderIdOrderItemsPage_getId();
+
+		Page<OrderItem> orderItemPage =
+			orderItemResource.getOrderIdOrderItemsPage(id, null);
+
+		int totalCount = GetterUtil.getInteger(orderItemPage.getTotalCount());
 
 		OrderItem orderItem1 = testGetOrderIdOrderItemsPage_addOrderItem(
 			id, randomOrderItem());
@@ -641,27 +1110,28 @@ public abstract class BaseOrderItemResourceTestCase {
 			id, randomOrderItem());
 
 		Page<OrderItem> page1 = orderItemResource.getOrderIdOrderItemsPage(
-			id, Pagination.of(1, 2));
+			id, Pagination.of(1, totalCount + 2));
 
 		List<OrderItem> orderItems1 = (List<OrderItem>)page1.getItems();
 
-		Assert.assertEquals(orderItems1.toString(), 2, orderItems1.size());
+		Assert.assertEquals(
+			orderItems1.toString(), totalCount + 2, orderItems1.size());
 
 		Page<OrderItem> page2 = orderItemResource.getOrderIdOrderItemsPage(
-			id, Pagination.of(2, 2));
+			id, Pagination.of(2, totalCount + 2));
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<OrderItem> orderItems2 = (List<OrderItem>)page2.getItems();
 
 		Assert.assertEquals(orderItems2.toString(), 1, orderItems2.size());
 
 		Page<OrderItem> page3 = orderItemResource.getOrderIdOrderItemsPage(
-			id, Pagination.of(1, 3));
+			id, Pagination.of(1, (int)totalCount + 3));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(orderItem1, orderItem2, orderItem3),
-			(List<OrderItem>)page3.getItems());
+		assertContains(orderItem1, (List<OrderItem>)page3.getItems());
+		assertContains(orderItem2, (List<OrderItem>)page3.getItems());
+		assertContains(orderItem3, (List<OrderItem>)page3.getItems());
 	}
 
 	protected OrderItem testGetOrderIdOrderItemsPage_addOrderItem(
@@ -701,6 +1171,9 @@ public abstract class BaseOrderItemResourceTestCase {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
+
+	@Rule
+	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	protected OrderItem testGraphQLOrderItem_addOrderItem() throws Exception {
 		throw new UnsupportedOperationException(
@@ -816,6 +1289,16 @@ public abstract class BaseOrderItemResourceTestCase {
 
 			if (Objects.equals("discountAmount", additionalAssertFieldName)) {
 				if (orderItem.getDiscountAmount() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"discountManuallyAdjusted", additionalAssertFieldName)) {
+
+				if (orderItem.getDiscountManuallyAdjusted() == null) {
 					valid = false;
 				}
 
@@ -996,6 +1479,16 @@ public abstract class BaseOrderItemResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"priceManuallyAdjusted", additionalAssertFieldName)) {
+
+				if (orderItem.getPriceManuallyAdjusted() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("printedNote", additionalAssertFieldName)) {
 				if (orderItem.getPrintedNote() == null) {
 					valid = false;
@@ -1024,6 +1517,22 @@ public abstract class BaseOrderItemResourceTestCase {
 
 			if (Objects.equals("quantity", additionalAssertFieldName)) {
 				if (orderItem.getQuantity() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("replacedSku", additionalAssertFieldName)) {
+				if (orderItem.getReplacedSku() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("replacedSkuId", additionalAssertFieldName)) {
+				if (orderItem.getReplacedSkuId() == null) {
 					valid = false;
 				}
 
@@ -1108,6 +1617,14 @@ public abstract class BaseOrderItemResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("unitOfMeasureKey", additionalAssertFieldName)) {
+				if (orderItem.getUnitOfMeasureKey() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("unitPrice", additionalAssertFieldName)) {
 				if (orderItem.getUnitPrice() == null) {
 					valid = false;
@@ -1126,6 +1643,14 @@ public abstract class BaseOrderItemResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("virtualItemURLs", additionalAssertFieldName)) {
+				if (orderItem.getVirtualItemURLs() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			throw new IllegalArgumentException(
 				"Invalid additional assert field name " +
 					additionalAssertFieldName);
@@ -1135,6 +1660,13 @@ public abstract class BaseOrderItemResourceTestCase {
 	}
 
 	protected void assertValid(Page<OrderItem> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<OrderItem> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<OrderItem> orderItems = page.getItems();
@@ -1149,6 +1681,25 @@ public abstract class BaseOrderItemResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1229,9 +1780,9 @@ public abstract class BaseOrderItemResourceTestCase {
 			}
 
 			if (Objects.equals("customFields", additionalAssertFieldName)) {
-				if (!equals(
-						(Map)orderItem1.getCustomFields(),
-						(Map)orderItem2.getCustomFields())) {
+				if (!Objects.deepEquals(
+						orderItem1.getCustomFields(),
+						orderItem2.getCustomFields())) {
 
 					return false;
 				}
@@ -1265,6 +1816,19 @@ public abstract class BaseOrderItemResourceTestCase {
 				if (!Objects.deepEquals(
 						orderItem1.getDiscountAmount(),
 						orderItem2.getDiscountAmount())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"discountManuallyAdjusted", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						orderItem1.getDiscountManuallyAdjusted(),
+						orderItem2.getDiscountManuallyAdjusted())) {
 
 					return false;
 				}
@@ -1500,6 +2064,19 @@ public abstract class BaseOrderItemResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"priceManuallyAdjusted", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						orderItem1.getPriceManuallyAdjusted(),
+						orderItem2.getPriceManuallyAdjusted())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("printedNote", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						orderItem1.getPrintedNote(),
@@ -1538,6 +2115,28 @@ public abstract class BaseOrderItemResourceTestCase {
 			if (Objects.equals("quantity", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						orderItem1.getQuantity(), orderItem2.getQuantity())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("replacedSku", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						orderItem1.getReplacedSku(),
+						orderItem2.getReplacedSku())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("replacedSkuId", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						orderItem1.getReplacedSkuId(),
+						orderItem2.getReplacedSkuId())) {
 
 					return false;
 				}
@@ -1648,6 +2247,17 @@ public abstract class BaseOrderItemResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("unitOfMeasureKey", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						orderItem1.getUnitOfMeasureKey(),
+						orderItem2.getUnitOfMeasureKey())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("unitPrice", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						orderItem1.getUnitPrice(), orderItem2.getUnitPrice())) {
@@ -1664,6 +2274,17 @@ public abstract class BaseOrderItemResourceTestCase {
 				if (!Objects.deepEquals(
 						orderItem1.getUnitPriceWithTaxAmount(),
 						orderItem2.getUnitPriceWithTaxAmount())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("virtualItemURLs", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						orderItem1.getVirtualItemURLs(),
+						orderItem2.getVirtualItemURLs())) {
 
 					return false;
 				}
@@ -1708,14 +2329,16 @@ public abstract class BaseOrderItemResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1732,6 +2355,10 @@ public abstract class BaseOrderItemResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1741,18 +2368,18 @@ public abstract class BaseOrderItemResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1784,14 +2411,57 @@ public abstract class BaseOrderItemResourceTestCase {
 		}
 
 		if (entityFieldName.equals("deliveryGroup")) {
-			sb.append("'");
-			sb.append(String.valueOf(orderItem.getDeliveryGroup()));
-			sb.append("'");
+			Object object = orderItem.getDeliveryGroup();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("discountAmount")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("discountManuallyAdjusted")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
 		}
@@ -1842,9 +2512,47 @@ public abstract class BaseOrderItemResourceTestCase {
 		}
 
 		if (entityFieldName.equals("externalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(orderItem.getExternalReferenceCode()));
-			sb.append("'");
+			Object object = orderItem.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1860,9 +2568,47 @@ public abstract class BaseOrderItemResourceTestCase {
 		}
 
 		if (entityFieldName.equals("formattedQuantity")) {
-			sb.append("'");
-			sb.append(String.valueOf(orderItem.getFormattedQuantity()));
-			sb.append("'");
+			Object object = orderItem.getFormattedQuantity();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1878,18 +2624,93 @@ public abstract class BaseOrderItemResourceTestCase {
 		}
 
 		if (entityFieldName.equals("options")) {
-			sb.append("'");
-			sb.append(String.valueOf(orderItem.getOptions()));
-			sb.append("'");
+			Object object = orderItem.getOptions();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("orderExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(orderItem.getOrderExternalReferenceCode()));
-			sb.append("'");
+			Object object = orderItem.getOrderExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1899,10 +2720,53 @@ public abstract class BaseOrderItemResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("priceManuallyAdjusted")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("printedNote")) {
-			sb.append("'");
-			sb.append(String.valueOf(orderItem.getPrintedNote()));
-			sb.append("'");
+			Object object = orderItem.getPrintedNote();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1918,6 +2782,57 @@ public abstract class BaseOrderItemResourceTestCase {
 		}
 
 		if (entityFieldName.equals("quantity")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("replacedSku")) {
+			Object object = orderItem.getReplacedSku();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("replacedSkuId")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
 		}
@@ -1972,17 +2887,93 @@ public abstract class BaseOrderItemResourceTestCase {
 		}
 
 		if (entityFieldName.equals("sku")) {
-			sb.append("'");
-			sb.append(String.valueOf(orderItem.getSku()));
-			sb.append("'");
+			Object object = orderItem.getSku();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("skuExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(orderItem.getSkuExternalReferenceCode()));
-			sb.append("'");
+			Object object = orderItem.getSkuExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1998,9 +2989,93 @@ public abstract class BaseOrderItemResourceTestCase {
 		}
 
 		if (entityFieldName.equals("unitOfMeasure")) {
-			sb.append("'");
-			sb.append(String.valueOf(orderItem.getUnitOfMeasure()));
-			sb.append("'");
+			Object object = orderItem.getUnitOfMeasure();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("unitOfMeasureKey")) {
+			Object object = orderItem.getUnitOfMeasureKey();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -2011,6 +3086,11 @@ public abstract class BaseOrderItemResourceTestCase {
 		}
 
 		if (entityFieldName.equals("unitPriceWithTaxAmount")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("virtualItemURLs")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
 		}
@@ -2062,6 +3142,7 @@ public abstract class BaseOrderItemResourceTestCase {
 				bookedQuantityId = RandomTestUtil.randomLong();
 				deliveryGroup = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
+				discountManuallyAdjusted = RandomTestUtil.randomBoolean();
 				externalReferenceCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				formattedQuantity = StringUtil.toLowerCase(
@@ -2071,11 +3152,13 @@ public abstract class BaseOrderItemResourceTestCase {
 				orderExternalReferenceCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				orderId = RandomTestUtil.randomLong();
+				priceManuallyAdjusted = RandomTestUtil.randomBoolean();
 				printedNote = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
-				quantity = RandomTestUtil.randomInt();
+				replacedSku = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				replacedSkuId = RandomTestUtil.randomLong();
 				requestedDeliveryDate = RandomTestUtil.nextDate();
-				shippedQuantity = RandomTestUtil.randomInt();
 				shippingAddressId = RandomTestUtil.randomLong();
 				sku = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				skuExternalReferenceCode = StringUtil.toLowerCase(
@@ -2083,6 +3166,8 @@ public abstract class BaseOrderItemResourceTestCase {
 				skuId = RandomTestUtil.randomLong();
 				subscription = RandomTestUtil.randomBoolean();
 				unitOfMeasure = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				unitOfMeasureKey = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 			}
 		};
@@ -2102,6 +3187,115 @@ public abstract class BaseOrderItemResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -2177,18 +3371,6 @@ public abstract class BaseOrderItemResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseOrderItemResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

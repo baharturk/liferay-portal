@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.serdes.v1_0;
 
+import com.liferay.headless.delivery.client.dto.v1_0.CustomCSSViewport;
 import com.liferay.headless.delivery.client.dto.v1_0.FragmentViewport;
 import com.liferay.headless.delivery.client.dto.v1_0.PageRowDefinition;
 import com.liferay.headless.delivery.client.dto.v1_0.RowViewport;
@@ -24,7 +16,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 import javax.annotation.Generated;
 
@@ -57,6 +48,70 @@ public class PageRowDefinitionSerDes {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("{");
+
+		if (pageRowDefinition.getCssClasses() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"cssClasses\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < pageRowDefinition.getCssClasses().length; i++) {
+				sb.append("\"");
+
+				sb.append(_escape(pageRowDefinition.getCssClasses()[i]));
+
+				sb.append("\"");
+
+				if ((i + 1) < pageRowDefinition.getCssClasses().length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		if (pageRowDefinition.getCustomCSS() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"customCSS\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(pageRowDefinition.getCustomCSS()));
+
+			sb.append("\"");
+		}
+
+		if (pageRowDefinition.getCustomCSSViewports() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"customCSSViewports\": ");
+
+			sb.append("[");
+
+			for (int i = 0;
+				 i < pageRowDefinition.getCustomCSSViewports().length; i++) {
+
+				sb.append(
+					String.valueOf(
+						pageRowDefinition.getCustomCSSViewports()[i]));
+
+				if ((i + 1) <
+						pageRowDefinition.getCustomCSSViewports().length) {
+
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
 
 		if (pageRowDefinition.getFragmentStyle() != null) {
 			if (sb.length() > 1) {
@@ -102,6 +157,16 @@ public class PageRowDefinitionSerDes {
 			sb.append(pageRowDefinition.getGutters());
 		}
 
+		if (pageRowDefinition.getIndexed() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"indexed\": ");
+
+			sb.append(pageRowDefinition.getIndexed());
+		}
+
 		if (pageRowDefinition.getModulesPerRow() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -110,6 +175,20 @@ public class PageRowDefinitionSerDes {
 			sb.append("\"modulesPerRow\": ");
 
 			sb.append(pageRowDefinition.getModulesPerRow());
+		}
+
+		if (pageRowDefinition.getName() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"name\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(pageRowDefinition.getName()));
+
+			sb.append("\"");
 		}
 
 		if (pageRowDefinition.getNumberOfColumns() != null) {
@@ -200,6 +279,32 @@ public class PageRowDefinitionSerDes {
 
 		Map<String, String> map = new TreeMap<>();
 
+		if (pageRowDefinition.getCssClasses() == null) {
+			map.put("cssClasses", null);
+		}
+		else {
+			map.put(
+				"cssClasses",
+				String.valueOf(pageRowDefinition.getCssClasses()));
+		}
+
+		if (pageRowDefinition.getCustomCSS() == null) {
+			map.put("customCSS", null);
+		}
+		else {
+			map.put(
+				"customCSS", String.valueOf(pageRowDefinition.getCustomCSS()));
+		}
+
+		if (pageRowDefinition.getCustomCSSViewports() == null) {
+			map.put("customCSSViewports", null);
+		}
+		else {
+			map.put(
+				"customCSSViewports",
+				String.valueOf(pageRowDefinition.getCustomCSSViewports()));
+		}
+
 		if (pageRowDefinition.getFragmentStyle() == null) {
 			map.put("fragmentStyle", null);
 		}
@@ -225,6 +330,13 @@ public class PageRowDefinitionSerDes {
 			map.put("gutters", String.valueOf(pageRowDefinition.getGutters()));
 		}
 
+		if (pageRowDefinition.getIndexed() == null) {
+			map.put("indexed", null);
+		}
+		else {
+			map.put("indexed", String.valueOf(pageRowDefinition.getIndexed()));
+		}
+
 		if (pageRowDefinition.getModulesPerRow() == null) {
 			map.put("modulesPerRow", null);
 		}
@@ -232,6 +344,13 @@ public class PageRowDefinitionSerDes {
 			map.put(
 				"modulesPerRow",
 				String.valueOf(pageRowDefinition.getModulesPerRow()));
+		}
+
+		if (pageRowDefinition.getName() == null) {
+			map.put("name", null);
+		}
+		else {
+			map.put("name", String.valueOf(pageRowDefinition.getName()));
 		}
 
 		if (pageRowDefinition.getNumberOfColumns() == null) {
@@ -300,7 +419,39 @@ public class PageRowDefinitionSerDes {
 			PageRowDefinition pageRowDefinition, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "fragmentStyle")) {
+			if (Objects.equals(jsonParserFieldName, "cssClasses")) {
+				if (jsonParserFieldValue != null) {
+					pageRowDefinition.setCssClasses(
+						toStrings((Object[])jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "customCSS")) {
+				if (jsonParserFieldValue != null) {
+					pageRowDefinition.setCustomCSS(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "customCSSViewports")) {
+
+				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					CustomCSSViewport[] customCSSViewportsArray =
+						new CustomCSSViewport[jsonParserFieldValues.length];
+
+					for (int i = 0; i < customCSSViewportsArray.length; i++) {
+						customCSSViewportsArray[i] =
+							CustomCSSViewportSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
+					pageRowDefinition.setCustomCSSViewports(
+						customCSSViewportsArray);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "fragmentStyle")) {
 				if (jsonParserFieldValue != null) {
 					pageRowDefinition.setFragmentStyle(
 						FragmentStyleSerDes.toDTO(
@@ -309,15 +460,20 @@ public class PageRowDefinitionSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "fragmentViewports")) {
 				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					FragmentViewport[] fragmentViewportsArray =
+						new FragmentViewport[jsonParserFieldValues.length];
+
+					for (int i = 0; i < fragmentViewportsArray.length; i++) {
+						fragmentViewportsArray[i] =
+							FragmentViewportSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
 					pageRowDefinition.setFragmentViewports(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> FragmentViewportSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new FragmentViewport[size]
-						));
+						fragmentViewportsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "gutters")) {
@@ -325,10 +481,20 @@ public class PageRowDefinitionSerDes {
 					pageRowDefinition.setGutters((Boolean)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "indexed")) {
+				if (jsonParserFieldValue != null) {
+					pageRowDefinition.setIndexed((Boolean)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "modulesPerRow")) {
 				if (jsonParserFieldValue != null) {
 					pageRowDefinition.setModulesPerRow(
 						Integer.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				if (jsonParserFieldValue != null) {
+					pageRowDefinition.setName((String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "numberOfColumns")) {
@@ -352,14 +518,18 @@ public class PageRowDefinitionSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "rowViewports")) {
 				if (jsonParserFieldValue != null) {
-					pageRowDefinition.setRowViewports(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> RowViewportSerDes.toDTO((String)object)
-						).toArray(
-							size -> new RowViewport[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					RowViewport[] rowViewportsArray =
+						new RowViewport[jsonParserFieldValues.length];
+
+					for (int i = 0; i < rowViewportsArray.length; i++) {
+						rowViewportsArray[i] = RowViewportSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					pageRowDefinition.setRowViewports(rowViewportsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "verticalAlignment")) {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service;
@@ -32,72 +23,6 @@ public class DLAppLocalServiceWrapper
 
 	public DLAppLocalServiceWrapper(DLAppLocalService dlAppLocalService) {
 		_dlAppLocalService = dlAppLocalService;
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addFileEntry(String, long, long, long, String, String,
-	 byte[], Date, Date, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.repository.model.FileEntry addFileEntry(
-			long userId, long repositoryId, long folderId,
-			String sourceFileName, String mimeType, byte[] bytes,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _dlAppLocalService.addFileEntry(
-			userId, repositoryId, folderId, sourceFileName, mimeType, bytes,
-			serviceContext);
-	}
-
-	/**
-	 * Adds a file entry and associated metadata based on a byte array.
-	 *
-	 * <p>
-	 * This method takes two file names, the <code>sourceFileName</code> and the
-	 * <code>title</code>. The <code>sourceFileName</code> corresponds to the
-	 * name of the actual file being uploaded. The <code>title</code>
-	 * corresponds to a name the client wishes to assign this file after it has
-	 * been uploaded to the portal. If it is <code>null</code>, the <code>
-	 * sourceFileName</code> will be used.
-	 * </p>
-	 *
-	 * @param userId the primary key of the file entry's creator/owner
-	 * @param repositoryId the primary key of the file entry's repository
-	 * @param folderId the primary key of the file entry's parent folder
-	 * @param sourceFileName the original file's name
-	 * @param mimeType the file's MIME type
-	 * @param title the name to be assigned to the file (optionally
-	 <code>null </code>)
-	 * @param description the file's description
-	 * @param changeLog the file's version change log
-	 * @param bytes the file's data (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied. Can set the
-	 asset category IDs, asset tag names, and expando bridge
-	 attributes for the file entry. In a Liferay repository, it
-	 may include:  <ul> <li> fileEntryTypeId - ID for a custom
-	 file entry type </li> <li> fieldsMap - mapping for fields
-	 associated with a custom file entry type </li> </ul>
-	 * @return the file entry
-	 * @throws PortalException if a portal exception occurred
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addFileEntry(String, long, long, long, String, String,
-	 String, String, String, byte[], Date, Date, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.repository.model.FileEntry addFileEntry(
-			long userId, long repositoryId, long folderId,
-			String sourceFileName, String mimeType, String title,
-			String description, String changeLog, byte[] bytes,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _dlAppLocalService.addFileEntry(
-			userId, repositoryId, folderId, sourceFileName, mimeType, title,
-			description, changeLog, bytes, serviceContext);
 	}
 
 	/**
@@ -146,58 +71,6 @@ public class DLAppLocalServiceWrapper
 		return _dlAppLocalService.addFileEntry(
 			userId, repositoryId, folderId, sourceFileName, mimeType, title,
 			description, changeLog, file, serviceContext);
-	}
-
-	/**
-	 * Adds a file entry and associated metadata based on an {@link InputStream}
-	 * object.
-	 *
-	 * <p>
-	 * This method takes two file names, the <code>sourceFileName</code> and the
-	 * <code>title</code>. The <code>sourceFileName</code> corresponds to the
-	 * name of the actual file being uploaded. The <code>title</code>
-	 * corresponds to a name the client wishes to assign this file after it has
-	 * been uploaded to the portal. If it is <code>null</code>, the <code>
-	 * sourceFileName</code> will be used.
-	 * </p>
-	 *
-	 * @param userId the primary key of the file entry's creator/owner
-	 * @param repositoryId the primary key of the repository
-	 * @param folderId the primary key of the file entry's parent folder
-	 * @param sourceFileName the original file's name
-	 * @param mimeType the file's MIME type
-	 * @param title the name to be assigned to the file (optionally
-	 <code>null </code>)
-	 * @param description the file's description
-	 * @param changeLog the file's version change log
-	 * @param inputStream the file's data (optionally <code>null</code>)
-	 * @param size the file's size (optionally <code>0</code>)
-	 * @param serviceContext the service context to be applied. Can set the
-	 asset category IDs, asset tag names, and expando bridge
-	 attributes for the file entry. In a Liferay repository, it
-	 may include:  <ul> <li> fileEntryTypeId - ID for a custom
-	 file entry type </li> <li> fieldsMap - mapping for fields
-	 associated with a custom file entry type </li> </ul>
-	 * @return the file entry
-	 * @throws PortalException if a portal exception occurred
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addFileEntry(String, long, long, long, String, String,
-	 String, String, String, InputStream, long, Date, Date,
-	 ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.repository.model.FileEntry addFileEntry(
-			long userId, long repositoryId, long folderId,
-			String sourceFileName, String mimeType, String title,
-			String description, String changeLog,
-			java.io.InputStream inputStream, long size,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _dlAppLocalService.addFileEntry(
-			userId, repositoryId, folderId, sourceFileName, mimeType, title,
-			description, changeLog, inputStream, size, serviceContext);
 	}
 
 	@Override
@@ -253,15 +126,15 @@ public class DLAppLocalServiceWrapper
 	public com.liferay.portal.kernel.repository.model.FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long repositoryId,
 			long folderId, String sourceFileName, String mimeType, String title,
-			String description, String changeLog, byte[] bytes,
+			String urlTitle, String description, String changeLog, byte[] bytes,
 			java.util.Date expirationDate, java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.addFileEntry(
 			externalReferenceCode, userId, repositoryId, folderId,
-			sourceFileName, mimeType, title, description, changeLog, bytes,
-			expirationDate, reviewDate, serviceContext);
+			sourceFileName, mimeType, title, urlTitle, description, changeLog,
+			bytes, expirationDate, reviewDate, serviceContext);
 	}
 
 	/**
@@ -302,15 +175,16 @@ public class DLAppLocalServiceWrapper
 	public com.liferay.portal.kernel.repository.model.FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long repositoryId,
 			long folderId, String sourceFileName, String mimeType, String title,
-			String description, String changeLog, java.io.File file,
-			java.util.Date expirationDate, java.util.Date reviewDate,
+			String urlTitle, String description, String changeLog,
+			java.io.File file, java.util.Date expirationDate,
+			java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.addFileEntry(
 			externalReferenceCode, userId, repositoryId, folderId,
-			sourceFileName, mimeType, title, description, changeLog, file,
-			expirationDate, reviewDate, serviceContext);
+			sourceFileName, mimeType, title, urlTitle, description, changeLog,
+			file, expirationDate, reviewDate, serviceContext);
 	}
 
 	/**
@@ -354,7 +228,7 @@ public class DLAppLocalServiceWrapper
 	public com.liferay.portal.kernel.repository.model.FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long repositoryId,
 			long folderId, String sourceFileName, String mimeType, String title,
-			String description, String changeLog,
+			String urlTitle, String description, String changeLog,
 			java.io.InputStream inputStream, long size,
 			java.util.Date expirationDate, java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -362,7 +236,7 @@ public class DLAppLocalServiceWrapper
 
 		return _dlAppLocalService.addFileEntry(
 			externalReferenceCode, userId, repositoryId, folderId,
-			sourceFileName, mimeType, title, description, changeLog,
+			sourceFileName, mimeType, title, urlTitle, description, changeLog,
 			inputStream, size, expirationDate, reviewDate, serviceContext);
 	}
 
@@ -409,14 +283,14 @@ public class DLAppLocalServiceWrapper
 	 */
 	@Override
 	public com.liferay.portal.kernel.repository.model.Folder addFolder(
-			long userId, long repositoryId, long parentFolderId, String name,
-			String description,
+			String externalReferenceCode, long userId, long repositoryId,
+			long parentFolderId, String name, String description,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.addFolder(
-			userId, repositoryId, parentFolderId, name, description,
-			serviceContext);
+			externalReferenceCode, userId, repositoryId, parentFolderId, name,
+			description, serviceContext);
 	}
 
 	/**
@@ -541,6 +415,16 @@ public class DLAppLocalServiceWrapper
 
 		return _dlAppLocalService.fetchFileEntryByExternalReferenceCode(
 			groupId, externalReferenceCode);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.repository.model.Folder
+			fetchFolderByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dlAppLocalService.fetchFolderByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -688,6 +572,16 @@ public class DLAppLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.getFolder(repositoryId, parentFolderId, name);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.repository.model.Folder
+			getFolderByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dlAppLocalService.getFolderByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -882,7 +776,8 @@ public class DLAppLocalServiceWrapper
 	@Override
 	public com.liferay.portal.kernel.repository.model.FileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog,
 			com.liferay.document.library.kernel.model.DLVersionNumberIncrease
 				dlVersionNumberIncrease,
 			byte[] bytes, java.util.Date expirationDate,
@@ -891,65 +786,9 @@ public class DLAppLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, bytes, expirationDate,
-			reviewDate, serviceContext);
-	}
-
-	/**
-	 * Updates a file entry and associated metadata based on a byte array
-	 * object. If the file data is <code>null</code>, then only the associated
-	 * metadata (i.e., <code>title</code>, <code>description</code>, and
-	 * parameters in the <code>serviceContext</code>) will be updated.
-	 *
-	 * <p>
-	 * This method takes two file names, the <code>sourceFileName</code> and the
-	 * <code>title</code>. The <code>sourceFileName</code> corresponds to the
-	 * name of the actual file being uploaded. The <code>title</code>
-	 * corresponds to a name the client wishes to assign this file after it has
-	 * been uploaded to the portal.
-	 * </p>
-	 *
-	 * @param userId the primary key of the user
-	 * @param fileEntryId the primary key of the file entry
-	 * @param sourceFileName the original file's name (optionally
-	 <code>null</code>)
-	 * @param mimeType the file's MIME type (optionally <code>null</code>)
-	 * @param title the new name to be assigned to the file (optionally <code>
-	 <code>null</code></code>)
-	 * @param description the file's new description
-	 * @param changeLog the file's version change log (optionally
-	 <code>null</code>)
-	 * @param dlVersionNumberIncrease the kind of version number increase to
-	 apply for these changes.
-	 * @param bytes the file's data (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied. Can set the
-	 asset category IDs, asset tag names, and expando bridge
-	 attributes for the file entry. In a Liferay repository, it may
-	 include:  <ul> <li> fileEntryTypeId - ID for a custom file entry
-	 type </li> <li> fieldsMap - mapping for fields associated with a
-	 custom file entry type </li> </ul>
-	 * @return the file entry
-	 * @throws PortalException if a portal exception occurred
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #updateFileEntry(long, long , String, String, String, String,
-	 String, DLVersionNumberIncrease, byte[],
-	 Date, Date, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.repository.model.FileEntry updateFileEntry(
-			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			com.liferay.document.library.kernel.model.DLVersionNumberIncrease
-				dlVersionNumberIncrease,
-			byte[] bytes,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _dlAppLocalService.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, bytes, serviceContext);
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, bytes,
+			expirationDate, reviewDate, serviceContext);
 	}
 
 	/**
@@ -994,7 +833,8 @@ public class DLAppLocalServiceWrapper
 	@Override
 	public com.liferay.portal.kernel.repository.model.FileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog,
 			com.liferay.document.library.kernel.model.DLVersionNumberIncrease
 				dlVersionNumberIncrease,
 			java.io.File file, java.util.Date expirationDate,
@@ -1003,121 +843,8 @@ public class DLAppLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, file, expirationDate,
-			reviewDate, serviceContext);
-	}
-
-	/**
-	 * Updates a file entry and associated metadata based on a {@link File}
-	 * object. If the file data is <code>null</code>, then only the associated
-	 * metadata (i.e., <code>title</code>, <code>description</code>, and
-	 * parameters in the <code>serviceContext</code>) will be updated.
-	 *
-	 * <p>
-	 * This method takes two file names, the <code>sourceFileName</code> and the
-	 * <code>title</code>. The <code>sourceFileName</code> corresponds to the
-	 * name of the actual file being uploaded. The <code>title</code>
-	 * corresponds to a name the client wishes to assign this file after it has
-	 * been uploaded to the portal.
-	 * </p>
-	 *
-	 * @param userId the primary key of the user
-	 * @param fileEntryId the primary key of the file entry
-	 * @param sourceFileName the original file's name (optionally
-	 <code>null</code>)
-	 * @param mimeType the file's MIME type (optionally <code>null</code>)
-	 * @param title the new name to be assigned to the file (optionally <code>
-	 <code>null</code></code>)
-	 * @param description the file's new description
-	 * @param changeLog the file's version change log (optionally
-	 <code>null</code>)
-	 * @param dlVersionNumberIncrease the kind of version number increase to
-	 apply for these changes.
-	 * @param file the file's data (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied. Can set the
-	 asset category IDs, asset tag names, and expando bridge
-	 attributes for the file entry. In a Liferay repository, it may
-	 include:  <ul> <li> fileEntryTypeId - ID for a custom file entry
-	 type </li> <li> fieldsMap - mapping for fields associated with a
-	 custom file entry type </li> </ul>
-	 * @return the file entry
-	 * @throws PortalException if a portal exception occurred
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #updateFileEntry(long, long , String, String, String, String,
-	 String, DLVersionNumberIncrease, File,
-	 Date, Date, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.repository.model.FileEntry updateFileEntry(
-			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			com.liferay.document.library.kernel.model.DLVersionNumberIncrease
-				dlVersionNumberIncrease,
-			java.io.File file,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _dlAppLocalService.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, file, serviceContext);
-	}
-
-	/**
-	 * Updates a file entry and associated metadata based on an {@link
-	 * InputStream} object. If the file data is <code>null</code>, then only the
-	 * associated metadata (i.e., <code>title</code>, <code>description</code>,
-	 * and parameters in the <code>serviceContext</code>) will be updated.
-	 *
-	 * <p>
-	 * This method takes two file names, the <code>sourceFileName</code> and the
-	 * <code>title</code>. The <code>sourceFileName</code> corresponds to the
-	 * name of the actual file being uploaded. The <code>title</code>
-	 * corresponds to a name the client wishes to assign this file after it has
-	 * been uploaded to the portal.
-	 * </p>
-	 *
-	 * @param userId the primary key of the user
-	 * @param fileEntryId the primary key of the file entry
-	 * @param sourceFileName the original file's name (optionally
-	 <code>null</code>)
-	 * @param mimeType the file's MIME type (optionally <code>null</code>)
-	 * @param title the new name to be assigned to the file (optionally <code>
-	 <code>null</code></code>)
-	 * @param description the file's new description
-	 * @param changeLog the file's version change log (optionally
-	 <code>null</code>)
-	 * @param dlVersionNumberIncrease the kind of version number increase to
-	 apply for these changes.
-	 * @param inputStream the file's data (optionally <code>null</code>)
-	 * @param size the file's size (optionally <code>0</code>)
-	 * @param expirationDate the file's expiration date (optionally <code>null
-	 </code>)
-	 * @param reviewDate the file's review date (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied. Can set the
-	 asset category IDs, asset tag names, and expando bridge
-	 attributes for the file entry. In a Liferay repository, it may
-	 include:  <ul> <li> fileEntryTypeId - ID for a custom file entry
-	 type </li> <li> fieldsMap - mapping for fields associated with a
-	 custom file entry type </li> </ul>
-	 * @return the file entry
-	 * @throws PortalException if a portal exception occurred
-	 */
-	@Override
-	public com.liferay.portal.kernel.repository.model.FileEntry updateFileEntry(
-			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			com.liferay.document.library.kernel.model.DLVersionNumberIncrease
-				dlVersionNumberIncrease,
-			java.io.InputStream inputStream, long size,
-			java.util.Date expirationDate, java.util.Date reviewDate,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _dlAppLocalService.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, inputStream, size,
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, file,
 			expirationDate, reviewDate, serviceContext);
 	}
 
@@ -1149,6 +876,9 @@ public class DLAppLocalServiceWrapper
 	 apply for these changes.
 	 * @param inputStream the file's data (optionally <code>null</code>)
 	 * @param size the file's size (optionally <code>0</code>)
+	 * @param expirationDate the file's expiration date (optionally <code>null
+	 </code>)
+	 * @param reviewDate the file's review date (optionally <code>null</code>)
 	 * @param serviceContext the service context to be applied. Can set the
 	 asset category IDs, asset tag names, and expando bridge
 	 attributes for the file entry. In a Liferay repository, it may
@@ -1157,26 +887,23 @@ public class DLAppLocalServiceWrapper
 	 custom file entry type </li> </ul>
 	 * @return the file entry
 	 * @throws PortalException if a portal exception occurred
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #updateFileEntry(long, long , String, String, String, String,
-	 String, DLVersionNumberIncrease, InputStream, long,
-	 Date, Date, ServiceContext)}
 	 */
-	@Deprecated
 	@Override
 	public com.liferay.portal.kernel.repository.model.FileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog,
 			com.liferay.document.library.kernel.model.DLVersionNumberIncrease
 				dlVersionNumberIncrease,
 			java.io.InputStream inputStream, long size,
+			java.util.Date expirationDate, java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, inputStream, size,
-			serviceContext);
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, inputStream, size,
+			expirationDate, reviewDate, serviceContext);
 	}
 
 	/**

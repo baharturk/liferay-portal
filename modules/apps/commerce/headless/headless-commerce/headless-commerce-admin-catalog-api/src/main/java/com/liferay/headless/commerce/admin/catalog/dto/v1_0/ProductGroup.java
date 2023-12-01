@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.dto.v1_0;
@@ -88,7 +79,9 @@ public class ProductGroup implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, ?> customFields;
 
-	@Schema
+	@Schema(
+		example = "{hu_HU=Description HU, hr_HR=Description HR, en_US=Description}"
+	)
 	@Valid
 	public Map<String, String> getDescription() {
 		return description;
@@ -118,7 +111,7 @@ public class ProductGroup implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> description;
 
-	@Schema
+	@Schema(example = "AB-34098-789-N")
 	public String getExternalReferenceCode() {
 		return externalReferenceCode;
 	}
@@ -147,7 +140,7 @@ public class ProductGroup implements Serializable {
 	protected String externalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getId() {
 		return id;
 	}
@@ -204,7 +197,7 @@ public class ProductGroup implements Serializable {
 	protected ProductGroupProduct[] products;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "20")
 	public Integer getProductsCount() {
 		return productsCount;
 	}
@@ -232,7 +225,7 @@ public class ProductGroup implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer productsCount;
 
-	@Schema
+	@Schema(example = "{en_US=Title, hr_HR=Title HR, hu_HU=Title HU}")
 	@Valid
 	public Map<String, String> getTitle() {
 		return title;
@@ -466,5 +459,7 @@ public class ProductGroup implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

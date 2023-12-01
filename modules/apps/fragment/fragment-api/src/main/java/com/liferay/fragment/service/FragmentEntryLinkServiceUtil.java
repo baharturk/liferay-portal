@@ -1,23 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service;
 
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.portal.kernel.exception.PortalException;
-
-import java.util.Map;
 
 /**
  * Provides the remote service utility for FragmentEntryLink. This utility wraps
@@ -43,14 +32,15 @@ public class FragmentEntryLinkServiceUtil {
 			long fragmentEntryId, long segmentsExperienceId, long plid,
 			String css, String html, String js, String configuration,
 			String editableValues, String namespace, int position,
-			String rendererKey,
+			String rendererKey, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addFragmentEntryLink(
 			groupId, originalFragmentEntryLinkId, fragmentEntryId,
 			segmentsExperienceId, plid, css, html, js, configuration,
-			editableValues, namespace, position, rendererKey, serviceContext);
+			editableValues, namespace, position, rendererKey, type,
+			serviceContext);
 	}
 
 	public static FragmentEntryLink deleteFragmentEntryLink(
@@ -86,26 +76,12 @@ public class FragmentEntryLinkServiceUtil {
 			fragmentEntryLinkId, editableValues, updateClassedModel);
 	}
 
-	public static void updateFragmentEntryLinks(
-			long groupId, long plid, long[] fragmentEntryIds,
-			String editableValues,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		getService().updateFragmentEntryLinks(
-			groupId, plid, fragmentEntryIds, editableValues, serviceContext);
-	}
-
-	public static void updateFragmentEntryLinks(
-			Map<Long, String> fragmentEntryLinksEditableValuesMap)
-		throws PortalException {
-
-		getService().updateFragmentEntryLinks(
-			fragmentEntryLinksEditableValuesMap);
-	}
-
 	public static FragmentEntryLinkService getService() {
 		return _service;
+	}
+
+	public static void setService(FragmentEntryLinkService service) {
+		_service = service;
 	}
 
 	private static volatile FragmentEntryLinkService _service;

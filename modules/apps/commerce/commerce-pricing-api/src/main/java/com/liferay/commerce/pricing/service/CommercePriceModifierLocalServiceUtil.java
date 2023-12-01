@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service;
@@ -332,31 +323,12 @@ public class CommercePriceModifierLocalServiceUtil {
 		return getService().fetchCommercePriceModifier(commercePriceModifierId);
 	}
 
-	/**
-	 * Returns the commerce price modifier with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce price modifier's external reference code
-	 * @return the matching commerce price modifier, or <code>null</code> if a matching commerce price modifier could not be found
-	 */
 	public static CommercePriceModifier
 		fetchCommercePriceModifierByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
+			String externalReferenceCode, long companyId) {
 
 		return getService().fetchCommercePriceModifierByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommercePriceModifierByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static CommercePriceModifier
-		fetchCommercePriceModifierByReferenceCode(
-			long companyId, String externalReferenceCode) {
-
-		return getService().fetchCommercePriceModifierByReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -393,21 +365,13 @@ public class CommercePriceModifierLocalServiceUtil {
 		return getService().getCommercePriceModifier(commercePriceModifierId);
 	}
 
-	/**
-	 * Returns the commerce price modifier with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce price modifier's external reference code
-	 * @return the matching commerce price modifier
-	 * @throws PortalException if a matching commerce price modifier could not be found
-	 */
 	public static CommercePriceModifier
 			getCommercePriceModifierByExternalReferenceCode(
-				long companyId, String externalReferenceCode)
+				String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getCommercePriceModifierByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -601,6 +565,10 @@ public class CommercePriceModifierLocalServiceUtil {
 
 	public static CommercePriceModifierLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(CommercePriceModifierLocalService service) {
+		_service = service;
 	}
 
 	private static volatile CommercePriceModifierLocalService _service;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.persistence.impl;
@@ -42,7 +33,6 @@ import com.liferay.portal.tools.service.builder.test.service.persistence.LVEntry
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.List;
@@ -179,7 +169,7 @@ public class LVEntryLocalizationPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<LVEntryLocalization>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntryLocalization lvEntryLocalization : list) {
@@ -547,7 +537,7 @@ public class LVEntryLocalizationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {lvEntryId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -667,7 +657,7 @@ public class LVEntryLocalizationPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByLvEntryId_LanguageId, finderArgs);
+				_finderPathFetchByLvEntryId_LanguageId, finderArgs, this);
 		}
 
 		if (result instanceof LVEntryLocalization) {
@@ -783,7 +773,7 @@ public class LVEntryLocalizationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {lvEntryId, languageId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -915,7 +905,7 @@ public class LVEntryLocalizationPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByHeadId, finderArgs);
+				_finderPathFetchByHeadId, finderArgs, this);
 		}
 
 		if (result instanceof LVEntryLocalization) {
@@ -1006,7 +996,7 @@ public class LVEntryLocalizationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {headId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1475,7 +1465,7 @@ public class LVEntryLocalizationPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<LVEntryLocalization>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1545,7 +1535,7 @@ public class LVEntryLocalizationPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1649,29 +1639,13 @@ public class LVEntryLocalizationPersistenceImpl
 			new String[] {Long.class.getName()}, new String[] {"headId"},
 			false);
 
-		_setLVEntryLocalizationUtilPersistence(this);
+		LVEntryLocalizationUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setLVEntryLocalizationUtilPersistence(null);
+		LVEntryLocalizationUtil.setPersistence(null);
 
 		entityCache.removeCache(LVEntryLocalizationImpl.class.getName());
-	}
-
-	private void _setLVEntryLocalizationUtilPersistence(
-		LVEntryLocalizationPersistence lvEntryLocalizationPersistence) {
-
-		try {
-			Field field = LVEntryLocalizationUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, lvEntryLocalizationPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@ServiceReference(type = EntityCache.class)

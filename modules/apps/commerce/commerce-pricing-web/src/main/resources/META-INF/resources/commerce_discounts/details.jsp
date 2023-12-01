@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,8 +12,6 @@ CommerceDiscountDisplayContext commerceDiscountDisplayContext = (CommerceDiscoun
 
 CommerceDiscount commerceDiscount = commerceDiscountDisplayContext.getCommerceDiscount();
 long commerceDiscountId = commerceDiscountDisplayContext.getCommerceDiscountId();
-
-PortletURL portletDiscountRuleURL = commerceDiscountDisplayContext.getPortletDiscountRuleURL();
 
 boolean neverExpire = ParamUtil.getBoolean(request, "neverExpire", true);
 
@@ -60,6 +49,10 @@ boolean hasPermission = commerceDiscountDisplayContext.hasPermission(ActionKeys.
 
 	<aui:model-context bean="<%= commerceDiscount %>" model="<%= CommerceDiscount.class %>" />
 
+	<liferay-ui:error exception="<%= CommerceDiscountMaxPriceValueException.class %>">
+		<liferay-ui:message arguments="<%= CommercePriceConstants.PRICE_VALUE_MAX %>" key="price-max-value-is-x" />
+	</liferay-ui:error>
+
 	<div class="row">
 		<div class="col-12 col-xl-8">
 			<commerce-ui:panel
@@ -70,7 +63,7 @@ boolean hasPermission = commerceDiscountDisplayContext.hasPermission(ActionKeys.
 			>
 				<div class="row">
 					<div class="col">
-						<aui:input autoFocus="<%= true %>" label="name" name="title" />
+						<aui:input label="name" name="title" />
 					</div>
 
 					<div class="col-auto">
@@ -115,7 +108,8 @@ boolean hasPermission = commerceDiscountDisplayContext.hasPermission(ActionKeys.
 				<div class="row">
 					<div class="<%= colCssClass %>">
 						<aui:input ignoreRequestValue="<%= true %>" name="amount" suffix="<%= amountSuffix %>" type="text" value="<%= commerceDiscountDisplayContext.getCommerceDiscountAmount(locale) %>">
-							<aui:validator name="min">0</aui:validator>
+							<aui:validator name="min"><%= CommercePriceConstants.PRICE_VALUE_MIN %></aui:validator>
+							<aui:validator name="max"><%= CommercePriceConstants.PRICE_VALUE_MAX %></aui:validator>
 							<aui:validator name="number" />
 						</aui:input>
 					</div>
@@ -123,7 +117,8 @@ boolean hasPermission = commerceDiscountDisplayContext.hasPermission(ActionKeys.
 					<c:if test="<%= usePercentage %>">
 						<div class="<%= colCssClass %>">
 							<aui:input ignoreRequestValue="<%= true %>" name="maximumDiscountAmount" suffix="<%= HtmlUtil.escape(commerceDiscountDisplayContext.getDefaultCommerceCurrencyCode()) %>" type="text" value="<%= (commerceDiscount == null) ? BigDecimal.ZERO : commerceDiscountDisplayContext.round(commerceDiscount.getMaximumDiscountAmount()) %>">
-								<aui:validator name="min">0</aui:validator>
+								<aui:validator name="min"><%= CommercePriceConstants.PRICE_VALUE_MIN %></aui:validator>
+								<aui:validator name="max"><%= CommercePriceConstants.PRICE_VALUE_MAX %></aui:validator>
 								<aui:validator name="number" />
 							</aui:input>
 						</div>
@@ -205,11 +200,11 @@ boolean hasPermission = commerceDiscountDisplayContext.hasPermission(ActionKeys.
 		window,
 		'<portlet:namespace />selectType',
 		() => {
-			var A = AUI();
+			const type = document.getElementById(
+				'<portlet:namespace />usePercentage'
+			).value;
 
-			var type = A.one('#<portlet:namespace />usePercentage').val();
-
-			var portletURL = new Liferay.PortletURL.createURL(
+			const portletURL = new Liferay.PortletURL.createURL(
 				'<%= currentURLObj %>'
 			);
 
@@ -224,11 +219,10 @@ boolean hasPermission = commerceDiscountDisplayContext.hasPermission(ActionKeys.
 		window,
 		'<portlet:namespace />selectTarget',
 		() => {
-			var A = AUI();
+			const type = document.getElementById('<portlet:namespace />target')
+				.value;
 
-			var type = A.one('#<portlet:namespace />target').val();
-
-			var portletURL = new Liferay.PortletURL.createURL(
+			const portletURL = new Liferay.PortletURL.createURL(
 				'<%= currentURLObj %>'
 			);
 

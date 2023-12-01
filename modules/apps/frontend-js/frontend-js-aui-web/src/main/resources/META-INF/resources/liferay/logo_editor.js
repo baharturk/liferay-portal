@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-logo-editor',
 	(A) => {
-		var Lang = A.Lang;
+		const Lang = A.Lang;
 
-		var LogoEditor = A.Component.create({
+		const LogoEditor = A.Component.create({
 			ATTRS: {
 				aspectRatio: {
 					validator: Lang.isNumber,
@@ -54,11 +45,11 @@ AUI.add(
 
 			prototype: {
 				_defUploadCompleteFn(event) {
-					var instance = this;
+					const instance = this;
 
-					var response = event.response;
+					const response = event.response;
 
-					var portraitPreviewImg = instance._portraitPreviewImg;
+					const portraitPreviewImg = instance._portraitPreviewImg;
 
 					if (Lang.isObject(response)) {
 						if (response.errorMessage) {
@@ -68,9 +59,9 @@ AUI.add(
 						}
 
 						if (response.tempImageFileName) {
-							var previewURL = instance.get('previewURL');
+							let previewURL = instance.get('previewURL');
 
-							var tempImageFileName = encodeURIComponent(
+							const tempImageFileName = encodeURIComponent(
 								response.tempImageFileName
 							);
 
@@ -102,7 +93,7 @@ AUI.add(
 				},
 
 				_defUploadStartFn() {
-					var instance = this;
+					const instance = this;
 
 					instance._getMessageNode().remove();
 
@@ -110,9 +101,9 @@ AUI.add(
 				},
 
 				_getMessageNode(message, cssClass) {
-					var instance = this;
+					const instance = this;
 
-					var messageNode = instance._messageNode;
+					let messageNode = instance._messageNode;
 
 					if (!messageNode) {
 						messageNode = A.Node.create('<div></div>');
@@ -136,9 +127,9 @@ AUI.add(
 				},
 
 				_onFileNameChange() {
-					var instance = this;
+					const instance = this;
 
-					var formValidator = Liferay.Form.get(
+					const formValidator = Liferay.Form.get(
 						instance._formNode.attr('id')
 					).formValidator;
 
@@ -148,8 +139,8 @@ AUI.add(
 						instance._fileNameNode.val() &&
 						!formValidator.hasErrors()
 					) {
-						var imageCropper = instance._imageCropper;
-						var portraitPreviewImg = instance._portraitPreviewImg;
+						const imageCropper = instance._imageCropper;
+						const portraitPreviewImg = instance._portraitPreviewImg;
 
 						portraitPreviewImg.addClass('loading');
 
@@ -162,7 +153,7 @@ AUI.add(
 							imageCropper.disable();
 						}
 
-						var form = document[instance.ns('fm')];
+						const form = document[instance.ns('fm')];
 
 						instance.fire('uploadStart');
 
@@ -180,22 +171,22 @@ AUI.add(
 				},
 
 				_onImageLoad() {
-					var instance = this;
+					const instance = this;
 
-					var imageCropper = instance._imageCropper;
-					var portraitPreviewImg = instance._portraitPreviewImg;
+					let imageCropper = instance._imageCropper;
+					const portraitPreviewImg = instance._portraitPreviewImg;
 
 					if (
 						portraitPreviewImg.attr('src').indexOf('spacer.png') ===
 						-1
 					) {
-						var aspectRatio = instance.get('aspectRatio');
+						const aspectRatio = instance.get('aspectRatio');
 
-						var portraitPreviewImgHeight = portraitPreviewImg.height();
-						var portraitPreviewImgWidth = portraitPreviewImg.width();
+						const portraitPreviewImgHeight = portraitPreviewImg.height();
+						const portraitPreviewImgWidth = portraitPreviewImg.width();
 
-						var cropHeight = portraitPreviewImgHeight;
-						var cropWidth = portraitPreviewImgWidth;
+						let cropHeight = portraitPreviewImgHeight;
+						let cropWidth = portraitPreviewImgWidth;
 
 						if (aspectRatio) {
 							if (cropHeight < cropWidth) {
@@ -250,17 +241,17 @@ AUI.add(
 				},
 
 				_onSubmit() {
-					var instance = this;
+					const instance = this;
 
-					var imageCropper = instance._imageCropper;
-					var portraitPreviewImg = document.getElementById(
+					const imageCropper = instance._imageCropper;
+					const portraitPreviewImg = document.getElementById(
 						instance.get('namespace') + 'portraitPreviewImg'
 					);
 
 					if (imageCropper && portraitPreviewImg) {
-						var region = imageCropper.get('region');
+						const region = imageCropper.get('region');
 
-						var cropRegion = Liferay.Util.getCropRegion(
+						const cropRegion = Liferay.Util.getCropRegion(
 							portraitPreviewImg,
 							region
 						);
@@ -272,7 +263,7 @@ AUI.add(
 				},
 
 				_setCropBackgroundSize(width, height) {
-					var instance = this;
+					const instance = this;
 
 					if (instance._imageCrop) {
 						instance._imageCrop.setStyle(
@@ -290,7 +281,7 @@ AUI.add(
 				},
 
 				bindUI() {
-					var instance = this;
+					const instance = this;
 
 					instance.publish('uploadComplete', {
 						defaultFn: A.rbind('_defUploadCompleteFn', instance),
@@ -318,9 +309,9 @@ AUI.add(
 				},
 
 				destructor() {
-					var instance = this;
+					const instance = this;
 
-					var imageCropper = instance._imageCropper;
+					const imageCropper = instance._imageCropper;
 
 					if (imageCropper) {
 						imageCropper.destroy();
@@ -328,14 +319,14 @@ AUI.add(
 				},
 
 				initializer() {
-					var instance = this;
+					const instance = this;
 
 					instance.renderUI();
 					instance.bindUI();
 				},
 
 				renderUI() {
-					var instance = this;
+					const instance = this;
 
 					instance._cropRegionNode = instance.one('#cropRegion');
 					instance._emptyResultMessage = instance.one(
@@ -350,9 +341,9 @@ AUI.add(
 				},
 
 				resize() {
-					var instance = this;
+					const instance = this;
 
-					var portraitPreviewImg = instance._portraitPreviewImg;
+					const portraitPreviewImg = instance._portraitPreviewImg;
 
 					if (portraitPreviewImg) {
 						instance._setCropBackgroundSize(

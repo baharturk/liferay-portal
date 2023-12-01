@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.util;
@@ -19,20 +10,19 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.petra.xml.XMLUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.search.OpenSearch;
 import com.liferay.portal.kernel.search.OpenSearchRegistryUtil;
 import com.liferay.portal.kernel.search.OpenSearchUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Tuple;
@@ -40,6 +30,7 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.portal.kernel.xml.XMLUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -156,6 +147,8 @@ public class SearchUtil {
 				renderResponse
 			).setMVCPath(
 				"/view_content.jsp"
+			).setRedirect(
+				currentURL
 			).setPortletMode(
 				PortletMode.VIEW
 			).setWindowState(
@@ -163,7 +156,7 @@ public class SearchUtil {
 			).buildPortletURL();
 
 			if (Validator.isNull(className) || (classPK <= 0)) {
-				return HttpUtil.setParameter(
+				return HttpComponentsUtil.setParameter(
 					viewContentURL.toString(), "p_l_back_url", currentURL);
 			}
 
@@ -175,7 +168,7 @@ public class SearchUtil {
 					getAssetRendererFactoryByClassName(className);
 
 			if (assetRendererFactory == null) {
-				return HttpUtil.setParameter(
+				return HttpComponentsUtil.setParameter(
 					viewContentURL.toString(), "p_l_back_url", currentURL);
 			}
 
@@ -184,7 +177,7 @@ public class SearchUtil {
 			viewContentURL.setParameter("type", assetRendererFactory.getType());
 
 			if (!viewInContext) {
-				return HttpUtil.setParameter(
+				return HttpComponentsUtil.setParameter(
 					viewContentURL.toString(), "p_l_back_url", currentURL);
 			}
 
@@ -200,7 +193,8 @@ public class SearchUtil {
 				viewURL = viewContentURL.toString();
 			}
 
-			return HttpUtil.setParameter(viewURL, "p_l_back_url", currentURL);
+			return HttpComponentsUtil.setParameter(
+				viewURL, "p_l_back_url", currentURL);
 		}
 		catch (Exception exception) {
 			_log.error(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.mentions.web.internal.portlet;
@@ -23,7 +14,7 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -35,7 +26,7 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.service.permission.LayoutPermission;
-import com.liferay.portal.kernel.service.permission.PortletPermission;
+import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
@@ -43,7 +34,7 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.taglib.ui.UserPortraitTag;
+import com.liferay.user.taglib.servlet.taglib.UserPortraitTag;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,7 +58,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -76,7 +66,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.expiration-cache=0",
 		"javax.portlet.name=" + MentionsPortletKeys.MENTIONS,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"javax.portlet.security-role-ref=administrator",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -115,7 +106,7 @@ public class MentionsPortlet extends MVCPortlet {
 				httpServletResponse, jsonArray.toString());
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -134,10 +125,10 @@ public class MentionsPortlet extends MVCPortlet {
 			Supplier<List<User>> usersSupplier, ThemeDisplay themeDisplay)
 		throws PortalException {
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		for (User user : usersSupplier.get()) {
-			if (user.isDefaultUser() ||
+			if (user.isGuestUser() ||
 				(themeDisplay.getUserId() == user.getUserId())) {
 
 				continue;
@@ -177,8 +168,7 @@ public class MentionsPortlet extends MVCPortlet {
 			return JSONUtil.put("strategy", "default");
 		}
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-			strategyString);
+		JSONObject jsonObject = _jsonFactory.createJSONObject(strategyString);
 
 		if (jsonObject.isNull("strategy")) {
 			throw new PortalException(
@@ -210,8 +200,8 @@ public class MentionsPortlet extends MVCPortlet {
 				List<User> filteredUsers = new ArrayList<>();
 
 				List<User> users = mentionsStrategy.getUsers(
-					themeDisplay.getCompanyId(), themeDisplay.getUserId(),
-					query, jsonObject);
+					themeDisplay.getCompanyId(), themeDisplay.getSiteGroupId(),
+					themeDisplay.getUserId(), query, jsonObject);
 
 				for (User user : users) {
 					PermissionChecker permissionChecker =
@@ -222,7 +212,7 @@ public class MentionsPortlet extends MVCPortlet {
 					if ((layout != null) &&
 						_layoutPermission.contains(
 							permissionChecker, layout, true, ActionKeys.VIEW) &&
-						_portletPermission.contains(
+						PortletPermissionUtil.contains(
 							permissionChecker, layout, discussionPortletId,
 							ActionKeys.VIEW)) {
 
@@ -233,7 +223,7 @@ public class MentionsPortlet extends MVCPortlet {
 				return filteredUsers;
 			}
 			catch (PortalException portalException) {
-				_log.error(portalException, portalException);
+				_log.error(portalException);
 
 				return Collections.emptyList();
 			}
@@ -244,13 +234,13 @@ public class MentionsPortlet extends MVCPortlet {
 		MentionsPortlet.class);
 
 	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
 	private LayoutPermission _layoutPermission;
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private PortletPermission _portletPermission;
 
 	private ServiceTrackerMap<String, MentionsStrategy> _serviceTrackerMap;
 

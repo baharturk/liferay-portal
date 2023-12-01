@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeModel;
-import com.liferay.document.library.kernel.model.DLFileEntryTypeSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -41,18 +31,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -188,66 +175,6 @@ public class DLFileEntryTypeModelImpl
 	@Deprecated
 	public static final long FILEENTRYTYPEID_COLUMN_BITMASK = 32L;
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static DLFileEntryType toModel(DLFileEntryTypeSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		DLFileEntryType model = new DLFileEntryTypeImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setFileEntryTypeId(soapModel.getFileEntryTypeId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setDataDefinitionId(soapModel.getDataDefinitionId());
-		model.setFileEntryTypeKey(soapModel.getFileEntryTypeKey());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setScope(soapModel.getScope());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<DLFileEntryType> toModels(
-		DLFileEntryTypeSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<DLFileEntryType> models = new ArrayList<DLFileEntryType>(
-			soapModels.length);
-
-		for (DLFileEntryTypeSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public static final String MAPPING_TABLE_DLFILEENTRYTYPES_DLFOLDERS_NAME =
 		"DLFileEntryTypes_DLFolders";
 
@@ -348,141 +275,136 @@ public class DLFileEntryTypeModelImpl
 	public Map<String, Function<DLFileEntryType, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<DLFileEntryType, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, DLFileEntryType>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			DLFileEntryType.class.getClassLoader(), DLFileEntryType.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<DLFileEntryType, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<DLFileEntryType> constructor =
-				(Constructor<DLFileEntryType>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<DLFileEntryType, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<DLFileEntryType, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", DLFileEntryType::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", DLFileEntryType::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", DLFileEntryType::getUuid);
+			attributeGetterFunctions.put(
+				"fileEntryTypeId", DLFileEntryType::getFileEntryTypeId);
+			attributeGetterFunctions.put(
+				"groupId", DLFileEntryType::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", DLFileEntryType::getCompanyId);
+			attributeGetterFunctions.put("userId", DLFileEntryType::getUserId);
+			attributeGetterFunctions.put(
+				"userName", DLFileEntryType::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", DLFileEntryType::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", DLFileEntryType::getModifiedDate);
+			attributeGetterFunctions.put(
+				"dataDefinitionId", DLFileEntryType::getDataDefinitionId);
+			attributeGetterFunctions.put(
+				"fileEntryTypeKey", DLFileEntryType::getFileEntryTypeKey);
+			attributeGetterFunctions.put("name", DLFileEntryType::getName);
+			attributeGetterFunctions.put(
+				"description", DLFileEntryType::getDescription);
+			attributeGetterFunctions.put("scope", DLFileEntryType::getScope);
+			attributeGetterFunctions.put(
+				"lastPublishDate", DLFileEntryType::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<DLFileEntryType, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<DLFileEntryType, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<DLFileEntryType, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<DLFileEntryType, Object>>();
-		Map<String, BiConsumer<DLFileEntryType, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<DLFileEntryType, ?>>();
+		private static final Map<String, BiConsumer<DLFileEntryType, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", DLFileEntryType::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<DLFileEntryType, Long>)DLFileEntryType::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", DLFileEntryType::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<DLFileEntryType, Long>)
-				DLFileEntryType::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", DLFileEntryType::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<DLFileEntryType, String>)DLFileEntryType::setUuid);
-		attributeGetterFunctions.put(
-			"fileEntryTypeId", DLFileEntryType::getFileEntryTypeId);
-		attributeSetterBiConsumers.put(
-			"fileEntryTypeId",
-			(BiConsumer<DLFileEntryType, Long>)
-				DLFileEntryType::setFileEntryTypeId);
-		attributeGetterFunctions.put("groupId", DLFileEntryType::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<DLFileEntryType, Long>)DLFileEntryType::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", DLFileEntryType::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<DLFileEntryType, Long>)DLFileEntryType::setCompanyId);
-		attributeGetterFunctions.put("userId", DLFileEntryType::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<DLFileEntryType, Long>)DLFileEntryType::setUserId);
-		attributeGetterFunctions.put("userName", DLFileEntryType::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<DLFileEntryType, String>)DLFileEntryType::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", DLFileEntryType::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<DLFileEntryType, Date>)DLFileEntryType::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", DLFileEntryType::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<DLFileEntryType, Date>)
-				DLFileEntryType::setModifiedDate);
-		attributeGetterFunctions.put(
-			"dataDefinitionId", DLFileEntryType::getDataDefinitionId);
-		attributeSetterBiConsumers.put(
-			"dataDefinitionId",
-			(BiConsumer<DLFileEntryType, Long>)
-				DLFileEntryType::setDataDefinitionId);
-		attributeGetterFunctions.put(
-			"fileEntryTypeKey", DLFileEntryType::getFileEntryTypeKey);
-		attributeSetterBiConsumers.put(
-			"fileEntryTypeKey",
-			(BiConsumer<DLFileEntryType, String>)
-				DLFileEntryType::setFileEntryTypeKey);
-		attributeGetterFunctions.put("name", DLFileEntryType::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<DLFileEntryType, String>)DLFileEntryType::setName);
-		attributeGetterFunctions.put(
-			"description", DLFileEntryType::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<DLFileEntryType, String>)
-				DLFileEntryType::setDescription);
-		attributeGetterFunctions.put("scope", DLFileEntryType::getScope);
-		attributeSetterBiConsumers.put(
-			"scope",
-			(BiConsumer<DLFileEntryType, Integer>)DLFileEntryType::setScope);
-		attributeGetterFunctions.put(
-			"lastPublishDate", DLFileEntryType::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<DLFileEntryType, Date>)
-				DLFileEntryType::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<DLFileEntryType, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<DLFileEntryType, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<DLFileEntryType, Long>)
+					DLFileEntryType::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DLFileEntryType, Long>)
+					DLFileEntryType::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<DLFileEntryType, String>)DLFileEntryType::setUuid);
+			attributeSetterBiConsumers.put(
+				"fileEntryTypeId",
+				(BiConsumer<DLFileEntryType, Long>)
+					DLFileEntryType::setFileEntryTypeId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<DLFileEntryType, Long>)DLFileEntryType::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<DLFileEntryType, Long>)
+					DLFileEntryType::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<DLFileEntryType, Long>)DLFileEntryType::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<DLFileEntryType, String>)
+					DLFileEntryType::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<DLFileEntryType, Date>)
+					DLFileEntryType::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<DLFileEntryType, Date>)
+					DLFileEntryType::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"dataDefinitionId",
+				(BiConsumer<DLFileEntryType, Long>)
+					DLFileEntryType::setDataDefinitionId);
+			attributeSetterBiConsumers.put(
+				"fileEntryTypeKey",
+				(BiConsumer<DLFileEntryType, String>)
+					DLFileEntryType::setFileEntryTypeKey);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<DLFileEntryType, String>)DLFileEntryType::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<DLFileEntryType, String>)
+					DLFileEntryType::setDescription);
+			attributeSetterBiConsumers.put(
+				"scope",
+				(BiConsumer<DLFileEntryType, Integer>)
+					DLFileEntryType::setScope);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<DLFileEntryType, Date>)
+					DLFileEntryType::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1420,41 +1342,12 @@ public class DLFileEntryTypeModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<DLFileEntryType, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<DLFileEntryType, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<DLFileEntryType, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((DLFileEntryType)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, DLFileEntryType>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					DLFileEntryType.class, ModelWrapper.class);
 
 	}
 
@@ -1482,7 +1375,8 @@ public class DLFileEntryTypeModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<DLFileEntryType, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

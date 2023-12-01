@@ -1,32 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.tag.facet.portlet;
 
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchResponse;
-import com.liferay.portal.search.web.internal.facet.display.builder.AssetTagsSearchFacetDisplayBuilder;
 import com.liferay.portal.search.web.internal.facet.display.context.AssetTagsSearchFacetDisplayContext;
-import com.liferay.portal.search.web.internal.tag.facet.builder.AssetTagsFacetConfiguration;
-import com.liferay.portal.search.web.internal.tag.facet.builder.AssetTagsFacetConfigurationImpl;
+import com.liferay.portal.search.web.internal.facet.display.context.builder.AssetTagsSearchFacetDisplayContextBuilder;
 import com.liferay.portal.search.web.internal.tag.facet.constants.TagFacetPortletKeys;
-import com.liferay.portal.search.web.internal.util.SearchOptionalUtil;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 
@@ -44,7 +31,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Lino Alves
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-tag-facet",
@@ -64,7 +50,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.view-template=/tag/facet/view.jsp",
 		"javax.portlet.name=" + TagFacetPortletKeys.TAG_FACET,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user"
+		"javax.portlet.security-role-ref=guest,power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -103,49 +90,50 @@ public class TagFacetPortlet extends MVCPortlet {
 		PortletSharedSearchResponse portletSharedSearchResponse,
 		RenderRequest renderRequest) {
 
-		Facet facet = portletSharedSearchResponse.getFacet(
-			_getAggregationName(renderRequest));
+		AssetTagsSearchFacetDisplayContextBuilder
+			assetTagsSearchFacetDisplayContextBuilder =
+				_createTagsSearchFacetDisplayContextBuilder(renderRequest);
 
 		TagFacetPortletPreferences tagFacetPortletPreferences =
 			new TagFacetPortletPreferencesImpl(
 				portletSharedSearchResponse.getPortletPreferences(
 					renderRequest));
 
-		AssetTagsFacetConfiguration assetTagsFacetConfiguration =
-			new AssetTagsFacetConfigurationImpl(facet.getFacetConfiguration());
-
-		AssetTagsSearchFacetDisplayBuilder assetTagsSearchFacetDisplayBuilder =
-			_createTagsSearchFacetDisplayBuilder(renderRequest);
-
-		assetTagsSearchFacetDisplayBuilder.setDisplayStyle(
+		assetTagsSearchFacetDisplayContextBuilder.setDisplayStyle(
 			tagFacetPortletPreferences.getDisplayStyle());
-		assetTagsSearchFacetDisplayBuilder.setFacet(facet);
-		assetTagsSearchFacetDisplayBuilder.setFrequenciesVisible(
+
+		assetTagsSearchFacetDisplayContextBuilder.setFacet(
+			portletSharedSearchResponse.getFacet(
+				_getAggregationName(renderRequest)));
+		assetTagsSearchFacetDisplayContextBuilder.setFrequenciesVisible(
 			tagFacetPortletPreferences.isFrequenciesVisible());
-		assetTagsSearchFacetDisplayBuilder.setFrequencyThreshold(
-			assetTagsFacetConfiguration.getFrequencyThreshold());
-		assetTagsSearchFacetDisplayBuilder.setMaxTerms(
-			assetTagsFacetConfiguration.getMaxTerms());
-		assetTagsSearchFacetDisplayBuilder.setPaginationStartParameterName(
-			_getPaginationStartParameterName(portletSharedSearchResponse));
+		assetTagsSearchFacetDisplayContextBuilder.setFrequencyThreshold(
+			tagFacetPortletPreferences.getFrequencyThreshold());
+		assetTagsSearchFacetDisplayContextBuilder.setMaxTerms(
+			tagFacetPortletPreferences.getMaxTerms());
+		assetTagsSearchFacetDisplayContextBuilder.setOrder(
+			tagFacetPortletPreferences.getOrder());
+		assetTagsSearchFacetDisplayContextBuilder.
+			setPaginationStartParameterName(
+				_getPaginationStartParameterName(portletSharedSearchResponse));
 
 		String parameterName = tagFacetPortletPreferences.getParameterName();
 
-		assetTagsSearchFacetDisplayBuilder.setParameterName(parameterName);
+		assetTagsSearchFacetDisplayContextBuilder.setParameterName(
+			parameterName);
+		assetTagsSearchFacetDisplayContextBuilder.setParameterValues(
+			portletSharedSearchResponse.getParameterValues(
+				parameterName, renderRequest));
 
-		SearchOptionalUtil.copy(
-			() -> portletSharedSearchResponse.getParameterValues(
-				parameterName, renderRequest),
-			assetTagsSearchFacetDisplayBuilder::setParameterValues);
-
-		return assetTagsSearchFacetDisplayBuilder.build();
+		return assetTagsSearchFacetDisplayContextBuilder.build();
 	}
 
-	private AssetTagsSearchFacetDisplayBuilder
-		_createTagsSearchFacetDisplayBuilder(RenderRequest renderRequest) {
+	private AssetTagsSearchFacetDisplayContextBuilder
+		_createTagsSearchFacetDisplayContextBuilder(
+			RenderRequest renderRequest) {
 
 		try {
-			return new AssetTagsSearchFacetDisplayBuilder(renderRequest);
+			return new AssetTagsSearchFacetDisplayContextBuilder(renderRequest);
 		}
 		catch (ConfigurationException configurationException) {
 			throw new RuntimeException(configurationException);

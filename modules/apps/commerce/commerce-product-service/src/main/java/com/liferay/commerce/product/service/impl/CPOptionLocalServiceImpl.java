@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.impl;
@@ -20,14 +11,16 @@ import com.liferay.commerce.product.constants.CPField;
 import com.liferay.commerce.product.exception.CPOptionKeyException;
 import com.liferay.commerce.product.exception.CPOptionSKUContributorException;
 import com.liferay.commerce.product.model.CPOption;
+import com.liferay.commerce.product.service.CPOptionValueLocalService;
 import com.liferay.commerce.product.service.base.CPOptionLocalServiceBaseImpl;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
+import com.liferay.portal.aop.AopService;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
@@ -40,17 +33,18 @@ import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.settings.SystemSettingsLocator;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
@@ -59,10 +53,17 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Marco Leo
  * @author Igor Beslic
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.product.model.CPOption",
+	service = AopService.class
+)
 public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -70,21 +71,21 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 	public CPOption addCPOption(
 			String externalReferenceCode, long userId,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, boolean facetable, boolean required,
+			String commerceOptionTypeKey, boolean facetable, boolean required,
 			boolean skuContributor, String key, ServiceContext serviceContext)
 		throws PortalException {
 
-		validateDDMFormFieldTypeName(ddmFormFieldTypeName, skuContributor);
+		_validateCommerceOptionTypeKey(commerceOptionTypeKey, skuContributor);
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 
 		if (Validator.isBlank(externalReferenceCode)) {
 			externalReferenceCode = null;
 		}
 
-		key = FriendlyURLNormalizerUtil.normalizeWithPeriodsAndSlashes(key);
+		key = _friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(key);
 
-		validateCPOptionKey(0, user.getCompanyId(), key);
+		_validateCPOptionKey(0, user.getCompanyId(), key);
 
 		long cpOptionId = counterLocalService.increment();
 
@@ -96,7 +97,7 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 		cpOption.setUserName(user.getFullName());
 		cpOption.setNameMap(nameMap);
 		cpOption.setDescriptionMap(descriptionMap);
-		cpOption.setDDMFormFieldTypeName(ddmFormFieldTypeName);
+		cpOption.setCommerceOptionTypeKey(commerceOptionTypeKey);
 		cpOption.setFacetable(facetable);
 		cpOption.setRequired(required);
 		cpOption.setSkuContributor(skuContributor);
@@ -107,7 +108,7 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 
 		// Resources
 
-		resourceLocalService.addModelResources(cpOption, serviceContext);
+		_resourceLocalService.addModelResources(cpOption, serviceContext);
 
 		return cpOption;
 	}
@@ -116,7 +117,7 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 	public CPOption addOrUpdateCPOption(
 			String externalReferenceCode, long userId,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, boolean facetable, boolean required,
+			String commerceOptionTypeKey, boolean facetable, boolean required,
 			boolean skuContributor, String key, ServiceContext serviceContext)
 		throws PortalException {
 
@@ -124,20 +125,20 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 			externalReferenceCode = null;
 		}
 		else {
-			CPOption cpOption = cpOptionPersistence.fetchByC_ERC(
-				serviceContext.getCompanyId(), externalReferenceCode);
+			CPOption cpOption = cpOptionPersistence.fetchByERC_C(
+				externalReferenceCode, serviceContext.getCompanyId());
 
 			if (cpOption != null) {
 				return updateCPOption(
 					cpOption.getCPOptionId(), nameMap, descriptionMap,
-					ddmFormFieldTypeName, facetable, required, skuContributor,
+					commerceOptionTypeKey, facetable, required, skuContributor,
 					key, serviceContext);
 			}
 		}
 
 		return addCPOption(
 			externalReferenceCode, userId, nameMap, descriptionMap,
-			ddmFormFieldTypeName, facetable, required, skuContributor, key,
+			commerceOptionTypeKey, facetable, required, skuContributor, key,
 			serviceContext);
 	}
 
@@ -152,12 +153,12 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 
 		// Commerce product option values
 
-		cpOptionValueLocalService.deleteCPOptionValues(
+		_cpOptionValueLocalService.deleteCPOptionValues(
 			cpOption.getCPOptionId());
 
 		// Resources
 
-		resourceLocalService.deleteResource(
+		_resourceLocalService.deleteResource(
 			cpOption, ResourceConstants.SCOPE_INDIVIDUAL);
 
 		// Expando
@@ -192,14 +193,12 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 			return null;
 		}
 
-		return cpOptionPersistence.fetchByC_ERC(
-			companyId, externalReferenceCode);
+		return cpOptionPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
 	}
 
 	@Override
-	public CPOption fetchCPOption(long companyId, String key)
-		throws PortalException {
-
+	public CPOption fetchCPOption(long companyId, String key) {
 		return cpOptionPersistence.fetchByC_K(companyId, key);
 	}
 
@@ -229,33 +228,33 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 			long companyId, String keywords, int start, int end, Sort sort)
 		throws PortalException {
 
-		SearchContext searchContext = buildSearchContext(
+		SearchContext searchContext = _buildSearchContext(
 			companyId, keywords, start, end, sort);
 
-		return searchCPOptions(searchContext);
+		return _searchCPOptions(searchContext);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CPOption updateCPOption(
 			long cpOptionId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String ddmFormFieldTypeName,
+			Map<Locale, String> descriptionMap, String commerceOptionTypeKey,
 			boolean facetable, boolean required, boolean skuContributor,
 			String key, ServiceContext serviceContext)
 		throws PortalException {
 
-		validateDDMFormFieldTypeName(ddmFormFieldTypeName, skuContributor);
+		_validateCommerceOptionTypeKey(commerceOptionTypeKey, skuContributor);
 
 		CPOption cpOption = cpOptionPersistence.findByPrimaryKey(cpOptionId);
 
-		key = FriendlyURLNormalizerUtil.normalizeWithPeriodsAndSlashes(key);
+		key = _friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(key);
 
-		validateCPOptionKey(
+		_validateCPOptionKey(
 			cpOption.getCPOptionId(), cpOption.getCompanyId(), key);
 
 		cpOption.setNameMap(nameMap);
 		cpOption.setDescriptionMap(descriptionMap);
-		cpOption.setDDMFormFieldTypeName(ddmFormFieldTypeName);
+		cpOption.setCommerceOptionTypeKey(commerceOptionTypeKey);
 		cpOption.setFacetable(facetable);
 		cpOption.setRequired(required);
 		cpOption.setSkuContributor(skuContributor);
@@ -278,7 +277,7 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 		return cpOptionPersistence.update(cpOption);
 	}
 
-	protected SearchContext buildSearchContext(
+	private SearchContext _buildSearchContext(
 		long companyId, String keywords, int start, int end, Sort sort) {
 
 		SearchContext searchContext = new SearchContext();
@@ -300,7 +299,6 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 					"keywords", keywords
 				).build()
 			).build());
-
 		searchContext.setCompanyId(companyId);
 		searchContext.setEnd(end);
 
@@ -322,7 +320,15 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 		return searchContext;
 	}
 
-	protected List<CPOption> getCPOptions(Hits hits) throws PortalException {
+	private CPOptionConfiguration _getCPOptionConfiguration()
+		throws ConfigurationException {
+
+		return _configurationProvider.getConfiguration(
+			CPOptionConfiguration.class,
+			new SystemSettingsLocator(CPConstants.SERVICE_NAME_CP_OPTION));
+	}
+
+	private List<CPOption> _getCPOptions(Hits hits) throws PortalException {
 		List<Document> documents = hits.toList();
 
 		List<CPOption> cpOptions = new ArrayList<>(documents.size());
@@ -352,7 +358,7 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 		return cpOptions;
 	}
 
-	protected BaseModelSearchResult<CPOption> searchCPOptions(
+	private BaseModelSearchResult<CPOption> _searchCPOptions(
 			SearchContext searchContext)
 		throws PortalException {
 
@@ -362,7 +368,7 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 		for (int i = 0; i < 10; i++) {
 			Hits hits = indexer.search(searchContext, _SELECTED_FIELD_NAMES);
 
-			List<CPOption> cpOptions = getCPOptions(hits);
+			List<CPOption> cpOptions = _getCPOptions(hits);
 
 			if (cpOptions != null) {
 				return new BaseModelSearchResult<>(cpOptions, hits.getLength());
@@ -373,7 +379,35 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 			"Unable to fix the search index after 10 attempts");
 	}
 
-	protected void validateCPOptionKey(
+	private void _validateCommerceOptionTypeKey(
+			String commerceOptionTypeKey, boolean skuContributor)
+		throws PortalException {
+
+		if (Validator.isNull(commerceOptionTypeKey)) {
+			throw new CPOptionSKUContributorException();
+		}
+
+		CPOptionConfiguration cpOptionConfiguration =
+			_getCPOptionConfiguration();
+
+		String[] allowedCommerceOptionTypes =
+			cpOptionConfiguration.allowedCommerceOptionTypes();
+
+		if (skuContributor) {
+			allowedCommerceOptionTypes =
+				CPConstants.PRODUCT_OPTION_SKU_CONTRIBUTOR_FIELD_TYPES;
+		}
+
+		if (ArrayUtil.contains(
+				allowedCommerceOptionTypes, commerceOptionTypeKey)) {
+
+			return;
+		}
+
+		throw new CPOptionSKUContributorException();
+	}
+
+	private void _validateCPOptionKey(
 			long cpOptionId, long companyId, String key)
 		throws PortalException {
 
@@ -384,50 +418,26 @@ public class CPOptionLocalServiceImpl extends CPOptionLocalServiceBaseImpl {
 		}
 	}
 
-	protected void validateDDMFormFieldTypeName(
-			String ddmFormFieldTypeName, boolean skuContributor)
-		throws PortalException {
-
-		if (Validator.isNull(ddmFormFieldTypeName)) {
-			throw new CPOptionSKUContributorException();
-		}
-
-		CPOptionConfiguration cpOptionConfiguration =
-			_getCPOptionConfiguration();
-
-		String[] ddmFormFieldTypesAllowed =
-			cpOptionConfiguration.ddmFormFieldTypesAllowed();
-
-		if (skuContributor) {
-			ddmFormFieldTypesAllowed =
-				CPConstants.PRODUCT_OPTION_SKU_CONTRIBUTOR_FIELD_TYPES;
-		}
-
-		if (ArrayUtil.contains(
-				ddmFormFieldTypesAllowed, ddmFormFieldTypeName)) {
-
-			return;
-		}
-
-		throw new CPOptionSKUContributorException();
-	}
-
-	private CPOptionConfiguration _getCPOptionConfiguration()
-		throws ConfigurationException {
-
-		return _configurationProvider.getConfiguration(
-			CPOptionConfiguration.class,
-			new SystemSettingsLocator(CPConstants.SERVICE_NAME_CP_OPTION));
-	}
-
 	private static final String[] _SELECTED_FIELD_NAMES = {
 		Field.ENTRY_CLASS_PK, Field.COMPANY_ID, Field.UID
 	};
 
-	@ServiceReference(type = ConfigurationProvider.class)
+	@Reference
 	private ConfigurationProvider _configurationProvider;
 
-	@ServiceReference(type = ExpandoRowLocalService.class)
+	@Reference
+	private CPOptionValueLocalService _cpOptionValueLocalService;
+
+	@Reference
 	private ExpandoRowLocalService _expandoRowLocalService;
+
+	@Reference
+	private FriendlyURLNormalizer _friendlyURLNormalizer;
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

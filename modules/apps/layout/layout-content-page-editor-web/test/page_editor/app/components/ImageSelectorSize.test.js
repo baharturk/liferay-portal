@@ -1,19 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {act, cleanup, render} from '@testing-library/react';
+import {act, render} from '@testing-library/react';
 import React from 'react';
 
 import {useGlobalContext} from '../../../../src/main/resources/META-INF/resources/page_editor/app/contexts/GlobalContext';
@@ -30,13 +21,17 @@ jest.mock(
 );
 
 const renderImageSelectorSize = (
-	{imageSizeId = '1000px', onImageSizeIdChanged} = {imageSizeId: '1000px'}
+	{imageSizeId = '1000px', imageSizeLimit = null, onImageSizeIdChanged} = {
+		imageSizeId: '1000px',
+		imageSizeLimit: null,
+	}
 ) =>
 	render(
 		<StoreAPIContextProvider>
 			<ImageSelectorSize
 				fieldValue={{fileEntryId: '1234'}}
 				imageSizeId={imageSizeId}
+				imageSizeLimit={imageSizeLimit}
 				onImageSizeIdChanged={onImageSizeIdChanged}
 			/>
 		</StoreAPIContextProvider>
@@ -67,6 +62,8 @@ const imageSizesPromise = Promise.resolve([
 
 describe('ImageSelectorSize', () => {
 	beforeEach(() => {
+		Liferay.FeatureFlags['LPS-187285'] = true;
+
 		useGlobalContext.mockReturnValue({
 			document: {
 				body: {
@@ -89,9 +86,10 @@ describe('ImageSelectorSize', () => {
 	});
 
 	afterEach(() => {
+		Liferay.FeatureFlags['LPS-187285'] = false;
+
 		useGlobalContext.mockClear();
 		ImageService.getAvailableImageConfigurations.mockClear();
-		cleanup();
 	});
 
 	it('renders viewport width if there are no image sizes', async () => {
@@ -176,5 +174,19 @@ describe('ImageSelectorSize', () => {
 		const widthLabel = getByText('width:', {exact: false});
 
 		expect(widthLabel.parentElement.textContent).toBe('width:300px');
+	});
+
+	it('shows a warning if the image is larger than the specified size', async () => {
+		const {getByText} = renderImageSelectorSize({
+			imageSizeLimit: 100,
+		});
+
+		await act(() => imageSizesPromise);
+
+		expect(
+			getByText(
+				'big-image-file-size-used please-consider-configuring-adaptive-media-lazy-loading-or-reducing-the-image-size'
+			)
+		).toBeInTheDocument();
 	});
 });

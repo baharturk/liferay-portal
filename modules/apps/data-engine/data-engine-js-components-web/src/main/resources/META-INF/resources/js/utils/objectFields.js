@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {fetch} from 'frontend-js-web';
 
-import {EVENT_TYPES} from '../custom/form/eventTypes.es';
+import {EVENT_TYPES} from '../custom/form/eventTypes';
 
 const HEADERS = {
 	'Accept': 'application/json',
@@ -38,8 +29,13 @@ const getURL = (path, params) => {
 };
 
 const fetchObjectFields = (objectDefinitionId) => {
+	const pathContext = themeDisplay.getPathContext();
+
 	return fetch(
-		getURL(`/o/object-admin/v1.0/object-definitions/${objectDefinitionId}`),
+		getURL(
+			pathContext +
+				`/o/object-admin/v1.0/object-definitions/${objectDefinitionId}`
+		),
 		{
 			headers: HEADERS,
 			method: 'GET',
@@ -70,7 +66,7 @@ export async function addObjectFields(dispatch) {
 
 		dispatch({
 			payload: {objectFields},
-			type: EVENT_TYPES.OBJECT_FIELDS.ADD,
+			type: EVENT_TYPES.OBJECT.FIELDS_CHANGE,
 		});
 	}
 }
@@ -84,13 +80,13 @@ export async function updateObjectFields(dispatch) {
 
 		dispatch({
 			payload: {objectFields},
-			type: EVENT_TYPES.OBJECT_FIELDS.ADD,
+			type: EVENT_TYPES.OBJECT.FIELDS_CHANGE,
 		});
 	}
 	else {
 		dispatch({
 			payload: {objectFields: []},
-			type: EVENT_TYPES.OBJECT_FIELDS.ADD,
+			type: EVENT_TYPES.OBJECT.FIELDS_CHANGE,
 		});
 	}
 }
@@ -106,7 +102,8 @@ export function getSelectedValue(value) {
 }
 
 export function getObjectFieldName({settingsContext}) {
-	const getAdvancedColumn = ({title}) => title.toLowerCase() === 'advanced';
+	const getAdvancedColumn = ({title}) =>
+		title === Liferay.Language.get('advanced');
 	const fieldsFromAdvancedColumn = settingsContext.pages.find(
 		getAdvancedColumn
 	)?.rows[0].columns[0].fields;

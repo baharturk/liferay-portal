@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.display.context;
@@ -25,13 +16,13 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -59,7 +50,7 @@ public class DDMFormBrowserDisplayContext {
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 
-		_httpServletRequest = PortalUtil.getHttpServletRequest(_renderRequest);
+		_httpServletRequest = PortalUtil.getHttpServletRequest(renderRequest);
 
 		_formWebRequestHelper = new DDMFormWebRequestHelper(
 			_httpServletRequest);
@@ -100,14 +91,14 @@ public class DDMFormBrowserDisplayContext {
 		ddmFormInstanceSearch.setOrderByComparator(
 			_getDDMFormInstanceOrderByComparator(getOrderByType()));
 		ddmFormInstanceSearch.setOrderByType(getOrderByType());
-		ddmFormInstanceSearch.setResults(
-			_ddmFormInstanceService.search(
+		ddmFormInstanceSearch.setResultsAndTotal(
+			() -> _ddmFormInstanceService.search(
 				_formWebRequestHelper.getCompanyId(),
 				_formWebRequestHelper.getScopeGroupId(), getKeywords(),
 				ddmFormInstanceSearch.getStart(),
 				ddmFormInstanceSearch.getEnd(),
-				ddmFormInstanceSearch.getOrderByComparator()));
-		ddmFormInstanceSearch.setTotal(getTotalItems());
+				ddmFormInstanceSearch.getOrderByComparator()),
+			getTotalItems());
 
 		_ddmFormInstanceSearch = ddmFormInstanceSearch;
 

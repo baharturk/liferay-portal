@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model;
@@ -401,6 +392,27 @@ public interface FragmentEntryLinkModel
 	public void setConfiguration(String configuration);
 
 	/**
+	 * Returns the deleted of this fragment entry link.
+	 *
+	 * @return the deleted of this fragment entry link
+	 */
+	public boolean getDeleted();
+
+	/**
+	 * Returns <code>true</code> if this fragment entry link is deleted.
+	 *
+	 * @return <code>true</code> if this fragment entry link is deleted; <code>false</code> otherwise
+	 */
+	public boolean isDeleted();
+
+	/**
+	 * Sets whether this fragment entry link is deleted.
+	 *
+	 * @param deleted the deleted of this fragment entry link
+	 */
+	public void setDeleted(boolean deleted);
+
+	/**
 	 * Returns the editable values of this fragment entry link.
 	 *
 	 * @return the editable values of this fragment entry link
@@ -460,6 +472,20 @@ public interface FragmentEntryLinkModel
 	public void setRendererKey(String rendererKey);
 
 	/**
+	 * Returns the type of this fragment entry link.
+	 *
+	 * @return the type of this fragment entry link
+	 */
+	public int getType();
+
+	/**
+	 * Sets the type of this fragment entry link.
+	 *
+	 * @param type the type of this fragment entry link
+	 */
+	public void setType(int type);
+
+	/**
 	 * Returns the last propagation date of this fragment entry link.
 	 *
 	 * @return the last propagation date of this fragment entry link
@@ -491,5 +517,9 @@ public interface FragmentEntryLinkModel
 
 	@Override
 	public FragmentEntryLink cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

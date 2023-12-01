@@ -1,10 +1,22 @@
-@import 'typograph';
+@import 'components';
+@import 'containers';
 @import 'variables';
 
-@import 'components/button';
-@import 'components/input';
-@import 'components/onboarding/invites';
-@import 'components/onboarding/layout';
-@import 'components/onboarding/setup-dxp-cloud';
-@import 'components/select';
-@import 'components/skeleton';
+.okta-status-icon {
+	border-radius: 50%;
+	height: 12px;
+	width: 12px;
+}
+
+.okta-status {
+	button {
+		align-items: center;
+		color: white;
+		display: flex;
+		gap: 4px;
+	}
+
+	button:hover {
+		color: white;
+	}
+}

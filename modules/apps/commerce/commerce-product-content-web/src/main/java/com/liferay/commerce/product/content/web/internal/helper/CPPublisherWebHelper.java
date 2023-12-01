@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.helper;
@@ -24,7 +15,7 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.util.CPDefinitionHelper;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -49,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marco Leo
  */
-@Component(enabled = false, service = CPPublisherWebHelper.class)
+@Component(service = CPPublisherWebHelper.class)
 public class CPPublisherWebHelper {
 
 	public List<CPCatalogEntry> getCPCatalogEntries(
@@ -84,9 +75,7 @@ public class CPPublisherWebHelper {
 			}
 			catch (NoSuchCPDefinitionException noSuchCPDefinitionException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(
-						noSuchCPDefinitionException,
-						noSuchCPDefinitionException);
+					_log.debug(noSuchCPDefinitionException);
 				}
 
 				missingAssetCPDefinitionIds.add(cpDefinitionId);
@@ -103,7 +92,7 @@ public class CPPublisherWebHelper {
 		List<CPInstance> cpInstances = cpDefinition.getCPInstances();
 
 		if (cpInstances.size() > 1) {
-			return LanguageUtil.get(locale, "multiple-skus");
+			return _language.get(locale, "multiple-skus");
 		}
 
 		CPInstance cpInstance = cpInstances.get(0);
@@ -295,15 +284,12 @@ public class CPPublisherWebHelper {
 
 		cpQuery.setOrderByCol2(orderByColumn2);
 
-		String orderByType1 = GetterUtil.getString(
-			portletPreferences.getValue("orderByType1", "DESC"));
-
-		cpQuery.setOrderByType1(orderByType1);
-
-		String orderByType2 = GetterUtil.getString(
-			portletPreferences.getValue("orderByType2", "ASC"));
-
-		cpQuery.setOrderByType2(orderByType2);
+		cpQuery.setOrderByType1(
+			GetterUtil.getString(
+				portletPreferences.getValue("orderByType1", "DESC")));
+		cpQuery.setOrderByType2(
+			GetterUtil.getString(
+				portletPreferences.getValue("orderByType2", "ASC")));
 	}
 
 	private long[] _filterAssetCategoryIds(long[] assetCategoryIds) {
@@ -334,5 +320,8 @@ public class CPPublisherWebHelper {
 
 	@Reference
 	private CPDefinitionHelper _cpDefinitionHelper;
+
+	@Reference
+	private Language _language;
 
 }

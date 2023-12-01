@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayInput} from '@clayui/form';
@@ -48,7 +39,10 @@ const getDateOptionsByType = (label, name) => ({
 	],
 });
 
-const getSelectedParameter = (value, selectedParameterName) => {
+/* TODO: enforce parameter type consistency and remove this function */
+function getFromParameter(parameter, key, getLocalizedValue) {
+	let value = getLocalizedValue(parameter) ?? parameter;
+
 	if (value && typeof value === 'string') {
 		try {
 			value = JSON.parse(value);
@@ -56,8 +50,8 @@ const getSelectedParameter = (value, selectedParameterName) => {
 		catch (error) {}
 	}
 
-	return value?.[selectedParameterName];
-};
+	return value?.[key];
+}
 
 const parameters = {
 	dateRange: [
@@ -68,7 +62,7 @@ const parameters = {
 	pastDates: [getDateOptionsByType(endsOnLabel, 'endsOn')],
 };
 
-const ValidationDate = ({
+export default function ValidationDate({
 	dispatch,
 	errorMessage,
 	localizationMode,
@@ -82,12 +76,9 @@ const ValidationDate = ({
 	transformSelectedValidation,
 	validations,
 	visible,
-}) => {
-	const startDate = getSelectedParameter(
-		localizedValue(parameter),
-		'startsFrom'
-	);
-	const endDate = getSelectedParameter(localizedValue(parameter), 'endsOn');
+}) {
+	const startDate = getFromParameter(parameter, 'startsFrom', localizedValue);
+	const endDate = getFromParameter(parameter, 'endsOn', localizedValue);
 
 	const selectedParameter = parameters[selectedValidation.name];
 
@@ -108,52 +99,44 @@ const ValidationDate = ({
 
 	const errorMessageName = name + '_errorMessage';
 
-	const {dateFieldTypeValidationEnabled, formBuilder} = useFormState();
+	const {formBuilder} = useFormState();
 
 	const fields = useMemo(() => {
 		const fields = [];
 
-		if (dateFieldTypeValidationEnabled) {
-			const visitor = new PagesVisitor(formBuilder.pages);
+		const visitor = new PagesVisitor(formBuilder.pages);
 
-			visitor.mapFields(
-				(
-					field,
-					_pageIndex,
-					_rowIndex,
-					_columnIndex,
-					...parentFields
-				) => {
-					if (
-						field.repeatable ||
-						field.type !== 'date' ||
-						field.fieldName === parentFieldName ||
-						parentFields.some(({repeatable}) => repeatable)
-					) {
-						return;
-					}
+		visitor.mapFields(
+			(field, _pageIndex, _rowIndex, _columnIndex, ...parentFields) => {
+				if (
+					field.repeatable ||
+					field.type !== 'date' ||
+					field.fieldName === parentFieldName ||
+					parentFields.some(({repeatable}) => repeatable)
+				) {
+					return;
+				}
 
-					fields.push({
-						checked: false,
-						label: field.label,
-						name: field.fieldName,
-						value: field.fieldName,
-					});
-				},
-				true,
-				true
-			);
-		}
+				fields.push({
+					checked: false,
+					label: field.label,
+					name: field.fieldName,
+					value: field.fieldName,
+				});
+			},
+			true,
+			true
+		);
 
 		return fields;
-	}, [formBuilder.pages, dateFieldTypeValidationEnabled, parentFieldName]);
+	}, [formBuilder.pages, parentFieldName]);
 
 	return (
 		<>
 			<div className="ddm-form-field-type__validation-date-accepted-date">
 				<DDMSelect
 					className="lfr-ddm__validation-date-select"
-					disabled={readOnly || localizationMode}
+					disabled={readOnly}
 					label={Liferay.Language.get('accepted-date')}
 					name="selectedValidation"
 					onChange={({target: {value}}) => {
@@ -178,20 +161,16 @@ const ValidationDate = ({
 							? {
 									parameters: startDate,
 									title: Liferay.Language.get('start-date'),
-									tooltip: dateFieldTypeValidationEnabled
-										? Liferay.Language.get(
-												'starts-from-tooltip'
-										  )
-										: null,
+									tooltip: Liferay.Language.get(
+										'starts-from-tooltip'
+									),
 							  }
 							: {
 									parameters: endDate,
 									title: Liferay.Language.get('end-date'),
-									tooltip: dateFieldTypeValidationEnabled
-										? Liferay.Language.get(
-												'ends-on-tooltip'
-										  )
-										: null,
+									tooltip: Liferay.Language.get(
+										'ends-on-tooltip'
+									),
 							  };
 
 					return (
@@ -199,7 +178,7 @@ const ValidationDate = ({
 							{selectedParameter.length > 1 && (
 								<>
 									<label>{title.toUpperCase()}</label>
-									<div className="separator" />
+									<hr className="separator" />
 								</>
 							)}
 
@@ -244,6 +223,4 @@ const ValidationDate = ({
 			</label>
 		</>
 	);
-};
-
-export default ValidationDate;
+}

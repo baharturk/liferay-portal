@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.cache.multiple.internal;
@@ -79,6 +70,10 @@ public class PortalCacheClusterEvent implements Serializable {
 		setElementValue(elementValue);
 	}
 
+	public long getCompanyId() {
+		return _companyId;
+	}
+
 	public Serializable getElementKey() {
 		return SerializableObjectWrapper.unwrap(_elementKey);
 	}
@@ -117,6 +112,10 @@ public class PortalCacheClusterEvent implements Serializable {
 		return _timeToLive;
 	}
 
+	public void setCompanyId(long companyId) {
+		_companyId = companyId;
+	}
+
 	public void setElementValue(Serializable elementValue) {
 		if (elementValue == null) {
 			return;
@@ -141,9 +140,11 @@ public class PortalCacheClusterEvent implements Serializable {
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(13);
+		StringBundler sb = new StringBundler(15);
 
-		sb.append("{elementKey=");
+		sb.append("{companyId=");
+		sb.append(_companyId);
+		sb.append(", elementKey=");
 		sb.append(_elementKey);
 
 		if (_elementValueBytes != null) {
@@ -167,6 +168,7 @@ public class PortalCacheClusterEvent implements Serializable {
 	private static final Log _log = LogFactoryUtil.getLog(
 		PortalCacheClusterEvent.class);
 
+	private long _companyId = Long.MIN_VALUE;
 	private final SerializableObjectWrapper _elementKey;
 	private byte[] _elementValueBytes;
 	private final PortalCacheClusterEventType _portalCacheClusterEventType;

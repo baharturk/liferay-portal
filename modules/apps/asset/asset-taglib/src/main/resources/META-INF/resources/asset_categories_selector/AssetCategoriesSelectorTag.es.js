@@ -1,17 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayLink from '@clayui/link';
+import {useId} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useState} from 'react';
 
@@ -25,6 +18,7 @@ function AssetCategoriesSelectorTag({
 	initialVocabularies = [],
 	inputName,
 	portletURL,
+	showLabel,
 }) {
 	const [vocabularies, setVocabularies] = useState(initialVocabularies);
 
@@ -36,6 +30,7 @@ function AssetCategoriesSelectorTag({
 			inputName={inputName}
 			onVocabulariesChange={setVocabularies}
 			portletURL={portletURL}
+			showLabel={showLabel}
 			vocabularies={vocabularies}
 		/>
 	);
@@ -47,11 +42,15 @@ AssetCategoriesSelectorTag.propTypes = {
 	id: PropTypes.string,
 	initialVocabularies: PropTypes.array,
 	inputName: PropTypes.string,
-	learnHowURL: PropTypes.string,
+	learnHowLink: PropTypes.object,
 	portletURL: PropTypes.string,
+	showLabel: PropTypes.bool,
 };
 
 export default function (props) {
+	const internalVocabulariesId = useId();
+	const publicVocabulariesId = useId();
+
 	const initialPublicVocabularies = props.vocabularies.filter(
 		(vocabulary) =>
 			vocabulary.visibilityType ===
@@ -65,58 +64,70 @@ export default function (props) {
 
 	return (
 		<>
-			{props.learnHowURL && (
-				<p
-					className="small text-secondary"
-					dangerouslySetInnerHTML={{
-						__html: Liferay.Util.sub(
-							Liferay.Language.get(
-								'x-learn-how-x-to-tailor-categories-to-your-needs'
-							),
-							`<a href=${props.learnHowURL} target="_blank">`,
-							'</a>'
-						),
-					}}
-				/>
+			{props.showLabel && props.learnHowLink && (
+				<ClayLink
+					className="d-block mb-2 text-underline"
+					href={props.learnHowLink.url}
+					target="_blank"
+				>
+					{props.learnHowLink.message}
+				</ClayLink>
 			)}
 
-			{initialPublicVocabularies && initialPublicVocabularies.length > 0 && (
-				<>
-					<div className="border-0 mb-0 sheet-subtitle text-uppercase">
-						{Liferay.Language.get('public-categories')}
-					</div>
+			{initialPublicVocabularies && !!initialPublicVocabularies.length && (
+				<div aria-labelledby={publicVocabulariesId} role="group">
+					{props.showLabel && (
+						<>
+							<div
+								className="border-0 mb-0 sheet-subtitle text-uppercase"
+								id={publicVocabulariesId}
+							>
+								{Liferay.Language.get('public-categories')}
+							</div>
 
-					<p className="small text-secondary">
-						{Liferay.Language.get(
-							'they-can-be-displayed-through-pages-widgets-fragments-and-searches'
-						)}
-					</p>
+							<p className="small text-secondary">
+								{Liferay.Language.get(
+									'they-can-be-displayed-through-pages-widgets-fragments-and-searches'
+								)}
+							</p>
+						</>
+					)}
 
 					<AssetCategoriesSelectorTag
 						{...props}
+						id={`${publicVocabulariesId}_categories`}
 						initialVocabularies={initialPublicVocabularies}
 					/>
-				</>
+				</div>
 			)}
 
 			{initialInternalVocabularies &&
-				initialInternalVocabularies.length > 0 && (
-					<>
-						<div className="border-0 mb-0 sheet-subtitle text-uppercase">
-							{Liferay.Language.get('internal-categories')}
-						</div>
-
-						<p className="text-secondary">
-							{Liferay.Language.get(
-								'they-are-displayed-inside-the-administration-only'
-							)}
-						</p>
+				!!initialInternalVocabularies.length && (
+					<div aria-labelledby={internalVocabulariesId} role="group">
+						{props.showLabel && (
+							<>
+								<div
+									className="border-0 mb-0 sheet-subtitle text-uppercase"
+									id={internalVocabulariesId}
+								>
+									{Liferay.Language.get(
+										'internal-categories'
+									)}
+								</div>
+								<p className="small text-secondary">
+									{Liferay.Language.get(
+										'they-are-displayed-inside-the-administration-only'
+									)}
+								</p>{' '}
+							</>
+						)}
 
 						<AssetCategoriesSelectorTag
 							{...props}
+							id={`${internalVocabulariesId}_categories`}
 							initialVocabularies={initialInternalVocabularies}
 						/>
-					</>
+					</div>
 				)}
 		</>
 	);

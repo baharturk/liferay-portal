@@ -1,18 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '../../utils/polyfills';
+import '../../tests_utilities/polyfills';
 
 import '@testing-library/jest-dom/extend-expect';
 import {
@@ -27,29 +18,39 @@ import React from 'react';
 
 import ServiceProvider from '../../../src/main/resources/META-INF/resources/ServiceProvider/index';
 import AccountSelector from '../../../src/main/resources/META-INF/resources/components/account_selector/AccountSelector';
-import {accountTemplate, getAccounts} from '../../utils/fake_data/accounts';
-import {getOrders} from '../../utils/fake_data/orders';
+import {
+	accountTemplate,
+	getAccounts,
+} from '../../tests_utilities/fake_data/accounts';
+import {getOrders} from '../../tests_utilities/fake_data/orders';
 
 const ACCOUNTS_HEADLESS_API_ENDPOINT = ServiceProvider.AdminAccountAPI('v1')
 	.baseURL;
+
+const USERS_HEADLESS_API_ENDPOINT = '/o/headless-admin-user/v1.0/accounts';
 
 describe('AccountSelector', () => {
 	beforeEach(() => {
 		const accountsEndpointRegexp = new RegExp(
 			ACCOUNTS_HEADLESS_API_ENDPOINT
 		);
+
 		const ordersEndpointRegexp = new RegExp(
 			`${ServiceProvider.DeliveryCartAPI(
 				'v1'
 			).cartsByAccountIdAndChannelIdURL(42332, 24324)}`
 		);
 
+		const usersEndpointRegexp = new RegExp(USERS_HEADLESS_API_ENDPOINT);
+
 		fetchMock.mock(accountsEndpointRegexp, (url) => getAccounts(url));
 		fetchMock.mock(ordersEndpointRegexp, (url) => getOrders(url));
+		fetchMock.mock(usersEndpointRegexp, () => Promise.resolve());
 	});
 
 	afterEach(() => {
 		fetchMock.restore();
+
 		cleanup();
 	});
 
@@ -100,9 +101,10 @@ describe('AccountSelector', () => {
 			const accountsList = renderedComponent.baseElement.querySelectorAll(
 				'.accounts-list li'
 			);
+
 			const accountsListItem = accountsList[0];
 
-			expect(accountsList.length).toBe(10);
+			expect(accountsList.length).toBe(11);
 
 			expect(accountsListItem.querySelector('img').src).toContain(
 				'/test-logo-folder/test.jpg'

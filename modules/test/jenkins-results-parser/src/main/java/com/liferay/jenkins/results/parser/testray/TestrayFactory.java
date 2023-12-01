@@ -1,27 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.testray;
 
 import com.liferay.jenkins.results.parser.Build;
+import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.SourceFormatBuild;
 import com.liferay.jenkins.results.parser.TopLevelBuild;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 import com.liferay.jenkins.results.parser.test.clazz.group.AxisTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.FunctionalAxisTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.JUnitAxisTestClassGroup;
+import com.liferay.jenkins.results.parser.test.clazz.group.PlaywrightAxisTestClassGroup;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 
 import java.util.HashMap;
@@ -32,16 +26,18 @@ import java.util.Map;
  */
 public class TestrayFactory {
 
+	public static PortalLogTestrayCaseResult newPortalLogTestrayCaseResult(
+		TestrayBuild testrayBuild, TopLevelBuild topLevelBuild,
+		AxisTestClassGroup axisTestClassGroup) {
+
+		return new PortalLogTestrayCaseResult(
+			testrayBuild, topLevelBuild, axisTestClassGroup);
+	}
+
 	public static TestrayAttachment newTestrayAttachment(
 		TestrayCaseResult testrayCaseResult, String name, String key) {
 
-		TestrayServer testrayServer = testrayCaseResult.getTestrayServer();
-
-		if (testrayServer instanceof RsyncTestrayServer) {
-			return new DefaultTestrayAttachment(testrayCaseResult, name, key);
-		}
-
-		return new S3TestrayAttachment(testrayCaseResult, name, key);
+		return new DefaultTestrayAttachment(testrayCaseResult, name, key);
 	}
 
 	public static TestrayAttachmentRecorder newTestrayAttachmentRecorder(
@@ -62,7 +58,8 @@ public class TestrayFactory {
 	}
 
 	public static TestrayAttachmentUploader newTestrayAttachmentUploader(
-		Build build, URL testrayServerURL) {
+		Build build, URL testrayServerURL,
+		TestrayAttachmentUploader.Type type) {
 
 		String testrayServerURLString = "";
 
@@ -70,7 +67,9 @@ public class TestrayFactory {
 			testrayServerURLString = String.valueOf(testrayServerURL);
 		}
 
-		String key = build.getBuildURL() + "_" + testrayServerURLString;
+		String key = JenkinsResultsParserUtil.combine(
+			build.getBuildURL(), "_", testrayServerURLString, "_",
+			type.toString());
 
 		TestrayAttachmentUploader testrayAttachmentUploader =
 			_testrayAttachmentUploaders.get(key);
@@ -79,12 +78,13 @@ public class TestrayFactory {
 			return testrayAttachmentUploader;
 		}
 
-		if (testrayServerURLString.startsWith("https://testray.liferay.com")) {
+		if (type == TestrayAttachmentUploader.Type.RSYNC) {
 			testrayAttachmentUploader = new RsyncTestrayAttachmentUploader(
 				build, testrayServerURL);
 		}
 		else {
-			testrayAttachmentUploader = new S3TestrayAttachmentUploader(build);
+			testrayAttachmentUploader = new S3TestrayAttachmentUploader(
+				build, testrayServerURL);
 		}
 
 		_testrayAttachmentUploaders.put(key, testrayAttachmentUploader);
@@ -92,9 +92,108 @@ public class TestrayFactory {
 		return testrayAttachmentUploader;
 	}
 
+	public static TestrayBuild newTestrayBuild(String testrayBuildURL) {
+		TestrayBuild testrayBuild = _testrayBuilds.get(testrayBuildURL);
+
+		if (testrayBuild != null) {
+			return testrayBuild;
+		}
+
+		try {
+			testrayBuild = new TestrayBuild(new URL(testrayBuildURL));
+
+			_testrayBuilds.put(testrayBuildURL, testrayBuild);
+
+			return testrayBuild;
+		}
+		catch (MalformedURLException malformedURLException) {
+			throw new RuntimeException(malformedURLException);
+		}
+	}
+
 	public static TestrayCaseResult newTestrayCaseResult(
 		TestrayBuild testrayBuild, TopLevelBuild topLevelBuild,
 		AxisTestClassGroup axisTestClassGroup, TestClass testClass) {
+
+		if (testrayBuild == null) {
+			throw new RuntimeException("Testray build is null");
+		}
+
+		if (topLevelBuild == null) {
+			throw new RuntimeException("Top level build is null");
+		}
+
+		if (axisTestClassGroup == null) {
+			throw new RuntimeException("Axis test class group is null");
+		}
+
+		if (testClass != null) {
+			if (axisTestClassGroup instanceof FunctionalAxisTestClassGroup) {
+				return new FunctionalBatchBuildTestrayCaseResult(
+					testrayBuild, topLevelBuild, axisTestClassGroup, testClass);
+			}
+			else if (axisTestClassGroup instanceof JUnitAxisTestClassGroup) {
+				return new JUnitBatchBuildTestrayCaseResult(
+					testrayBuild, topLevelBuild, axisTestClassGroup, testClass);
+			}
+		}
+
+		if (axisTestClassGroup instanceof PlaywrightAxisTestClassGroup) {
+			return new PlaywrightBatchBuildTestrayCaseResult(
+				testrayBuild, topLevelBuild, axisTestClassGroup);
+		}
+
+		if (topLevelBuild instanceof SourceFormatBuild) {
+			return new SFBatchBuildTestrayCaseResult(
+				testrayBuild, topLevelBuild, axisTestClassGroup);
+		}
+
+		return new BatchBuildTestrayCaseResult(
+			testrayBuild, topLevelBuild, axisTestClassGroup);
+	}
+
+	public static TestrayRoutine newTestrayRoutine(String testrayRoutineURL) {
+		TestrayRoutine testrayRoutine = _testrayRoutines.get(testrayRoutineURL);
+
+		if (testrayRoutine != null) {
+			return testrayRoutine;
+		}
+
+		try {
+			testrayRoutine = new TestrayRoutine(new URL(testrayRoutineURL));
+
+			_testrayRoutines.put(testrayRoutineURL, testrayRoutine);
+
+			return testrayRoutine;
+		}
+		catch (MalformedURLException malformedURLException) {
+			throw new RuntimeException(malformedURLException);
+		}
+	}
+
+	public static TestrayServer newTestrayServer(String testrayServerURL) {
+		TestrayServer testrayServer = _testrayServers.get(testrayServerURL);
+
+		if (testrayServer != null) {
+			return testrayServer;
+		}
+
+		testrayServer = new DefaultTestrayServer(testrayServerURL);
+
+		_testrayServers.put(testrayServerURL, testrayServer);
+
+		return testrayServer;
+	}
+
+	public static TopLevelBuildTestrayCaseResult
+		newTopLevelBuildTestrayCaseResult(
+			TestrayBuild testrayBuild, TopLevelBuild topLevelBuild) {
+
+		Long testrayBuildID = testrayBuild.getID();
+
+		if (_topLevelBuildTestrayCaseResults.containsKey(testrayBuildID)) {
+			return _topLevelBuildTestrayCaseResults.get(testrayBuildID);
+		}
 
 		if (testrayBuild == null) {
 			throw new RuntimeException("Please set a Testray build");
@@ -104,57 +203,24 @@ public class TestrayFactory {
 			throw new RuntimeException("Please set a top level build");
 		}
 
-		if (axisTestClassGroup == null) {
-			throw new RuntimeException("Please set an axis test class group");
-		}
+		_topLevelBuildTestrayCaseResults.put(
+			testrayBuildID,
+			new TopLevelBuildTestrayCaseResult(testrayBuild, topLevelBuild));
 
-		if (testClass != null) {
-			if (axisTestClassGroup instanceof FunctionalAxisTestClassGroup) {
-				return new FunctionalBatchTestrayCaseResult(
-					testrayBuild, topLevelBuild, axisTestClassGroup, testClass);
-			}
-			else if (axisTestClassGroup instanceof JUnitAxisTestClassGroup) {
-				return new JUnitBatchTestrayCaseResult(
-					testrayBuild, topLevelBuild, axisTestClassGroup, testClass);
-			}
-		}
-
-		if (topLevelBuild instanceof SourceFormatBuild) {
-			return new SFBatchTestrayCaseResult(
-				testrayBuild, topLevelBuild, axisTestClassGroup);
-		}
-
-		return new BatchTestrayCaseResult(
-			testrayBuild, topLevelBuild, axisTestClassGroup);
-	}
-
-	public static TestrayServer newTestrayServer(
-		String testrayServerURLString) {
-
-		TestrayServer testrayServer = _testrayServers.get(
-			testrayServerURLString);
-
-		if (testrayServer != null) {
-			return testrayServer;
-		}
-
-		if (testrayServerURLString.startsWith("https://testray.liferay.com")) {
-			testrayServer = new RsyncTestrayServer(testrayServerURLString);
-		}
-		else {
-			testrayServer = new DefaultTestrayServer(testrayServerURLString);
-		}
-
-		_testrayServers.put(testrayServerURLString, testrayServer);
-
-		return testrayServer;
+		return _topLevelBuildTestrayCaseResults.get(testrayBuildID);
 	}
 
 	private static final Map<Build, TestrayAttachmentRecorder>
 		_testrayAttachmentRecorders = new HashMap<>();
 	private static final Map<String, TestrayAttachmentUploader>
 		_testrayAttachmentUploaders = new HashMap<>();
+	private static final Map<String, TestrayBuild> _testrayBuilds =
+		new HashMap<>();
+	private static final Map<String, TestrayRoutine> _testrayRoutines =
+		new HashMap<>();
 	private static final Map<String, TestrayServer> _testrayServers =
 		new HashMap<>();
+	private static final Map<Long, TopLevelBuildTestrayCaseResult>
+		_topLevelBuildTestrayCaseResults = new HashMap<>();
 
 }

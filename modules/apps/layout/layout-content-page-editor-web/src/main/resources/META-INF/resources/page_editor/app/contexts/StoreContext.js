@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useIsMounted} from '@liferay/frontend-js-react-web';
@@ -20,17 +11,50 @@ import React, {
 	useMemo,
 	useReducer,
 	useRef,
+	useState,
 } from 'react';
 
 import useUndo from '../components/undo/useUndo';
 
-const StoreDispatchContext = React.createContext(() => {});
-const StoreGetStateContext = React.createContext(null);
-const StoreSubscriptionContext = React.createContext([() => {}, () => {}]);
-
 const DEFAULT_COMPARE_EQUAL = (a, b) => a === b;
 const DEFAULT_DISPATCH = () => {};
 const DEFAULT_GET_STATE = () => ({});
+
+const StoreDispatchContext = React.createContext(DEFAULT_DISPATCH);
+const StoreGetStateContext = React.createContext(DEFAULT_GET_STATE);
+const StoreSubscriptionContext = React.createContext(() => {});
+
+class EventEmitter {
+	constructor() {
+		this._listeners = new Map();
+		this._nextListenerId = 0;
+	}
+
+	addListener(callback) {
+		const id = this._nextListenerId++;
+
+		this._listeners.set(id, callback);
+
+		return {
+			removeListener: () => {
+				this._listeners.delete(id);
+			},
+		};
+	}
+
+	emit(data) {
+		for (const listener of this._listeners.values()) {
+			try {
+				listener(data);
+			}
+			catch (error) {
+				if (process.env.NODE_ENV === 'development') {
+					console.error(error);
+				}
+			}
+		}
+	}
+}
 
 /**
  * Although StoreContextProvider creates a full functional store,
@@ -46,30 +70,20 @@ export function StoreAPIContextProvider({
 	dispatch = DEFAULT_DISPATCH,
 	getState = DEFAULT_GET_STATE,
 }) {
+	const [emitter] = useState(() => new EventEmitter());
 	const state = getState();
 
-	const subscribersRef = useRef([]);
-
-	const subscribe = useCallback((subscriber) => {
-		subscribersRef.current = [...subscribersRef.current, subscriber];
-	}, []);
-
-	const unsubscribe = useCallback((subscriber) => {
-		subscribersRef.current = subscribersRef.current.filter(
-			(_subscriber) => _subscriber !== subscriber
-		);
-	}, []);
-
-	const subscriptionContextRef = useRef([subscribe, unsubscribe]);
+	const subscribe = useCallback(
+		(subscriber) => emitter.addListener(subscriber),
+		[emitter]
+	);
 
 	useEffect(() => {
-		subscribersRef.current.forEach((subscriber) => subscriber(state));
-	}, [state]);
+		emitter.emit(state);
+	}, [emitter, state]);
 
 	return (
-		<StoreSubscriptionContext.Provider
-			value={subscriptionContextRef.current}
-		>
+		<StoreSubscriptionContext.Provider value={subscribe}>
 			<StoreDispatchContext.Provider value={dispatch}>
 				<StoreGetStateContext.Provider value={getState}>
 					{children}
@@ -121,7 +135,7 @@ export function useSelectorCallback(
 	compareEqual = DEFAULT_COMPARE_EQUAL
 ) {
 	const getState = useContext(StoreGetStateContext);
-	const [subscribe, unsubscribe] = useContext(StoreSubscriptionContext);
+	const subscribe = useContext(StoreSubscriptionContext);
 
 	const initialState = useMemo(
 		() => selector(getState()),
@@ -133,27 +147,35 @@ export function useSelectorCallback(
 		[]
 	);
 
-	const [selectorState, setSelectorState] = useReducer(
-		(state, nextState) =>
-			compareEqual(state, nextState) ? state : nextState,
-		initialState
-	);
+	const [selectorState, setSelectorState] = useReducer((state, nextState) => {
+
+		// If nextState is undefined, we consider this an accidental
+		// outdated-props issue. If you need to use an empty real state,
+		// use null instead.
+
+		if (nextState === undefined) {
+			return state;
+		}
+
+		return compareEqual(state, nextState) ? state : nextState;
+	}, initialState);
 
 	/* eslint-disable-next-line react-hooks/exhaustive-deps */
 	const selectorCallback = useCallback(selector, dependencies);
 
 	useEffect(() => {
-		const onStoreChange = (nextState) => {
-			setSelectorState(selectorCallback(nextState));
-		};
-
 		setSelectorState(selectorCallback(getState()));
-		subscribe(onStoreChange);
+
+		const handler = subscribe((nextState) => {
+			setSelectorState(selectorCallback(nextState));
+		});
 
 		return () => {
-			unsubscribe(onStoreChange);
+			if (handler) {
+				handler.removeListener();
+			}
 		};
-	}, [getState, selectorCallback, subscribe, unsubscribe]);
+	}, [getState, selectorCallback, subscribe]);
 
 	return selectorState;
 }
@@ -163,6 +185,16 @@ export function useSelectorCallback(
  */
 export function useSelector(selector, compareEqual = DEFAULT_COMPARE_EQUAL) {
 	return useSelectorCallback(selector, [], compareEqual);
+}
+
+export function useSelectorRef(selector) {
+	const ref = useRef(null);
+
+	useSelector((state) => {
+		ref.current = selector(state);
+	});
+
+	return ref;
 }
 
 function useThunk([state, dispatch]) {

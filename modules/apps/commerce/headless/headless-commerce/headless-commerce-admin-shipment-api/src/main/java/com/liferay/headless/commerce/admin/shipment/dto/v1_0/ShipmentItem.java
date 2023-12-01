@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.shipment.dto.v1_0;
@@ -28,6 +19,8 @@ import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.io.Serializable;
+
+import java.math.BigDecimal;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -123,8 +116,36 @@ public class ShipmentItem implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date createDate;
 
-	@DecimalMin("0")
 	@Schema
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String externalReferenceCode;
+
+	@DecimalMin("0")
+	@Schema(example = "30130")
 	public Long getId() {
 		return id;
 	}
@@ -179,7 +200,7 @@ public class ShipmentItem implements Serializable {
 	protected Date modifiedDate;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getOrderItemId() {
 		return orderItemId;
 	}
@@ -209,18 +230,19 @@ public class ShipmentItem implements Serializable {
 	protected Long orderItemId;
 
 	@DecimalMin("0")
-	@Schema
-	public Integer getQuantity() {
+	@Schema(example = "10.1")
+	@Valid
+	public BigDecimal getQuantity() {
 		return quantity;
 	}
 
-	public void setQuantity(Integer quantity) {
+	public void setQuantity(BigDecimal quantity) {
 		this.quantity = quantity;
 	}
 
 	@JsonIgnore
 	public void setQuantity(
-		UnsafeSupplier<Integer, Exception> quantityUnsafeSupplier) {
+		UnsafeSupplier<BigDecimal, Exception> quantityUnsafeSupplier) {
 
 		try {
 			quantity = quantityUnsafeSupplier.get();
@@ -236,10 +258,42 @@ public class ShipmentItem implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
-	protected Integer quantity;
+	protected BigDecimal quantity;
+
+	@Schema
+	public String getShipmentExternalReferenceCode() {
+		return shipmentExternalReferenceCode;
+	}
+
+	public void setShipmentExternalReferenceCode(
+		String shipmentExternalReferenceCode) {
+
+		this.shipmentExternalReferenceCode = shipmentExternalReferenceCode;
+	}
+
+	@JsonIgnore
+	public void setShipmentExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			shipmentExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			shipmentExternalReferenceCode =
+				shipmentExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String shipmentExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getShipmentId() {
 		return shipmentId;
 	}
@@ -267,7 +321,35 @@ public class ShipmentItem implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long shipmentId;
 
-	@Schema
+	@Schema(example = "s")
+	public String getUnitOfMeasureKey() {
+		return unitOfMeasureKey;
+	}
+
+	public void setUnitOfMeasureKey(String unitOfMeasureKey) {
+		this.unitOfMeasureKey = unitOfMeasureKey;
+	}
+
+	@JsonIgnore
+	public void setUnitOfMeasureKey(
+		UnsafeSupplier<String, Exception> unitOfMeasureKeyUnsafeSupplier) {
+
+		try {
+			unitOfMeasureKey = unitOfMeasureKeyUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String unitOfMeasureKey;
+
+	@Schema(example = "John")
 	public String getUserName() {
 		return userName;
 	}
@@ -295,8 +377,36 @@ public class ShipmentItem implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String userName;
 
+	@Schema(example = "true")
+	public Boolean getValidateInventory() {
+		return validateInventory;
+	}
+
+	public void setValidateInventory(Boolean validateInventory) {
+		this.validateInventory = validateInventory;
+	}
+
+	@JsonIgnore
+	public void setValidateInventory(
+		UnsafeSupplier<Boolean, Exception> validateInventoryUnsafeSupplier) {
+
+		try {
+			validateInventory = validateInventoryUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean validateInventory;
+
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getWarehouseId() {
 		return warehouseId;
 	}
@@ -379,6 +489,20 @@ public class ShipmentItem implements Serializable {
 			sb.append("\"");
 		}
 
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -423,6 +547,20 @@ public class ShipmentItem implements Serializable {
 			sb.append(quantity);
 		}
 
+		if (shipmentExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"shipmentExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(shipmentExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
 		if (shipmentId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -431,6 +569,20 @@ public class ShipmentItem implements Serializable {
 			sb.append("\"shipmentId\": ");
 
 			sb.append(shipmentId);
+		}
+
+		if (unitOfMeasureKey != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"unitOfMeasureKey\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(unitOfMeasureKey));
+
+			sb.append("\"");
 		}
 
 		if (userName != null) {
@@ -445,6 +597,16 @@ public class ShipmentItem implements Serializable {
 			sb.append(_escape(userName));
 
 			sb.append("\"");
+		}
+
+		if (validateInventory != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"validateInventory\": ");
+
+			sb.append(validateInventory);
 		}
 
 		if (warehouseId != null) {
@@ -551,5 +713,7 @@ public class ShipmentItem implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

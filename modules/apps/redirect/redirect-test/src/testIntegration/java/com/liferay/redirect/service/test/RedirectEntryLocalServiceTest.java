@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.redirect.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.LayoutFriendlyURLException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -22,12 +14,16 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.redirect.exception.CircularRedirectEntryException;
 import com.liferay.redirect.exception.DuplicateRedirectEntrySourceURLException;
+import com.liferay.redirect.exception.RequiredRedirectEntrySourceURLException;
 import com.liferay.redirect.model.RedirectEntry;
 import com.liferay.redirect.model.RedirectNotFoundEntry;
 import com.liferay.redirect.service.RedirectEntryLocalService;
@@ -46,6 +42,7 @@ import org.junit.runner.RunWith;
 
 /**
  * @author Alejandro Tardín
+ * @author Roberto Díaz
  */
 @RunWith(Arquillian.class)
 public class RedirectEntryLocalServiceTest {
@@ -57,6 +54,8 @@ public class RedirectEntryLocalServiceTest {
 
 	@Before
 	public void setUp() throws Exception {
+		UserTestUtil.setUser(TestPropsValues.getUser());
+
 		_group = GroupTestUtil.addGroup();
 	}
 
@@ -91,7 +90,8 @@ public class RedirectEntryLocalServiceTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		Assert.assertEquals(
-			"anotherSourceURL", _chainedRedirectEntry.getSourceURL());
+			_friendlyURLNormalizer.normalizeWithEncoding("anotherSourceURL"),
+			_chainedRedirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"groupBaseURL/sourceURL",
@@ -113,7 +113,9 @@ public class RedirectEntryLocalServiceTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		Assert.assertEquals(
-			"intermediateDestinationURL", _chainedRedirectEntry.getSourceURL());
+			_friendlyURLNormalizer.normalizeWithEncoding(
+				"intermediateDestinationURL"),
+			_chainedRedirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"finalDestinationURL", _chainedRedirectEntry.getDestinationURL());
@@ -121,7 +123,9 @@ public class RedirectEntryLocalServiceTest {
 		_redirectEntry = _redirectEntryLocalService.fetchRedirectEntry(
 			_redirectEntry.getRedirectEntryId());
 
-		Assert.assertEquals("sourceURL", _redirectEntry.getSourceURL());
+		Assert.assertEquals(
+			_friendlyURLNormalizer.normalizeWithEncoding("sourceURL"),
+			_redirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"groupBaseURL/intermediateDestinationURL",
@@ -167,6 +171,21 @@ public class RedirectEntryLocalServiceTest {
 			"sourceURL", ServiceContextTestUtil.getServiceContext());
 	}
 
+	@Test(expected = DuplicateRedirectEntrySourceURLException.class)
+	public void testAddRedirectEntryFailsWhenDuplicateSourceURLDiffersUpperCaseLowerCase()
+		throws Exception {
+
+		_redirectEntry = _redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "groupBaseURL/destinationURL", null, false,
+			StringUtil.toUpperCase("sourceURL"),
+			ServiceContextTestUtil.getServiceContext());
+
+		_redirectEntry = _redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "destinationURL", null, false,
+			StringUtil.toLowerCase("sourceURL"),
+			ServiceContextTestUtil.getServiceContext());
+	}
+
 	@Test(
 		expected = CircularRedirectEntryException.MustNotFormALoopWithAnotherRedirectEntry.class
 	)
@@ -178,6 +197,24 @@ public class RedirectEntryLocalServiceTest {
 		_chainedRedirectEntry = _redirectEntryLocalService.addRedirectEntry(
 			_group.getGroupId(), "groupBaseURL/sourceURL", null, "groupBaseURL",
 			false, "destinationURL", false,
+			ServiceContextTestUtil.getServiceContext());
+	}
+
+	@Test(
+		expected = CircularRedirectEntryException.MustNotFormALoopWithAnotherRedirectEntry.class
+	)
+	public void testAddRedirectEntryFailsWhenRedirectLoopSourceURLDiffersUpperCaseLowerCase()
+		throws Exception {
+
+		_redirectEntry = _redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "groupBaseURL/destinationURL", null, false,
+			StringUtil.toUpperCase("sourceURL"),
+			ServiceContextTestUtil.getServiceContext());
+
+		_chainedRedirectEntry = _redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(),
+			"groupBaseURL/" + StringUtil.toLowerCase("sourceURL"), null,
+			"groupBaseURL", false, "destinationURL", false,
 			ServiceContextTestUtil.getServiceContext());
 	}
 
@@ -212,12 +249,50 @@ public class RedirectEntryLocalServiceTest {
 	}
 
 	@Test(expected = LayoutFriendlyURLException.class)
-	public void testAddRedirectEntryFailsWhenSourceURLInvalidChar()
+	public void testAddRedirectEntryFailsWhenSourceURLFriendlyURLMapper()
 		throws Exception {
 
-		_redirectEntry = _redirectEntryLocalService.addRedirectEntry(
-			_group.getGroupId(), "destinationURL", null, false, "~",
-			ServiceContextTestUtil.getServiceContext());
+		_redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "http://www.liferay.com", null, false,
+			"questions",
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+	}
+
+	@Test(expected = LayoutFriendlyURLException.class)
+	public void testAddRedirectEntryFailsWhenSourceURLLayoutFriendlyUrlKeywordsProperty()
+		throws Exception {
+
+		_redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "http://www.liferay.com", null, false,
+			"tunnel-web",
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+	}
+
+	@Test(expected = RequiredRedirectEntrySourceURLException.class)
+	public void testAddRedirectEntryFailsWhenSourceURLNull() throws Exception {
+		_redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "http://www.liferay.com", null, false,
+			StringPool.BLANK,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+	}
+
+	@Test(expected = LayoutFriendlyURLException.class)
+	public void testAddRedirectEntryFailsWhenSourceURLOneCharacterLong()
+		throws Exception {
+
+		_redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "http://www.liferay.com", null, false, "a",
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+	}
+
+	@Test(expected = LayoutFriendlyURLException.class)
+	public void testAddRedirectEntryFailsWhenSourceURLPortalFriendlyURLSeparator()
+		throws Exception {
+
+		_redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "http://www.liferay.com", null, false,
+			"-/test",
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 
 	@Test(expected = LayoutFriendlyURLException.class)
@@ -237,6 +312,25 @@ public class RedirectEntryLocalServiceTest {
 			_group.getGroupId(), "destinationURL", null, false,
 			StringUtil.randomString(256),
 			ServiceContextTestUtil.getServiceContext());
+	}
+
+	@Test(expected = LayoutFriendlyURLException.class)
+	public void testAddRedirectEntryFailsWhenSourceURLURLanguagePath()
+		throws Exception {
+
+		_redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "http://www.liferay.com", null, false,
+			"es/test",
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+	}
+
+	@Test(expected = LayoutFriendlyURLException.class)
+	public void testAddRedirectEntryFailsWhenSourceURLURLSeparator()
+		throws Exception {
+
+		_redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "http://www.liferay.com", null, false, "/b/",
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 
 	@Test(
@@ -275,7 +369,8 @@ public class RedirectEntryLocalServiceTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		Assert.assertEquals(
-			"anotherSourceURL", _chainedRedirectEntry.getSourceURL());
+			_friendlyURLNormalizer.normalizeWithEncoding("anotherSourceURL"),
+			_chainedRedirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"destinationURL", _chainedRedirectEntry.getDestinationURL());
@@ -294,7 +389,9 @@ public class RedirectEntryLocalServiceTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		Assert.assertEquals(
-			"intermediateDestinationURL", _chainedRedirectEntry.getSourceURL());
+			_friendlyURLNormalizer.normalizeWithEncoding(
+				"intermediateDestinationURL"),
+			_chainedRedirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"finalDestinationURL", _chainedRedirectEntry.getDestinationURL());
@@ -302,10 +399,23 @@ public class RedirectEntryLocalServiceTest {
 		_redirectEntry = _redirectEntryLocalService.fetchRedirectEntry(
 			_redirectEntry.getRedirectEntryId());
 
-		Assert.assertEquals("sourceURL", _redirectEntry.getSourceURL());
+		Assert.assertEquals(
+			_friendlyURLNormalizer.normalizeWithEncoding("sourceURL"),
+			_redirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"finalDestinationURL", _redirectEntry.getDestinationURL());
+	}
+
+	@Test
+	public void testAddRedirectEntryNotNormalizedSourceURL() throws Exception {
+		_redirectEntry = _redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "destinationURL", null, false, "attaché",
+			ServiceContextTestUtil.getServiceContext());
+
+		Assert.assertEquals(
+			_friendlyURLNormalizer.normalizeWithEncoding("attaché"),
+			_redirectEntry.getSourceURL());
 	}
 
 	@Test
@@ -328,7 +438,9 @@ public class RedirectEntryLocalServiceTest {
 		_redirectEntry = _redirectEntryLocalService.fetchRedirectEntry(
 			_redirectEntry.getRedirectEntryId());
 
-		Assert.assertEquals("sourceURL", _redirectEntry.getSourceURL());
+		Assert.assertEquals(
+			_friendlyURLNormalizer.normalizeWithEncoding("sourceURL"),
+			_redirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"groupBaseURL/intermediateURL", _redirectEntry.getDestinationURL());
@@ -337,14 +449,16 @@ public class RedirectEntryLocalServiceTest {
 			_chainedRedirectEntry.getRedirectEntryId());
 
 		Assert.assertEquals(
-			"destinationURL", _chainedRedirectEntry.getSourceURL());
+			_friendlyURLNormalizer.normalizeWithEncoding("destinationURL"),
+			_chainedRedirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"groupBaseURL/sourceURL",
 			_chainedRedirectEntry.getDestinationURL());
 
 		Assert.assertEquals(
-			"intermediateURL", _intermediateRedirectEntry.getSourceURL());
+			_friendlyURLNormalizer.normalizeWithEncoding("intermediateURL"),
+			_intermediateRedirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"groupBaseURL/destinationURL",
@@ -467,7 +581,8 @@ public class RedirectEntryLocalServiceTest {
 			"anotherSourceURL", false);
 
 		Assert.assertEquals(
-			"anotherSourceURL", _chainedRedirectEntry.getSourceURL());
+			_friendlyURLNormalizer.normalizeWithEncoding("anotherSourceURL"),
+			_chainedRedirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"groupBaseURL/sourceURL",
@@ -493,7 +608,9 @@ public class RedirectEntryLocalServiceTest {
 			null, "groupBaseURL", false, "intermediateDestinationURL", false);
 
 		Assert.assertEquals(
-			"intermediateDestinationURL", _chainedRedirectEntry.getSourceURL());
+			_friendlyURLNormalizer.normalizeWithEncoding(
+				"intermediateDestinationURL"),
+			_chainedRedirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"finalDestinationURL", _chainedRedirectEntry.getDestinationURL());
@@ -501,7 +618,9 @@ public class RedirectEntryLocalServiceTest {
 		_redirectEntry = _redirectEntryLocalService.fetchRedirectEntry(
 			_redirectEntry.getRedirectEntryId());
 
-		Assert.assertEquals("sourceURL", _redirectEntry.getSourceURL());
+		Assert.assertEquals(
+			_friendlyURLNormalizer.normalizeWithEncoding("sourceURL"),
+			_redirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"groupBaseURL/intermediateDestinationURL",
@@ -519,7 +638,9 @@ public class RedirectEntryLocalServiceTest {
 			"groupBaseURL", false, "sourceURL", false,
 			ServiceContextTestUtil.getServiceContext());
 
-		Assert.assertEquals("sourceURL", _redirectEntry.getSourceURL());
+		Assert.assertEquals(
+			_friendlyURLNormalizer.normalizeWithEncoding("sourceURL"),
+			_redirectEntry.getSourceURL());
 		Assert.assertEquals(
 			"groupBaseURL/destinationURL", _redirectEntry.getDestinationURL());
 
@@ -547,7 +668,8 @@ public class RedirectEntryLocalServiceTest {
 			"anotherSourceURL", true);
 
 		Assert.assertEquals(
-			"anotherSourceURL", _chainedRedirectEntry.getSourceURL());
+			_friendlyURLNormalizer.normalizeWithEncoding("anotherSourceURL"),
+			_chainedRedirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"destinationURL", _chainedRedirectEntry.getDestinationURL());
@@ -572,7 +694,9 @@ public class RedirectEntryLocalServiceTest {
 			null, "groupBaseURL", false, "intermediateDestinationURL", true);
 
 		Assert.assertEquals(
-			"intermediateDestinationURL", _chainedRedirectEntry.getSourceURL());
+			_friendlyURLNormalizer.normalizeWithEncoding(
+				"intermediateDestinationURL"),
+			_chainedRedirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"finalDestinationURL", _chainedRedirectEntry.getDestinationURL());
@@ -580,14 +704,34 @@ public class RedirectEntryLocalServiceTest {
 		_redirectEntry = _redirectEntryLocalService.fetchRedirectEntry(
 			_redirectEntry.getRedirectEntryId());
 
-		Assert.assertEquals("sourceURL", _redirectEntry.getSourceURL());
+		Assert.assertEquals(
+			_friendlyURLNormalizer.normalizeWithEncoding("sourceURL"),
+			_redirectEntry.getSourceURL());
 
 		Assert.assertEquals(
 			"finalDestinationURL", _redirectEntry.getDestinationURL());
 	}
 
+	@Test
+	public void testUpdateRedirectEntryNormalizedSourceURL() throws Exception {
+		_redirectEntry = _redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), "destinationURL", null, false, "sourceURL",
+			ServiceContextTestUtil.getServiceContext());
+
+		_redirectEntry = _redirectEntryLocalService.updateRedirectEntry(
+			_redirectEntry.getRedirectEntryId(), "destinationURL", null, false,
+			"attaché");
+
+		Assert.assertEquals(
+			_friendlyURLNormalizer.normalizeWithEncoding("attaché"),
+			_redirectEntry.getSourceURL());
+	}
+
 	@DeleteAfterTestRun
 	private RedirectEntry _chainedRedirectEntry;
+
+	@Inject
+	private FriendlyURLNormalizer _friendlyURLNormalizer;
 
 	@DeleteAfterTestRun
 	private Group _group;

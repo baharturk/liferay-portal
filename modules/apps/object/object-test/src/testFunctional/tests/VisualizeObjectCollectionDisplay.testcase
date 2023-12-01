@@ -12,47 +12,47 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		ObjectAdmin.deleteAllCustomObjectsViaAPI();
 
-		if ("${testPortalInstance}" == "true") {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
-		}
-		else {
-			ObjectAdmin.deleteAllCustomObjectsViaAPI();
 		}
 	}
 
 	@description = "LPS-135386 - Verify if the user can display the entries on a table format"
-	@priority = "5"
+	@priority = 5
 	test CanDisplayEntriesOnTableFormat {
 		property portal.acceptance = "true";
 
 		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object",
-			objectName = "CustomObject",
-			pluralLabelName = "Custom Objects");
+			labelName = "Custom Object 299",
+			objectName = "CustomObject299",
+			pluralLabelName = "Custom Objects 299");
 
 		ObjectAdmin.addObjectFieldViaAPI(
+			fieldBusinessType = "Text",
 			fieldLabelName = "Custom Field",
 			fieldName = "customObjectField",
 			fieldType = "String",
 			isRequired = "false",
-			objectName = "CustomObject");
+			objectName = "CustomObject299");
 
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject");
+		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject299");
 
 		ObjectAdmin.addObjectSingleFieldEntryViaAPI(
 			fieldName = "customObjectField",
-			objectName = "CustomObject",
+			objectName = "CustomObject299",
 			value = "Test Text 1");
 
 		ObjectAdmin.addObjectSingleFieldEntryViaAPI(
 			fieldName = "customObjectField",
-			objectName = "CustomObject",
+			objectName = "CustomObject299",
 			value = "Test Text 2");
 
 		VisualizeObjectDisplayPage.createObjectPageTemplate(
-			contentType = "Custom Object",
+			contentType = "Custom Object 299",
 			pageTemplateName = "Blank Display Page");
 
 		PageEditor.addFragment(
@@ -61,61 +61,65 @@ definition {
 
 		PageEditor.editCollectionDisplay(
 			fragmentName = "Collection Display",
-			infoListProviderName = "Custom Objects");
+			infoListProviderName = "Custom Objects 299");
 
 		DoubleClick(
 			collectionName = "Collection Display",
 			locator1 = "VisualizeObjectCollectionDisplay#FRAGMENT_COLLECTION");
 
 		Select(
-			key_fieldLabel = "List Style",
+			key_fieldLabel = "Style Display",
 			locator1 = "Select#GENERIC_SELECT_FIELD",
 			value1 = "Table");
 
-		PageEditor.clickPublish();
+		PageEditor.publish();
 
 		VisualizeObjectDisplayPage.openDisplayPage(displayPageName = "Blank Display Page");
 
-		VisualizeObjectCollectionDisplay.viwEntriesTable(entries = "Test Text 1");
+		AssertElementPresent(
+			key_entries = "Test Text 1",
+			locator1 = "VisualizeObjectCollectionDisplay#ENTRIES_TABLE");
 
-		VisualizeObjectCollectionDisplay.viwEntriesTable(entries = "Test Text 2");
+		AssertElementPresent(
+			key_entries = "Test Text 2",
+			locator1 = "VisualizeObjectCollectionDisplay#ENTRIES_TABLE");
 	}
 
 	@description = "LPS-133865 - Verify if the fields from an Object are displayed to be mapped on a fragment"
-	@priority = "5"
+	@priority = 5
 	test FieldsFromObjectDisplayedToBeMapped {
 		property portal.acceptance = "true";
 
 		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object",
-			objectName = "CustomObject",
-			pluralLabelName = "Custom Objects");
+			labelName = "Custom Object 300",
+			objectName = "CustomObject300",
+			pluralLabelName = "Custom Objects 300");
 
 		ObjectAdmin.addObjectFieldViaAPI(
+			fieldBusinessType = "Integer",
 			fieldLabelName = "Number",
 			fieldName = "integer",
 			fieldType = "Integer",
 			isRequired = "false",
-			objectName = "CustomObject");
+			objectName = "CustomObject300");
 
 		ObjectAdmin.addObjectFieldViaAPI(
+			fieldBusinessType = "Text",
 			fieldLabelName = "Text",
 			fieldName = "text",
 			fieldType = "String",
 			isRequired = "false",
-			objectName = "CustomObject");
+			objectName = "CustomObject300");
 
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject");
+		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject300");
 
 		VisualizeObjectDisplayPage.createObjectPageTemplate(
-			contentType = "Custom Object",
+			contentType = "Custom Object 300",
 			pageTemplateName = "Blank Display Page");
 
 		PageEditor.addFragment(
-			collectionName = "Content Display",
-			fragmentName = "Collection Display");
-
-		VisualizeObjectCollectionDisplay.addFieldForCollectionDisplay(fragmentName = "Heading");
+			collectionName = "Basic Components",
+			fragmentName = "Heading");
 
 		VisualizeObjectCollectionDisplay.openHeading();
 
@@ -129,60 +133,61 @@ definition {
 	}
 
 	@description = "LPS-133865 - Verify if the Object is displayed to be selected as Collection Provider on the Collection Display fragment"
-	@priority = "5"
+	@priority = 5
 	test ObjectDisplayedToCollectionProdiver {
 		property portal.acceptance = "true";
 
 		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object",
-			objectName = "CustomObject",
-			pluralLabelName = "Custom Objects");
+			labelName = "Custom Object 301",
+			objectName = "CustomObject301",
+			pluralLabelName = "Custom Objects 301");
 
 		ObjectAdmin.addObjectFieldViaAPI(
+			fieldBusinessType = "Text",
 			fieldLabelName = "Field",
 			fieldName = "customObjectField",
 			fieldType = "String",
 			isRequired = "false",
-			objectName = "CustomObject");
+			objectName = "CustomObject301");
 
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject");
+		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject301");
 
 		VisualizeObjectCollectionDisplay.openObjectCollectionProvider();
 
-		VisualizeObjectCollectionDisplay.viewObjectCollectionProvider(labelName = "Custom Object");
+		AssertElementPresent(
+			key_labelName = "Custom Objects 301",
+			locator1 = "VisualizeObjectCollectionDisplay#VIEW_OBJECT_COLLECTION_DISPLAY");
 	}
 
 	@description = "LPS-133865 - Verify if the Object entries are rendered inside the Collection Display fragment"
-	@priority = "5"
+	@priority = 5
 	test ObjectEntriesAreRendered {
 		property portal.acceptance = "true";
 
 		ObjectAdmin.addObjectViaAPI(
-			labelName = "Custom Object",
-			objectName = "CustomObject",
-			pluralLabelName = "Custom Objects");
+			labelName = "Custom Object 302",
+			objectName = "CustomObject302",
+			pluralLabelName = "Custom Objects 302");
 
 		ObjectAdmin.addObjectFieldViaAPI(
+			fieldBusinessType = "Text",
 			fieldLabelName = "Text",
-			fieldName = "text",
+			fieldName = "customObjectField",
 			fieldType = "String",
 			isRequired = "false",
-			objectName = "CustomObject");
+			objectName = "CustomObject302");
 
-		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject");
+		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject302");
 
-		ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-			fieldName = "text",
-			objectName = "CustomObject",
-			value = "Test Text 1");
-
-		ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-			fieldName = "text",
-			objectName = "CustomObject",
-			value = "Test Text 2");
+		for (var entryName : list "A,B") {
+			ObjectAdmin.addObjectSingleFieldEntryViaAPI(
+				fieldName = "customObjectField",
+				objectName = "CustomObject302",
+				value = "Entry ${entryName}");
+		}
 
 		VisualizeObjectDisplayPage.createObjectPageTemplate(
-			contentType = "Custom Object",
+			contentType = "Custom Object 302",
 			pageTemplateName = "Blank Display Page");
 
 		PageEditor.addFragment(
@@ -191,27 +196,28 @@ definition {
 
 		PageEditor.editCollectionDisplay(
 			fragmentName = "Collection Display",
-			infoListProviderName = "Custom Objects");
+			infoListProviderName = "Custom Objects 302");
 
-		PageEditor.gotoTab(tabName = "Fragments and Widgets");
+		Refresh();
 
-		VisualizeObjectCollectionDisplay.addFieldForCollectionDisplay(fragmentName = "Heading");
+		PageEditor.addFragmentToCollectionDisplay(
+			collectionName = "Basic Components",
+			entryTitle = "",
+			fragmentName = "Heading");
 
 		VisualizeObjectCollectionDisplay.openHeading();
 
-		VisualizeObjectCollectionDisplay.addFieldInsideCollectionDisplay(
-			fragmentName = "Heading",
-			label = "Expand Collection Display");
-
 		VisualizeObjectCollectionDisplay.mapFragment(fieldLabel = "Text");
 
-		PageEditor.clickPublish();
+		PageEditor.publish();
 
 		VisualizeObjectDisplayPage.openDisplayPage(displayPageName = "Blank Display Page");
 
-		VisualizeObjectCollectionDisplay.viewEntriesFragment(entries = "Test Text 1");
-
-		VisualizeObjectCollectionDisplay.viewEntriesFragment(entries = "Test Text 2");
+		for (var entryName : list "A,B") {
+			AssertElementPresent(
+				key_entries = "Entry ${entryName}",
+				locator1 = "VisualizeObjectCollectionDisplay#ENTRIES_FRAGMENT");
+		}
 	}
 
 }

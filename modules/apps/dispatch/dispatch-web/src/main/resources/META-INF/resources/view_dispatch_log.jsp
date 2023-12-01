@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,6 +11,10 @@
 DispatchLogDisplayContext dispatchLogDisplayContext = (DispatchLogDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 DispatchLog dispatchLog = dispatchLogDisplayContext.getDispatchLog();
+
+DispatchTrigger dispatchTrigger = dispatchLogDisplayContext.getDispatchTrigger();
+
+Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(FastDateFormatConstants.SHORT, FastDateFormatConstants.LONG, locale, TimeZone.getTimeZone(dispatchTrigger.getTimeZoneId()));
 %>
 
 <portlet:actionURL name="/dispatch/edit_dispatch_log" var="editDispatchLogActionURL" />
@@ -35,13 +30,13 @@ DispatchLog dispatchLog = dispatchLogDisplayContext.getDispatchLog();
 						<clay:col
 							md="2"
 						>
-							<%= LanguageUtil.get(request, "start-date") %>
+							<liferay-ui:message key="start-date" />
 						</clay:col>
 
 						<clay:col
 							md="8"
 						>
-							<%= (dispatchLog.getStartDate() != null) ? fastDateFormat.format(dispatchLog.getStartDate()) : "" %>
+							<%= (dispatchLog.getStartDate() != null) ? fastDateTimeFormat.format(dispatchLog.getStartDate()) : "" %>
 						</clay:col>
 					</clay:row>
 
@@ -49,7 +44,21 @@ DispatchLog dispatchLog = dispatchLogDisplayContext.getDispatchLog();
 						<clay:col
 							md="2"
 						>
-							<%= LanguageUtil.get(request, "status") %>
+							<liferay-ui:message key="scheduled-start-date" />
+						</clay:col>
+
+						<clay:col
+							md="8"
+						>
+							<%= (dispatchLog.getStartDate() != null) ? dateTimeFormat.format(dispatchLog.getStartDate()) : "" %>
+						</clay:col>
+					</clay:row>
+
+					<clay:row>
+						<clay:col
+							md="2"
+						>
+							<liferay-ui:message key="status" />
 						</clay:col>
 
 						<%
@@ -60,7 +69,7 @@ DispatchLog dispatchLog = dispatchLogDisplayContext.getDispatchLog();
 							cssClass='<%= String.format("background-task-status-row background-task-status-%s %s", dispatchTaskStatus.getLabel(), dispatchTaskStatus.getCssClass()) %>'
 							md="8"
 						>
-							<h6><%= LanguageUtil.get(request, dispatchTaskStatus.getLabel()) %></h6>
+							<h6><liferay-ui:message key="<%= dispatchTaskStatus.getLabel() %>" /></h6>
 						</clay:col>
 					</clay:row>
 
@@ -68,13 +77,13 @@ DispatchLog dispatchLog = dispatchLogDisplayContext.getDispatchLog();
 						<clay:col
 							md="2"
 						>
-							<%= LanguageUtil.get(request, "runtime") %>
+							<liferay-ui:message key="runtime" />
 						</clay:col>
 
 						<clay:col
 							md="8"
 						>
-							<%= dispatchLogDisplayContext.getExecutionTimeMills() + " ms" %>
+							<%= dispatchLogDisplayContext.getExecutionTimeMills() %> ms
 						</clay:col>
 					</clay:row>
 
@@ -83,7 +92,7 @@ DispatchLog dispatchLog = dispatchLogDisplayContext.getDispatchLog();
 							<clay:col
 								md="2"
 							>
-								<%= LanguageUtil.get(request, "error") %>
+								<liferay-ui:message key="error" />
 							</clay:col>
 
 							<clay:col
@@ -99,7 +108,7 @@ DispatchLog dispatchLog = dispatchLogDisplayContext.getDispatchLog();
 							<clay:col
 								md="2"
 							>
-								<%= LanguageUtil.get(request, "output") %>
+								<liferay-ui:message key="output" />
 							</clay:col>
 
 							<clay:col

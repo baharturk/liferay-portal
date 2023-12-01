@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.web.internal.portlet.action;
@@ -120,6 +111,8 @@ public class UpdateOAuth2ApplicationMVCActionCommand
 			}
 		}
 
+		String clientAuthenticationMethod = ParamUtil.get(
+			request, "clientAuthenticationMethod", StringPool.BLANK);
 		long clientCredentialUserId = ParamUtil.get(
 			request, "clientCredentialUserId", themeDisplay.getUserId());
 		String clientId = ParamUtil.get(request, "clientId", StringPool.BLANK);
@@ -129,6 +122,7 @@ public class UpdateOAuth2ApplicationMVCActionCommand
 			request, "description", StringPool.BLANK);
 		String homePageURL = ParamUtil.get(
 			request, "homePageURL", StringPool.BLANK);
+		String jwks = ParamUtil.get(request, "jwks", StringPool.BLANK);
 		String name = ParamUtil.get(request, "name", StringPool.BLANK);
 		String privacyPolicyURL = ParamUtil.get(
 			request, "privacyPolicyURL", StringPool.BLANK);
@@ -171,11 +165,12 @@ public class UpdateOAuth2ApplicationMVCActionCommand
 
 				OAuth2Application oAuth2Application =
 					_oAuth2ApplicationService.addOAuth2Application(
-						allowedGrantTypesList, clientCredentialUserId, clientId,
-						clientProfile.id(), clientSecret, description,
-						featuresList, homePageURL, 0, name, privacyPolicyURL,
-						redirectURIsList, rememberDevice, scopeAliasesList,
-						trustedApplication, serviceContext);
+						allowedGrantTypesList, clientAuthenticationMethod,
+						clientCredentialUserId, clientId, clientProfile.id(),
+						clientSecret, description, featuresList, homePageURL, 0,
+						jwks, name, privacyPolicyURL, redirectURIsList,
+						rememberDevice, scopeAliasesList, trustedApplication,
+						serviceContext);
 
 				response.setRenderParameter(
 					"oAuth2ApplicationId",
@@ -189,9 +184,10 @@ public class UpdateOAuth2ApplicationMVCActionCommand
 				_oAuth2ApplicationService.updateOAuth2Application(
 					oAuth2ApplicationId,
 					oAuth2Application.getOAuth2ApplicationScopeAliasesId(),
-					allowedGrantTypesList, clientCredentialUserId, clientId,
-					clientProfile.id(), clientSecret, description, featuresList,
-					homePageURL, oAuth2Application.getIconFileEntryId(), name,
+					allowedGrantTypesList, clientAuthenticationMethod,
+					clientCredentialUserId, clientId, clientProfile.id(),
+					clientSecret, description, featuresList, homePageURL,
+					oAuth2Application.getIconFileEntryId(), jwks, name,
 					privacyPolicyURL, redirectURIsList, rememberDevice,
 					trustedApplication);
 
@@ -216,7 +212,7 @@ public class UpdateOAuth2ApplicationMVCActionCommand
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			Class<?> peClass = portalException.getClass();

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.social.service.persistence.impl;
@@ -46,7 +37,6 @@ import com.liferay.social.kernel.service.persistence.SocialActivitySettingUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -190,7 +180,7 @@ public class SocialActivitySettingPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialActivitySetting>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialActivitySetting socialActivitySetting : list) {
@@ -567,7 +557,8 @@ public class SocialActivitySettingPersistenceImpl
 
 			finderArgs = new Object[] {groupId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -718,7 +709,7 @@ public class SocialActivitySettingPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialActivitySetting>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialActivitySetting socialActivitySetting : list) {
@@ -1120,7 +1111,8 @@ public class SocialActivitySettingPersistenceImpl
 
 			finderArgs = new Object[] {groupId, classNameId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1278,7 +1270,7 @@ public class SocialActivitySettingPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialActivitySetting>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialActivitySetting socialActivitySetting : list) {
@@ -1680,7 +1672,8 @@ public class SocialActivitySettingPersistenceImpl
 
 			finderArgs = new Object[] {groupId, activityType};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1846,7 +1839,7 @@ public class SocialActivitySettingPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialActivitySetting>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SocialActivitySetting socialActivitySetting : list) {
@@ -2275,7 +2268,8 @@ public class SocialActivitySettingPersistenceImpl
 
 			finderArgs = new Object[] {groupId, classNameId, activityType};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2415,12 +2409,9 @@ public class SocialActivitySettingPersistenceImpl
 
 		name = Objects.toString(name, "");
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			SocialActivitySetting.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {
 				groupId, classNameId, activityType, name
 			};
@@ -2428,10 +2419,13 @@ public class SocialActivitySettingPersistenceImpl
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByG_C_A_N, finderArgs);
+				_finderPathFetchByG_C_A_N, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivitySetting.class);
 
 		if (result instanceof SocialActivitySetting) {
 			SocialActivitySetting socialActivitySetting =
@@ -2444,6 +2438,15 @@ public class SocialActivitySettingPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						SocialActivitySetting.class,
+						socialActivitySetting.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -2588,7 +2591,8 @@ public class SocialActivitySettingPersistenceImpl
 				groupId, classNameId, activityType, name
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3037,7 +3041,7 @@ public class SocialActivitySettingPersistenceImpl
 	@Override
 	public SocialActivitySetting fetchByPrimaryKey(Serializable primaryKey) {
 		if (CTPersistenceHelperUtil.isProductionMode(
-				SocialActivitySetting.class)) {
+				SocialActivitySetting.class, primaryKey)) {
 
 			return super.fetchByPrimaryKey(primaryKey);
 		}
@@ -3263,7 +3267,7 @@ public class SocialActivitySettingPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SocialActivitySetting>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3339,7 +3343,7 @@ public class SocialActivitySettingPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -3560,29 +3564,13 @@ public class SocialActivitySettingPersistenceImpl
 			new String[] {"groupId", "classNameId", "activityType", "name"},
 			false);
 
-		_setSocialActivitySettingUtilPersistence(this);
+		SocialActivitySettingUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setSocialActivitySettingUtilPersistence(null);
+		SocialActivitySettingUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(SocialActivitySettingImpl.class.getName());
-	}
-
-	private void _setSocialActivitySettingUtilPersistence(
-		SocialActivitySettingPersistence socialActivitySettingPersistence) {
-
-		try {
-			Field field = SocialActivitySettingUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, socialActivitySettingPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_SOCIALACTIVITYSETTING =

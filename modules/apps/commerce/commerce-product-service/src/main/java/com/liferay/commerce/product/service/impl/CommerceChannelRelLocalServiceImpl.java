@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.impl;
@@ -17,16 +8,26 @@ package com.liferay.commerce.product.service.impl;
 import com.liferay.commerce.product.exception.DuplicateCommerceChannelRelException;
 import com.liferay.commerce.product.model.CommerceChannelRel;
 import com.liferay.commerce.product.service.base.CommerceChannelRelLocalServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.product.model.CommerceChannelRel",
+	service = AopService.class
+)
 public class CommerceChannelRelLocalServiceImpl
 	extends CommerceChannelRelLocalServiceBaseImpl {
 
@@ -36,7 +37,7 @@ public class CommerceChannelRelLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
+		long classNameId = _classNameLocalService.getClassNameId(className);
 
 		CommerceChannelRel existingCommerceChannelRel =
 			commerceChannelRelPersistence.fetchByC_C_C(
@@ -46,7 +47,7 @@ public class CommerceChannelRelLocalServiceImpl
 			throw new DuplicateCommerceChannelRelException();
 		}
 
-		User user = userLocalService.getUser(serviceContext.getUserId());
+		User user = _userLocalService.getUser(serviceContext.getUserId());
 
 		long commerceChannelRelId = counterLocalService.increment();
 
@@ -72,7 +73,7 @@ public class CommerceChannelRelLocalServiceImpl
 	@Override
 	public void deleteCommerceChannelRels(String className, long classPK) {
 		commerceChannelRelPersistence.removeByC_C(
-			classNameLocalService.getClassNameId(className), classPK);
+			_classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	@Override
@@ -80,7 +81,7 @@ public class CommerceChannelRelLocalServiceImpl
 		String className, long classPK, long commerceChannelId) {
 
 		return commerceChannelRelPersistence.fetchByC_C_C(
-			classNameLocalService.getClassNameId(className), classPK,
+			_classNameLocalService.getClassNameId(className), classPK,
 			commerceChannelId);
 	}
 
@@ -99,7 +100,7 @@ public class CommerceChannelRelLocalServiceImpl
 		OrderByComparator<CommerceChannelRel> orderByComparator) {
 
 		return commerceChannelRelPersistence.findByC_C(
-			classNameLocalService.getClassNameId(className), classPK, start,
+			_classNameLocalService.getClassNameId(className), classPK, start,
 			end, orderByComparator);
 	}
 
@@ -120,7 +121,7 @@ public class CommerceChannelRelLocalServiceImpl
 	@Override
 	public int getCommerceChannelRelsCount(String className, long classPK) {
 		return commerceChannelRelPersistence.countByC_C(
-			classNameLocalService.getClassNameId(className), classPK);
+			_classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	@Override
@@ -129,5 +130,11 @@ public class CommerceChannelRelLocalServiceImpl
 
 		return commerceChannelRelFinder.countByC_C(className, classPK, name);
 	}
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

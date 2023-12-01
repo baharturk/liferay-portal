@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.synchronizer;
@@ -37,10 +28,7 @@ public class FilterToIndexSynchronizerImplTest extends BaseSynonymsWebTestCase {
 		LiferayUnitTestRule.INSTANCE;
 
 	@Before
-	@Override
 	public void setUp() throws Exception {
-		super.setUp();
-
 		_filterToIndexSynchronizerImpl = new FilterToIndexSynchronizerImpl();
 
 		ReflectionTestUtil.setFieldValue(
@@ -49,9 +37,6 @@ public class FilterToIndexSynchronizerImplTest extends BaseSynonymsWebTestCase {
 		ReflectionTestUtil.setFieldValue(
 			_filterToIndexSynchronizerImpl, "_synonymSetFilterReader",
 			synonymSetFilterReader);
-		ReflectionTestUtil.setFieldValue(
-			_filterToIndexSynchronizerImpl, "_synonymSetIndexNameBuilder",
-			synonymSetIndexNameBuilder);
 		ReflectionTestUtil.setFieldValue(
 			_filterToIndexSynchronizerImpl, "_synonymSetStorageAdapter",
 			synonymSetStorageAdapter);
@@ -67,7 +52,7 @@ public class FilterToIndexSynchronizerImplTest extends BaseSynonymsWebTestCase {
 		Mockito.verify(
 			synonymSetStorageAdapter, Mockito.times(1)
 		).create(
-			Mockito.anyObject(), Mockito.anyObject()
+			Mockito.any(), Mockito.any()
 		);
 	}
 

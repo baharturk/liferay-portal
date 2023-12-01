@@ -1,24 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
 
 import com.liferay.document.library.display.context.DLMimeTypeDisplayContext;
 import com.liferay.document.library.display.context.DLViewFileVersionDisplayContext;
+import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
-import com.liferay.document.library.kernel.model.DLFileVersion;
+import com.liferay.document.library.kernel.model.DLFileEntryType;
+import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalServiceUtil;
 import com.liferay.document.library.kernel.versioning.VersioningStrategy;
 import com.liferay.document.library.preview.DLPreviewRenderer;
@@ -26,6 +19,7 @@ import com.liferay.document.library.preview.DLPreviewRendererProvider;
 import com.liferay.document.library.preview.exception.DLFileEntryPreviewGenerationException;
 import com.liferay.document.library.preview.exception.DLPreviewGenerationInProcessException;
 import com.liferay.document.library.preview.exception.DLPreviewSizeException;
+import com.liferay.document.library.util.DLFileEntryTypeUtil;
 import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.document.library.web.internal.constants.DLWebKeys;
 import com.liferay.document.library.web.internal.display.context.helper.DLPortletInstanceSettingsHelper;
@@ -36,9 +30,11 @@ import com.liferay.document.library.web.internal.display.context.logic.UIItemsBu
 import com.liferay.document.library.web.internal.display.context.util.JSPRenderer;
 import com.liferay.document.library.web.internal.helper.DLTrashHelper;
 import com.liferay.dynamic.data.mapping.exception.StorageException;
-import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.StorageEngine;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -47,18 +43,14 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.FileVersion;
-import com.liferay.portal.kernel.servlet.taglib.ui.Menu;
-import com.liferay.portal.kernel.servlet.taglib.ui.MenuItem;
-import com.liferay.portal.kernel.servlet.taglib.ui.ToolbarItem;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
 import java.io.IOException;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.ResourceBundle;
 import java.util.UUID;
 
 import javax.servlet.ServletException;
@@ -72,35 +64,103 @@ public class DefaultDLViewFileVersionDisplayContext
 	implements DLViewFileVersionDisplayContext {
 
 	public DefaultDLViewFileVersionDisplayContext(
-			HttpServletRequest httpServletRequest,
-			HttpServletResponse httpServletResponse, FileShortcut fileShortcut,
+			DDMStorageEngineManager ddmStorageEngineManager,
 			DLMimeTypeDisplayContext dlMimeTypeDisplayContext,
-			ResourceBundle resourceBundle, StorageEngine storageEngine,
-			DLTrashHelper dlTrashHelper,
 			DLPreviewRendererProvider dlPreviewRendererProvider,
-			VersioningStrategy versioningStrategy, DLURLHelper dlURLHelper)
+			DLTrashHelper dlTrashHelper, DLURLHelper dlURLHelper,
+			FileShortcut fileShortcut, HttpServletRequest httpServletRequest,
+			VersioningStrategy versioningStrategy)
 		throws PortalException {
 
 		this(
 			httpServletRequest, fileShortcut.getFileVersion(), fileShortcut,
-			dlMimeTypeDisplayContext, resourceBundle, storageEngine,
-			dlTrashHelper, dlPreviewRendererProvider, versioningStrategy,
-			dlURLHelper);
+			ddmStorageEngineManager, dlMimeTypeDisplayContext, dlTrashHelper,
+			dlPreviewRendererProvider, versioningStrategy, dlURLHelper);
 	}
 
 	public DefaultDLViewFileVersionDisplayContext(
-		HttpServletRequest httpServletRequest,
-		HttpServletResponse httpServletResponse, FileVersion fileVersion,
+		DDMStorageEngineManager ddmStorageEngineManager,
 		DLMimeTypeDisplayContext dlMimeTypeDisplayContext,
-		ResourceBundle resourceBundle, StorageEngine storageEngine,
-		DLTrashHelper dlTrashHelper,
 		DLPreviewRendererProvider dlPreviewRendererProvider,
-		VersioningStrategy versioningStrategy, DLURLHelper dlURLHelper) {
+		DLTrashHelper dlTrashHelper, DLURLHelper dlURLHelper,
+		FileVersion fileVersion, HttpServletRequest httpServletRequest,
+		VersioningStrategy versioningStrategy) {
 
 		this(
-			httpServletRequest, fileVersion, null, dlMimeTypeDisplayContext,
-			resourceBundle, storageEngine, dlTrashHelper,
-			dlPreviewRendererProvider, versioningStrategy, dlURLHelper);
+			httpServletRequest, fileVersion, null, ddmStorageEngineManager,
+			dlMimeTypeDisplayContext, dlTrashHelper, dlPreviewRendererProvider,
+			versioningStrategy, dlURLHelper);
+	}
+
+	@Override
+	public List<DropdownItem> getActionDropdownItems() throws PortalException {
+		if (!isActionsVisible()) {
+			return null;
+		}
+
+		return DropdownItemListBuilder.addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					DropdownItemListBuilder.add(
+						_uiItemsBuilder::isDownloadActionAvailable,
+						_uiItemsBuilder.createDownloadDropdownItem()
+					).add(
+						_uiItemsBuilder::isViewOriginalFileActionAvailable,
+						_uiItemsBuilder.createViewOriginalFileDropdownItem()
+					).add(
+						_uiItemsBuilder::isEditActionAvailable,
+						_uiItemsBuilder.createEditDropdownItem()
+					).add(
+						_uiItemsBuilder::isEditImageActionAvailable,
+						_uiItemsBuilder.createEditImageDropdownItem()
+					).build());
+				dropdownGroupItem.setSeparator(true);
+			}
+		).addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					DropdownItemListBuilder.add(
+						_uiItemsBuilder::isCheckoutActionAvailable,
+						_uiItemsBuilder.createCheckoutDropdownItem()
+					).add(
+						_uiItemsBuilder::isCancelCheckoutActionAvailable,
+						_uiItemsBuilder.createCancelCheckoutDropdownItem()
+					).add(
+						_uiItemsBuilder::isCheckinActionAvailable,
+						_uiItemsBuilder.createCheckinDropdownItem()
+					).add(
+						_uiItemsBuilder::
+							isCollectDigitalSignatureActionAvailable,
+						_uiItemsBuilder.
+							createCollectDigitalSignatureDropdownItem()
+					).add(
+						_uiItemsBuilder::isHistoryActionAvailable,
+						_uiItemsBuilder.createHistoryDropdownItem()
+					).add(
+						_uiItemsBuilder::isMoveActionAvailable,
+						_uiItemsBuilder.createMoveDropdownItem()
+					).add(
+						_uiItemsBuilder::isCopyActionAvailable,
+						_uiItemsBuilder.createCopyDropdownItem()
+					).build());
+				dropdownGroupItem.setSeparator(true);
+			}
+		).addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					DropdownItemListBuilder.add(
+						_uiItemsBuilder::isPermissionsActionAvailable,
+						_uiItemsBuilder.createPermissionsDropdownItem()
+					).add(
+						_uiItemsBuilder::isPublishActionAvailable,
+						_uiItemsBuilder.createPublishDropdownItem()
+					).add(
+						_uiItemsBuilder::isDeleteActionAvailable,
+						_uiItemsBuilder.createDeleteDropdownItem()
+					).build());
+				dropdownGroupItem.setSeparator(true);
+			}
+		).build();
 	}
 
 	@Override
@@ -121,7 +181,7 @@ public class DefaultDLViewFileVersionDisplayContext
 			DLFileEntryMetadataLocalServiceUtil.getFileEntryMetadata(
 				ddmStructure.getStructureId(), _fileVersion.getFileVersionId());
 
-		return _storageEngine.getDDMFormValues(
+		return _ddmStorageEngineManager.getDDMFormValues(
 			dlFileEntryMetadata.getDDMStorageId());
 	}
 
@@ -129,7 +189,12 @@ public class DefaultDLViewFileVersionDisplayContext
 	public DDMFormValues getDDMFormValues(long classPK)
 		throws StorageException {
 
-		return _storageEngine.getDDMFormValues(classPK);
+		try {
+			return _ddmStorageEngineManager.getDDMFormValues(classPK);
+		}
+		catch (PortalException portalException) {
+			throw new StorageException(portalException);
+		}
 	}
 
 	@Override
@@ -139,10 +204,7 @@ public class DefaultDLViewFileVersionDisplayContext
 		}
 
 		if (_fileVersionDisplayContextHelper.isDLFileVersion()) {
-			DLFileVersion dlFileVersion =
-				(DLFileVersion)_fileVersion.getModel();
-
-			_ddmStructures = dlFileVersion.getDDMStructures();
+			_ddmStructures = _getVisibleDDMStructures();
 		}
 		else {
 			_ddmStructures = Collections.emptyList();
@@ -170,7 +232,7 @@ public class DefaultDLViewFileVersionDisplayContext
 
 	@Override
 	public String getDiscussionLabel(Locale locale) {
-		return LanguageUtil.get(_resourceBundle, "comments");
+		return LanguageUtil.get(_httpServletRequest, "comments");
 	}
 
 	@Override
@@ -181,47 +243,6 @@ public class DefaultDLViewFileVersionDisplayContext
 
 		return _dlMimeTypeDisplayContext.getIconFileMimeType(
 			_fileVersion.getMimeType());
-	}
-
-	@Override
-	public Menu getMenu() throws PortalException {
-		Menu menu = new Menu();
-
-		menu.setDirection("left-side");
-		menu.setMarkupView("lexicon");
-		menu.setMenuItems(_getMenuItems());
-		menu.setMessage(LanguageUtil.get(_resourceBundle, "actions"));
-		menu.setScroll(false);
-		menu.setShowWhenSingleIcon(true);
-
-		return menu;
-	}
-
-	@Override
-	public List<ToolbarItem> getToolbarItems() throws PortalException {
-		List<ToolbarItem> toolbarItems = new ArrayList<>();
-
-		_uiItemsBuilder.addCollectDigitalSignatureToolbarItem(toolbarItems);
-
-		_uiItemsBuilder.addDownloadToolbarItem(toolbarItems);
-
-		_uiItemsBuilder.addEditToolbarItem(toolbarItems);
-
-		_uiItemsBuilder.addCheckoutToolbarItem(toolbarItems);
-
-		_uiItemsBuilder.addCancelCheckoutToolbarItem(toolbarItems);
-
-		_uiItemsBuilder.addCheckinToolbarItem(toolbarItems);
-
-		_uiItemsBuilder.addMoveToolbarItem(toolbarItems);
-
-		_uiItemsBuilder.addPermissionsToolbarItem(toolbarItems);
-
-		_uiItemsBuilder.addMoveToTheRecycleBinToolbarItem(toolbarItems);
-
-		_uiItemsBuilder.addDeleteToolbarItem(toolbarItems);
-
-		return toolbarItems;
 	}
 
 	@Override
@@ -246,17 +267,21 @@ public class DefaultDLViewFileVersionDisplayContext
 
 	@Override
 	public boolean hasPreview() {
-		if (_dlPreviewRendererProvider != null) {
-			DLPreviewRenderer dlPreviewRenderer =
-				_dlPreviewRendererProvider.getPreviewDLPreviewRenderer(
-					_fileVersion);
+		if ((_dlPreviewRendererProvider == null) ||
+			_isSystemDLFileEntryType()) {
 
-			if (dlPreviewRenderer != null) {
-				return true;
-			}
+			return false;
 		}
 
-		return false;
+		DLPreviewRenderer dlPreviewRenderer =
+			_dlPreviewRendererProvider.getPreviewDLPreviewRenderer(
+				_fileVersion);
+
+		if (dlPreviewRenderer == null) {
+			return false;
+		}
+
+		return true;
 	}
 
 	@Override
@@ -270,7 +295,13 @@ public class DefaultDLViewFileVersionDisplayContext
 
 	@Override
 	public boolean isDownloadLinkVisible() throws PortalException {
-		return _fileEntryDisplayContextHelper.isDownloadActionAvailable();
+		if (_isSystemDLFileEntryType() ||
+			!_fileEntryDisplayContextHelper.isDownloadActionAvailable()) {
+
+			return false;
+		}
+
+		return true;
 	}
 
 	@Override
@@ -280,6 +311,10 @@ public class DefaultDLViewFileVersionDisplayContext
 
 	@Override
 	public boolean isVersionInfoVisible() {
+		if (_isSystemDLFileEntryType()) {
+			return false;
+		}
+
 		return true;
 	}
 
@@ -322,8 +357,8 @@ public class DefaultDLViewFileVersionDisplayContext
 	private DefaultDLViewFileVersionDisplayContext(
 		HttpServletRequest httpServletRequest, FileVersion fileVersion,
 		FileShortcut fileShortcut,
+		DDMStorageEngineManager ddmStorageEngineManager,
 		DLMimeTypeDisplayContext dlMimeTypeDisplayContext,
-		ResourceBundle resourceBundle, StorageEngine storageEngine,
 		DLTrashHelper dlTrashHelper,
 		DLPreviewRendererProvider dlPreviewRendererProvider,
 		VersioningStrategy versioningStrategy, DLURLHelper dlURLHelper) {
@@ -331,9 +366,8 @@ public class DefaultDLViewFileVersionDisplayContext
 		try {
 			_httpServletRequest = httpServletRequest;
 			_fileVersion = fileVersion;
+			_ddmStorageEngineManager = ddmStorageEngineManager;
 			_dlMimeTypeDisplayContext = dlMimeTypeDisplayContext;
-			_resourceBundle = resourceBundle;
-			_storageEngine = storageEngine;
 			_dlPreviewRendererProvider = dlPreviewRendererProvider;
 
 			DLRequestHelper dlRequestHelper = new DLRequestHelper(
@@ -352,13 +386,13 @@ public class DefaultDLViewFileVersionDisplayContext
 
 			if (fileShortcut == null) {
 				_uiItemsBuilder = new UIItemsBuilder(
-					httpServletRequest, fileEntry, fileVersion, _resourceBundle,
-					dlTrashHelper, versioningStrategy, dlURLHelper);
+					httpServletRequest, fileEntry, fileVersion, dlTrashHelper,
+					versioningStrategy, dlURLHelper);
 			}
 			else {
 				_uiItemsBuilder = new UIItemsBuilder(
-					httpServletRequest, fileShortcut, _resourceBundle,
-					dlTrashHelper, versioningStrategy, dlURLHelper);
+					httpServletRequest, fileShortcut, dlTrashHelper,
+					versioningStrategy, dlURLHelper);
 			}
 		}
 		catch (PortalException portalException) {
@@ -366,6 +400,35 @@ public class DefaultDLViewFileVersionDisplayContext
 				"Unable to build DefaultDLViewFileVersionDisplayContext for " +
 					fileVersion,
 				portalException);
+		}
+	}
+
+	private DLFileEntryType _getDLFileEntryType() {
+		try {
+			if (_dlFileEntryType != null) {
+				return _dlFileEntryType;
+			}
+
+			if (!_fileVersionDisplayContextHelper.isDLFileVersion()) {
+				return null;
+			}
+
+			FileEntry fileEntry = _getFileEntry(_fileVersion);
+
+			if (fileEntry == null) {
+				return null;
+			}
+
+			DLFileEntry dlFileEntry = (DLFileEntry)fileEntry.getModel();
+
+			_dlFileEntryType = dlFileEntry.getDLFileEntryType();
+
+			return _dlFileEntryType;
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+
+			return null;
 		}
 	}
 
@@ -379,48 +442,22 @@ public class DefaultDLViewFileVersionDisplayContext
 		return null;
 	}
 
-	private List<MenuItem> _getMenuItems() throws PortalException {
-		List<MenuItem> menuItems = new ArrayList<>();
+	private List<DDMStructure> _getVisibleDDMStructures()
+		throws PortalException {
 
-		if (isActionsVisible()) {
-			_uiItemsBuilder.addDownloadMenuItem(menuItems);
+		DLFileEntryType dlFileEntryType = _getDLFileEntryType();
 
-			_uiItemsBuilder.addViewOriginalFileMenuItem(menuItems);
-
-			_uiItemsBuilder.addEditMenuItem(menuItems);
-
-			_uiItemsBuilder.addEditImageItem(menuItems);
-
-			_uiItemsBuilder.addCheckoutMenuItem(menuItems);
-
-			_uiItemsBuilder.addCancelCheckoutMenuItem(menuItems);
-
-			_uiItemsBuilder.addCheckinMenuItem(menuItems);
-
-			_uiItemsBuilder.addCollectDigitalSignatureMenuItem(menuItems);
-
-			_uiItemsBuilder.addMoveMenuItem(menuItems);
-
-			MenuItem menuItem = null;
-
-			if (!menuItems.isEmpty()) {
-				menuItem = menuItems.get(menuItems.size() - 1);
-			}
-
-			_uiItemsBuilder.addPermissionsMenuItem(menuItems);
-
-			_uiItemsBuilder.addDeleteMenuItem(menuItems);
-
-			_uiItemsBuilder.addPublishMenuItem(menuItems, true);
-
-			if ((menuItem != null) &&
-				(menuItem != menuItems.get(menuItems.size() - 1))) {
-
-				menuItem.setSeparator(true);
-			}
+		if (dlFileEntryType == null) {
+			return Collections.emptyList();
 		}
 
-		return menuItems;
+		return ListUtil.filter(
+			DLFileEntryTypeUtil.getDDMStructures(dlFileEntryType),
+			ddmStructure ->
+				(ddmStructure.getStructureId() !=
+					dlFileEntryType.getDataDefinitionId()) ||
+				(dlFileEntryType.getScope() !=
+					DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_SYSTEM));
 	}
 
 	private void _handleError(
@@ -440,6 +477,19 @@ public class DefaultDLViewFileVersionDisplayContext
 		}
 
 		jspRenderer.render(httpServletRequest, httpServletResponse);
+	}
+
+	private boolean _isSystemDLFileEntryType() {
+		DLFileEntryType dlFileEntryType = _getDLFileEntryType();
+
+		if ((dlFileEntryType == null) ||
+			(dlFileEntryType.getScope() !=
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_SYSTEM)) {
+
+			return false;
+		}
+
+		return true;
 	}
 
 	private void _renderPreview(
@@ -463,7 +513,7 @@ public class DefaultDLViewFileVersionDisplayContext
 				exception instanceof DLPreviewSizeException) {
 
 				if (_log.isWarnEnabled()) {
-					_log.warn(exception, exception);
+					_log.warn(exception);
 				}
 			}
 			else {
@@ -483,7 +533,9 @@ public class DefaultDLViewFileVersionDisplayContext
 	private static final Log _log = LogFactoryUtil.getLog(
 		DefaultDLViewFileVersionDisplayContext.class);
 
+	private final DDMStorageEngineManager _ddmStorageEngineManager;
 	private List<DDMStructure> _ddmStructures;
+	private DLFileEntryType _dlFileEntryType;
 	private final DLMimeTypeDisplayContext _dlMimeTypeDisplayContext;
 	private final DLPortletInstanceSettingsHelper
 		_dlPortletInstanceSettingsHelper;
@@ -492,9 +544,7 @@ public class DefaultDLViewFileVersionDisplayContext
 	private final FileVersion _fileVersion;
 	private final FileVersionDisplayContextHelper
 		_fileVersionDisplayContextHelper;
-	private HttpServletRequest _httpServletRequest;
-	private final ResourceBundle _resourceBundle;
-	private final StorageEngine _storageEngine;
+	private final HttpServletRequest _httpServletRequest;
 	private final UIItemsBuilder _uiItemsBuilder;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.exportimport.content.processor;
@@ -19,7 +10,6 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
-import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
@@ -27,13 +17,14 @@ import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
+import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ClassedModel;
 import com.liferay.portal.kernel.model.StagedModel;
-import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
@@ -43,7 +34,6 @@ import com.liferay.staging.StagingGroupHelperUtil;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -65,13 +55,23 @@ public class EditableValuesMappingExportImportContentProcessor
 			boolean exportReferencedContent, boolean escapeContent)
 		throws Exception {
 
-		JSONObject editableProcessorJSONObject =
+		_replaceAllEditableExportContentReferences(
 			editableValuesJSONObject.getJSONObject(
-				_KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
+				FragmentEntryProcessorConstants.
+					KEY_BACKGROUND_IMAGE_FRAGMENT_ENTRY_PROCESSOR),
+			exportReferencedContent, portletDataContext, stagedModel);
 
 		_replaceAllEditableExportContentReferences(
-			editableProcessorJSONObject, exportReferencedContent,
-			portletDataContext, stagedModel);
+			editableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR),
+			exportReferencedContent, portletDataContext, stagedModel);
+
+		_replaceAllEditableExportContentReferences(
+			editableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR),
+			exportReferencedContent, portletDataContext, stagedModel);
 
 		return editableValuesJSONObject;
 	}
@@ -82,12 +82,23 @@ public class EditableValuesMappingExportImportContentProcessor
 			JSONObject editableValuesJSONObject)
 		throws Exception {
 
-		JSONObject editableProcessorJSONObject =
+		_replaceAllEditableImportContentReferences(
 			editableValuesJSONObject.getJSONObject(
-				_KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
+				FragmentEntryProcessorConstants.
+					KEY_BACKGROUND_IMAGE_FRAGMENT_ENTRY_PROCESSOR),
+			portletDataContext);
 
 		_replaceAllEditableImportContentReferences(
-			editableProcessorJSONObject, portletDataContext);
+			editableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR),
+			portletDataContext);
+
+		_replaceAllEditableImportContentReferences(
+			editableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR),
+			portletDataContext);
 
 		return editableValuesJSONObject;
 	}
@@ -192,13 +203,12 @@ public class EditableValuesMappingExportImportContentProcessor
 		_exportDDMTemplateReference(
 			portletDataContext, stagedModel, editableJSONObject);
 
-		// LPS-111037
-
 		String className = _portal.getClassName(classNameId);
 
-		if (Objects.equals(className, FileEntry.class.getName())) {
-			className = DLFileEntry.class.getName();
-		}
+		editableJSONObject.put("className", className);
+
+		className = _infoSearchClassMapperRegistry.getSearchClassName(
+			className);
 
 		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
 			className, classPK);
@@ -226,8 +236,6 @@ public class EditableValuesMappingExportImportContentProcessor
 
 			return;
 		}
-
-		editableJSONObject.put("className", _portal.getClassName(classNameId));
 
 		if (exportReferencedContent) {
 			try {
@@ -300,19 +308,9 @@ public class EditableValuesMappingExportImportContentProcessor
 			}
 		}
 
-		// LPS-111037
-
-		String assetRendererFactoryByClassName = className;
-
-		if (Objects.equals(
-				assetRendererFactoryByClassName, FileEntry.class.getName())) {
-
-			assetRendererFactoryByClassName = DLFileEntry.class.getName();
-		}
-
 		AssetRendererFactory<?> assetRendererFactory =
 			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
-				assetRendererFactoryByClassName);
+				_infoSearchClassMapperRegistry.getSearchClassName(className));
 
 		StagingGroupHelper stagingGroupHelper =
 			StagingGroupHelperUtil.getStagingGroupHelper();
@@ -340,13 +338,13 @@ public class EditableValuesMappingExportImportContentProcessor
 		classPK = MapUtil.getLong(primaryKeys, classPK, classPK);
 
 		editableJSONObject.put("classPK", classPK);
+
+		if (editableJSONObject.has("fileEntryId")) {
+			editableJSONObject.put("fileEntryId", classPK);
+		}
 	}
 
 	private static final String _DDM_TEMPLATE = "ddmTemplate_";
-
-	private static final String _KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR =
-		"com.liferay.fragment.entry.processor.editable." +
-			"EditableFragmentEntryProcessor";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditableValuesMappingExportImportContentProcessor.class);
@@ -356,6 +354,9 @@ public class EditableValuesMappingExportImportContentProcessor
 
 	@Reference
 	private DDMTemplateLocalService _ddmTemplateLocalService;
+
+	@Reference
+	private InfoSearchClassMapperRegistry _infoSearchClassMapperRegistry;
 
 	@Reference
 	private Portal _portal;

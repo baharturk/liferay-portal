@@ -1,23 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.internal.resource.v1_0;
 
 import com.liferay.object.admin.rest.dto.v1_0.ObjectField;
 import com.liferay.object.admin.rest.resource.v1_0.ObjectFieldResource;
+import com.liferay.petra.function.UnsafeBiConsumer;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.search.Sort;
@@ -27,32 +21,43 @@ import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParser;
 import com.liferay.portal.odata.filter.FilterParserProvider;
+import com.liferay.portal.odata.sort.SortField;
+import com.liferay.portal.odata.sort.SortParser;
+import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.batch.engine.VulcanBatchEngineTaskItemDelegate;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTaskResource;
 import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResource;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.ActionUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.io.Serializable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -71,6 +76,99 @@ public abstract class BaseObjectFieldResourceImpl
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -X 'GET' 'http://localhost:8080/o/object-admin/v1.0/object-definitions/by-external-reference-code/{externalReferenceCode}/object-fields'  -u 'test@liferay.com:test'
+	 */
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+				name = "externalReferenceCode"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "filter"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "page"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "pageSize"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "search"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "sort"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "ObjectField")}
+	)
+	@javax.ws.rs.GET
+	@javax.ws.rs.Path(
+		"/object-definitions/by-external-reference-code/{externalReferenceCode}/object-fields"
+	)
+	@javax.ws.rs.Produces({"application/json", "application/xml"})
+	@Override
+	public Page<ObjectField>
+			getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+				@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+				@javax.validation.constraints.NotNull
+				@javax.ws.rs.PathParam("externalReferenceCode")
+				String externalReferenceCode,
+				@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+				@javax.ws.rs.QueryParam("search")
+				String search,
+				@javax.ws.rs.core.Context Filter filter,
+				@javax.ws.rs.core.Context Pagination pagination,
+				@javax.ws.rs.core.Context Sort[] sorts)
+		throws Exception {
+
+		return Page.of(Collections.emptyList());
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -X 'POST' 'http://localhost:8080/o/object-admin/v1.0/object-definitions/by-external-reference-code/{externalReferenceCode}/object-fields' -d $'{"DBType": ___, "businessType": ___, "defaultValue": ___, "externalReferenceCode": ___, "indexed": ___, "indexedAsKeyword": ___, "indexedLanguageId": ___, "label": ___, "listTypeDefinitionExternalReferenceCode": ___, "listTypeDefinitionId": ___, "localized": ___, "name": ___, "objectFieldSettings": ___, "readOnly": ___, "readOnlyConditionExpression": ___, "required": ___, "state": ___, "system": ___, "type": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
+	 */
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+				name = "externalReferenceCode"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "ObjectField")}
+	)
+	@javax.ws.rs.Consumes({"application/json", "application/xml"})
+	@javax.ws.rs.Path(
+		"/object-definitions/by-external-reference-code/{externalReferenceCode}/object-fields"
+	)
+	@javax.ws.rs.POST
+	@javax.ws.rs.Produces({"application/json", "application/xml"})
+	@Override
+	public ObjectField postObjectDefinitionByExternalReferenceCodeObjectField(
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.validation.constraints.NotNull
+			@javax.ws.rs.PathParam("externalReferenceCode")
+			String externalReferenceCode,
+			ObjectField objectField)
+		throws Exception {
+
+		return new ObjectField();
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -X 'GET' 'http://localhost:8080/o/object-admin/v1.0/object-definitions/{objectDefinitionId}/object-fields'  -u 'test@liferay.com:test'
 	 */
 	@io.swagger.v3.oas.annotations.Parameters(
@@ -81,7 +179,7 @@ public abstract class BaseObjectFieldResourceImpl
 			),
 			@io.swagger.v3.oas.annotations.Parameter(
 				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
-				name = "search"
+				name = "filter"
 			),
 			@io.swagger.v3.oas.annotations.Parameter(
 				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
@@ -90,6 +188,14 @@ public abstract class BaseObjectFieldResourceImpl
 			@io.swagger.v3.oas.annotations.Parameter(
 				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
 				name = "pageSize"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "search"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "sort"
 			)
 		}
 	)
@@ -108,7 +214,9 @@ public abstract class BaseObjectFieldResourceImpl
 			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
 			@javax.ws.rs.QueryParam("search")
 			String search,
-			@javax.ws.rs.core.Context Pagination pagination)
+			@javax.ws.rs.core.Context Filter filter,
+			@javax.ws.rs.core.Context Pagination pagination,
+			@javax.ws.rs.core.Context Sort[] sorts)
 		throws Exception {
 
 		return Page.of(Collections.emptyList());
@@ -117,7 +225,95 @@ public abstract class BaseObjectFieldResourceImpl
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -X 'POST' 'http://localhost:8080/o/object-admin/v1.0/object-definitions/{objectDefinitionId}/object-fields' -d $'{"DBType": ___, "businessType": ___, "indexed": ___, "indexedAsKeyword": ___, "indexedLanguageId": ___, "label": ___, "listTypeDefinitionId": ___, "name": ___, "required": ___, "type": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
+	 * curl -X 'POST' 'http://localhost:8080/o/object-admin/v1.0/object-definitions/{objectDefinitionId}/object-fields/export-batch'  -u 'test@liferay.com:test'
+	 */
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+				name = "objectDefinitionId"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "filter"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "search"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "sort"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "callbackURL"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "contentType"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "fieldNames"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "ObjectField")}
+	)
+	@javax.ws.rs.Consumes("application/json")
+	@javax.ws.rs.Path(
+		"/object-definitions/{objectDefinitionId}/object-fields/export-batch"
+	)
+	@javax.ws.rs.POST
+	@javax.ws.rs.Produces("application/json")
+	@Override
+	public Response postObjectDefinitionObjectFieldsPageExportBatch(
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.validation.constraints.NotNull
+			@javax.ws.rs.PathParam("objectDefinitionId")
+			Long objectDefinitionId,
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.QueryParam("search")
+			String search,
+			@javax.ws.rs.core.Context Filter filter,
+			@javax.ws.rs.core.Context Sort[] sorts,
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.QueryParam("callbackURL")
+			String callbackURL,
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.DefaultValue("JSON")
+			@javax.ws.rs.QueryParam("contentType")
+			String contentType,
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.QueryParam("fieldNames")
+			String fieldNames)
+		throws Exception {
+
+		vulcanBatchEngineExportTaskResource.setContextAcceptLanguage(
+			contextAcceptLanguage);
+		vulcanBatchEngineExportTaskResource.setContextCompany(contextCompany);
+		vulcanBatchEngineExportTaskResource.setContextHttpServletRequest(
+			contextHttpServletRequest);
+		vulcanBatchEngineExportTaskResource.setContextUriInfo(contextUriInfo);
+		vulcanBatchEngineExportTaskResource.setContextUser(contextUser);
+		vulcanBatchEngineExportTaskResource.setGroupLocalService(
+			groupLocalService);
+
+		Response.ResponseBuilder responseBuilder = Response.accepted();
+
+		return responseBuilder.entity(
+			vulcanBatchEngineExportTaskResource.postExportTask(
+				ObjectField.class.getName(), callbackURL, contentType,
+				fieldNames)
+		).build();
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -X 'POST' 'http://localhost:8080/o/object-admin/v1.0/object-definitions/{objectDefinitionId}/object-fields' -d $'{"DBType": ___, "businessType": ___, "defaultValue": ___, "externalReferenceCode": ___, "indexed": ___, "indexedAsKeyword": ___, "indexedLanguageId": ___, "label": ___, "listTypeDefinitionExternalReferenceCode": ___, "listTypeDefinitionId": ___, "localized": ___, "name": ___, "objectFieldSettings": ___, "readOnly": ___, "readOnlyConditionExpression": ___, "required": ___, "state": ___, "system": ___, "type": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
 	 */
 	@io.swagger.v3.oas.annotations.Parameters(
 		value = {
@@ -305,7 +501,7 @@ public abstract class BaseObjectFieldResourceImpl
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -X 'PATCH' 'http://localhost:8080/o/object-admin/v1.0/object-fields/{objectFieldId}' -d $'{"DBType": ___, "businessType": ___, "indexed": ___, "indexedAsKeyword": ___, "indexedLanguageId": ___, "label": ___, "listTypeDefinitionId": ___, "name": ___, "required": ___, "type": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
+	 * curl -X 'PATCH' 'http://localhost:8080/o/object-admin/v1.0/object-fields/{objectFieldId}' -d $'{"DBType": ___, "businessType": ___, "defaultValue": ___, "externalReferenceCode": ___, "indexed": ___, "indexedAsKeyword": ___, "indexedLanguageId": ___, "label": ___, "listTypeDefinitionExternalReferenceCode": ___, "listTypeDefinitionId": ___, "localized": ___, "name": ___, "objectFieldSettings": ___, "readOnly": ___, "readOnlyConditionExpression": ___, "required": ___, "state": ___, "system": ___, "type": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
 	 */
 	@io.swagger.v3.oas.annotations.Parameters(
 		value = {
@@ -337,12 +533,17 @@ public abstract class BaseObjectFieldResourceImpl
 			existingObjectField.setDBType(objectField.getDBType());
 		}
 
-		if (objectField.getActions() != null) {
-			existingObjectField.setActions(objectField.getActions());
-		}
-
 		if (objectField.getBusinessType() != null) {
 			existingObjectField.setBusinessType(objectField.getBusinessType());
+		}
+
+		if (objectField.getDefaultValue() != null) {
+			existingObjectField.setDefaultValue(objectField.getDefaultValue());
+		}
+
+		if (objectField.getExternalReferenceCode() != null) {
+			existingObjectField.setExternalReferenceCode(
+				objectField.getExternalReferenceCode());
 		}
 
 		if (objectField.getIndexed() != null) {
@@ -363,22 +564,43 @@ public abstract class BaseObjectFieldResourceImpl
 			existingObjectField.setLabel(objectField.getLabel());
 		}
 
+		if (objectField.getListTypeDefinitionExternalReferenceCode() != null) {
+			existingObjectField.setListTypeDefinitionExternalReferenceCode(
+				objectField.getListTypeDefinitionExternalReferenceCode());
+		}
+
 		if (objectField.getListTypeDefinitionId() != null) {
 			existingObjectField.setListTypeDefinitionId(
 				objectField.getListTypeDefinitionId());
+		}
+
+		if (objectField.getLocalized() != null) {
+			existingObjectField.setLocalized(objectField.getLocalized());
 		}
 
 		if (objectField.getName() != null) {
 			existingObjectField.setName(objectField.getName());
 		}
 
-		if (objectField.getRelationshipType() != null) {
-			existingObjectField.setRelationshipType(
-				objectField.getRelationshipType());
+		if (objectField.getReadOnly() != null) {
+			existingObjectField.setReadOnly(objectField.getReadOnly());
+		}
+
+		if (objectField.getReadOnlyConditionExpression() != null) {
+			existingObjectField.setReadOnlyConditionExpression(
+				objectField.getReadOnlyConditionExpression());
 		}
 
 		if (objectField.getRequired() != null) {
 			existingObjectField.setRequired(objectField.getRequired());
+		}
+
+		if (objectField.getState() != null) {
+			existingObjectField.setState(objectField.getState());
+		}
+
+		if (objectField.getSystem() != null) {
+			existingObjectField.setSystem(objectField.getSystem());
 		}
 
 		if (objectField.getType() != null) {
@@ -393,7 +615,7 @@ public abstract class BaseObjectFieldResourceImpl
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -X 'PUT' 'http://localhost:8080/o/object-admin/v1.0/object-fields/{objectFieldId}' -d $'{"DBType": ___, "businessType": ___, "indexed": ___, "indexedAsKeyword": ___, "indexedLanguageId": ___, "label": ___, "listTypeDefinitionId": ___, "name": ___, "required": ___, "type": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
+	 * curl -X 'PUT' 'http://localhost:8080/o/object-admin/v1.0/object-fields/{objectFieldId}' -d $'{"DBType": ___, "businessType": ___, "defaultValue": ___, "externalReferenceCode": ___, "indexed": ___, "indexedAsKeyword": ___, "indexedLanguageId": ___, "label": ___, "listTypeDefinitionExternalReferenceCode": ___, "listTypeDefinitionId": ___, "localized": ___, "name": ___, "objectFieldSettings": ___, "readOnly": ___, "readOnlyConditionExpression": ___, "required": ___, "state": ___, "system": ___, "type": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
 	 */
 	@io.swagger.v3.oas.annotations.Parameters(
 		value = {
@@ -469,29 +691,74 @@ public abstract class BaseObjectFieldResourceImpl
 	@Override
 	@SuppressWarnings("PMD.UnusedLocalVariable")
 	public void create(
-			java.util.Collection<ObjectField> objectFields,
+			Collection<ObjectField> objectFields,
 			Map<String, Serializable> parameters)
 		throws Exception {
 
-		UnsafeConsumer<ObjectField, Exception> objectFieldUnsafeConsumer =
-			objectField -> postObjectDefinitionObjectField(
-				Long.parseLong((String)parameters.get("objectDefinitionId")),
-				objectField);
+		UnsafeFunction<ObjectField, ObjectField, Exception>
+			objectFieldUnsafeFunction = null;
 
-		for (ObjectField objectField : objectFields) {
-			objectFieldUnsafeConsumer.accept(objectField);
+		String createStrategy = (String)parameters.getOrDefault(
+			"createStrategy", "INSERT");
+
+		if (StringUtil.equalsIgnoreCase(createStrategy, "INSERT")) {
+			if (parameters.containsKey("objectDefinitionId")) {
+				objectFieldUnsafeFunction =
+					objectField -> postObjectDefinitionObjectField(
+						_parseLong(
+							(String)parameters.get("objectDefinitionId")),
+						objectField);
+			}
+			else if (parameters.containsKey("externalReferenceCode")) {
+				objectFieldUnsafeFunction = objectField ->
+					postObjectDefinitionByExternalReferenceCodeObjectField(
+						(String)parameters.get("externalReferenceCode"),
+						objectField);
+			}
+			else {
+				throw new NotSupportedException(
+					"One of the following parameters must be specified: [objectDefinitionId, externalReferenceCode]");
+			}
+		}
+
+		if (objectFieldUnsafeFunction == null) {
+			throw new NotSupportedException(
+				"Create strategy \"" + createStrategy +
+					"\" is not supported for ObjectField");
+		}
+
+		if (contextBatchUnsafeBiConsumer != null) {
+			contextBatchUnsafeBiConsumer.accept(
+				objectFields, objectFieldUnsafeFunction);
+		}
+		else if (contextBatchUnsafeConsumer != null) {
+			contextBatchUnsafeConsumer.accept(
+				objectFields, objectFieldUnsafeFunction::apply);
+		}
+		else {
+			for (ObjectField objectField : objectFields) {
+				objectFieldUnsafeFunction.apply(objectField);
+			}
 		}
 	}
 
 	@Override
 	public void delete(
-			java.util.Collection<ObjectField> objectFields,
+			Collection<ObjectField> objectFields,
 			Map<String, Serializable> parameters)
 		throws Exception {
 
 		for (ObjectField objectField : objectFields) {
 			deleteObjectField(objectField.getId());
 		}
+	}
+
+	public Set<String> getAvailableCreateStrategies() {
+		return SetUtil.fromArray("INSERT");
+	}
+
+	public Set<String> getAvailableUpdateStrategies() {
+		return SetUtil.fromArray("PARTIAL_UPDATE", "UPDATE");
 	}
 
 	@Override
@@ -509,15 +776,25 @@ public abstract class BaseObjectFieldResourceImpl
 		return null;
 	}
 
+	public String getVersion() {
+		return "v1.0";
+	}
+
 	@Override
 	public Page<ObjectField> read(
 			Filter filter, Pagination pagination, Sort[] sorts,
 			Map<String, Serializable> parameters, String search)
 		throws Exception {
 
-		return getObjectDefinitionObjectFieldsPage(
-			Long.parseLong((String)parameters.get("objectDefinitionId")),
-			search, pagination);
+		if (parameters.containsKey("objectDefinitionId")) {
+			return getObjectDefinitionObjectFieldsPage(
+				_parseLong((String)parameters.get("objectDefinitionId")),
+				search, filter, pagination, sorts);
+		}
+		else {
+			throw new NotSupportedException(
+				"One of the following parameters must be specified: [objectDefinitionId]");
+		}
 	}
 
 	@Override
@@ -544,20 +821,78 @@ public abstract class BaseObjectFieldResourceImpl
 
 	@Override
 	public void update(
-			java.util.Collection<ObjectField> objectFields,
+			Collection<ObjectField> objectFields,
 			Map<String, Serializable> parameters)
 		throws Exception {
 
-		for (ObjectField objectField : objectFields) {
-			putObjectField(
+		UnsafeFunction<ObjectField, ObjectField, Exception>
+			objectFieldUnsafeFunction = null;
+
+		String updateStrategy = (String)parameters.getOrDefault(
+			"updateStrategy", "UPDATE");
+
+		if (StringUtil.equalsIgnoreCase(updateStrategy, "PARTIAL_UPDATE")) {
+			objectFieldUnsafeFunction = objectField -> patchObjectField(
 				objectField.getId() != null ? objectField.getId() :
-					Long.parseLong((String)parameters.get("objectFieldId")),
+					_parseLong((String)parameters.get("objectFieldId")),
 				objectField);
 		}
+
+		if (StringUtil.equalsIgnoreCase(updateStrategy, "UPDATE")) {
+			objectFieldUnsafeFunction = objectField -> putObjectField(
+				objectField.getId() != null ? objectField.getId() :
+					_parseLong((String)parameters.get("objectFieldId")),
+				objectField);
+		}
+
+		if (objectFieldUnsafeFunction == null) {
+			throw new NotSupportedException(
+				"Update strategy \"" + updateStrategy +
+					"\" is not supported for ObjectField");
+		}
+
+		if (contextBatchUnsafeBiConsumer != null) {
+			contextBatchUnsafeBiConsumer.accept(
+				objectFields, objectFieldUnsafeFunction);
+		}
+		else if (contextBatchUnsafeConsumer != null) {
+			contextBatchUnsafeConsumer.accept(
+				objectFields, objectFieldUnsafeFunction::apply);
+		}
+		else {
+			for (ObjectField objectField : objectFields) {
+				objectFieldUnsafeFunction.apply(objectField);
+			}
+		}
+	}
+
+	private Long _parseLong(String value) {
+		if (value != null) {
+			return Long.parseLong(value);
+		}
+
+		return null;
 	}
 
 	public void setContextAcceptLanguage(AcceptLanguage contextAcceptLanguage) {
 		this.contextAcceptLanguage = contextAcceptLanguage;
+	}
+
+	public void setContextBatchUnsafeBiConsumer(
+		UnsafeBiConsumer
+			<Collection<ObjectField>,
+			 UnsafeFunction<ObjectField, ObjectField, Exception>, Exception>
+				contextBatchUnsafeBiConsumer) {
+
+		this.contextBatchUnsafeBiConsumer = contextBatchUnsafeBiConsumer;
+	}
+
+	public void setContextBatchUnsafeConsumer(
+		UnsafeBiConsumer
+			<Collection<ObjectField>, UnsafeConsumer<ObjectField, Exception>,
+			 Exception> contextBatchUnsafeConsumer) {
+
+		this.contextBatchUnsafeConsumer = contextBatchUnsafeConsumer;
 	}
 
 	public void setContextCompany(
@@ -568,6 +903,13 @@ public abstract class BaseObjectFieldResourceImpl
 
 	public void setContextHttpServletRequest(
 		HttpServletRequest contextHttpServletRequest) {
+
+		if ((contextHttpServletRequest != null) &&
+			(contextHttpServletRequest.getAttribute(WebKeys.CTX) == null)) {
+
+			contextHttpServletRequest.setAttribute(
+				WebKeys.CTX, ServletContextPool.get(StringPool.BLANK));
+		}
 
 		this.contextHttpServletRequest = contextHttpServletRequest;
 	}
@@ -620,6 +962,26 @@ public abstract class BaseObjectFieldResourceImpl
 		this.roleLocalService = roleLocalService;
 	}
 
+	public void setSortParserProvider(SortParserProvider sortParserProvider) {
+		this.sortParserProvider = sortParserProvider;
+	}
+
+	public void setVulcanBatchEngineExportTaskResource(
+		VulcanBatchEngineExportTaskResource
+			vulcanBatchEngineExportTaskResource) {
+
+		this.vulcanBatchEngineExportTaskResource =
+			vulcanBatchEngineExportTaskResource;
+	}
+
+	public void setVulcanBatchEngineImportTaskResource(
+		VulcanBatchEngineImportTaskResource
+			vulcanBatchEngineImportTaskResource) {
+
+		this.vulcanBatchEngineImportTaskResource =
+			vulcanBatchEngineImportTaskResource;
+	}
+
 	@Override
 	public Filter toFilter(
 		String filterString, Map<String, List<String>> multivaluedMap) {
@@ -640,9 +1002,49 @@ public abstract class BaseObjectFieldResourceImpl
 		}
 		catch (Exception exception) {
 			_log.error("Invalid filter " + filterString, exception);
+
+			return null;
+		}
+	}
+
+	@Override
+	public Sort[] toSorts(String sortString) {
+		if (Validator.isNull(sortString)) {
+			return null;
 		}
 
-		return null;
+		try {
+			SortParser sortParser = sortParserProvider.provide(
+				getEntityModel(Collections.emptyMap()));
+
+			if (sortParser == null) {
+				return null;
+			}
+
+			com.liferay.portal.odata.sort.Sort oDataSort =
+				new com.liferay.portal.odata.sort.Sort(
+					sortParser.parse(sortString));
+
+			List<SortField> sortFields = oDataSort.getSortFields();
+
+			Sort[] sorts = new Sort[sortFields.size()];
+
+			for (int i = 0; i < sortFields.size(); i++) {
+				SortField sortField = sortFields.get(i);
+
+				sorts[i] = new Sort(
+					sortField.getSortableFieldName(
+						contextAcceptLanguage.getPreferredLocale()),
+					!sortField.isAscending());
+			}
+
+			return sorts;
+		}
+		catch (Exception exception) {
+			_log.error("Invalid sort " + sortString, exception);
+
+			return new Sort[0];
+		}
 	}
 
 	protected Map<String, String> addAction(
@@ -683,35 +1085,84 @@ public abstract class BaseObjectFieldResourceImpl
 		ObjectField objectField, ObjectField existingObjectField) {
 	}
 
-	protected <T, R> List<R> transform(
-		java.util.Collection<T> collection,
-		UnsafeFunction<T, R, Exception> unsafeFunction) {
+	protected <T, R, E extends Throwable> List<R> transform(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
 
 		return TransformUtil.transform(collection, unsafeFunction);
 	}
 
-	protected <T, R> R[] transform(
-		T[] array, UnsafeFunction<T, R, Exception> unsafeFunction,
-		Class<?> clazz) {
+	protected <T, R, E extends Throwable> R[] transform(
+		T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<?> clazz) {
 
 		return TransformUtil.transform(array, unsafeFunction, clazz);
 	}
 
-	protected <T, R> R[] transformToArray(
-		java.util.Collection<T> collection,
-		UnsafeFunction<T, R, Exception> unsafeFunction, Class<?> clazz) {
+	protected <T, R, E extends Throwable> R[] transformToArray(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction,
+		Class<?> clazz) {
 
 		return TransformUtil.transformToArray(
 			collection, unsafeFunction, clazz);
 	}
 
-	protected <T, R> List<R> transformToList(
-		T[] array, UnsafeFunction<T, R, Exception> unsafeFunction) {
+	protected <T, R, E extends Throwable> List<R> transformToList(
+		T[] array, UnsafeFunction<T, R, E> unsafeFunction) {
 
 		return TransformUtil.transformToList(array, unsafeFunction);
 	}
 
+	protected <T, R, E extends Throwable> long[] transformToLongArray(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
+
+		return TransformUtil.transformToLongArray(collection, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> List<R> unsafeTransform(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransform(collection, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> R[] unsafeTransform(
+			T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<?> clazz)
+		throws E {
+
+		return TransformUtil.unsafeTransform(array, unsafeFunction, clazz);
+	}
+
+	protected <T, R, E extends Throwable> R[] unsafeTransformToArray(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction,
+			Class<?> clazz)
+		throws E {
+
+		return TransformUtil.unsafeTransformToArray(
+			collection, unsafeFunction, clazz);
+	}
+
+	protected <T, R, E extends Throwable> List<R> unsafeTransformToList(
+			T[] array, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransformToList(array, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> long[] unsafeTransformToLongArray(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransformToLongArray(
+			collection, unsafeFunction);
+	}
+
 	protected AcceptLanguage contextAcceptLanguage;
+	protected UnsafeBiConsumer
+		<Collection<ObjectField>,
+		 UnsafeFunction<ObjectField, ObjectField, Exception>, Exception>
+			contextBatchUnsafeBiConsumer;
+	protected UnsafeBiConsumer
+		<Collection<ObjectField>, UnsafeConsumer<ObjectField, Exception>,
+		 Exception> contextBatchUnsafeConsumer;
 	protected com.liferay.portal.kernel.model.Company contextCompany;
 	protected HttpServletRequest contextHttpServletRequest;
 	protected HttpServletResponse contextHttpServletResponse;
@@ -724,6 +1175,9 @@ public abstract class BaseObjectFieldResourceImpl
 	protected ResourceActionLocalService resourceActionLocalService;
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 	protected RoleLocalService roleLocalService;
+	protected SortParserProvider sortParserProvider;
+	protected VulcanBatchEngineExportTaskResource
+		vulcanBatchEngineExportTaskResource;
 	protected VulcanBatchEngineImportTaskResource
 		vulcanBatchEngineImportTaskResource;
 

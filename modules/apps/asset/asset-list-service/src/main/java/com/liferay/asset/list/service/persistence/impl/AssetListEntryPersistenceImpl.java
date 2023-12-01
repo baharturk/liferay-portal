@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service.persistence.impl;
@@ -40,7 +31,6 @@ import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -56,7 +46,6 @@ import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -88,7 +77,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {AssetListEntryPersistence.class, BasePersistence.class})
+@Component(service = AssetListEntryPersistence.class)
 public class AssetListEntryPersistenceImpl
 	extends BasePersistenceImpl<AssetListEntry>
 	implements AssetListEntryPersistence {
@@ -208,7 +197,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -600,7 +589,7 @@ public class AssetListEntryPersistenceImpl
 
 			finderArgs = new Object[] {uuid};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -723,21 +712,21 @@ public class AssetListEntryPersistenceImpl
 
 		uuid = Objects.toString(uuid, "");
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			AssetListEntry.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {uuid, groupId};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			AssetListEntry.class);
 
 		if (result instanceof AssetListEntry) {
 			AssetListEntry assetListEntry = (AssetListEntry)result;
@@ -747,6 +736,14 @@ public class AssetListEntryPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						AssetListEntry.class, assetListEntry.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -856,7 +853,7 @@ public class AssetListEntryPersistenceImpl
 
 			finderArgs = new Object[] {uuid, groupId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1028,7 +1025,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -1453,7 +1450,7 @@ public class AssetListEntryPersistenceImpl
 
 			finderArgs = new Object[] {uuid, companyId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1617,7 +1614,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -2483,7 +2480,7 @@ public class AssetListEntryPersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>AssetListEntryModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param start the lower bound of the range of asset list entries
 	 * @param end the upper bound of the range of asset list entries (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -2529,7 +2526,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				_finderPathWithPaginationFindByGroupId, finderArgs);
+				_finderPathWithPaginationFindByGroupId, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -2639,7 +2636,7 @@ public class AssetListEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2705,7 +2702,7 @@ public class AssetListEntryPersistenceImpl
 			finderArgs = new Object[] {StringUtil.merge(groupIds)};
 
 			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByGroupId, finderArgs);
+				_finderPathWithPaginationCountByGroupId, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2943,21 +2940,21 @@ public class AssetListEntryPersistenceImpl
 
 		assetListEntryKey = Objects.toString(assetListEntryKey, "");
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			AssetListEntry.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {groupId, assetListEntryKey};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByG_ALEK, finderArgs);
+				_finderPathFetchByG_ALEK, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			AssetListEntry.class);
 
 		if (result instanceof AssetListEntry) {
 			AssetListEntry assetListEntry = (AssetListEntry)result;
@@ -2968,6 +2965,14 @@ public class AssetListEntryPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						AssetListEntry.class, assetListEntry.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -3078,7 +3083,7 @@ public class AssetListEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId, assetListEntryKey};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3208,20 +3213,21 @@ public class AssetListEntryPersistenceImpl
 
 		title = Objects.toString(title, "");
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			AssetListEntry.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {groupId, title};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(_finderPathFetchByG_T, finderArgs);
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByG_T, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			AssetListEntry.class);
 
 		if (result instanceof AssetListEntry) {
 			AssetListEntry assetListEntry = (AssetListEntry)result;
@@ -3231,6 +3237,14 @@ public class AssetListEntryPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						AssetListEntry.class, assetListEntry.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -3340,7 +3354,7 @@ public class AssetListEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId, title};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3501,7 +3515,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -4495,7 +4509,7 @@ public class AssetListEntryPersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>AssetListEntryModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param title the title
 	 * @param start the lower bound of the range of asset list entries
 	 * @param end the upper bound of the range of asset list entries (not inclusive)
@@ -4545,7 +4559,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				_finderPathWithPaginationFindByG_LikeT, finderArgs);
+				_finderPathWithPaginationFindByG_LikeT, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -4682,7 +4696,7 @@ public class AssetListEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId, title};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -4766,7 +4780,7 @@ public class AssetListEntryPersistenceImpl
 			finderArgs = new Object[] {StringUtil.merge(groupIds), title};
 
 			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByG_LikeT, finderArgs);
+				_finderPathWithPaginationCountByG_LikeT, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -5105,7 +5119,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -5848,7 +5862,7 @@ public class AssetListEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId, type};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -6066,7 +6080,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -7086,8 +7100,8 @@ public class AssetListEntryPersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>AssetListEntryModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
-	 * @param assetEntryType the asset entry type
+	 * @param groupIds the group IDs
+	 * @param assetEntryTypes the asset entry types
 	 * @param start the lower bound of the range of asset list entries
 	 * @param end the upper bound of the range of asset list entries (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -7149,7 +7163,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				_finderPathWithPaginationFindByG_AET, finderArgs);
+				_finderPathWithPaginationFindByG_AET, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -7297,7 +7311,7 @@ public class AssetListEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId, assetEntryType};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -7392,7 +7406,7 @@ public class AssetListEntryPersistenceImpl
 			};
 
 			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByG_AET, finderArgs);
+				_finderPathWithPaginationCountByG_AET, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -7766,7 +7780,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -8901,9 +8915,9 @@ public class AssetListEntryPersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>AssetListEntryModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param title the title
-	 * @param assetEntryType the asset entry type
+	 * @param assetEntryTypes the asset entry types
 	 * @param start the lower bound of the range of asset list entries
 	 * @param end the upper bound of the range of asset list entries (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -8968,7 +8982,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				_finderPathWithPaginationFindByG_LikeT_AET, finderArgs);
+				_finderPathWithPaginationFindByG_LikeT_AET, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -9142,7 +9156,7 @@ public class AssetListEntryPersistenceImpl
 
 			finderArgs = new Object[] {groupId, title, assetEntryType};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -9258,7 +9272,7 @@ public class AssetListEntryPersistenceImpl
 			};
 
 			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByG_LikeT_AET, finderArgs);
+				_finderPathWithPaginationCountByG_LikeT_AET, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -9709,7 +9723,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -10828,7 +10842,7 @@ public class AssetListEntryPersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>AssetListEntryModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param assetEntrySubtype the asset entry subtype
 	 * @param assetEntryType the asset entry type
 	 * @param start the lower bound of the range of asset list entries
@@ -10885,7 +10899,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				_finderPathWithPaginationFindByG_AES_AET, finderArgs);
+				_finderPathWithPaginationFindByG_AES_AET, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -11047,7 +11061,7 @@ public class AssetListEntryPersistenceImpl
 				groupId, assetEntrySubtype, assetEntryType
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -11152,7 +11166,7 @@ public class AssetListEntryPersistenceImpl
 			};
 
 			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByG_AES_AET, finderArgs);
+				_finderPathWithPaginationCountByG_AES_AET, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -11564,7 +11578,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -12798,7 +12812,7 @@ public class AssetListEntryPersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>AssetListEntryModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param title the title
 	 * @param assetEntrySubtype the asset entry subtype
 	 * @param assetEntryType the asset entry type
@@ -12858,7 +12872,8 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				_finderPathWithPaginationFindByG_LikeT_AES_AET, finderArgs);
+				_finderPathWithPaginationFindByG_LikeT_AES_AET, finderArgs,
+				this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetListEntry assetListEntry : list) {
@@ -13043,7 +13058,7 @@ public class AssetListEntryPersistenceImpl
 				groupId, title, assetEntrySubtype, assetEntryType
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -13167,7 +13182,8 @@ public class AssetListEntryPersistenceImpl
 			};
 
 			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByG_LikeT_AES_AET, finderArgs);
+				_finderPathWithPaginationCountByG_LikeT_AES_AET, finderArgs,
+				this);
 		}
 
 		if (count == null) {
@@ -13942,7 +13958,9 @@ public class AssetListEntryPersistenceImpl
 	 */
 	@Override
 	public AssetListEntry fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(AssetListEntry.class)) {
+		if (ctPersistenceHelper.isProductionMode(
+				AssetListEntry.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -14161,7 +14179,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetListEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -14237,7 +14255,7 @@ public class AssetListEntryPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -14606,30 +14624,14 @@ public class AssetListEntryPersistenceImpl
 			},
 			false);
 
-		_setAssetListEntryUtilPersistence(this);
+		AssetListEntryUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setAssetListEntryUtilPersistence(null);
+		AssetListEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(AssetListEntryImpl.class.getName());
-	}
-
-	private void _setAssetListEntryUtilPersistence(
-		AssetListEntryPersistence assetListEntryPersistence) {
-
-		try {
-			Field field = AssetListEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, assetListEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -14720,9 +14722,5 @@ public class AssetListEntryPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private AssetListEntryModelArgumentsResolver
-		_assetListEntryModelArgumentsResolver;
 
 }

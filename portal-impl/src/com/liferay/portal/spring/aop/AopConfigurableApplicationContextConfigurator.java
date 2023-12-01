@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.spring.aop;
@@ -29,7 +20,7 @@ import com.liferay.portal.spring.hibernate.PortletHibernateConfiguration;
 import com.liferay.portal.spring.hibernate.PortletTransactionManager;
 import com.liferay.portal.spring.transaction.CounterTransactionExecutor;
 import com.liferay.portal.spring.transaction.DefaultTransactionExecutor;
-import com.liferay.portal.spring.transaction.TransactionHandler;
+import com.liferay.portal.spring.transaction.TransactionExecutor;
 import com.liferay.portal.spring.transaction.TransactionInvokerImpl;
 import com.liferay.portal.spring.transaction.TransactionManagerFactory;
 
@@ -38,17 +29,15 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.hibernate.engine.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.DefaultSingletonBeanRegistry;
-import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.orm.hibernate3.HibernateTransactionManager;
+import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
@@ -174,17 +163,6 @@ public class AopConfigurableApplicationContextConfigurator
 		private PlatformTransactionManager _getPlatformTransactionManager(
 			ConfigurableListableBeanFactory configurableListableBeanFactory) {
 
-			BeanDefinitionRegistry beanDefinitionRegistry =
-				(BeanDefinitionRegistry)configurableListableBeanFactory;
-
-			GenericBeanDefinition genericBeanDefinition =
-				new GenericBeanDefinition();
-
-			genericBeanDefinition.setAbstract(true);
-
-			beanDefinitionRegistry.registerBeanDefinition(
-				"basePersistence", genericBeanDefinition);
-
 			DataSource liferayDataSource =
 				configurableListableBeanFactory.getBean(
 					"liferayDataSource", DataSource.class);
@@ -206,9 +184,11 @@ public class AopConfigurableApplicationContextConfigurator
 						_classLoader, liferayDataSource);
 
 				try {
+					portletHibernateConfiguration.afterPropertiesSet();
+
 					liferayHibernateSessionFactory =
 						(SessionFactoryImplementor)
-							portletHibernateConfiguration.buildSessionFactory();
+							portletHibernateConfiguration.getObject();
 				}
 				catch (Exception exception) {
 					return ReflectionUtil.throwException(exception);
@@ -275,13 +255,8 @@ public class AopConfigurableApplicationContextConfigurator
 				BasePersistenceImpl<?> basePersistenceImpl =
 					(BasePersistenceImpl<?>)bean;
 
-				if (basePersistenceImpl.getDataSource() == null) {
-					basePersistenceImpl.setDataSource(_dataSource);
-				}
-
-				if (basePersistenceImpl.getDialect() == null) {
-					basePersistenceImpl.setSessionFactory(_sessionFactory);
-				}
+				basePersistenceImpl.setDataSource(_dataSource);
+				basePersistenceImpl.setSessionFactory(_sessionFactory);
 			}
 
 			return bean;
@@ -339,7 +314,7 @@ public class AopConfigurableApplicationContextConfigurator
 		@Override
 		protected AopInvocationHandler createAopInvocationHandler(Object bean) {
 			AopInvocationHandler aopInvocationHandler = AopCacheManager.create(
-				bean, _transactionHandler);
+				bean, _transactionExecutor);
 
 			_aopInvocationHandlers.add(aopInvocationHandler);
 
@@ -347,16 +322,16 @@ public class AopConfigurableApplicationContextConfigurator
 		}
 
 		private ServiceBeanAutoProxyCreator(
-			ClassLoader classLoader, TransactionHandler transactionHandler) {
+			ClassLoader classLoader, TransactionExecutor transactionExecutor) {
 
 			super(new ServiceBeanMatcher(false), classLoader);
 
-			_transactionHandler = transactionHandler;
+			_transactionExecutor = transactionExecutor;
 		}
 
 		private final List<AopInvocationHandler> _aopInvocationHandlers =
 			new ArrayList<>();
-		private final TransactionHandler _transactionHandler;
+		private final TransactionExecutor _transactionExecutor;
 
 	}
 

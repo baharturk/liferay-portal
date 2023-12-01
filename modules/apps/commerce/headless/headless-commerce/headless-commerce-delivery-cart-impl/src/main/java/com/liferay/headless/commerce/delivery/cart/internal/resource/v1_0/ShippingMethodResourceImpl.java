@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.cart.internal.resource.v1_0;
@@ -27,7 +18,7 @@ import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.commerce.service.CommerceShippingMethodLocalService;
 import com.liferay.commerce.util.CommerceShippingEngineRegistry;
-import com.liferay.commerce.util.comparator.CommerceShippingOptionLabelComparator;
+import com.liferay.commerce.util.comparator.CommerceShippingOptionPriorityComparator;
 import com.liferay.headless.commerce.delivery.cart.dto.v1_0.ShippingMethod;
 import com.liferay.headless.commerce.delivery.cart.dto.v1_0.ShippingOption;
 import com.liferay.headless.commerce.delivery.cart.resource.v1_0.ShippingMethodResource;
@@ -37,8 +28,6 @@ import com.liferay.portal.vulcan.pagination.Page;
 
 import java.math.BigDecimal;
 
-import java.util.List;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ServiceScope;
@@ -47,7 +36,6 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Andrea Sbarra
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/shipping-method.properties",
 	scope = ServiceScope.PROTOTYPE, service = ShippingMethodResource.class
 )
@@ -95,15 +83,12 @@ public class ShippingMethodResourceImpl extends BaseShippingMethodResourceImpl {
 			_commerceShippingEngineRegistry.getCommerceShippingEngine(
 				commerceShippingMethod.getEngineKey());
 
-		List<CommerceShippingOption> commerceShippingOptions =
-			commerceShippingEngine.getCommerceShippingOptions(
-				commerceContext, commerceOrder,
-				contextAcceptLanguage.getPreferredLocale());
-
 		return transformToArray(
 			ListUtil.sort(
-				commerceShippingOptions,
-				new CommerceShippingOptionLabelComparator()),
+				commerceShippingEngine.getCommerceShippingOptions(
+					commerceContext, commerceOrder,
+					contextAcceptLanguage.getPreferredLocale()),
+				new CommerceShippingOptionPriorityComparator()),
 			shippingOption -> _toShippingOption(
 				shippingOption, commerceContext),
 			ShippingOption.class);
@@ -142,8 +127,8 @@ public class ShippingMethodResourceImpl extends BaseShippingMethodResourceImpl {
 					commerceContext.getCommerceCurrency(),
 					commerceShippingOption.getAmount(),
 					contextAcceptLanguage.getPreferredLocale());
-				label = commerceShippingOption.getLabel();
-				name = commerceShippingOption.getName();
+				label = commerceShippingOption.getName();
+				name = commerceShippingOption.getKey();
 			}
 		};
 	}

@@ -1,34 +1,46 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-FDSSampleDisplayContext fdsSampleDisplayContext = (FDSSampleDisplayContext)request.getAttribute(FDSSampleWebKeys.FDS_SAMPLE_DISPLAY_CONTEXT);
+String tabs1 = ParamUtil.getString(request, "tabs1", "customized");
+
+String tabs1Names = "classic,controlled,customized,minimum,react,empty";
+
+PortletURL portletURL = PortletURLBuilder.createRenderURL(
+	renderResponse
+).setTabs1(
+	tabs1
+).buildPortletURL();
 %>
 
-<frontend-data-set:headless-display
-	apiURL="<%= fdsSampleDisplayContext.getAPIURL() %>"
-	customViewsEnabled="<%= true %>"
-	fdsActionDropdownItems="<%= fdsSampleDisplayContext.getFDSActionDropdownItems() %>"
-	formId="fm"
-	id="<%= FDSSampleFDSNames.FDS_SAMPLES %>"
-	itemsPerPage="<%= 20 %>"
-	namespace="<%= liferayPortletResponse.getNamespace() %>"
-	pageNumber="<%= 1 %>"
-	portletURL="<%= liferayPortletResponse.createRenderURL() %>"
-	style="fluid"
-/>
+<clay:container-fluid>
+	<liferay-ui:tabs
+		names="<%= tabs1Names %>"
+		url="<%= portletURL.toString() %>"
+		value="<%= tabs1 %>"
+	>
+
+		<%
+		String[] sections = tabs1Names.split(StringPool.COMMA);
+
+		for (int i = 0; i < sections.length; i++) {
+		%>
+
+			<liferay-ui:section>
+				<c:if test="<%= tabs1.equals(sections[i]) %>">
+					<liferay-util:include page='<%= "/partials/" + tabs1 + ".jsp" %>' servletContext="<%= pageContext.getServletContext() %>" />
+				</c:if>
+			</liferay-ui:section>
+
+		<%
+		}
+		%>
+
+	</liferay-ui:tabs>
+</clay:container-fluid>

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service;
 
+import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 
 /**
@@ -38,11 +30,10 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			addCommerceTierPriceEntry(
-				long commercePriceEntryId, java.math.BigDecimal price,
-				java.math.BigDecimal promoPrice, int minQuantity,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommerceTierPriceEntry addCommerceTierPriceEntry(
+			long commercePriceEntryId, java.math.BigDecimal price,
+			java.math.BigDecimal promoPrice, java.math.BigDecimal minQuantity,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.addCommerceTierPriceEntry(
@@ -51,12 +42,11 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			addCommerceTierPriceEntry(
-				String externalReferenceCode, long commercePriceEntryId,
-				java.math.BigDecimal price, java.math.BigDecimal promoPrice,
-				int minQuantity,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommerceTierPriceEntry addCommerceTierPriceEntry(
+			String externalReferenceCode, long commercePriceEntryId,
+			java.math.BigDecimal price, java.math.BigDecimal promoPrice,
+			java.math.BigDecimal minQuantity,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.addCommerceTierPriceEntry(
@@ -65,21 +55,20 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			addCommerceTierPriceEntry(
-				String externalReferenceCode, long commercePriceEntryId,
-				java.math.BigDecimal price, int minQuantity,
-				boolean bulkPricing, boolean discountDiscovery,
-				java.math.BigDecimal discountLevel1,
-				java.math.BigDecimal discountLevel2,
-				java.math.BigDecimal discountLevel3,
-				java.math.BigDecimal discountLevel4, int displayDateMonth,
-				int displayDateDay, int displayDateYear, int displayDateHour,
-				int displayDateMinute, int expirationDateMonth,
-				int expirationDateDay, int expirationDateYear,
-				int expirationDateHour, int expirationDateMinute,
-				boolean neverExpire,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommerceTierPriceEntry addCommerceTierPriceEntry(
+			String externalReferenceCode, long commercePriceEntryId,
+			java.math.BigDecimal price, java.math.BigDecimal minQuantity,
+			boolean bulkPricing, boolean discountDiscovery,
+			java.math.BigDecimal discountLevel1,
+			java.math.BigDecimal discountLevel2,
+			java.math.BigDecimal discountLevel3,
+			java.math.BigDecimal discountLevel4, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, int expirationDateMonth,
+			int expirationDateDay, int expirationDateYear,
+			int expirationDateHour, int expirationDateMinute,
+			boolean neverExpire,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.addCommerceTierPriceEntry(
@@ -93,13 +82,12 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			addOrUpdateCommerceTierPriceEntry(
-				String externalReferenceCode, long commerceTierPriceEntryId,
-				long commercePriceEntryId, java.math.BigDecimal price,
-				java.math.BigDecimal promoPrice, int minQuantity,
-				String priceEntryExternalReferenceCode,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommerceTierPriceEntry addOrUpdateCommerceTierPriceEntry(
+			String externalReferenceCode, long commerceTierPriceEntryId,
+			long commercePriceEntryId, java.math.BigDecimal price,
+			java.math.BigDecimal promoPrice, java.math.BigDecimal minQuantity,
+			String priceEntryExternalReferenceCode,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.addOrUpdateCommerceTierPriceEntry(
@@ -109,21 +97,20 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			addOrUpdateCommerceTierPriceEntry(
-				String externalReferenceCode, long commerceTierPriceEntryId,
-				long commercePriceEntryId, java.math.BigDecimal price,
-				int minQuantity, boolean bulkPricing, boolean discountDiscovery,
-				java.math.BigDecimal discountLevel1,
-				java.math.BigDecimal discountLevel2,
-				java.math.BigDecimal discountLevel3,
-				java.math.BigDecimal discountLevel4, int displayDateMonth,
-				int displayDateDay, int displayDateYear, int displayDateHour,
-				int displayDateMinute, int expirationDateMonth,
-				int expirationDateDay, int expirationDateYear,
-				int expirationDateHour, int expirationDateMinute,
-				boolean neverExpire, String priceEntryExternalReferenceCode,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommerceTierPriceEntry addOrUpdateCommerceTierPriceEntry(
+			String externalReferenceCode, long commerceTierPriceEntryId,
+			long commercePriceEntryId, java.math.BigDecimal price,
+			java.math.BigDecimal minQuantity, boolean bulkPricing,
+			boolean discountDiscovery, java.math.BigDecimal discountLevel1,
+			java.math.BigDecimal discountLevel2,
+			java.math.BigDecimal discountLevel3,
+			java.math.BigDecimal discountLevel4, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, int expirationDateMonth,
+			int expirationDateDay, int expirationDateYear,
+			int expirationDateHour, int expirationDateMinute,
+			boolean neverExpire, String priceEntryExternalReferenceCode,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.addOrUpdateCommerceTierPriceEntry(
@@ -146,9 +133,8 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			fetchByExternalReferenceCode(
-				String externalReferenceCode, long companyId)
+	public CommerceTierPriceEntry fetchByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.fetchByExternalReferenceCode(
@@ -160,19 +146,17 @@ public class CommerceTierPriceEntryServiceWrapper
 	 */
 	@Deprecated
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommerceTierPriceEntry>
-				fetchCommerceTierPriceEntries(
-					long companyId, int start, int end)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommerceTierPriceEntry> fetchCommerceTierPriceEntries(
+			long companyId, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.fetchCommerceTierPriceEntries(
 			companyId, start, end);
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			fetchCommerceTierPriceEntry(long commerceTierPriceEntryId)
+	public CommerceTierPriceEntry fetchCommerceTierPriceEntry(
+			long commerceTierPriceEntryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.fetchCommerceTierPriceEntry(
@@ -180,25 +164,20 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommerceTierPriceEntry>
-				getCommerceTierPriceEntries(
-					long commercePriceEntryId, int start, int end)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommerceTierPriceEntry> getCommerceTierPriceEntries(
+			long commercePriceEntryId, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.getCommerceTierPriceEntries(
 			commercePriceEntryId, start, end);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommerceTierPriceEntry>
-				getCommerceTierPriceEntries(
-					long commercePriceEntryId, int start, int end,
-					com.liferay.portal.kernel.util.OrderByComparator
-						<com.liferay.commerce.price.list.model.
-							CommerceTierPriceEntry> orderByComparator)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommerceTierPriceEntry> getCommerceTierPriceEntries(
+			long commercePriceEntryId, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<CommerceTierPriceEntry> orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.getCommerceTierPriceEntries(
 			commercePriceEntryId, start, end, orderByComparator);
@@ -225,8 +204,8 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			getCommerceTierPriceEntry(long commerceTierPriceEntryId)
+	public CommerceTierPriceEntry getCommerceTierPriceEntry(
+			long commerceTierPriceEntryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.getCommerceTierPriceEntry(
@@ -245,11 +224,9 @@ public class CommerceTierPriceEntryServiceWrapper
 
 	@Override
 	public com.liferay.portal.kernel.search.BaseModelSearchResult
-		<com.liferay.commerce.price.list.model.CommerceTierPriceEntry>
-				searchCommerceTierPriceEntries(
-					long companyId, long commercePriceEntryId, String keywords,
-					int start, int end,
-					com.liferay.portal.kernel.search.Sort sort)
+		<CommerceTierPriceEntry> searchCommerceTierPriceEntries(
+				long companyId, long commercePriceEntryId, String keywords,
+				int start, int end, com.liferay.portal.kernel.search.Sort sort)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.searchCommerceTierPriceEntries(
@@ -267,11 +244,10 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			updateCommerceTierPriceEntry(
-				long commerceTierPriceEntryId, java.math.BigDecimal price,
-				java.math.BigDecimal promoPrice, int minQuantity,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommerceTierPriceEntry updateCommerceTierPriceEntry(
+			long commerceTierPriceEntryId, java.math.BigDecimal price,
+			java.math.BigDecimal promoPrice, java.math.BigDecimal minQuantity,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.updateCommerceTierPriceEntry(
@@ -280,20 +256,19 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			updateCommerceTierPriceEntry(
-				long commerceTierPriceEntryId, java.math.BigDecimal price,
-				int minQuantity, boolean bulkPricing, boolean discountDiscovery,
-				java.math.BigDecimal discountLevel1,
-				java.math.BigDecimal discountLevel2,
-				java.math.BigDecimal discountLevel3,
-				java.math.BigDecimal discountLevel4, int displayDateMonth,
-				int displayDateDay, int displayDateYear, int displayDateHour,
-				int displayDateMinute, int expirationDateMonth,
-				int expirationDateDay, int expirationDateYear,
-				int expirationDateHour, int expirationDateMinute,
-				boolean neverExpire,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommerceTierPriceEntry updateCommerceTierPriceEntry(
+			long commerceTierPriceEntryId, java.math.BigDecimal price,
+			java.math.BigDecimal minQuantity, boolean bulkPricing,
+			boolean discountDiscovery, java.math.BigDecimal discountLevel1,
+			java.math.BigDecimal discountLevel2,
+			java.math.BigDecimal discountLevel3,
+			java.math.BigDecimal discountLevel4, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, int expirationDateMonth,
+			int expirationDateDay, int expirationDateYear,
+			int expirationDateHour, int expirationDateMinute,
+			boolean neverExpire,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.updateCommerceTierPriceEntry(
@@ -306,11 +281,9 @@ public class CommerceTierPriceEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-			updateExternalReferenceCode(
-				com.liferay.commerce.price.list.model.CommerceTierPriceEntry
-					commerceTierPriceEntry,
-				String externalReferenceCode)
+	public CommerceTierPriceEntry updateExternalReferenceCode(
+			CommerceTierPriceEntry commerceTierPriceEntry,
+			String externalReferenceCode)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceTierPriceEntryService.updateExternalReferenceCode(

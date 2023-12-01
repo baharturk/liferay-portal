@@ -1,38 +1,39 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.server.admin.web.internal.portlet.action;
 
-import com.liferay.document.library.kernel.util.DLPreviewableProcessor;
+import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
+import com.liferay.document.library.kernel.document.conversion.DocumentConversion;
+import com.liferay.document.library.kernel.model.DLProcessorConstants;
+import com.liferay.document.library.kernel.store.Store;
+import com.liferay.document.library.kernel.util.AudioProcessor;
+import com.liferay.document.library.kernel.util.DLProcessor;
+import com.liferay.document.library.kernel.util.PDFProcessor;
+import com.liferay.document.library.kernel.util.VideoProcessor;
+import com.liferay.document.library.preview.processor.BasePreviewableDLProcessor;
+import com.liferay.image.Ghostscript;
+import com.liferay.image.ImageMagick;
 import com.liferay.mail.kernel.model.Account;
 import com.liferay.mail.kernel.service.MailService;
-import com.liferay.petra.log4j.Log4JUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.convert.ConvertException;
 import com.liferay.portal.convert.ConvertProcess;
+import com.liferay.portal.convert.ConvertProcessUtil;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
 import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.cache.SingleVMPool;
+import com.liferay.portal.kernel.cluster.ClusterExecutor;
+import com.liferay.portal.kernel.cluster.ClusterMasterExecutor;
+import com.liferay.portal.kernel.cluster.ClusterRequest;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
-import com.liferay.portal.kernel.image.GhostscriptUtil;
-import com.liferay.portal.kernel.image.ImageMagickUtil;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncPrintWriter;
 import com.liferay.portal.kernel.log.Log;
@@ -53,42 +54,42 @@ import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.ResourcePermission;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiServiceUtil;
 import com.liferay.portal.kernel.portlet.LiferayActionResponse;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
-import com.liferay.portal.kernel.scripting.Scripting;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.scripting.ScriptingException;
 import com.liferay.portal.kernel.scripting.ScriptingHelperUtil;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicy;
 import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicyFactory;
 import com.liferay.portal.kernel.security.membershippolicy.RoleMembershipPolicy;
-import com.liferay.portal.kernel.security.membershippolicy.RoleMembershipPolicyFactory;
-import com.liferay.portal.kernel.security.membershippolicy.SiteMembershipPolicy;
-import com.liferay.portal.kernel.security.membershippolicy.SiteMembershipPolicyFactory;
 import com.liferay.portal.kernel.security.membershippolicy.UserGroupMembershipPolicy;
-import com.liferay.portal.kernel.security.membershippolicy.UserGroupMembershipPolicyFactory;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutRevisionLocalService;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
-import com.liferay.portal.kernel.service.ServiceComponentLocalService;
-import com.liferay.portal.kernel.servlet.DirectServletRegistry;
+import com.liferay.portal.kernel.servlet.DirectServletRegistryUtil;
+import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.InstancePool;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
+import com.liferay.portal.kernel.util.MethodHandler;
+import com.liferay.portal.kernel.util.MethodKey;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -96,15 +97,27 @@ import com.liferay.portal.kernel.util.ThreadUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.log4j.Log4JUtil;
+import com.liferay.portal.security.membershippolicy.RoleMembershipPolicyFactoryUtil;
+import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
+import com.liferay.portal.security.membershippolicy.UserGroupMembershipPolicyFactoryUtil;
 import com.liferay.portal.util.MaintenanceUtil;
-import com.liferay.portal.util.PrefsPropsUtil;
+import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.ShutdownUtil;
+import com.liferay.server.admin.web.internal.constants.ImageMagickResourceLimitConstants;
+import com.liferay.server.admin.web.internal.scripting.util.ServerScriptingUtil;
 
+import java.lang.reflect.InvocationHandler;
+
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
@@ -125,25 +138,36 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
+		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
 		"javax.portlet.name=" + PortletKeys.SERVER_ADMIN,
 		"mvc.command.name=/server_admin/edit_server"
 	},
-	service = MVCActionCommand.class
+	service = {IdentifiableOSGiService.class, MVCActionCommand.class}
 )
-public class EditServerMVCActionCommand extends BaseMVCActionCommand {
+public class EditServerMVCActionCommand
+	extends BaseMVCActionCommand implements IdentifiableOSGiService {
 
 	@Override
 	public void doProcessAction(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
+		if (!StringUtil.equals(actionRequest.getMethod(), HttpMethods.POST)) {
+			return;
+		}
+
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
+
+		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
 
 		PermissionChecker permissionChecker =
 			themeDisplay.getPermissionChecker();
 
-		if (!permissionChecker.isOmniadmin()) {
+		if (!permissionChecker.isOmniadmin() &&
+			(!permissionChecker.isCompanyAdmin() ||
+			 !cmd.equals("updateMail"))) {
+
 			SessionErrors.add(
 				actionRequest,
 				PrincipalException.MustBeOmniadmin.class.getName());
@@ -153,14 +177,16 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 			return;
 		}
 
-		PortletPreferences portletPreferences = PrefsPropsUtil.getPreferences();
-
-		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
+		PortletPreferences portletPreferences = _prefsProps.getPreferences(
+			ParamUtil.getLong(actionRequest, "preferencesCompanyId"));
 
 		String redirect = ParamUtil.getString(actionRequest, "redirect");
 
 		if (cmd.equals("addLogLevel")) {
-			_addLogLevel(actionRequest);
+			_updateLogLevels(
+				Collections.singletonMap(
+					ParamUtil.getString(actionRequest, "loggerName"),
+					ParamUtil.getString(actionRequest, "priority")));
 		}
 		else if (cmd.equals("cacheDb")) {
 			_cacheDb();
@@ -186,8 +212,42 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		else if (cmd.startsWith("convertProcess.")) {
 			redirect = _convertProcess(actionRequest, actionResponse, cmd);
 		}
-		else if (cmd.equals("dlPreviews")) {
-			DLPreviewableProcessor.deleteFiles();
+		else if (cmd.equals("dlDeletePreviews")) {
+			_deleteFiles();
+		}
+		else if (cmd.equals("dlGenerateAudioPreviews")) {
+			AudioProcessor audioProcessor = (AudioProcessor)_audioDLProcessor;
+
+			audioProcessor.generatePreviews();
+
+			hideDefaultSuccessMessage(actionRequest);
+
+			SessionMessages.add(actionRequest, "dlGenerateAudioPreviews");
+		}
+		else if (cmd.equals("dlGenerateOpenOfficePreviews")) {
+			_documentConversion.generatePreviews();
+
+			hideDefaultSuccessMessage(actionRequest);
+
+			SessionMessages.add(actionRequest, "dlGenerateOpenOfficePreviews");
+		}
+		else if (cmd.equals("dlGeneratePDFPreviews")) {
+			PDFProcessor pdfProcessor = (PDFProcessor)_dlProcessor;
+
+			pdfProcessor.generatePreviews();
+
+			hideDefaultSuccessMessage(actionRequest);
+
+			SessionMessages.add(actionRequest, "dlGeneratePDFPreviews");
+		}
+		else if (cmd.equals("dlGenerateVideoPreviews")) {
+			VideoProcessor videoProcessor = (VideoProcessor)_videoDLProcessor;
+
+			videoProcessor.generatePreviews();
+
+			hideDefaultSuccessMessage(actionRequest);
+
+			SessionMessages.add(actionRequest, "dlGenerateVideoPreviews");
 		}
 		else if (cmd.equals("gc")) {
 			_gc();
@@ -210,21 +270,44 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		else if (cmd.equals("updateMail")) {
 			_updateMail(actionRequest, portletPreferences);
 		}
+		else if (cmd.equals("updatePortalProperties")) {
+			_updatePortalProperties(actionRequest);
+		}
 		else if (cmd.equals("verifyMembershipPolicies")) {
 			_verifyMembershipPolicies();
-		}
-		else if (cmd.equals("verifyPluginTables")) {
-			_verifyPluginTables();
 		}
 
 		sendRedirect(actionRequest, actionResponse, redirect);
 	}
 
-	private void _addLogLevel(ActionRequest actionRequest) throws Exception {
-		String loggerName = ParamUtil.getString(actionRequest, "loggerName");
-		String priority = ParamUtil.getString(actionRequest, "priority");
+	@Override
+	public String getOSGiServiceIdentifier() {
+		return EditServerMVCActionCommand.class.getName();
+	}
 
-		Log4JUtil.setLevel(loggerName, priority, true);
+	private static void _resetLogLevels(
+		Map<String, String> logLevels, Map<String, String> customLogSettings) {
+
+		for (Map.Entry<String, String> logLevel : logLevels.entrySet()) {
+			Log4JUtil.setLevel(
+				logLevel.getKey(), logLevel.getValue(),
+				customLogSettings.containsKey(logLevel.getKey()));
+		}
+	}
+
+	private static void _updateLogLevels(
+		Map<String, String> logLevels, String osgiServiceIdentifier) {
+
+		EditServerMVCActionCommand editServerMVCActionCommand =
+			(EditServerMVCActionCommand)
+				IdentifiableOSGiServiceUtil.getIdentifiableOSGiService(
+					osgiServiceIdentifier);
+
+		if (editServerMVCActionCommand == null) {
+			return;
+		}
+
+		editServerMVCActionCommand._updateLogLevels(logLevels);
 	}
 
 	private void _cacheDb() throws Exception {
@@ -236,7 +319,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	private void _cacheServlet() throws Exception {
-		_directServletRegistry.clearServlets();
+		DirectServletRegistryUtil.clearServlets();
 	}
 
 	private void _cacheSingle() throws Exception {
@@ -341,12 +424,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 					layoutStagingHandler.setLayoutRevision(layoutRevision);
 
 					if (_containsPortlet(
-							(Layout)ProxyUtil.newProxyInstance(
-								PortalClassLoaderUtil.getClassLoader(),
-								new Class<?>[] {
-									Layout.class, ModelWrapper.class
-								},
-								layoutStagingHandler),
+							_proxyProviderFunction.apply(layoutStagingHandler),
 							portletPreferences.getPortletId())) {
 
 						return;
@@ -359,7 +437,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 					}
 
 					_portletPreferencesLocalService.deletePortletPreferences(
-						portletPreferences);
+						portletPreferences.getPortletPreferencesId());
 				});
 
 			actionableDynamicQuery.performActions();
@@ -378,6 +456,19 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 			ActionableDynamicQuery actionableDynamicQuery =
 				_portletPreferencesLocalService.getActionableDynamicQuery();
 
+			actionableDynamicQuery.setAddCriteriaMethod(
+				dynamicQuery -> {
+					Property plidProperty = PropertyFactoryUtil.forName("plid");
+
+					DynamicQuery layoutRevisionDynamicQuery =
+						_layoutRevisionLocalService.dynamicQuery();
+
+					layoutRevisionDynamicQuery.setProjection(
+						ProjectionFactoryUtil.property("layoutRevisionId"));
+
+					dynamicQuery.add(
+						plidProperty.notIn(layoutRevisionDynamicQuery));
+				});
 			actionableDynamicQuery.setParallel(true);
 			actionableDynamicQuery.setPerformActionMethod(
 				(com.liferay.portal.kernel.model.PortletPreferences pref) -> {
@@ -416,7 +507,8 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 
 					if (orphan) {
 						_portletPreferencesLocalService.
-							deletePortletPreferences(pref);
+							deletePortletPreferences(
+								pref.getPortletPreferencesId());
 					}
 				});
 
@@ -445,7 +537,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		String className = StringUtil.replaceFirst(
 			cmd, "convertProcess.", StringPool.BLANK);
 
-		ConvertProcess convertProcess = (ConvertProcess)InstancePool.get(
+		ConvertProcess convertProcess = ConvertProcessUtil.getConvertProcess(
 			className);
 
 		String[] parameters = convertProcess.getParameterNames();
@@ -502,11 +594,24 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 
 		Message message = new Message();
 
-		message.setPayload(className);
+		message.setPayload(convertProcess);
 
 		_messageBus.sendMessage(DestinationNames.CONVERT_PROCESS, message);
 
 		return null;
+	}
+
+	private void _deleteFiles() {
+		_companyLocalService.forEachCompanyId(
+			companyId -> {
+				_store.deleteDirectory(
+					companyId, BasePreviewableDLProcessor.REPOSITORY_ID,
+					BasePreviewableDLProcessor.PREVIEW_PATH);
+
+				_store.deleteDirectory(
+					companyId, BasePreviewableDLProcessor.REPOSITORY_ID,
+					BasePreviewableDLProcessor.THUMBNAIL_PATH);
+			});
 	}
 
 	private void _gc() throws Exception {
@@ -543,7 +648,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 			SessionMessages.add(actionRequest, "script", script);
 			SessionMessages.add(actionRequest, "output", output);
 
-			_scripting.exec(null, portletObjects, language, script);
+			ServerScriptingUtil.execute(portletObjects, language, script);
 
 			unsyncPrintWriter.flush();
 
@@ -610,42 +715,65 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		portletPreferences.setValue(
 			PropsKeys.IMAGEMAGICK_GLOBAL_SEARCH_PATH, imageMagickPath);
 
-		Enumeration<String> enumeration = actionRequest.getParameterNames();
+		for (String name : ImageMagickResourceLimitConstants.PROPERTY_NAMES) {
+			String propertyName = PropsKeys.IMAGEMAGICK_RESOURCE_LIMIT + name;
 
-		while (enumeration.hasMoreElements()) {
-			String name = enumeration.nextElement();
-
-			if (name.startsWith("imageMagickLimit")) {
-				String key = StringUtil.toLowerCase(name.substring(16));
-				String value = ParamUtil.getString(actionRequest, name);
-
-				portletPreferences.setValue(
-					PropsKeys.IMAGEMAGICK_RESOURCE_LIMIT + key, value);
-			}
+			portletPreferences.setValue(
+				propertyName, ParamUtil.getString(actionRequest, propertyName));
 		}
 
 		portletPreferences.store();
 
-		GhostscriptUtil.reset();
-		ImageMagickUtil.reset();
+		_ghostscript.reset();
+		_imageMagick.reset();
 	}
 
-	private void _updateLogLevels(ActionRequest actionRequest)
-		throws Exception {
-
+	private void _updateLogLevels(ActionRequest actionRequest) {
 		Enumeration<String> enumeration = actionRequest.getParameterNames();
+
+		Map<String, String> logLevels = new HashMap<>();
 
 		while (enumeration.hasMoreElements()) {
 			String name = enumeration.nextElement();
 
 			if (name.startsWith("logLevel")) {
-				String loggerName = name.substring(8);
-
-				String priority = ParamUtil.getString(
-					actionRequest, name, Level.INFO.toString());
-
-				Log4JUtil.setLevel(loggerName, priority, true);
+				logLevels.put(
+					name.substring(8),
+					ParamUtil.getString(
+						actionRequest, name, Level.INFO.toString()));
 			}
+		}
+
+		_updateLogLevels(logLevels);
+	}
+
+	private void _updateLogLevels(Map<String, String> logLevels) {
+		for (Map.Entry<String, String> logLevelEntry : logLevels.entrySet()) {
+			Log4JUtil.setLevel(
+				logLevelEntry.getKey(), logLevelEntry.getValue(), true);
+		}
+
+		if (!_clusterExecutor.isEnabled()) {
+			return;
+		}
+
+		if (_clusterMasterExecutor.isMaster()) {
+			ClusterRequest clusterRequest =
+				ClusterRequest.createMulticastRequest(
+					new MethodHandler(
+						_resetLogLevelsMethodKey, Log4JUtil.getPriorities(),
+						Log4JUtil.getCustomLogSettings()),
+					true);
+
+			clusterRequest.setFireAndForget(true);
+
+			_clusterExecutor.execute(clusterRequest);
+		}
+		else {
+			_clusterMasterExecutor.executeOnMaster(
+				new MethodHandler(
+					_updateLogLevelsMethodKey, logLevels,
+					getOSGiServiceIdentifier()));
 		}
 	}
 
@@ -661,6 +789,8 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		int pop3Port = ParamUtil.getInteger(actionRequest, "pop3Port");
 		boolean pop3Secure = ParamUtil.getBoolean(actionRequest, "pop3Secure");
 		String pop3User = ParamUtil.getString(actionRequest, "pop3User");
+		boolean popServerNotificationsEnabled = ParamUtil.getBoolean(
+			actionRequest, "popServerNotificationsEnabled");
 		String smtpHost = ParamUtil.getString(actionRequest, "smtpHost");
 		String smtpPassword = ParamUtil.getString(
 			actionRequest, "smtpPassword");
@@ -686,41 +816,88 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		portletPreferences.setValue(
 			PropsKeys.MAIL_SESSION_MAIL_ADVANCED_PROPERTIES,
 			advancedProperties);
-		portletPreferences.setValue(
-			PropsKeys.MAIL_SESSION_MAIL_POP3_HOST, pop3Host);
+
+		if (!Validator.isBlank(pop3Host)) {
+			portletPreferences.setValue(
+				PropsKeys.MAIL_SESSION_MAIL_POP3_HOST, pop3Host);
+		}
 
 		if (!pop3Password.equals(Portal.TEMP_OBFUSCATION_VALUE)) {
 			portletPreferences.setValue(
 				PropsKeys.MAIL_SESSION_MAIL_POP3_PASSWORD, pop3Password);
 		}
 
-		portletPreferences.setValue(
-			PropsKeys.MAIL_SESSION_MAIL_POP3_PORT, String.valueOf(pop3Port));
-		portletPreferences.setValue(
-			PropsKeys.MAIL_SESSION_MAIL_POP3_USER, pop3User);
-		portletPreferences.setValue(
-			PropsKeys.MAIL_SESSION_MAIL_SMTP_HOST, smtpHost);
+		if (pop3Port > 0) {
+			portletPreferences.setValue(
+				PropsKeys.MAIL_SESSION_MAIL_POP3_PORT,
+				String.valueOf(pop3Port));
+		}
+
+		if (!Validator.isBlank(pop3User)) {
+			portletPreferences.setValue(
+				PropsKeys.MAIL_SESSION_MAIL_POP3_USER, pop3User);
+		}
+
+		if (!Validator.isBlank(smtpHost)) {
+			portletPreferences.setValue(
+				PropsKeys.MAIL_SESSION_MAIL_SMTP_HOST, smtpHost);
+		}
 
 		if (!smtpPassword.equals(Portal.TEMP_OBFUSCATION_VALUE)) {
 			portletPreferences.setValue(
 				PropsKeys.MAIL_SESSION_MAIL_SMTP_PASSWORD, smtpPassword);
 		}
 
-		portletPreferences.setValue(
-			PropsKeys.MAIL_SESSION_MAIL_SMTP_PORT, String.valueOf(smtpPort));
+		if (smtpPort > 0) {
+			portletPreferences.setValue(
+				PropsKeys.MAIL_SESSION_MAIL_SMTP_PORT,
+				String.valueOf(smtpPort));
+		}
+
 		portletPreferences.setValue(
 			PropsKeys.MAIL_SESSION_MAIL_SMTP_STARTTLS_ENABLE,
 			String.valueOf(smtpStartTLSEnable));
-		portletPreferences.setValue(
-			PropsKeys.MAIL_SESSION_MAIL_SMTP_USER, smtpUser);
+
+		if (!Validator.isBlank(smtpUser)) {
+			portletPreferences.setValue(
+				PropsKeys.MAIL_SESSION_MAIL_SMTP_USER, smtpUser);
+		}
+
 		portletPreferences.setValue(
 			PropsKeys.MAIL_SESSION_MAIL_STORE_PROTOCOL, storeProtocol);
 		portletPreferences.setValue(
 			PropsKeys.MAIL_SESSION_MAIL_TRANSPORT_PROTOCOL, transportProtocol);
+		portletPreferences.setValue(
+			PropsKeys.POP_SERVER_NOTIFICATIONS_ENABLED,
+			String.valueOf(popServerNotificationsEnabled));
 
 		portletPreferences.store();
 
 		_mailService.clearSession();
+	}
+
+	private void _updatePortalProperties(ActionRequest actionRequest) {
+		Enumeration<String> enumeration = actionRequest.getParameterNames();
+
+		Map<String, String> portalProperties = new HashMap<>();
+
+		while (enumeration.hasMoreElements()) {
+			String name = enumeration.nextElement();
+
+			if (name.startsWith("portalProperty")) {
+				portalProperties.put(
+					name.substring(14),
+					ParamUtil.getString(actionRequest, name, "false"));
+			}
+		}
+
+		_updatePortalProperties(portalProperties);
+	}
+
+	private void _updatePortalProperties(Map<String, String> portalProperties) {
+		for (Map.Entry<String, String> entry : portalProperties.entrySet()) {
+			PropsUtil.set(entry.getKey(), entry.getValue());
+		}
 	}
 
 	private void _verifyMembershipPolicies() throws Exception {
@@ -731,33 +908,57 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		organizationMembershipPolicy.verifyPolicy();
 
 		RoleMembershipPolicy roleMembershipPolicy =
-			_roleMembershipPolicyFactory.getRoleMembershipPolicy();
+			RoleMembershipPolicyFactoryUtil.getRoleMembershipPolicy();
 
 		roleMembershipPolicy.verifyPolicy();
 
-		SiteMembershipPolicy siteMembershipPolicy =
-			_siteMembershipPolicyFactory.getSiteMembershipPolicy();
-
-		siteMembershipPolicy.verifyPolicy();
+		SiteMembershipPolicyUtil.verifyPolicy();
 
 		UserGroupMembershipPolicy userGroupMembershipPolicy =
-			_userGroupMembershipPolicyFactory.getUserGroupMembershipPolicy();
+			UserGroupMembershipPolicyFactoryUtil.getUserGroupMembershipPolicy();
 
 		userGroupMembershipPolicy.verifyPolicy();
-	}
-
-	private void _verifyPluginTables() throws Exception {
-		_serviceComponentLocalService.verifyDB();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditServerMVCActionCommand.class);
 
+	private static final Function<InvocationHandler, Layout>
+		_proxyProviderFunction = ProxyUtil.getProxyProviderFunction(
+			Layout.class, ModelWrapper.class);
+	private static final MethodKey _resetLogLevelsMethodKey = new MethodKey(
+		EditServerMVCActionCommand.class, "_resetLogLevels", Map.class,
+		Map.class);
+	private static final MethodKey _updateLogLevelsMethodKey = new MethodKey(
+		EditServerMVCActionCommand.class, "_updateLogLevels", Map.class,
+		String.class);
+
+	@Reference(target = "(type=" + DLProcessorConstants.AUDIO_PROCESSOR + ")")
+	private DLProcessor _audioDLProcessor;
+
 	@Reference
-	private DirectServletRegistry _directServletRegistry;
+	private ClusterExecutor _clusterExecutor;
+
+	@Reference
+	private ClusterMasterExecutor _clusterMasterExecutor;
+
+	@Reference
+	private CompanyLocalService _companyLocalService;
+
+	@Reference(target = "(type=" + DLProcessorConstants.PDF_PROCESSOR + ")")
+	private DLProcessor _dlProcessor;
+
+	@Reference
+	private DocumentConversion _documentConversion;
+
+	@Reference
+	private Ghostscript _ghostscript;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private ImageMagick _imageMagick;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
@@ -785,27 +986,21 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 	private PortletPreferencesLocalService _portletPreferencesLocalService;
 
 	@Reference
+	private PrefsProps _prefsProps;
+
+	@Reference
 	private ResourcePermissionLocalService _resourcePermissionLocalService;
 
 	@Reference
 	private RoleLocalService _roleLocalService;
 
 	@Reference
-	private RoleMembershipPolicyFactory _roleMembershipPolicyFactory;
-
-	@Reference
-	private Scripting _scripting;
-
-	@Reference
-	private ServiceComponentLocalService _serviceComponentLocalService;
-
-	@Reference
 	private SingleVMPool _singleVMPool;
 
-	@Reference
-	private SiteMembershipPolicyFactory _siteMembershipPolicyFactory;
+	@Reference(target = "(default=true)")
+	private Store _store;
 
-	@Reference
-	private UserGroupMembershipPolicyFactory _userGroupMembershipPolicyFactory;
+	@Reference(target = "(type=" + DLProcessorConstants.VIDEO_PROCESSOR + ")")
+	private DLProcessor _videoDLProcessor;
 
 }

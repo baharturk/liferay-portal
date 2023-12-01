@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.marketplace.internal.bundle;
@@ -23,7 +14,6 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.portal.lpkg.deployer.LPKGVerifier;
 import com.liferay.portal.util.ShutdownUtil;
 
 import java.io.File;
@@ -45,15 +35,12 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Joan Kim
  * @author Ryan Park
  */
-@Component(
-	immediate = true, service = {BundleManager.class, BundleManagerImpl.class}
-)
+@Component(service = BundleManager.class)
 public class BundleManagerImpl implements BundleManager {
 
 	@Override
@@ -107,7 +94,7 @@ public class BundleManagerImpl implements BundleManager {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -149,7 +136,7 @@ public class BundleManagerImpl implements BundleManager {
 			bundle.uninstall();
 		}
 		catch (BundleException bundleException) {
-			_log.error(bundleException, bundleException);
+			_log.error(bundleException);
 		}
 	}
 
@@ -228,8 +215,5 @@ public class BundleManagerImpl implements BundleManager {
 		BundleManagerImpl.class);
 
 	private BundleContext _bundleContext;
-
-	@Reference
-	private LPKGVerifier _lpkgVerifier;
 
 }

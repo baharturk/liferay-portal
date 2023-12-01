@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.servlet.taglib;
 
-import com.liferay.frontend.taglib.clay.servlet.taglib.soy.VerticalCard;
+import com.liferay.frontend.taglib.clay.internal.servlet.taglib.util.DropdownItemListUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -44,6 +35,16 @@ public class VerticalCardTag extends BaseCardTag {
 		}
 
 		return super.doStartTag();
+	}
+
+	public String getAriaLabel() {
+		VerticalCard verticalCard = getVerticalCard();
+
+		if ((_ariaLabel == null) && (verticalCard != null)) {
+			return verticalCard.getAriaLabel();
+		}
+
+		return _ariaLabel;
 	}
 
 	@Override
@@ -177,6 +178,16 @@ public class VerticalCardTag extends BaseCardTag {
 		return _stickerStyle;
 	}
 
+	public String getStickerTitle() {
+		VerticalCard verticalCard = getVerticalCard();
+
+		if ((_stickerTitle == null) && (verticalCard != null)) {
+			return verticalCard.getStickerTitle();
+		}
+
+		return _stickerTitle;
+	}
+
 	public String getSubtitle() {
 		VerticalCard verticalCard = getVerticalCard();
 
@@ -252,6 +263,10 @@ public class VerticalCardTag extends BaseCardTag {
 		return _showSticker;
 	}
 
+	public void setAriaLabel(String ariaLabel) {
+		_ariaLabel = ariaLabel;
+	}
+
 	public void setFlushHorizontal(boolean flushHorizontal) {
 		_flushHorizontal = flushHorizontal;
 	}
@@ -312,6 +327,10 @@ public class VerticalCardTag extends BaseCardTag {
 		_stickerStyle = stickerStyle;
 	}
 
+	public void setStickerTitle(String stickerTitle) {
+		_stickerTitle = stickerTitle;
+	}
+
 	public void setSubtitle(String subtitle) {
 		_subtitle = subtitle;
 	}
@@ -328,6 +347,7 @@ public class VerticalCardTag extends BaseCardTag {
 	protected void cleanUp() {
 		super.cleanUp();
 
+		_ariaLabel = null;
 		_flushHorizontal = null;
 		_flushVertical = null;
 		_imageAlt = null;
@@ -342,17 +362,19 @@ public class VerticalCardTag extends BaseCardTag {
 		_stickerLabel = null;
 		_stickerShape = null;
 		_stickerStyle = null;
+		_stickerTitle = null;
 		_subtitle = null;
 		_title = null;
 	}
 
 	@Override
 	protected String getHydratedModuleName() {
-		return "frontend-taglib-clay/cards/VerticalCard";
+		return "{VerticalCard} from frontend-taglib-clay";
 	}
 
 	@Override
 	protected Map<String, Object> prepareProps(Map<String, Object> props) {
+		props.put("ariaLabel", getAriaLabel());
 		props.put("description", getSubtitle());
 		props.put("displayType", _getDisplayType());
 		props.put("flushHorizontal", isFlushHorizontal());
@@ -368,6 +390,7 @@ public class VerticalCardTag extends BaseCardTag {
 		props.put("stickerLabel", getStickerLabel());
 		props.put("stickerShape", getStickerShape());
 		props.put("stickerStyle", getStickerStyle());
+		props.put("stickerTitle", getStickerTitle());
 		props.put("title", getTitle());
 
 		return super.prepareProps(props);
@@ -539,10 +562,21 @@ public class VerticalCardTag extends BaseCardTag {
 
 		jspWriter.write("<div class=\"card-body\"><div class=\"card-row\">");
 		jspWriter.write("<div class=\"autofit-col autofit-col-expand\">");
+		jspWriter.write("<p");
+
+		String ariaLabel = getAriaLabel();
+
+		if (Validator.isNotNull(ariaLabel)) {
+			jspWriter.write(" aria-label=\"");
+			jspWriter.write(HtmlUtil.escapeAttribute(ariaLabel));
+			jspWriter.write("\"");
+		}
+
+		jspWriter.write(" class=\"card-title\"");
 
 		String title = getTitle();
 
-		jspWriter.write("<p class=\"card-title\" title=\"");
+		jspWriter.write(" title=\"");
 
 		if (Validator.isNotNull(title)) {
 			jspWriter.write(HtmlUtil.escapeAttribute(title));
@@ -585,7 +619,7 @@ public class VerticalCardTag extends BaseCardTag {
 
 		List<LabelItem> labels = getLabels();
 
-		if (!ListUtil.isEmpty(labels)) {
+		if (ListUtil.isNotEmpty(labels)) {
 			jspWriter.write("<div class=\"card-detail\">");
 
 			for (LabelItem labelItem : labels) {
@@ -621,7 +655,7 @@ public class VerticalCardTag extends BaseCardTag {
 
 		List<DropdownItem> actionDropdownItems = getActionDropdownItems();
 
-		if (!ListUtil.isEmpty(actionDropdownItems)) {
+		if (!DropdownItemListUtil.isEmpty(actionDropdownItems)) {
 			jspWriter.write("<div class=\"autofit-col\">");
 
 			DropdownActionsTag dropdownActionsTag = new DropdownActionsTag();
@@ -652,6 +686,7 @@ public class VerticalCardTag extends BaseCardTag {
 
 	private static final String _ATTRIBUTE_NAMESPACE = "clay:verticalcard:";
 
+	private String _ariaLabel;
 	private Boolean _flushHorizontal;
 	private Boolean _flushVertical;
 	private String _imageAlt;
@@ -666,6 +701,7 @@ public class VerticalCardTag extends BaseCardTag {
 	private String _stickerLabel;
 	private String _stickerShape;
 	private String _stickerStyle;
+	private String _stickerTitle;
 	private String _subtitle;
 	private String _title;
 

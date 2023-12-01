@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.display.context;
@@ -26,15 +17,14 @@ import com.liferay.commerce.product.content.web.internal.configuration.CPCompare
 import com.liferay.commerce.product.data.source.CPDataSourceResult;
 import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
 import com.liferay.commerce.product.type.CPType;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
+import com.liferay.commerce.product.type.CPTypeRegistry;
 import com.liferay.commerce.product.util.CPCompareHelper;
 import com.liferay.commerce.product.util.CPDefinitionHelper;
 import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.theme.PortletDisplay;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.ArrayList;
@@ -58,7 +48,7 @@ public class CPCompareContentDisplayContext {
 				cpContentListEntryRendererRegistry,
 			CPContentListRendererRegistry cpContentListRendererRegistry,
 			CPDefinitionHelper cpDefinitionHelper,
-			CPTypeServicesTracker cpTypeServicesTracker,
+			CPTypeRegistry cpTypeRegistry,
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
@@ -66,17 +56,14 @@ public class CPCompareContentDisplayContext {
 			cpContentListEntryRendererRegistry;
 		_cpContentListRendererRegistry = cpContentListRendererRegistry;
 		_cpDefinitionHelper = cpDefinitionHelper;
-		_cpTypeServicesTracker = cpTypeServicesTracker;
+		_cpTypeRegistry = cpTypeRegistry;
 
 		_cpRequestHelper = new CPRequestHelper(httpServletRequest);
 
-		ThemeDisplay themeDisplay = _cpRequestHelper.getThemeDisplay();
-
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
 		_cpCompareContentPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				CPCompareContentPortletInstanceConfiguration.class);
+			ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				CPCompareContentPortletInstanceConfiguration.class,
+				_cpRequestHelper.getThemeDisplay());
 
 		if (hasCommerceChannel()) {
 			CommerceContext commerceContext =
@@ -86,10 +73,10 @@ public class CPCompareContentDisplayContext {
 			_cpDefinitionIds = cpCompareHelper.getCPDefinitionIds(
 				commerceContext.getCommerceChannelGroupId(),
 				CommerceUtil.getCommerceAccountId(commerceContext),
-				CookieKeys.getCookie(
-					httpServletRequest,
+				CookiesManagerUtil.getCookieValue(
 					cpCompareHelper.getCPDefinitionIdsCookieKey(
-						commerceContext.getCommerceChannelGroupId())));
+						commerceContext.getCommerceChannelGroupId()),
+					httpServletRequest));
 		}
 		else {
 			_cpDefinitionIds = new ArrayList<>();
@@ -206,7 +193,7 @@ public class CPCompareContentDisplayContext {
 	}
 
 	public List<CPType> getCPTypes() {
-		return _cpTypeServicesTracker.getCPTypes();
+		return _cpTypeRegistry.getCPTypes();
 	}
 
 	public String getDisplayStyle() {
@@ -270,6 +257,6 @@ public class CPCompareContentDisplayContext {
 	private final CPDefinitionHelper _cpDefinitionHelper;
 	private final List<Long> _cpDefinitionIds;
 	private final CPRequestHelper _cpRequestHelper;
-	private final CPTypeServicesTracker _cpTypeServicesTracker;
+	private final CPTypeRegistry _cpTypeRegistry;
 
 }

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -38,22 +29,31 @@ String notificationTemplateBody = BeanPropertiesUtil.getString(calendarNotificat
 	title="<%= calendarName %>"
 />
 
-<aui:nav-bar cssClass="navbar-collapse-absolute navbar-expand-md navbar-underline navigation-bar navigation-bar-light" markupView="lexicon">
-	<aui:nav cssClass="navbar-nav">
+<clay:navigation-bar
+	navigationItems='<%=
+		new JSPNavigationItemList(pageContext) {
+			{
+				navigationURL.setParameter("tabs3", "invite-email");
 
-		<%
-		navigationURL.setParameter("tabs3", "invite-email");
-		%>
+				add(
+					navigationItem -> {
+						navigationItem.setActive(tabs3.equals("invite-email"));
+						navigationItem.setHref(navigationURL.toString());
+						navigationItem.setLabel(LanguageUtil.get(httpServletRequest, "invite-email"));
+					});
 
-		<aui:nav-item href="<%= navigationURL.toString() %>" label="invite-email" selected='<%= tabs3.equals("invite-email") %>' />
+				navigationURL.setParameter("tabs3", "reminder-email");
 
-		<%
-		navigationURL.setParameter("tabs3", "reminder-email");
-		%>
-
-		<aui:nav-item href="<%= navigationURL.toString() %>" label="reminder-email" selected='<%= tabs3.equals("reminder-email") %>' />
-	</aui:nav>
-</aui:nav-bar>
+				add(
+					navigationItem -> {
+						navigationItem.setActive(tabs3.equals("reminder-email"));
+						navigationItem.setHref(navigationURL.toString());
+						navigationItem.setLabel(LanguageUtil.get(httpServletRequest, "reminder-email"));
+					});
+			}
+		}
+	%>'
+/>
 
 <liferay-portlet:actionURL name="updateCalendarNotificationTemplate" var="updateCalendarNotificationTemplateURL" />
 

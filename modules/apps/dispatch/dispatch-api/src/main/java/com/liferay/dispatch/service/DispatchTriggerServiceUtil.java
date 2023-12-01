@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.service;
@@ -39,14 +30,15 @@ public class DispatchTriggerServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.dispatch.service.impl.DispatchTriggerServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static DispatchTrigger addDispatchTrigger(
-			long userId, String dispatchTaskExecutorType,
+			String externalReferenceCode, long userId,
+			String dispatchTaskExecutorType,
 			com.liferay.portal.kernel.util.UnicodeProperties
 				dispatchTaskSettingsUnicodeProperties,
 			String name)
 		throws PortalException {
 
 		return getService().addDispatchTrigger(
-			userId, dispatchTaskExecutorType,
+			externalReferenceCode, userId, dispatchTaskExecutorType,
 			dispatchTaskSettingsUnicodeProperties, name);
 	}
 
@@ -54,6 +46,12 @@ public class DispatchTriggerServiceUtil {
 		throws PortalException {
 
 		getService().deleteDispatchTrigger(dispatchTriggerId);
+	}
+
+	public static DispatchTrigger getDispatchTrigger(long dispatchTriggerId)
+		throws PortalException {
+
+		return getService().getDispatchTrigger(dispatchTriggerId);
 	}
 
 	public static List<DispatchTrigger> getDispatchTriggers(int start, int end)
@@ -82,14 +80,14 @@ public class DispatchTriggerServiceUtil {
 			int endDateMonth, int endDateDay, int endDateYear, int endDateHour,
 			int endDateMinute, boolean neverEnd, boolean overlapAllowed,
 			int startDateMonth, int startDateDay, int startDateYear,
-			int startDateHour, int startDateMinute)
+			int startDateHour, int startDateMinute, String timeZoneId)
 		throws PortalException {
 
 		return getService().updateDispatchTrigger(
 			dispatchTriggerId, active, cronExpression, dispatchTaskClusterMode,
 			endDateMonth, endDateDay, endDateYear, endDateHour, endDateMinute,
 			neverEnd, overlapAllowed, startDateMonth, startDateDay,
-			startDateYear, startDateHour, startDateMinute);
+			startDateYear, startDateHour, startDateMinute, timeZoneId);
 	}
 
 	public static DispatchTrigger updateDispatchTrigger(
@@ -105,6 +103,10 @@ public class DispatchTriggerServiceUtil {
 
 	public static DispatchTriggerService getService() {
 		return _service;
+	}
+
+	public static void setService(DispatchTriggerService service) {
+		_service = service;
 	}
 
 	private static volatile DispatchTriggerService _service;

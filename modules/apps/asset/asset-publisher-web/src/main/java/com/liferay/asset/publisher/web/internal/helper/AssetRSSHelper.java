@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.helper;
@@ -20,13 +11,14 @@ import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.publisher.constants.AssetPublisherWebKeys;
 import com.liferay.asset.publisher.util.AssetEntryResult;
 import com.liferay.asset.publisher.util.AssetPublisherHelper;
+import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherSelectionStyleConfigurationUtil;
 import com.liferay.asset.publisher.web.internal.constants.AssetPublisherSelectionStyleConstants;
 import com.liferay.asset.publisher.web.internal.display.context.AssetPublisherDisplayContext;
 import com.liferay.asset.util.AssetHelper;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -63,7 +55,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @author Julio Camarero
  */
-@Component(immediate = true, service = AssetRSSHelper.class)
+@Component(service = AssetRSSHelper.class)
 public class AssetRSSHelper {
 
 	public byte[] getRSS(
@@ -74,7 +66,8 @@ public class AssetRSSHelper {
 
 		String selectionStyle = portletPreferences.getValue(
 			"selectionStyle",
-			AssetPublisherSelectionStyleConstants.TYPE_DYNAMIC);
+			AssetPublisherSelectionStyleConfigurationUtil.
+				defaultSelectionStyle());
 
 		if (!selectionStyle.equals(
 				AssetPublisherSelectionStyleConstants.TYPE_DYNAMIC)) {
@@ -129,7 +122,7 @@ public class AssetRSSHelper {
 
 			String value = null;
 
-			String languageId = LanguageUtil.getLanguageId(portletRequest);
+			String languageId = _language.getLanguageId(portletRequest);
 
 			if (displayStyle.equals(RSSUtil.DISPLAY_STYLE_TITLE)) {
 				value = StringPool.BLANK;
@@ -316,6 +309,9 @@ public class AssetRSSHelper {
 
 	@Reference
 	private AssetPublisherHelper _assetPublisherHelper;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

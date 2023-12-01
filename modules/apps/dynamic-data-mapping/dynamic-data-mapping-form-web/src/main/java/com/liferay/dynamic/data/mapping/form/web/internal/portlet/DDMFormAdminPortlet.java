@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.portlet;
@@ -18,18 +9,15 @@ import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormBuilderContextFactory;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormContextDeserializer;
 import com.liferay.dynamic.data.mapping.form.builder.settings.DDMFormBuilderSettingsRetriever;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderer;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormTemplateContextFactory;
 import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
-import com.liferay.dynamic.data.mapping.form.web.internal.configuration.FFDateTimeDDMFormFieldTypeConfiguration;
-import com.liferay.dynamic.data.mapping.form.web.internal.configuration.activator.DDMFormWebConfigurationActivator;
-import com.liferay.dynamic.data.mapping.form.web.internal.configuration.activator.FFSubmissionsSettingsConfigurationActivator;
+import com.liferay.dynamic.data.mapping.form.web.internal.configuration.DDMFormWebConfiguration;
 import com.liferay.dynamic.data.mapping.form.web.internal.display.context.DDMFormAdminDisplayContext;
 import com.liferay.dynamic.data.mapping.form.web.internal.display.context.DDMFormAdminFieldSetDisplayContext;
-import com.liferay.dynamic.data.mapping.form.web.internal.instance.lifecycle.AddDefaultSharedFormLayoutPortalInstanceLifecycleListener;
 import com.liferay.dynamic.data.mapping.io.DDMFormFieldTypesSerializer;
-import com.liferay.dynamic.data.mapping.io.exporter.DDMFormInstanceRecordWriterTracker;
+import com.liferay.dynamic.data.mapping.io.exporter.DDMFormInstanceRecordWriterRegistry;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceService;
@@ -37,7 +25,7 @@ import com.liferay.dynamic.data.mapping.service.DDMFormInstanceVersionLocalServi
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterTracker;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterRegistry;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesMerger;
 import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.object.service.ObjectDefinitionLocalService;
@@ -65,17 +53,14 @@ import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Bruno Basto
  */
 @Component(
-	configurationPid = "com.liferay.dynamic.data.mapping.form.web.internal.configuration.FFDateTimeDDMFormFieldTypeConfiguration",
-	immediate = true,
+	configurationPid = "com.liferay.dynamic.data.mapping.form.web.internal.configuration.DDMFormWebConfiguration",
 	property = {
 		"com.liferay.portlet.autopropagated-parameters=currentTab",
 		"com.liferay.portlet.css-class-wrapper=portlet-forms-admin",
@@ -94,7 +79,8 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 		"javax.portlet.init-param.view-template=/admin/view.jsp",
 		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"javax.portlet.security-role-ref=power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -111,13 +97,13 @@ public class DDMFormAdminPortlet extends MVCPortlet {
 		catch (Exception exception) {
 			if (isSessionErrorException(exception)) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(exception, exception);
+					_log.warn(exception);
 				}
 
 				SessionErrors.add(renderRequest, exception.getClass());
 			}
 			else {
-				_log.error(exception, exception);
+				_log.error(exception);
 
 				throw new PortletException(exception);
 			}
@@ -129,10 +115,10 @@ public class DDMFormAdminPortlet extends MVCPortlet {
 	}
 
 	@Activate
+	@Modified
 	protected void activate(Map<String, Object> properties) {
-		_ffDateTimeDDMFormFieldTypeConfiguration =
-			ConfigurableUtil.createConfigurable(
-				FFDateTimeDDMFormFieldTypeConfiguration.class, properties);
+		_ddmFormWebConfiguration = ConfigurableUtil.createConfigurable(
+			DDMFormWebConfiguration.class, properties);
 	}
 
 	@Override
@@ -144,13 +130,6 @@ public class DDMFormAdminPortlet extends MVCPortlet {
 		}
 
 		return false;
-	}
-
-	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.dynamic.data.mapping.form.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
-	)
-	protected void setRelease(Release release) {
 	}
 
 	protected void setRenderRequestAttributes(
@@ -165,65 +144,45 @@ public class DDMFormAdminPortlet extends MVCPortlet {
 				WebKeys.PORTLET_DISPLAY_CONTEXT,
 				new DDMFormAdminFieldSetDisplayContext(
 					renderRequest, renderResponse,
-					_addDefaultSharedFormLayoutPortalInstanceLifecycleListener,
 					_ddmFormBuilderContextFactory,
 					_ddmFormBuilderSettingsRetriever,
 					_ddmFormContextToDDMFormValues,
-					_ddmFormFieldTypeServicesTracker,
+					_ddmFormFieldTypeServicesRegistry,
 					_ddmFormFieldTypesSerializer, _ddmFormInstanceLocalService,
 					_ddmFormInstanceRecordLocalService,
-					_ddmFormInstanceRecordWriterTracker,
+					_ddmFormInstanceRecordWriterRegistry,
 					_ddmFormInstanceService,
 					_ddmFormInstanceVersionLocalService, _ddmFormRenderer,
 					_ddmFormTemplateContextFactory, _ddmFormValuesFactory,
-					_ddmFormValuesMerger,
-					_ddmFormWebConfigurationActivator.
-						getDDMFormWebConfiguration(),
-					_ddmStorageAdapterTracker, _ddmStructureLocalService,
-					_ddmStructureService,
-					_ffDateTimeDDMFormFieldTypeConfiguration,
-					_ffSubmissionsSettingsConfigurationActivator, _jsonFactory,
-					_npmResolver, _objectDefinitionLocalService, _portal));
+					_ddmFormValuesMerger, _ddmFormWebConfiguration,
+					_ddmStorageAdapterRegistry, _ddmStructureLocalService,
+					_ddmStructureService, _jsonFactory, _npmResolver,
+					_objectDefinitionLocalService, _portal));
 		}
 		else {
 			renderRequest.setAttribute(
 				WebKeys.PORTLET_DISPLAY_CONTEXT,
 				new DDMFormAdminDisplayContext(
 					renderRequest, renderResponse,
-					_addDefaultSharedFormLayoutPortalInstanceLifecycleListener,
 					_ddmFormBuilderContextFactory,
 					_ddmFormBuilderSettingsRetriever,
 					_ddmFormContextToDDMFormValues,
-					_ddmFormFieldTypeServicesTracker,
+					_ddmFormFieldTypeServicesRegistry,
 					_ddmFormFieldTypesSerializer, _ddmFormInstanceLocalService,
 					_ddmFormInstanceRecordLocalService,
-					_ddmFormInstanceRecordWriterTracker,
+					_ddmFormInstanceRecordWriterRegistry,
 					_ddmFormInstanceService,
 					_ddmFormInstanceVersionLocalService, _ddmFormRenderer,
 					_ddmFormTemplateContextFactory, _ddmFormValuesFactory,
-					_ddmFormValuesMerger,
-					_ddmFormWebConfigurationActivator.
-						getDDMFormWebConfiguration(),
-					_ddmStorageAdapterTracker, _ddmStructureLocalService,
-					_ddmStructureService,
-					_ffDateTimeDDMFormFieldTypeConfiguration,
-					_ffSubmissionsSettingsConfigurationActivator, _jsonFactory,
-					_npmResolver, _objectDefinitionLocalService, _portal));
+					_ddmFormValuesMerger, _ddmFormWebConfiguration,
+					_ddmStorageAdapterRegistry, _ddmStructureLocalService,
+					_ddmStructureService, _jsonFactory, _npmResolver,
+					_objectDefinitionLocalService, _portal));
 		}
-	}
-
-	protected void unsetDDMFormWebConfigurationActivator(
-		DDMFormWebConfigurationActivator ddmFormWebConfigurationActivator) {
-
-		_ddmFormWebConfigurationActivator = null;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormAdminPortlet.class);
-
-	@Reference
-	private AddDefaultSharedFormLayoutPortalInstanceLifecycleListener
-		_addDefaultSharedFormLayoutPortalInstanceLifecycleListener;
 
 	@Reference
 	private DDMFormBuilderContextFactory _ddmFormBuilderContextFactory;
@@ -238,7 +197,7 @@ public class DDMFormAdminPortlet extends MVCPortlet {
 		_ddmFormContextToDDMFormValues;
 
 	@Reference
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
 
 	@Reference(target = "(ddm.form.field.types.serializer.type=json)")
 	private DDMFormFieldTypesSerializer _ddmFormFieldTypesSerializer;
@@ -251,8 +210,8 @@ public class DDMFormAdminPortlet extends MVCPortlet {
 		_ddmFormInstanceRecordLocalService;
 
 	@Reference
-	private DDMFormInstanceRecordWriterTracker
-		_ddmFormInstanceRecordWriterTracker;
+	private DDMFormInstanceRecordWriterRegistry
+		_ddmFormInstanceRecordWriterRegistry;
 
 	@Reference
 	private DDMFormInstanceService _ddmFormInstanceService;
@@ -273,30 +232,16 @@ public class DDMFormAdminPortlet extends MVCPortlet {
 	@Reference
 	private DDMFormValuesMerger _ddmFormValuesMerger;
 
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY,
-		unbind = "unsetDDMFormWebConfigurationActivator"
-	)
-	private volatile DDMFormWebConfigurationActivator
-		_ddmFormWebConfigurationActivator;
+	private volatile DDMFormWebConfiguration _ddmFormWebConfiguration;
 
 	@Reference
-	private DDMStorageAdapterTracker _ddmStorageAdapterTracker;
+	private DDMStorageAdapterRegistry _ddmStorageAdapterRegistry;
 
 	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;
 
 	@Reference
 	private DDMStructureService _ddmStructureService;
-
-	private FFDateTimeDDMFormFieldTypeConfiguration
-		_ffDateTimeDDMFormFieldTypeConfiguration;
-
-	@Reference
-	private FFSubmissionsSettingsConfigurationActivator
-		_ffSubmissionsSettingsConfigurationActivator;
 
 	@Reference
 	private JSONFactory _jsonFactory;
@@ -309,5 +254,10 @@ public class DDMFormAdminPortlet extends MVCPortlet {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.dynamic.data.mapping.form.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))"
+	)
+	private Release _release;
 
 }

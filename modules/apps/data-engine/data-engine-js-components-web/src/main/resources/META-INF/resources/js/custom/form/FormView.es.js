@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '../../../css/main.scss';
@@ -21,6 +12,8 @@ import React, {
 	useImperativeHandle,
 	useRef,
 } from 'react';
+import {DndProvider} from 'react-dnd';
+import {HTML5Backend} from 'react-dnd-html5-backend';
 
 import Pages from '../../core/components/Pages.es';
 import {INITIAL_CONFIG_STATE} from '../../core/config/initialConfigState.es';
@@ -40,7 +33,12 @@ import {evaluate} from '../../utils/evaluation.es';
 import * as Fields from '../../utils/fields.es';
 import {getFormId, getFormNode} from '../../utils/formId.es';
 import {parseProps} from '../../utils/parseProps.es';
-import {paginationReducer} from './reducers/index.es';
+import DragLayer from './components/DragLayer.es';
+import {
+	objectRelationshipReducer,
+	paginationReducer,
+	repeatableDNDReducer,
+} from './reducers/index.es';
 
 const DDM_FORM_PORTLET_NAMESPACE =
 	'_com_liferay_dynamic_data_mapping_form_web_portlet_DDMFormPortlet_';
@@ -51,7 +49,7 @@ const DDM_FORM_PORTLET_NAMESPACE =
  * of the submit and uses Liferay.Util.submitForm.
  */
 const useFormSubmit = ({apiRef, containerRef}) => {
-	const {activePage, pages} = useFormState();
+	const {activePage, pages, title} = useFormState();
 	const {portletNamespace, submittable, validateCSRFTokenURL} = useConfig();
 	const isDDMFormPortletNamespace = portletNamespace.includes(
 		DDM_FORM_PORTLET_NAMESPACE
@@ -63,34 +61,37 @@ const useFormSubmit = ({apiRef, containerRef}) => {
 				.validate()
 				.then((validForm) => {
 					if (validForm) {
-						const liferayForm =
-							event.target.id &&
-							Liferay.Form.get(event.target.id);
+						AUI().use('liferay-form', () => {
+							const liferayForm =
+								event.target.id &&
+								Liferay.Form.get(event.target.id);
 
-						const validLiferayForm = !Object.keys(
-							liferayForm?.formValidator?.errors ?? {}
-						).length;
+							const validLiferayForm = !Object.keys(
+								liferayForm?.formValidator?.errors ?? {}
+							).length;
 
-						if (!validLiferayForm) {
-							Liferay.fire('ddmFormError', {
+							if (!validLiferayForm) {
+								Liferay.fire('ddmFormError', {
+									formWrapperId: event.target.id,
+								});
+
+								return;
+							}
+
+							if (submittable) {
+								Liferay.Util.submitForm(event.target);
+							}
+
+							Liferay.fire('ddmFormValid', {
 								formWrapperId: event.target.id,
 							});
 
-							return;
-						}
-
-						if (submittable) {
-							Liferay.Util.submitForm(event.target);
-						}
-
-						Liferay.fire('ddmFormValid', {
-							formWrapperId: event.target.id,
-						});
-
-						Liferay.fire('ddmFormSubmit', {
-							formId: getFormId(
-								getFormNode(containerRef.current)
-							),
+							Liferay.fire('ddmFormSubmit', {
+								formId: getFormId(
+									getFormNode(containerRef.current)
+								),
+								title,
+							});
 						});
 					}
 					else {
@@ -108,7 +109,7 @@ const useFormSubmit = ({apiRef, containerRef}) => {
 					});
 				});
 		},
-		[apiRef, containerRef, submittable]
+		[apiRef, containerRef, submittable, title]
 	);
 
 	const handleFormSubmitted = useCallback(
@@ -178,8 +179,9 @@ const useFormSubmit = ({apiRef, containerRef}) => {
 		if (containerRef.current) {
 			Liferay.fire('ddmFormPageShow', {
 				formId: getFormId(getFormNode(containerRef.current)),
+				formPageTitle: pages[activePage].title,
 				page: activePage,
-				title: pages[activePage].title,
+				title,
 			});
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -243,6 +245,9 @@ const usePublicAPI = ({apiRef, containerRef, unstable_onEventRef}) => {
 					activePage,
 					defaultLanguageId,
 					editingLanguageId,
+					formId: containerRef.current
+						? getFormId(getFormNode(containerRef.current))
+						: 0,
 					groupId,
 					pages,
 					portletNamespace,
@@ -253,6 +258,7 @@ const usePublicAPI = ({apiRef, containerRef, unstable_onEventRef}) => {
 		[
 			dispatch,
 			activePage,
+			containerRef,
 			defaultLanguageId,
 			editingLanguageId,
 			groupId,
@@ -299,6 +305,9 @@ const usePublicAPI = ({apiRef, containerRef, unstable_onEventRef}) => {
 			evaluate(null, {
 				defaultLanguageId,
 				editingLanguageId,
+				formId: containerRef.current
+					? getFormId(getFormNode(containerRef.current))
+					: 0,
 				groupId,
 				pages,
 				portletNamespace,
@@ -394,36 +403,46 @@ export const FormView = React.forwardRef((props, ref) => {
 	const unstable_onEventRef = useRef(null);
 
 	return (
-		<ConfigProvider config={config} initialConfig={INITIAL_CONFIG_STATE}>
-			<FormProvider
-				init={({paginationMode, ...otherProps}) => ({
-					...otherProps,
-					paginationMode:
-						PAGINATION_MODE_MAPPED[paginationMode] ??
-						paginationMode,
-				})}
-				initialState={INITIAL_STATE}
-				onAction={(action) => {
-					if (unstable_onEventRef.current) {
-						unstable_onEventRef.current(action);
-					}
-				}}
-				reducers={[
-					activePageReducer,
-					fieldReducer,
-					languageReducer,
-					pagesStructureReducer,
-					pageValidationReducer,
-					paginationReducer,
-				]}
-				value={state}
+		<DndProvider backend={HTML5Backend} context={window}>
+			<ConfigProvider
+				config={config}
+				initialConfig={INITIAL_CONFIG_STATE}
 			>
-				<Form
-					ref={ref ?? defaultRef}
-					unstable_onEventRef={unstable_onEventRef}
-				/>
-			</FormProvider>
-		</ConfigProvider>
+				<FormProvider
+					init={({paginationMode, ...otherProps}) => ({
+						...otherProps,
+						paginationMode:
+							config.contentType ??
+							PAGINATION_MODE_MAPPED[paginationMode] ??
+							paginationMode,
+					})}
+					initialState={INITIAL_STATE}
+					onAction={(action) => {
+						if (unstable_onEventRef.current) {
+							unstable_onEventRef.current(action);
+						}
+					}}
+					reducers={[
+						activePageReducer,
+						fieldReducer,
+						languageReducer,
+						objectRelationshipReducer,
+						pagesStructureReducer,
+						pageValidationReducer,
+						paginationReducer,
+						repeatableDNDReducer,
+					]}
+					value={state}
+				>
+					<DragLayer />
+
+					<Form
+						ref={ref ?? defaultRef}
+						unstable_onEventRef={unstable_onEventRef}
+					/>
+				</FormProvider>
+			</ConfigProvider>
+		</DndProvider>
 	);
 });
 

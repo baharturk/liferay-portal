@@ -1,35 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.cache.ehcache.internal;
 
-import com.liferay.portal.cache.BasePortalCache;
+import com.liferay.petra.concurrent.DCLSingleton;
 import com.liferay.portal.cache.ehcache.internal.event.PortalCacheCacheEventListener;
-import com.liferay.portal.kernel.cache.PortalCacheListener;
-import com.liferay.portal.kernel.cache.PortalCacheListenerScope;
-import com.liferay.portal.kernel.cache.PortalCacheManager;
 
 import java.io.Serializable;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.function.Supplier;
 
+import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
-import net.sf.ehcache.event.CacheEventListener;
 import net.sf.ehcache.event.NotificationScope;
 import net.sf.ehcache.event.RegisteredEventListeners;
 
@@ -39,133 +23,43 @@ import net.sf.ehcache.event.RegisteredEventListeners;
  * @author Shuyang Zhou
  */
 public class EhcachePortalCache<K extends Serializable, V>
-	extends BasePortalCache<K, V> implements EhcacheWrapper {
+	extends BaseEhcachePortalCache<K, V> {
 
 	public EhcachePortalCache(
-		PortalCacheManager<K, V> portalCacheManager, Ehcache ehcache) {
+		BaseEhcachePortalCacheManager<K, V> baseEhcachePortalCacheManager,
+		EhcachePortalCacheConfiguration ehcachePortalCacheConfiguration) {
 
-		super(portalCacheManager);
+		super(baseEhcachePortalCacheManager, ehcachePortalCacheConfiguration);
 
-		this.ehcache = ehcache;
+		_cacheManager = baseEhcachePortalCacheManager.getEhcacheManager();
 
-		RegisteredEventListeners registeredEventListeners =
-			ehcache.getCacheEventNotificationService();
-
-		registeredEventListeners.registerListener(
-			new PortalCacheCacheEventListener<>(
-				aggregatedPortalCacheListener, this),
-			NotificationScope.ALL);
+		_ehcacheSupplier = this::_createEhcache;
 	}
 
 	@Override
 	public Ehcache getEhcache() {
-		return ehcache;
+		return _ehcacheDCLSingleton.getSingleton(_ehcacheSupplier);
 	}
 
 	@Override
-	public List<K> getKeys() {
-		return ehcache.getKeys();
+	protected void dispose() {
+		_cacheManager.removeCache(getPortalCacheName());
 	}
 
 	@Override
-	public String getPortalCacheName() {
-		return ehcache.getName();
+	protected void resetEhcache() {
+		_ehcacheDCLSingleton.destroy(null);
 	}
 
-	@Override
-	public void removeAll() {
-		ehcache.removeAll();
-	}
-
-	@Override
-	protected V doGet(K key) {
-		Element element = ehcache.get(key);
-
-		if (element == null) {
-			return null;
+	private Ehcache _createEhcache() {
+		synchronized (_cacheManager) {
+			if (!_cacheManager.cacheExists(getPortalCacheName())) {
+				_cacheManager.addCache(getPortalCacheName());
+			}
 		}
 
-		return (V)element.getObjectValue();
-	}
+		Ehcache ehcache = _cacheManager.getCache(getPortalCacheName());
 
-	@Override
-	protected void doPut(K key, V value, int timeToLive) {
-		Element element = new Element(key, value);
-
-		if (timeToLive != DEFAULT_TIME_TO_LIVE) {
-			element.setTimeToLive(timeToLive);
-		}
-
-		ehcache.put(element);
-	}
-
-	@Override
-	protected V doPutIfAbsent(K key, V value, int timeToLive) {
-		Element element = new Element(key, value);
-
-		if (timeToLive != DEFAULT_TIME_TO_LIVE) {
-			element.setTimeToLive(timeToLive);
-		}
-
-		Element oldElement = ehcache.putIfAbsent(element);
-
-		if (oldElement == null) {
-			return null;
-		}
-
-		return (V)oldElement.getObjectValue();
-	}
-
-	@Override
-	protected void doRemove(K key) {
-		ehcache.remove(key);
-	}
-
-	@Override
-	protected boolean doRemove(K key, V value) {
-		Element element = new Element(key, value);
-
-		return ehcache.removeElement(element);
-	}
-
-	@Override
-	protected V doReplace(K key, V value, int timeToLive) {
-		Element element = new Element(key, value);
-
-		if (timeToLive != DEFAULT_TIME_TO_LIVE) {
-			element.setTimeToLive(timeToLive);
-		}
-
-		Element oldElement = ehcache.replace(element);
-
-		if (oldElement == null) {
-			return null;
-		}
-
-		return (V)oldElement.getObjectValue();
-	}
-
-	@Override
-	protected boolean doReplace(K key, V oldValue, V newValue, int timeToLive) {
-		Element oldElement = new Element(key, oldValue);
-
-		Element newElement = new Element(key, newValue);
-
-		if (timeToLive != DEFAULT_TIME_TO_LIVE) {
-			newElement.setTimeToLive(timeToLive);
-		}
-
-		return ehcache.replace(oldElement, newElement);
-	}
-
-	protected Map<PortalCacheListener<K, V>, PortalCacheListenerScope>
-		getPortalCacheListeners() {
-
-		return Collections.unmodifiableMap(
-			aggregatedPortalCacheListener.getPortalCacheListeners());
-	}
-
-	protected void reconfigEhcache(Ehcache ehcache) {
 		RegisteredEventListeners registeredEventListeners =
 			ehcache.getCacheEventNotificationService();
 
@@ -174,21 +68,12 @@ public class EhcachePortalCache<K extends Serializable, V>
 				aggregatedPortalCacheListener, this),
 			NotificationScope.ALL);
 
-		Ehcache oldEhcache = this.ehcache;
-
-		this.ehcache = ehcache;
-
-		registeredEventListeners =
-			oldEhcache.getCacheEventNotificationService();
-
-		Set<CacheEventListener> cacheEventListeners =
-			registeredEventListeners.getCacheEventListeners();
-
-		for (CacheEventListener cacheEventListener : cacheEventListeners) {
-			registeredEventListeners.unregisterListener(cacheEventListener);
-		}
+		return ehcache;
 	}
 
-	protected volatile Ehcache ehcache;
+	private final CacheManager _cacheManager;
+	private final DCLSingleton<Ehcache> _ehcacheDCLSingleton =
+		new DCLSingleton<>();
+	private final Supplier<Ehcache> _ehcacheSupplier;
 
 }

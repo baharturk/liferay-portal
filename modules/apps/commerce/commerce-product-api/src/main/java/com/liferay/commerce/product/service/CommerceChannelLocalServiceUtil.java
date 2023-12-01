@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
@@ -62,22 +53,7 @@ public class CommerceChannelLocalServiceUtil {
 	}
 
 	public static CommerceChannel addCommerceChannel(
-			String externalReferenceCode, long siteGroupId, String name,
-			String type,
-			com.liferay.portal.kernel.util.UnicodeProperties
-				typeSettingsUnicodeProperties,
-			String commerceCurrencyCode,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addCommerceChannel(
-			externalReferenceCode, siteGroupId, name, type,
-			typeSettingsUnicodeProperties, commerceCurrencyCode,
-			serviceContext);
-	}
-
-	public static CommerceChannel addOrUpdateCommerceChannel(
-			long userId, String externalReferenceCode, long siteGroupId,
+			String externalReferenceCode, long accountEntryId, long siteGroupId,
 			String name, String type,
 			com.liferay.portal.kernel.util.UnicodeProperties
 				typeSettingsUnicodeProperties,
@@ -85,9 +61,24 @@ public class CommerceChannelLocalServiceUtil {
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
-		return getService().addOrUpdateCommerceChannel(
-			userId, externalReferenceCode, siteGroupId, name, type,
+		return getService().addCommerceChannel(
+			externalReferenceCode, accountEntryId, siteGroupId, name, type,
 			typeSettingsUnicodeProperties, commerceCurrencyCode,
+			serviceContext);
+	}
+
+	public static CommerceChannel addOrUpdateCommerceChannel(
+			long userId, String externalReferenceCode, long accountEntryId,
+			long siteGroupId, String name, String type,
+			com.liferay.portal.kernel.util.UnicodeProperties
+				typeSettingsUnicodeProperties,
+			String commerceCurrencyCode,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addOrUpdateCommerceChannel(
+			userId, externalReferenceCode, accountEntryId, siteGroupId, name,
+			type, typeSettingsUnicodeProperties, commerceCurrencyCode,
 			serviceContext);
 	}
 
@@ -260,35 +251,38 @@ public class CommerceChannelLocalServiceUtil {
 		return getService().fetchCommerceChannel(commerceChannelId);
 	}
 
-	/**
-	 * Returns the commerce channel with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce channel's external reference code
-	 * @return the matching commerce channel, or <code>null</code> if a matching commerce channel could not be found
-	 */
 	public static CommerceChannel fetchCommerceChannelByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
 		return getService().fetchCommerceChannelByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceChannelByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static CommerceChannel fetchCommerceChannelByReferenceCode(
-		long companyId, String externalReferenceCode) {
+	public static CommerceChannel fetchCommerceChannelByGroupClassPK(
+			long groupId)
+		throws PortalException {
 
-		return getService().fetchCommerceChannelByReferenceCode(
-			companyId, externalReferenceCode);
+		return getService().fetchCommerceChannelByGroupClassPK(groupId);
 	}
 
 	public static CommerceChannel fetchCommerceChannelBySiteGroupId(
 		long siteGroupId) {
 
 		return getService().fetchCommerceChannelBySiteGroupId(siteGroupId);
+	}
+
+	/**
+	 * Returns the commerce channel with the matching UUID and company.
+	 *
+	 * @param uuid the commerce channel's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce channel, or <code>null</code> if a matching commerce channel could not be found
+	 */
+	public static CommerceChannel fetchCommerceChannelByUuidAndCompanyId(
+		String uuid, long companyId) {
+
+		return getService().fetchCommerceChannelByUuidAndCompanyId(
+			uuid, companyId);
 	}
 
 	public static com.liferay.portal.kernel.model.Group
@@ -317,20 +311,12 @@ public class CommerceChannelLocalServiceUtil {
 		return getService().getCommerceChannel(commerceChannelId);
 	}
 
-	/**
-	 * Returns the commerce channel with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce channel's external reference code
-	 * @return the matching commerce channel
-	 * @throws PortalException if a matching commerce channel could not be found
-	 */
 	public static CommerceChannel getCommerceChannelByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getCommerceChannelByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	public static CommerceChannel getCommerceChannelByGroupId(long groupId)
@@ -344,6 +330,22 @@ public class CommerceChannelLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getCommerceChannelByOrderGroupId(orderGroupId);
+	}
+
+	/**
+	 * Returns the commerce channel with the matching UUID and company.
+	 *
+	 * @param uuid the commerce channel's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce channel
+	 * @throws PortalException if a matching commerce channel could not be found
+	 */
+	public static CommerceChannel getCommerceChannelByUuidAndCompanyId(
+			String uuid, long companyId)
+		throws PortalException {
+
+		return getService().getCommerceChannelByUuidAndCompanyId(
+			uuid, companyId);
 	}
 
 	public static com.liferay.portal.kernel.model.Group getCommerceChannelGroup(
@@ -380,6 +382,20 @@ public class CommerceChannelLocalServiceUtil {
 		return getService().getCommerceChannels(companyId);
 	}
 
+	public static List<CommerceChannel> getCommerceChannels(
+			long companyId, String keywords, int start, int end)
+		throws PortalException {
+
+		return getService().getCommerceChannels(
+			companyId, keywords, start, end);
+	}
+
+	public static List<CommerceChannel> getCommerceChannelsByAccountEntryId(
+		long accountEntryId) {
+
+		return getService().getCommerceChannelsByAccountEntryId(accountEntryId);
+	}
+
 	/**
 	 * Returns the number of commerce channels.
 	 *
@@ -387,6 +403,20 @@ public class CommerceChannelLocalServiceUtil {
 	 */
 	public static int getCommerceChannelsCount() {
 		return getService().getCommerceChannelsCount();
+	}
+
+	public static int getCommerceChannelsCount(long companyId, String keywords)
+		throws PortalException {
+
+		return getService().getCommerceChannelsCount(companyId, keywords);
+	}
+
+	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return getService().getExportActionableDynamicQuery(portletDataContext);
 	}
 
 	public static
@@ -452,19 +482,8 @@ public class CommerceChannelLocalServiceUtil {
 	}
 
 	public static CommerceChannel updateCommerceChannel(
-			long commerceChannelId, long siteGroupId, String name, String type,
-			com.liferay.portal.kernel.util.UnicodeProperties
-				typeSettingsUnicodeProperties,
-			String commerceCurrencyCode)
-		throws PortalException {
-
-		return getService().updateCommerceChannel(
-			commerceChannelId, siteGroupId, name, type,
-			typeSettingsUnicodeProperties, commerceCurrencyCode);
-	}
-
-	public static CommerceChannel updateCommerceChannel(
-			long commerceChannelId, long siteGroupId, String name, String type,
+			long commerceChannelId, long accountEntryId, long siteGroupId,
+			String name, String type,
 			com.liferay.portal.kernel.util.UnicodeProperties
 				typeSettingsUnicodeProperties,
 			String commerceCurrencyCode, String priceDisplayType,
@@ -472,7 +491,7 @@ public class CommerceChannelLocalServiceUtil {
 		throws PortalException {
 
 		return getService().updateCommerceChannel(
-			commerceChannelId, siteGroupId, name, type,
+			commerceChannelId, accountEntryId, siteGroupId, name, type,
 			typeSettingsUnicodeProperties, commerceCurrencyCode,
 			priceDisplayType, discountsTargetNetPrice);
 	}
@@ -487,6 +506,10 @@ public class CommerceChannelLocalServiceUtil {
 
 	public static CommerceChannelLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(CommerceChannelLocalService service) {
+		_service = service;
 	}
 
 	private static volatile CommerceChannelLocalService _service;

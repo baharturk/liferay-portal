@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.sidecar;
@@ -25,8 +16,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import java.util.stream.Stream;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang.StringUtils;
@@ -156,25 +145,13 @@ public class ElasticsearchInstaller {
 	}
 
 	private void _downloadAndInstallElasticsearch() throws IOException {
-		Path filePath = _getFilePath(
-			_distribution.getElasticsearchDistributable());
-
-		UncompressUtil.unarchive(filePath, _temporaryDirectoryPath);
-
-		Path extractedElasticsearchDirectoryPath =
-			_getExtractedElasticsearchDirectoryPath(_temporaryDirectoryPath);
+		String rootArchiveName = UncompressUtil.unarchive(
+			_getFilePath(_distribution.getElasticsearchDistributable()),
+			_temporaryDirectoryPath);
 
 		PathUtil.copyDirectory(
-			extractedElasticsearchDirectoryPath.resolve("lib"),
-			_installationDirectoryPath.resolve("lib"));
-
-		Path extractedModulesDirectoryPath =
-			extractedElasticsearchDirectoryPath.resolve("modules");
-
-		PathUtil.copyDirectory(
-			extractedModulesDirectoryPath,
-			_installationDirectoryPath.resolve("modules"),
-			extractedModulesDirectoryPath.resolve("ingest-geoip"));
+			_temporaryDirectoryPath.resolve(rootArchiveName),
+			_installationDirectoryPath);
 	}
 
 	private void _downloadAndInstallPlugin(Distributable distributable)
@@ -207,18 +184,6 @@ public class ElasticsearchInstaller {
 				_distribution.getPluginDistributables()) {
 
 			_downloadAndInstallPlugin(distributable);
-		}
-	}
-
-	private Path _getExtractedElasticsearchDirectoryPath(
-			Path extractedRootDirectoryPath)
-		throws IOException {
-
-		try (Stream<Path> stream = Files.list(extractedRootDirectoryPath)) {
-			return stream.filter(
-				Files::isDirectory
-			).findAny(
-			).get();
 		}
 	}
 

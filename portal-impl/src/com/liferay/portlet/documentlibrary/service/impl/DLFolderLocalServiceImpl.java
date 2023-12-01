@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.impl;
@@ -22,6 +13,7 @@ import com.liferay.document.library.kernel.exception.InvalidFolderException;
 import com.liferay.document.library.kernel.exception.NoSuchFolderException;
 import com.liferay.document.library.kernel.exception.RequiredFileEntryTypeException;
 import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.model.DLFileEntryTable;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFolder;
@@ -36,6 +28,8 @@ import com.liferay.document.library.kernel.util.DLValidatorUtil;
 import com.liferay.document.library.kernel.util.comparator.FolderIdComparator;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
@@ -56,6 +50,7 @@ import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.WebDAVProps;
 import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.repository.event.RepositoryEventTrigger;
 import com.liferay.portal.kernel.repository.event.RepositoryEventType;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -75,6 +70,7 @@ import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.service.persistence.WebDAVPropsPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.trash.helper.TrashHelper;
 import com.liferay.portal.kernel.tree.TreeModelTasksAdapter;
 import com.liferay.portal.kernel.tree.TreePathUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
@@ -108,9 +104,10 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 
 	@Override
 	public DLFolder addFolder(
-			long userId, long groupId, long repositoryId, boolean mountPoint,
-			long parentFolderId, String name, String description,
-			boolean hidden, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long repositoryId, boolean mountPoint, long parentFolderId,
+			String name, String description, boolean hidden,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		// Folder
@@ -127,6 +124,7 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 		DLFolder dlFolder = dlFolderPersistence.create(folderId);
 
 		dlFolder.setUuid(serviceContext.getUuid());
+		dlFolder.setExternalReferenceCode(externalReferenceCode);
 		dlFolder.setGroupId(groupId);
 		dlFolder.setCompanyId(user.getCompanyId());
 		dlFolder.setUserId(user.getUserId());
@@ -370,6 +368,14 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 	}
 
 	@Override
+	public List<DLFolder> getFolders(
+		long groupId, boolean mountPoint, String treePath, boolean hidden) {
+
+		return dlFolderPersistence.findByG_M_LikeT_H(
+			groupId, mountPoint, treePath, hidden);
+	}
+
+	@Override
 	public List<DLFolder> getFolders(long groupId, long parentFolderId) {
 		return getFolders(groupId, parentFolderId, true);
 	}
@@ -418,23 +424,6 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 			orderByComparator);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getFolders(long, long, boolean, int, int,
-	 *             OrderByComparator)}
-	 */
-	@Deprecated
-	@Override
-	public List<DLFolder> getFolders(
-		long groupId, long parentFolderId, int status,
-		boolean includeMountfolders, int start, int end,
-		OrderByComparator<DLFolder> orderByComparator) {
-
-		return getFolders(
-			groupId, parentFolderId, includeMountfolders, status, start, end,
-			orderByComparator);
-	}
-
 	@Override
 	public List<DLFolder> getFolders(
 		long groupId, long parentFolderId, int start, int end,
@@ -442,6 +431,11 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 
 		return getFolders(
 			groupId, parentFolderId, true, start, end, orderByComparator);
+	}
+
+	@Override
+	public List<DLFolder> getFolders(long classNameId, String treePath) {
+		return dlFolderFinder.findF_ByC_T(classNameId, treePath);
 	}
 
 	@Override
@@ -512,6 +506,35 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 	}
 
 	@Override
+	public long getFolderSize(long companyId, long groupId, String treePath) {
+		List<Long> result = dslQuery(
+			DSLQueryFactoryUtil.select(
+				DSLFunctionFactoryUtil.sum(
+					DLFileEntryTable.INSTANCE.size
+				).as(
+					"SUM_VALUE"
+				)
+			).from(
+				DLFileEntryTable.INSTANCE
+			).where(
+				DLFileEntryTable.INSTANCE.companyId.eq(
+					companyId
+				).and(
+					DLFileEntryTable.INSTANCE.groupId.eq(groupId)
+				).and(
+					DLFileEntryTable.INSTANCE.treePath.like(
+						treePath.concat(StringPool.PERCENT))
+				)
+			));
+
+		if (result.get(0) == null) {
+			return 0;
+		}
+
+		return result.get(0);
+	}
+
+	@Override
 	public List<Long> getGroupFolderIds(long groupId, long parentFolderId) {
 		List<Long> folderIds = new ArrayList<>();
 
@@ -561,6 +584,15 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 	@Override
 	public List<DLFolder> getNoAssetFolders() {
 		return dlFolderFinder.findF_ByNoAssets();
+	}
+
+	@Override
+	public List<DLFolder> getNotInTrashFolders(
+		long groupId, boolean mountPoint, String treePath, boolean hidden) {
+
+		return dlFolderPersistence.findByG_M_LikeT_H_NotS(
+			groupId, mountPoint, treePath, hidden,
+			WorkflowConstants.STATUS_IN_TRASH);
 	}
 
 	@Override
@@ -1185,12 +1217,6 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 			DLFolder dlFolder, boolean includeTrashedEntries)
 		throws PortalException {
 
-		// Resources
-
-		_resourceLocalService.deleteResource(
-			dlFolder.getCompanyId(), DLFolder.class.getName(),
-			ResourceConstants.SCOPE_INDIVIDUAL, dlFolder.getFolderId());
-
 		// WebDAVProps
 
 		WebDAVProps webDAVProps = _webDAVPropsPersistence.fetchByC_C(
@@ -1245,6 +1271,12 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 
 		dlFolderPersistence.remove(dlFolder);
 
+		// Resources
+
+		_resourceLocalService.deleteResource(
+			dlFolder.getCompanyId(), DLFolder.class.getName(),
+			ResourceConstants.SCOPE_INDIVIDUAL, dlFolder.getFolderId());
+
 		// Directory
 
 		if (includeTrashedEntries) {
@@ -1281,7 +1313,11 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 			dlFolder.getGroupId(), dlFolder.getFolderId());
 
 		for (DLFolder curDLFolder : dlFolders) {
-			if (includeTrashedEntries || !curDLFolder.isInTrashExplicitly()) {
+			TrashHelper trashHelper = _trashHelperSnapshot.get();
+
+			if (includeTrashedEntries ||
+				!trashHelper.isInTrashExplicitly(curDLFolder)) {
+
 				repositoryEventTrigger.trigger(
 					RepositoryEventType.Delete.class, Folder.class,
 					new LiferayFolder(curDLFolder));
@@ -1413,6 +1449,9 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 					" is invalid because it contains a /"));
 		}
 	}
+
+	private static final Snapshot<TrashHelper> _trashHelperSnapshot =
+		new Snapshot<>(DLFolderLocalServiceImpl.class, TrashHelper.class);
 
 	@BeanReference(type = AssetEntryLocalService.class)
 	private AssetEntryLocalService _assetEntryLocalService;

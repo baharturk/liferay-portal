@@ -1,13 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {isObject} from '../util/utils';
@@ -40,7 +33,10 @@ function getChildAttributes(childNodes) {
 }
 
 function getLocationValue(field, context) {
-	const locator = field.locator || field.key || field;
+	let locator = field.locator || field.key || field;
+	if (locator === 'taskTimers') {
+		locator = 'task-timers';
+	}
 	const xmlDoc = context.ownerDocument || context;
 	let result;
 	let res;
@@ -71,9 +67,9 @@ function getLocationValue(field, context) {
 				for (const child of res.children) {
 					const childContent = {};
 
-					for (const item of child.children) {
+					if (!child.children.length) {
 						const childNodesAttributes = getChildAttributes(
-							item.childNodes
+							child.childNodes
 						);
 
 						let itemContent;
@@ -82,10 +78,217 @@ function getLocationValue(field, context) {
 							itemContent = childNodesAttributes;
 						}
 						else {
-							itemContent = item.textContent;
+							itemContent = child.textContent;
 						}
 
-						childContent[item.tagName] = itemContent;
+						childContent[child.tagName] = itemContent;
+					}
+					else {
+						for (const item of child.children) {
+							if (item.children.length) {
+								let childNodesAttributes = [];
+								let grandChildren = [];
+								let grandGrandChildren = [];
+								let currentTagName;
+
+								for (const itemChild of item.children) {
+									childNodesAttributes = getChildAttributes(
+										itemChild.childNodes
+									);
+
+									for (const item of itemChild.childNodes) {
+										if (item.children) {
+											for (const itemChildren of item.children) {
+												const tagName =
+													itemChildren.tagName ===
+													'name'
+														? `${item.tagName}-name`
+														: itemChildren.tagName;
+												if (!childContent[tagName]) {
+													childContent[tagName] = [];
+												}
+
+												childContent[tagName].push(
+													itemChildren.textContent
+												);
+											}
+										}
+									}
+
+									const itemChildNodesAttributes = getChildAttributes(
+										item.childNodes
+									);
+
+									let itemContent;
+
+									if (childNodesAttributes.length) {
+										itemContent = childNodesAttributes;
+									}
+									else if (
+										itemChildNodesAttributes.length
+									) {
+										itemContent = itemChildNodesAttributes;
+
+										if (itemChildNodesAttributes.length) {
+											if (!childContent[item.tagName]) {
+												childContent[item.tagName] = [];
+											}
+
+											childContent[
+												item.tagName
+											] = itemContent;
+										}
+
+										break;
+									}
+
+									if (itemChild.children.length) {
+										if (!currentTagName) {
+											currentTagName = itemChild.tagName;
+										}
+										else if (
+											currentTagName !== itemChild.tagName
+										) {
+											grandChildren = [];
+										}
+										currentTagName = itemChild.tagName;
+										const subItemContent = {};
+
+										for (const itemGrandChild of itemChild.children) {
+											if (
+												itemGrandChild.children.length
+											) {
+												grandGrandChildren = [];
+
+												for (const grandGrand of itemGrandChild.children) {
+													const grandGrandContent = {};
+
+													if (
+														grandGrand.children
+															.length
+													) {
+														grandGrandContent[
+															grandGrand.tagName
+														] = {};
+
+														for (const grandGrandChild of grandGrand.children) {
+															grandGrandContent[
+																grandGrand.tagName
+															][
+																grandGrandChild.tagName
+															] =
+																grandGrandChild.textContent;
+														}
+													}
+													else {
+														grandGrandContent[
+															grandGrand.tagName
+														] =
+															grandGrand.textContent;
+													}
+
+													grandGrandChildren.push(
+														grandGrandContent
+													);
+												}
+
+												subItemContent[
+													itemGrandChild.tagName
+												] = grandGrandChildren;
+											}
+											else {
+												subItemContent[
+													itemGrandChild.tagName
+												] = itemGrandChild.textContent;
+											}
+
+											for (const itemGrandChildAttribute of itemGrandChild.attributes) {
+												subItemContent[
+													itemGrandChildAttribute.name
+												] =
+													itemGrandChildAttribute.value;
+											}
+										}
+										grandChildren.push(subItemContent);
+									}
+									else {
+										itemContent = itemChild.textContent;
+										if (!childContent[itemChild.tagName]) {
+											childContent[
+												itemChild.tagName
+											] = [];
+										}
+										childContent[itemChild.tagName].push(
+											itemContent
+										);
+									}
+
+									childContent[
+										currentTagName
+									] = grandChildren;
+								}
+
+								const itemAttributes = item.attributes;
+
+								if (itemAttributes && itemAttributes.length) {
+									for (
+										let i = 0;
+										i < itemAttributes.length;
+										i++
+									) {
+										if (
+											!childContent[
+												itemAttributes[i].name
+											]
+										) {
+											childContent[
+												itemAttributes[i].name
+											] = [];
+										}
+
+										childContent[
+											itemAttributes[i].name
+										].push(itemAttributes[i].value);
+									}
+								}
+							}
+							else {
+								const childNodesAttributes = getChildAttributes(
+									item.childNodes
+								);
+
+								let itemContent;
+
+								if (childNodesAttributes.length) {
+									itemContent = childNodesAttributes;
+								}
+								else {
+									itemContent = item.textContent;
+								}
+
+								if (childContent[item.tagName]) {
+									if (
+										Array.isArray(
+											childContent[item.tagName]
+										)
+									) {
+										childContent[item.tagName] = [
+											...childContent[item.tagName],
+											itemContent,
+										];
+									}
+									else {
+										childContent[item.tagName] = [
+											childContent[item.tagName],
+											itemContent,
+										];
+									}
+								}
+								else {
+									childContent[item.tagName] = itemContent;
+								}
+							}
+						}
 					}
 
 					content.push(childContent);

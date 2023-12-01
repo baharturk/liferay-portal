@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.internal.notification;
@@ -31,11 +22,10 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 /**
  * @author Eduardo Lundgren
  */
-@Component(immediate = true, service = NotificationSenderFactory.class)
+@Component(service = NotificationSenderFactory.class)
 public class NotificationSenderFactory {
 
-	public static NotificationSender getNotificationSender(
-			String notificationType)
+	public NotificationSender getNotificationSender(String notificationType)
 		throws PortalException {
 
 		NotificationSender notificationSender = _notificationSenders.get(
@@ -47,12 +37,6 @@ public class NotificationSenderFactory {
 		}
 
 		return notificationSender;
-	}
-
-	public void setNotificationSenders(
-		Map<String, NotificationSender> notificationSenders) {
-
-		_notificationSenders = notificationSenders;
 	}
 
 	@Reference(
@@ -96,7 +80,7 @@ public class NotificationSenderFactory {
 	private static final Log _log = LogFactoryUtil.getLog(
 		NotificationSenderFactory.class);
 
-	private static Map<String, NotificationSender> _notificationSenders =
+	private final Map<String, NotificationSender> _notificationSenders =
 		new ConcurrentHashMap<>();
 
 }

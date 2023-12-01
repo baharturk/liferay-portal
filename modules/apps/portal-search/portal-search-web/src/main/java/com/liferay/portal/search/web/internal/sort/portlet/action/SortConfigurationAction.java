@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.sort.portlet.action;
@@ -22,7 +13,7 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.web.internal.sort.constants.SortPortletKeys;
-import com.liferay.portal.search.web.internal.sort.display.context.SortDisplayBuilder;
+import com.liferay.portal.search.web.internal.sort.display.context.builder.SortDisplayContextBuilder;
 import com.liferay.portal.search.web.internal.sort.portlet.SortPortletPreferences;
 import com.liferay.portal.search.web.internal.sort.portlet.SortPortletPreferencesImpl;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
@@ -41,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Wade Cao
  */
 @Component(
-	immediate = true, property = "javax.portlet.name=" + SortPortletKeys.SORT,
+	property = "javax.portlet.name=" + SortPortletKeys.SORT,
 	service = ConfigurationAction.class
 )
 public class SortConfigurationAction extends DefaultConfigurationAction {
@@ -69,11 +60,12 @@ public class SortConfigurationAction extends DefaultConfigurationAction {
 				portletSharedSearchResponse.getPortletPreferences(
 					renderRequest));
 
-		SortDisplayBuilder sortDisplayBuilder = _createSortDisplayBuilder(
-			language, portal, renderRequest, sortPortletPreferences);
+		SortDisplayContextBuilder sortDisplayContextBuilder =
+			_createSortDisplayContextBuilder(
+				language, portal, renderRequest, sortPortletPreferences);
 
 		httpServletRequest.setAttribute(
-			WebKeys.PORTLET_DISPLAY_CONTEXT, sortDisplayBuilder.build());
+			WebKeys.PORTLET_DISPLAY_CONTEXT, sortDisplayContextBuilder.build());
 
 		super.include(portletConfig, httpServletRequest, httpServletResponse);
 	}
@@ -84,12 +76,12 @@ public class SortConfigurationAction extends DefaultConfigurationAction {
 	@Reference
 	protected Portal portal;
 
-	private SortDisplayBuilder _createSortDisplayBuilder(
+	private SortDisplayContextBuilder _createSortDisplayContextBuilder(
 		Language language, Portal portal, RenderRequest renderRequest,
 		SortPortletPreferences sortPortletPreferences) {
 
 		try {
-			return new SortDisplayBuilder(
+			return new SortDisplayContextBuilder(
 				language, portal, renderRequest, sortPortletPreferences);
 		}
 		catch (ConfigurationException configurationException) {

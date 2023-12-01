@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.service.base;
@@ -21,6 +12,7 @@ import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerRegistryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
@@ -43,13 +35,17 @@ import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -61,8 +57,6 @@ import com.liferay.wiki.service.persistence.WikiPageFinder;
 import com.liferay.wiki.service.persistence.WikiPagePersistence;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -474,6 +468,11 @@ public abstract class WikiPageLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement WikiPageLocalServiceImpl#deleteWikiPage(WikiPage) to avoid orphaned data");
+		}
+
 		return wikiPageLocalService.deleteWikiPage((WikiPage)persistedModel);
 	}
 
@@ -592,14 +591,14 @@ public abstract class WikiPageLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		WikiPageLocalServiceUtil.setService(null);
 	}
 
 	@Override
 	public Class<?>[] getAopInterfaces() {
 		return new Class<?>[] {
 			WikiPageLocalService.class, IdentifiableOSGiService.class,
-			PersistedModelLocalService.class
+			CTService.class, PersistedModelLocalService.class
 		};
 	}
 
@@ -607,7 +606,7 @@ public abstract class WikiPageLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		wikiPageLocalService = (WikiPageLocalService)aopProxy;
 
-		_setLocalServiceUtilService(wikiPageLocalService);
+		WikiPageLocalServiceUtil.setService(wikiPageLocalService);
 	}
 
 	/**
@@ -620,8 +619,22 @@ public abstract class WikiPageLocalServiceBaseImpl
 		return WikiPageLocalService.class.getName();
 	}
 
-	protected Class<?> getModelClass() {
+	@Override
+	public CTPersistence<WikiPage> getCTPersistence() {
+		return wikiPagePersistence;
+	}
+
+	@Override
+	public Class<WikiPage> getModelClass() {
 		return WikiPage.class;
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<WikiPage>, R, E> updateUnsafeFunction)
+		throws E {
+
+		return updateUnsafeFunction.apply(wikiPagePersistence);
 	}
 
 	protected String getModelClassName() {
@@ -652,22 +665,6 @@ public abstract class WikiPageLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		WikiPageLocalService wikiPageLocalService) {
-
-		try {
-			Field field = WikiPageLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, wikiPageLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	protected WikiPageLocalService wikiPageLocalService;
 
 	@Reference
@@ -679,5 +676,8 @@ public abstract class WikiPageLocalServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		WikiPageLocalServiceBaseImpl.class);
 
 }

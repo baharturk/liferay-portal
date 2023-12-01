@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.contacts.service.impl;
@@ -24,6 +15,7 @@ import com.liferay.portal.kernel.exception.ContactNameException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.auth.FullNameValidatorFactory;
@@ -32,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Brian Wing Shun Chan
@@ -47,10 +40,10 @@ public class EntryLocalServiceImpl extends EntryLocalServiceBaseImpl {
 			long userId, String fullName, String emailAddress, String comments)
 		throws PortalException {
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 		Date date = new Date();
 
-		validate(user.getCompanyId(), 0, userId, fullName, emailAddress);
+		_validate(user.getCompanyId(), 0, userId, fullName, emailAddress);
 
 		long contactId = counterLocalService.increment();
 
@@ -112,7 +105,7 @@ public class EntryLocalServiceImpl extends EntryLocalServiceBaseImpl {
 
 		Entry entry = entryPersistence.findByPrimaryKey(entryId);
 
-		validate(
+		_validate(
 			entry.getCompanyId(), entryId, entry.getUserId(), fullName,
 			emailAddress);
 
@@ -124,7 +117,7 @@ public class EntryLocalServiceImpl extends EntryLocalServiceBaseImpl {
 		return entryPersistence.update(entry);
 	}
 
-	protected void validate(
+	private void _validate(
 			long companyId, long entryId, long userId, String fullName,
 			String emailAddress)
 		throws PortalException {
@@ -148,15 +141,15 @@ public class EntryLocalServiceImpl extends EntryLocalServiceBaseImpl {
 			if (!StringUtil.equalsIgnoreCase(
 					emailAddress, entry.getEmailAddress())) {
 
-				validateEmailAddress(companyId, userId, emailAddress);
+				_validateEmailAddress(companyId, userId, emailAddress);
 			}
 		}
 		else {
-			validateEmailAddress(companyId, userId, emailAddress);
+			_validateEmailAddress(companyId, userId, emailAddress);
 		}
 	}
 
-	protected void validateEmailAddress(
+	private void _validateEmailAddress(
 			long companyId, long userId, String emailAddress)
 		throws PortalException {
 
@@ -166,12 +159,15 @@ public class EntryLocalServiceImpl extends EntryLocalServiceBaseImpl {
 			throw new DuplicateEntryEmailAddressException();
 		}
 
-		User user = userLocalService.fetchUserByEmailAddress(
+		User user = _userLocalService.fetchUserByEmailAddress(
 			companyId, emailAddress);
 
 		if (user != null) {
 			throw new DuplicateEntryEmailAddressException();
 		}
 	}
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

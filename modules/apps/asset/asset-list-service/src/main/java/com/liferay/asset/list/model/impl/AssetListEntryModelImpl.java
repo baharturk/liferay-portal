@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.model.impl;
 
 import com.liferay.asset.list.model.AssetListEntry;
 import com.liferay.asset.list.model.AssetListEntryModel;
-import com.liferay.asset.list.model.AssetListEntrySoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -195,66 +182,6 @@ public class AssetListEntryModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static AssetListEntry toModel(AssetListEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		AssetListEntry model = new AssetListEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setAssetListEntryId(soapModel.getAssetListEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setAssetListEntryKey(soapModel.getAssetListEntryKey());
-		model.setTitle(soapModel.getTitle());
-		model.setType(soapModel.getType());
-		model.setAssetEntrySubtype(soapModel.getAssetEntrySubtype());
-		model.setAssetEntryType(soapModel.getAssetEntryType());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<AssetListEntry> toModels(
-		AssetListEntrySoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<AssetListEntry> models = new ArrayList<AssetListEntry>(
-			soapModels.length);
-
-		for (AssetListEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public AssetListEntryModelImpl() {
 	}
 
@@ -331,138 +258,133 @@ public class AssetListEntryModelImpl
 	public Map<String, Function<AssetListEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AssetListEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AssetListEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AssetListEntry.class.getClassLoader(), AssetListEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<AssetListEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<AssetListEntry> constructor =
-				(Constructor<AssetListEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<AssetListEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<AssetListEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", AssetListEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", AssetListEntry::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", AssetListEntry::getUuid);
+			attributeGetterFunctions.put(
+				"assetListEntryId", AssetListEntry::getAssetListEntryId);
+			attributeGetterFunctions.put("groupId", AssetListEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", AssetListEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", AssetListEntry::getUserId);
+			attributeGetterFunctions.put(
+				"userName", AssetListEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", AssetListEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", AssetListEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"assetListEntryKey", AssetListEntry::getAssetListEntryKey);
+			attributeGetterFunctions.put("title", AssetListEntry::getTitle);
+			attributeGetterFunctions.put("type", AssetListEntry::getType);
+			attributeGetterFunctions.put(
+				"assetEntrySubtype", AssetListEntry::getAssetEntrySubtype);
+			attributeGetterFunctions.put(
+				"assetEntryType", AssetListEntry::getAssetEntryType);
+			attributeGetterFunctions.put(
+				"lastPublishDate", AssetListEntry::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<AssetListEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<AssetListEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<AssetListEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<AssetListEntry, Object>>();
-		Map<String, BiConsumer<AssetListEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<AssetListEntry, ?>>();
+		private static final Map<String, BiConsumer<AssetListEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", AssetListEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<AssetListEntry, Long>)AssetListEntry::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", AssetListEntry::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<AssetListEntry, Long>)
-				AssetListEntry::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", AssetListEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<AssetListEntry, String>)AssetListEntry::setUuid);
-		attributeGetterFunctions.put(
-			"assetListEntryId", AssetListEntry::getAssetListEntryId);
-		attributeSetterBiConsumers.put(
-			"assetListEntryId",
-			(BiConsumer<AssetListEntry, Long>)
-				AssetListEntry::setAssetListEntryId);
-		attributeGetterFunctions.put("groupId", AssetListEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<AssetListEntry, Long>)AssetListEntry::setGroupId);
-		attributeGetterFunctions.put("companyId", AssetListEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<AssetListEntry, Long>)AssetListEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", AssetListEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<AssetListEntry, Long>)AssetListEntry::setUserId);
-		attributeGetterFunctions.put("userName", AssetListEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<AssetListEntry, String>)AssetListEntry::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", AssetListEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<AssetListEntry, Date>)AssetListEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", AssetListEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<AssetListEntry, Date>)AssetListEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"assetListEntryKey", AssetListEntry::getAssetListEntryKey);
-		attributeSetterBiConsumers.put(
-			"assetListEntryKey",
-			(BiConsumer<AssetListEntry, String>)
-				AssetListEntry::setAssetListEntryKey);
-		attributeGetterFunctions.put("title", AssetListEntry::getTitle);
-		attributeSetterBiConsumers.put(
-			"title",
-			(BiConsumer<AssetListEntry, String>)AssetListEntry::setTitle);
-		attributeGetterFunctions.put("type", AssetListEntry::getType);
-		attributeSetterBiConsumers.put(
-			"type",
-			(BiConsumer<AssetListEntry, Integer>)AssetListEntry::setType);
-		attributeGetterFunctions.put(
-			"assetEntrySubtype", AssetListEntry::getAssetEntrySubtype);
-		attributeSetterBiConsumers.put(
-			"assetEntrySubtype",
-			(BiConsumer<AssetListEntry, String>)
-				AssetListEntry::setAssetEntrySubtype);
-		attributeGetterFunctions.put(
-			"assetEntryType", AssetListEntry::getAssetEntryType);
-		attributeSetterBiConsumers.put(
-			"assetEntryType",
-			(BiConsumer<AssetListEntry, String>)
-				AssetListEntry::setAssetEntryType);
-		attributeGetterFunctions.put(
-			"lastPublishDate", AssetListEntry::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<AssetListEntry, Date>)
-				AssetListEntry::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<AssetListEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<AssetListEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<AssetListEntry, Long>)
+					AssetListEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<AssetListEntry, Long>)
+					AssetListEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<AssetListEntry, String>)AssetListEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"assetListEntryId",
+				(BiConsumer<AssetListEntry, Long>)
+					AssetListEntry::setAssetListEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<AssetListEntry, Long>)AssetListEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<AssetListEntry, Long>)AssetListEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<AssetListEntry, Long>)AssetListEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<AssetListEntry, String>)
+					AssetListEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<AssetListEntry, Date>)
+					AssetListEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<AssetListEntry, Date>)
+					AssetListEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"assetListEntryKey",
+				(BiConsumer<AssetListEntry, String>)
+					AssetListEntry::setAssetListEntryKey);
+			attributeSetterBiConsumers.put(
+				"title",
+				(BiConsumer<AssetListEntry, String>)AssetListEntry::setTitle);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<AssetListEntry, Integer>)AssetListEntry::setType);
+			attributeSetterBiConsumers.put(
+				"assetEntrySubtype",
+				(BiConsumer<AssetListEntry, String>)
+					AssetListEntry::setAssetEntrySubtype);
+			attributeSetterBiConsumers.put(
+				"assetEntryType",
+				(BiConsumer<AssetListEntry, String>)
+					AssetListEntry::setAssetEntryType);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<AssetListEntry, Date>)
+					AssetListEntry::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1171,41 +1093,12 @@ public class AssetListEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AssetListEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AssetListEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AssetListEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((AssetListEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, AssetListEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					AssetListEntry.class, ModelWrapper.class);
 
 	}
 
@@ -1231,7 +1124,8 @@ public class AssetListEntryModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<AssetListEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

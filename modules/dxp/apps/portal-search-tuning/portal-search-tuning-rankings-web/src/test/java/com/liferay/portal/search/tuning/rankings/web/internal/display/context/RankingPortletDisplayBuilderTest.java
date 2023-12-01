@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.rankings.web.internal.display.context;
@@ -17,6 +8,7 @@ package com.liferay.portal.search.tuning.rankings.web.internal.display.context;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.search.engine.SearchEngineInformation;
 import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.search.tuning.rankings.web.internal.BaseRankingsWebTestCase;
@@ -37,8 +29,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -52,16 +42,13 @@ public class RankingPortletDisplayBuilderTest extends BaseRankingsWebTestCase {
 		LiferayUnitTestRule.INSTANCE;
 
 	@Before
-	@Override
 	public void setUp() throws Exception {
-		super.setUp();
-
 		setUpPortletPreferencesFactoryUtil();
 
 		_rankingPortletDisplayBuilder = new RankingPortletDisplayBuilder(
 			_documentToRankingTranslator, _httpServletRequest, language, portal,
 			queries, rankingIndexNameBuilder, _sorts, _renderRequest,
-			_renderResponse, searchEngineAdapter);
+			_renderResponse, searchEngineAdapter, _searchEngineInformation);
 	}
 
 	@Test
@@ -118,27 +105,23 @@ public class RankingPortletDisplayBuilderTest extends BaseRankingsWebTestCase {
 		).when(
 			portal
 		).getHttpServletRequest(
-			Matchers.any(PortletRequest.class)
+			Mockito.any(PortletRequest.class)
 		);
 
 		return _httpServletRequest;
 	}
 
-	@Mock
-	private DocumentToRankingTranslator _documentToRankingTranslator;
-
-	@Mock
-	private HttpServletRequest _httpServletRequest;
-
+	private final DocumentToRankingTranslator _documentToRankingTranslator =
+		Mockito.mock(DocumentToRankingTranslator.class);
+	private final HttpServletRequest _httpServletRequest = Mockito.mock(
+		HttpServletRequest.class);
 	private RankingPortletDisplayBuilder _rankingPortletDisplayBuilder;
-
-	@Mock
-	private RenderRequest _renderRequest;
-
-	@Mock
-	private RenderResponse _renderResponse;
-
-	@Mock
-	private Sorts _sorts;
+	private final RenderRequest _renderRequest = Mockito.mock(
+		RenderRequest.class);
+	private final RenderResponse _renderResponse = Mockito.mock(
+		RenderResponse.class);
+	private final SearchEngineInformation _searchEngineInformation =
+		Mockito.mock(SearchEngineInformation.class);
+	private final Sorts _sorts = Mockito.mock(Sorts.class);
 
 }

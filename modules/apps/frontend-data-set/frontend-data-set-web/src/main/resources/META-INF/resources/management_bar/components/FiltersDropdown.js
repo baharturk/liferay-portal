@@ -1,105 +1,103 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {ClayButtonWithIcon} from '@clayui/button';
+import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
-import Icon from '@clayui/icon';
-import React, {useContext, useMemo, useState} from 'react';
+import ClayIcon from '@clayui/icon';
+import React, {useContext, useEffect, useState} from 'react';
 
-import FiltersContext from './filters/FiltersContext';
-import {Filter} from './filters/index';
+import ViewsContext from '../../views/ViewsContext';
+import Filter from './filters/Filter';
 
-function FiltersDropdown() {
-	const filtersState = useContext(FiltersContext);
+const FiltersDropdown = () => {
+	const [{filters: initialFilters}] = useContext(ViewsContext);
+
 	const [active, setActive] = useState(false);
+	const [activeFilter, setActiveFilter] = useState(null);
+	const [filters, setFilters] = useState(initialFilters);
 	const [query, setQuery] = useState('');
 
-	const visibleFilters = useMemo(
-		() => filtersState.filters.filter((filter) => !filter.invisible),
-		[filtersState]
-	);
+	const onSearch = (query) => {
+		setQuery(query);
 
-	const [activeFilterId, setActiveFilterId] = useState(null);
+		setFilters(
+			query
+				? initialFilters.filter(({label}) =>
+						label.toLowerCase().match(query.toLowerCase())
+				  ) || []
+				: initialFilters
+		);
+	};
 
-	const activeFilter = useMemo(() => {
-		return visibleFilters.length && activeFilterId
-			? activeFilterId &&
-					visibleFilters.find(
-						(filter) => filter.id === activeFilterId
-					)
-			: null;
-	}, [visibleFilters, activeFilterId]);
+	useEffect(() => {
+		setFilters(initialFilters);
+	}, [initialFilters]);
 
-	return filtersState.filters.length ? (
+	return (
 		<ClayDropDown
 			active={active}
 			className="filters-dropdown"
 			onActiveChange={setActive}
 			trigger={
-				<button
-					className="btn btn-unstyled dropdown-toggle filters-dropdown-button"
-					type="button"
+				<ClayButton
+					className="filters-dropdown-button"
+					displayType="unstyled"
 				>
 					<span className="navbar-text-truncate">
 						{Liferay.Language.get('filter')}
 					</span>
 
-					<Icon
+					<ClayIcon
 						className="ml-2"
 						symbol={active ? 'caret-top' : 'caret-bottom'}
 					/>
-				</button>
+				</ClayButton>
 			}
 		>
-			{activeFilterId ? (
+			{activeFilter ? (
 				<>
 					<li className="dropdown-subheader">
 						<ClayButtonWithIcon
+							aria-label={Liferay.Language.get('back')}
 							className="btn-filter-navigation"
 							displayType="unstyled"
-							onClick={() => setActiveFilterId(null)}
-							small
+							onClick={() => {
+								setActiveFilter(null);
+
+								setFilters(initialFilters);
+							}}
+							size="sm"
 							symbol="angle-left"
 						/>
 
 						{activeFilter.label}
 					</li>
-					<Filter
-						{...activeFilter}
-						updateFilterState={filtersState.updateFilterState}
-					/>
+
+					<Filter {...activeFilter} />
 				</>
 			) : (
 				<ClayDropDown.Group header={Liferay.Language.get('filters')}>
 					<ClayDropDown.Search
-						onChange={(event) => setQuery(event.target.value)}
+						aria-label={Liferay.Language.get('search')}
+						onChange={onSearch}
+						role="none"
 						value={query}
 					/>
 
 					<ClayDropDown.Divider className="m-0" />
 
-					{visibleFilters.length ? (
+					{filters.length ? (
 						<ClayDropDown.ItemList>
-							{visibleFilters.map((item) => (
+							{filters.map((filter) => (
 								<ClayDropDown.Item
-									active={item.value !== undefined}
-									key={item.id}
+									key={filter.id}
 									onClick={() => {
-										setActiveFilterId(item.id);
+										setActiveFilter(filter);
 									}}
 								>
-									{item.label}
+									{filter.label}
 								</ClayDropDown.Item>
 							))}
 						</ClayDropDown.ItemList>
@@ -111,7 +109,7 @@ function FiltersDropdown() {
 				</ClayDropDown.Group>
 			)}
 		</ClayDropDown>
-	) : null;
-}
+	);
+};
 
 export default FiltersDropdown;

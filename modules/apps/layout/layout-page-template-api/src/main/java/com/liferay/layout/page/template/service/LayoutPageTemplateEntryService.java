@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.service;
@@ -56,34 +47,10 @@ public interface LayoutPageTemplateEntryService extends BaseService {
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.layout.page.template.service.impl.LayoutPageTemplateEntryServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the layout page template entry remote service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link LayoutPageTemplateEntryServiceUtil} if injection and service tracking are not available.
 	 */
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addLayoutPageTemplateEntry(long, long, long, long, String,
-	 long, int, ServiceContext)}
-	 */
-	@Deprecated
-	public LayoutPageTemplateEntry addLayoutPageTemplateEntry(
-			long groupId, long layoutPageTemplateCollectionId, long classNameId,
-			long classTypeId, String name, int status,
-			ServiceContext serviceContext)
-		throws PortalException;
-
 	public LayoutPageTemplateEntry addLayoutPageTemplateEntry(
 			long groupId, long layoutPageTemplateCollectionId, long classNameId,
 			long classTypeId, String name, long masterLayoutPlid, int status,
 			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addLayoutPageTemplateEntry(long, long, String, int, long,
-	 int, ServiceContext)}
-	 */
-	@Deprecated
-	public LayoutPageTemplateEntry addLayoutPageTemplateEntry(
-			long groupId, long layoutPageTemplateCollectionId, String name,
-			int type, int status, ServiceContext serviceContext)
 		throws PortalException;
 
 	public LayoutPageTemplateEntry addLayoutPageTemplateEntry(
@@ -92,22 +59,11 @@ public interface LayoutPageTemplateEntryService extends BaseService {
 			ServiceContext serviceContext)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addLayoutPageTemplateEntry(long, long, long, long, String,
-	 int, ServiceContext)}
-	 */
-	@Deprecated
-	public LayoutPageTemplateEntry addLayoutPageTemplateEntry(
-			long groupId, long layoutPageTemplateCollectionId, String name,
-			int status, long classNameId, long classTypeId,
-			ServiceContext serviceContext)
-		throws PortalException;
-
 	public LayoutPageTemplateEntry copyLayoutPageTemplateEntry(
 			long groupId, long layoutPageTemplateCollectionId,
-			long layoutPageTemplateEntryId, ServiceContext serviceContext)
-		throws PortalException;
+			long sourceLayoutPageTemplateEntryId, boolean copyPermissions,
+			ServiceContext serviceContext)
+		throws Exception;
 
 	public LayoutPageTemplateEntry createLayoutPageTemplateEntryFromLayout(
 			long segmentsExperienceId, Layout sourceLayout, String name,
@@ -139,6 +95,26 @@ public interface LayoutPageTemplateEntryService extends BaseService {
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public LayoutPageTemplateEntry fetchLayoutPageTemplateEntryByUuidAndGroupId(
 		String uuid, long groupId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Object> getLayoutPageCollectionsAndLayoutPageTemplateEntries(
+		long groupId, long layoutPageTemplateCollectionId, int type, int start,
+		int end, OrderByComparator<Object> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Object> getLayoutPageCollectionsAndLayoutPageTemplateEntries(
+		long groupId, long layoutPageTemplateCollectionId, long classNameId,
+		long classTypeId, String name, int type, int status, int start, int end,
+		OrderByComparator<Object> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getLayoutPageCollectionsAndLayoutPageTemplateEntriesCount(
+		long groupId, long layoutPageTemplateCollectionId, int type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getLayoutPageCollectionsAndLayoutPageTemplateEntriesCount(
+		long groupId, long layoutPageTemplateCollectionId, long classNameId,
+		long classTypeId, String name, int type, int status);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<LayoutPageTemplateEntry> getLayoutPageTemplateEntries(
@@ -323,6 +299,11 @@ public interface LayoutPageTemplateEntryService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public LayoutPageTemplateEntry getLayoutPageTemplateEntry(
+			long layoutPageTemplateEntryId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public LayoutPageTemplateEntry getLayoutPageTemplateEntry(
 			long groupId, String layoutPageTemplateEntryKey)
 		throws PortalException;
 
@@ -347,17 +328,11 @@ public interface LayoutPageTemplateEntryService extends BaseService {
 		throws PortalException;
 
 	public LayoutPageTemplateEntry updateLayoutPageTemplateEntry(
-			long layoutPageTemplateEntryId, long[] fragmentEntryIds,
-			String editableValues, ServiceContext serviceContext)
+			long layoutPageTemplateEntryId, long classNameId, long classTypeId)
 		throws PortalException;
 
 	public LayoutPageTemplateEntry updateLayoutPageTemplateEntry(
 			long layoutPageTemplateEntryId, String name)
-		throws PortalException;
-
-	public LayoutPageTemplateEntry updateLayoutPageTemplateEntry(
-			long layoutPageTemplateEntryId, String name,
-			long[] fragmentEntryIds, ServiceContext serviceContext)
 		throws PortalException;
 
 	public LayoutPageTemplateEntry updateStatus(

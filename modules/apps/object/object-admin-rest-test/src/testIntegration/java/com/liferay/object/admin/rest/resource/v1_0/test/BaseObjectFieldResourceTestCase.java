@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.resource.v1_0.test;
@@ -28,6 +19,8 @@ import com.liferay.object.admin.rest.client.pagination.Page;
 import com.liferay.object.admin.rest.client.pagination.Pagination;
 import com.liferay.object.admin.rest.client.resource.v1_0.ObjectFieldResource;
 import com.liferay.object.admin.rest.client.serdes.v1_0.ObjectFieldSerDes;
+import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -42,32 +35,36 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 
-import org.apache.commons.beanutils.BeanUtilsBean;
+import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -179,8 +176,12 @@ public abstract class BaseObjectFieldResourceTestCase {
 
 		ObjectField objectField = randomObjectField();
 
+		objectField.setDefaultValue(regex);
+		objectField.setExternalReferenceCode(regex);
 		objectField.setIndexedLanguageId(regex);
+		objectField.setListTypeDefinitionExternalReferenceCode(regex);
 		objectField.setName(regex);
+		objectField.setReadOnlyConditionExpression(regex);
 
 		String json = ObjectFieldSerDes.toJSON(objectField);
 
@@ -188,8 +189,457 @@ public abstract class BaseObjectFieldResourceTestCase {
 
 		objectField = ObjectFieldSerDes.toDTO(json);
 
+		Assert.assertEquals(regex, objectField.getDefaultValue());
+		Assert.assertEquals(regex, objectField.getExternalReferenceCode());
 		Assert.assertEquals(regex, objectField.getIndexedLanguageId());
+		Assert.assertEquals(
+			regex, objectField.getListTypeDefinitionExternalReferenceCode());
 		Assert.assertEquals(regex, objectField.getName());
+		Assert.assertEquals(
+			regex, objectField.getReadOnlyConditionExpression());
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage()
+		throws Exception {
+
+		String externalReferenceCode =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExternalReferenceCode();
+		String irrelevantExternalReferenceCode =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getIrrelevantExternalReferenceCode();
+
+		Page<ObjectField> page =
+			objectFieldResource.
+				getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+					externalReferenceCode, null, null, Pagination.of(1, 10),
+					null);
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantExternalReferenceCode != null) {
+			ObjectField irrelevantObjectField =
+				testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+					irrelevantExternalReferenceCode,
+					randomIrrelevantObjectField());
+
+			page =
+				objectFieldResource.
+					getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+						irrelevantExternalReferenceCode, null, null,
+						Pagination.of(1, (int)totalCount + 1), null);
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantObjectField, (List<ObjectField>)page.getItems());
+			assertValid(
+				page,
+				testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
+		}
+
+		ObjectField objectField1 =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				externalReferenceCode, randomObjectField());
+
+		ObjectField objectField2 =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				externalReferenceCode, randomObjectField());
+
+		page =
+			objectFieldResource.
+				getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+					externalReferenceCode, null, null, Pagination.of(1, 10),
+					null);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(objectField1, (List<ObjectField>)page.getItems());
+		assertContains(objectField2, (List<ObjectField>)page.getItems());
+		assertValid(
+			page,
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExpectedActions(
+				externalReferenceCode));
+
+		objectFieldResource.deleteObjectField(objectField1.getId());
+
+		objectFieldResource.deleteObjectField(objectField2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithFilterDateTimeEquals()
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(
+			EntityField.Type.DATE_TIME);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		String externalReferenceCode =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExternalReferenceCode();
+
+		ObjectField objectField1 = randomObjectField();
+
+		objectField1 =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				externalReferenceCode, objectField1);
+
+		for (EntityField entityField : entityFields) {
+			Page<ObjectField> page =
+				objectFieldResource.
+					getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+						externalReferenceCode, null,
+						getFilterString(entityField, "between", objectField1),
+						Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(objectField1),
+				(List<ObjectField>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithFilterDoubleEquals()
+		throws Exception {
+
+		testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithFilter(
+			"eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithFilterStringContains()
+		throws Exception {
+
+		testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithFilter(
+			"contains", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithFilterStringEquals()
+		throws Exception {
+
+		testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithFilter(
+			"eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithFilter(
+			"startswith", EntityField.Type.STRING);
+	}
+
+	protected void
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithFilter(
+				String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		String externalReferenceCode =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExternalReferenceCode();
+
+		ObjectField objectField1 =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				externalReferenceCode, randomObjectField());
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		ObjectField objectField2 =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				externalReferenceCode, randomObjectField());
+
+		for (EntityField entityField : entityFields) {
+			Page<ObjectField> page =
+				objectFieldResource.
+					getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+						externalReferenceCode, null,
+						getFilterString(entityField, operator, objectField1),
+						Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(objectField1),
+				(List<ObjectField>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithPagination()
+		throws Exception {
+
+		String externalReferenceCode =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExternalReferenceCode();
+
+		Page<ObjectField> objectFieldPage =
+			objectFieldResource.
+				getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+					externalReferenceCode, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(objectFieldPage.getTotalCount());
+
+		ObjectField objectField1 =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				externalReferenceCode, randomObjectField());
+
+		ObjectField objectField2 =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				externalReferenceCode, randomObjectField());
+
+		ObjectField objectField3 =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				externalReferenceCode, randomObjectField());
+
+		Page<ObjectField> page1 =
+			objectFieldResource.
+				getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+					externalReferenceCode, null, null,
+					Pagination.of(1, totalCount + 2), null);
+
+		List<ObjectField> objectFields1 = (List<ObjectField>)page1.getItems();
+
+		Assert.assertEquals(
+			objectFields1.toString(), totalCount + 2, objectFields1.size());
+
+		Page<ObjectField> page2 =
+			objectFieldResource.
+				getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+					externalReferenceCode, null, null,
+					Pagination.of(2, totalCount + 2), null);
+
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+		List<ObjectField> objectFields2 = (List<ObjectField>)page2.getItems();
+
+		Assert.assertEquals(objectFields2.toString(), 1, objectFields2.size());
+
+		Page<ObjectField> page3 =
+			objectFieldResource.
+				getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+					externalReferenceCode, null, null,
+					Pagination.of(1, (int)totalCount + 3), null);
+
+		assertContains(objectField1, (List<ObjectField>)page3.getItems());
+		assertContains(objectField2, (List<ObjectField>)page3.getItems());
+		assertContains(objectField3, (List<ObjectField>)page3.getItems());
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithSortDateTime()
+		throws Exception {
+
+		testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithSort(
+			EntityField.Type.DATE_TIME,
+			(entityField, objectField1, objectField2) -> {
+				BeanTestUtil.setProperty(
+					objectField1, entityField.getName(),
+					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithSortDouble()
+		throws Exception {
+
+		testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, objectField1, objectField2) -> {
+				BeanTestUtil.setProperty(
+					objectField1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					objectField2, entityField.getName(), 0.5);
+			});
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithSortInteger()
+		throws Exception {
+
+		testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithSort(
+			EntityField.Type.INTEGER,
+			(entityField, objectField1, objectField2) -> {
+				BeanTestUtil.setProperty(
+					objectField1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(
+					objectField2, entityField.getName(), 1);
+			});
+	}
+
+	@Test
+	public void testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithSortString()
+		throws Exception {
+
+		testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithSort(
+			EntityField.Type.STRING,
+			(entityField, objectField1, objectField2) -> {
+				Class<?> clazz = objectField1.getClass();
+
+				String entityFieldName = entityField.getName();
+
+				Method method = clazz.getMethod(
+					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
+
+				Class<?> returnType = method.getReturnType();
+
+				if (returnType.isAssignableFrom(Map.class)) {
+					BeanTestUtil.setProperty(
+						objectField1, entityFieldName,
+						Collections.singletonMap("Aaa", "Aaa"));
+					BeanTestUtil.setProperty(
+						objectField2, entityFieldName,
+						Collections.singletonMap("Bbb", "Bbb"));
+				}
+				else if (entityFieldName.contains("email")) {
+					BeanTestUtil.setProperty(
+						objectField1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+					BeanTestUtil.setProperty(
+						objectField2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+				}
+				else {
+					BeanTestUtil.setProperty(
+						objectField1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+					BeanTestUtil.setProperty(
+						objectField2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+				}
+			});
+	}
+
+	protected void
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPageWithSort(
+				EntityField.Type type,
+				UnsafeTriConsumer
+					<EntityField, ObjectField, ObjectField, Exception>
+						unsafeTriConsumer)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		String externalReferenceCode =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExternalReferenceCode();
+
+		ObjectField objectField1 = randomObjectField();
+		ObjectField objectField2 = randomObjectField();
+
+		for (EntityField entityField : entityFields) {
+			unsafeTriConsumer.accept(entityField, objectField1, objectField2);
+		}
+
+		objectField1 =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				externalReferenceCode, objectField1);
+
+		objectField2 =
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				externalReferenceCode, objectField2);
+
+		Page<ObjectField> page =
+			objectFieldResource.
+				getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+					externalReferenceCode, null, null, null, null);
+
+		for (EntityField entityField : entityFields) {
+			Page<ObjectField> ascPage =
+				objectFieldResource.
+					getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+						externalReferenceCode, null, null,
+						Pagination.of(1, (int)page.getTotalCount() + 1),
+						entityField.getName() + ":asc");
+
+			assertContains(objectField1, (List<ObjectField>)ascPage.getItems());
+			assertContains(objectField2, (List<ObjectField>)ascPage.getItems());
+
+			Page<ObjectField> descPage =
+				objectFieldResource.
+					getObjectDefinitionByExternalReferenceCodeObjectFieldsPage(
+						externalReferenceCode, null, null,
+						Pagination.of(1, (int)page.getTotalCount() + 1),
+						entityField.getName() + ":desc");
+
+			assertContains(
+				objectField2, (List<ObjectField>)descPage.getItems());
+			assertContains(
+				objectField1, (List<ObjectField>)descPage.getItems());
+		}
+	}
+
+	protected ObjectField
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_addObjectField(
+				String externalReferenceCode, ObjectField objectField)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetObjectDefinitionByExternalReferenceCodeObjectFieldsPage_getIrrelevantExternalReferenceCode()
+		throws Exception {
+
+		return null;
+	}
+
+	@Test
+	public void testPostObjectDefinitionByExternalReferenceCodeObjectField()
+		throws Exception {
+
+		ObjectField randomObjectField = randomObjectField();
+
+		ObjectField postObjectField =
+			testPostObjectDefinitionByExternalReferenceCodeObjectField_addObjectField(
+				randomObjectField);
+
+		assertEquals(randomObjectField, postObjectField);
+		assertValid(postObjectField);
+	}
+
+	protected ObjectField
+			testPostObjectDefinitionByExternalReferenceCodeObjectField_addObjectField(
+				ObjectField objectField)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -201,9 +651,9 @@ public abstract class BaseObjectFieldResourceTestCase {
 
 		Page<ObjectField> page =
 			objectFieldResource.getObjectDefinitionObjectFieldsPage(
-				objectDefinitionId, null, Pagination.of(1, 10));
+				objectDefinitionId, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantObjectDefinitionId != null) {
 			ObjectField irrelevantObjectField =
@@ -212,14 +662,17 @@ public abstract class BaseObjectFieldResourceTestCase {
 					randomIrrelevantObjectField());
 
 			page = objectFieldResource.getObjectDefinitionObjectFieldsPage(
-				irrelevantObjectDefinitionId, null, Pagination.of(1, 2));
+				irrelevantObjectDefinitionId, null, null,
+				Pagination.of(1, (int)totalCount + 1), null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantObjectField),
-				(List<ObjectField>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantObjectField, (List<ObjectField>)page.getItems());
+			assertValid(
+				page,
+				testGetObjectDefinitionObjectFieldsPage_getExpectedActions(
+					irrelevantObjectDefinitionId));
 		}
 
 		ObjectField objectField1 =
@@ -231,18 +684,140 @@ public abstract class BaseObjectFieldResourceTestCase {
 				objectDefinitionId, randomObjectField());
 
 		page = objectFieldResource.getObjectDefinitionObjectFieldsPage(
-			objectDefinitionId, null, Pagination.of(1, 10));
+			objectDefinitionId, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(objectField1, objectField2),
-			(List<ObjectField>)page.getItems());
-		assertValid(page);
+		assertContains(objectField1, (List<ObjectField>)page.getItems());
+		assertContains(objectField2, (List<ObjectField>)page.getItems());
+		assertValid(
+			page,
+			testGetObjectDefinitionObjectFieldsPage_getExpectedActions(
+				objectDefinitionId));
 
 		objectFieldResource.deleteObjectField(objectField1.getId());
 
 		objectFieldResource.deleteObjectField(objectField2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetObjectDefinitionObjectFieldsPage_getExpectedActions(
+				Long objectDefinitionId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/object-admin/v1.0/object-definitions/{objectDefinitionId}/object-fields/batch".
+				replace(
+					"{objectDefinitionId}",
+					String.valueOf(objectDefinitionId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
+	}
+
+	@Test
+	public void testGetObjectDefinitionObjectFieldsPageWithFilterDateTimeEquals()
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(
+			EntityField.Type.DATE_TIME);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		Long objectDefinitionId =
+			testGetObjectDefinitionObjectFieldsPage_getObjectDefinitionId();
+
+		ObjectField objectField1 = randomObjectField();
+
+		objectField1 = testGetObjectDefinitionObjectFieldsPage_addObjectField(
+			objectDefinitionId, objectField1);
+
+		for (EntityField entityField : entityFields) {
+			Page<ObjectField> page =
+				objectFieldResource.getObjectDefinitionObjectFieldsPage(
+					objectDefinitionId, null,
+					getFilterString(entityField, "between", objectField1),
+					Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(objectField1),
+				(List<ObjectField>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetObjectDefinitionObjectFieldsPageWithFilterDoubleEquals()
+		throws Exception {
+
+		testGetObjectDefinitionObjectFieldsPageWithFilter(
+			"eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetObjectDefinitionObjectFieldsPageWithFilterStringContains()
+		throws Exception {
+
+		testGetObjectDefinitionObjectFieldsPageWithFilter(
+			"contains", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetObjectDefinitionObjectFieldsPageWithFilterStringEquals()
+		throws Exception {
+
+		testGetObjectDefinitionObjectFieldsPageWithFilter(
+			"eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetObjectDefinitionObjectFieldsPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetObjectDefinitionObjectFieldsPageWithFilter(
+			"startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetObjectDefinitionObjectFieldsPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		Long objectDefinitionId =
+			testGetObjectDefinitionObjectFieldsPage_getObjectDefinitionId();
+
+		ObjectField objectField1 =
+			testGetObjectDefinitionObjectFieldsPage_addObjectField(
+				objectDefinitionId, randomObjectField());
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		ObjectField objectField2 =
+			testGetObjectDefinitionObjectFieldsPage_addObjectField(
+				objectDefinitionId, randomObjectField());
+
+		for (EntityField entityField : entityFields) {
+			Page<ObjectField> page =
+				objectFieldResource.getObjectDefinitionObjectFieldsPage(
+					objectDefinitionId, null,
+					getFilterString(entityField, operator, objectField1),
+					Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(objectField1),
+				(List<ObjectField>)page.getItems());
+		}
 	}
 
 	@Test
@@ -251,6 +826,12 @@ public abstract class BaseObjectFieldResourceTestCase {
 
 		Long objectDefinitionId =
 			testGetObjectDefinitionObjectFieldsPage_getObjectDefinitionId();
+
+		Page<ObjectField> objectFieldPage =
+			objectFieldResource.getObjectDefinitionObjectFieldsPage(
+				objectDefinitionId, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(objectFieldPage.getTotalCount());
 
 		ObjectField objectField1 =
 			testGetObjectDefinitionObjectFieldsPage_addObjectField(
@@ -266,17 +847,20 @@ public abstract class BaseObjectFieldResourceTestCase {
 
 		Page<ObjectField> page1 =
 			objectFieldResource.getObjectDefinitionObjectFieldsPage(
-				objectDefinitionId, null, Pagination.of(1, 2));
+				objectDefinitionId, null, null,
+				Pagination.of(1, totalCount + 2), null);
 
 		List<ObjectField> objectFields1 = (List<ObjectField>)page1.getItems();
 
-		Assert.assertEquals(objectFields1.toString(), 2, objectFields1.size());
+		Assert.assertEquals(
+			objectFields1.toString(), totalCount + 2, objectFields1.size());
 
 		Page<ObjectField> page2 =
 			objectFieldResource.getObjectDefinitionObjectFieldsPage(
-				objectDefinitionId, null, Pagination.of(2, 2));
+				objectDefinitionId, null, null,
+				Pagination.of(2, totalCount + 2), null);
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<ObjectField> objectFields2 = (List<ObjectField>)page2.getItems();
 
@@ -284,11 +868,161 @@ public abstract class BaseObjectFieldResourceTestCase {
 
 		Page<ObjectField> page3 =
 			objectFieldResource.getObjectDefinitionObjectFieldsPage(
-				objectDefinitionId, null, Pagination.of(1, 3));
+				objectDefinitionId, null, null,
+				Pagination.of(1, (int)totalCount + 3), null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(objectField1, objectField2, objectField3),
-			(List<ObjectField>)page3.getItems());
+		assertContains(objectField1, (List<ObjectField>)page3.getItems());
+		assertContains(objectField2, (List<ObjectField>)page3.getItems());
+		assertContains(objectField3, (List<ObjectField>)page3.getItems());
+	}
+
+	@Test
+	public void testGetObjectDefinitionObjectFieldsPageWithSortDateTime()
+		throws Exception {
+
+		testGetObjectDefinitionObjectFieldsPageWithSort(
+			EntityField.Type.DATE_TIME,
+			(entityField, objectField1, objectField2) -> {
+				BeanTestUtil.setProperty(
+					objectField1, entityField.getName(),
+					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetObjectDefinitionObjectFieldsPageWithSortDouble()
+		throws Exception {
+
+		testGetObjectDefinitionObjectFieldsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, objectField1, objectField2) -> {
+				BeanTestUtil.setProperty(
+					objectField1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					objectField2, entityField.getName(), 0.5);
+			});
+	}
+
+	@Test
+	public void testGetObjectDefinitionObjectFieldsPageWithSortInteger()
+		throws Exception {
+
+		testGetObjectDefinitionObjectFieldsPageWithSort(
+			EntityField.Type.INTEGER,
+			(entityField, objectField1, objectField2) -> {
+				BeanTestUtil.setProperty(
+					objectField1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(
+					objectField2, entityField.getName(), 1);
+			});
+	}
+
+	@Test
+	public void testGetObjectDefinitionObjectFieldsPageWithSortString()
+		throws Exception {
+
+		testGetObjectDefinitionObjectFieldsPageWithSort(
+			EntityField.Type.STRING,
+			(entityField, objectField1, objectField2) -> {
+				Class<?> clazz = objectField1.getClass();
+
+				String entityFieldName = entityField.getName();
+
+				Method method = clazz.getMethod(
+					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
+
+				Class<?> returnType = method.getReturnType();
+
+				if (returnType.isAssignableFrom(Map.class)) {
+					BeanTestUtil.setProperty(
+						objectField1, entityFieldName,
+						Collections.singletonMap("Aaa", "Aaa"));
+					BeanTestUtil.setProperty(
+						objectField2, entityFieldName,
+						Collections.singletonMap("Bbb", "Bbb"));
+				}
+				else if (entityFieldName.contains("email")) {
+					BeanTestUtil.setProperty(
+						objectField1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+					BeanTestUtil.setProperty(
+						objectField2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+				}
+				else {
+					BeanTestUtil.setProperty(
+						objectField1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+					BeanTestUtil.setProperty(
+						objectField2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+				}
+			});
+	}
+
+	protected void testGetObjectDefinitionObjectFieldsPageWithSort(
+			EntityField.Type type,
+			UnsafeTriConsumer<EntityField, ObjectField, ObjectField, Exception>
+				unsafeTriConsumer)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		Long objectDefinitionId =
+			testGetObjectDefinitionObjectFieldsPage_getObjectDefinitionId();
+
+		ObjectField objectField1 = randomObjectField();
+		ObjectField objectField2 = randomObjectField();
+
+		for (EntityField entityField : entityFields) {
+			unsafeTriConsumer.accept(entityField, objectField1, objectField2);
+		}
+
+		objectField1 = testGetObjectDefinitionObjectFieldsPage_addObjectField(
+			objectDefinitionId, objectField1);
+
+		objectField2 = testGetObjectDefinitionObjectFieldsPage_addObjectField(
+			objectDefinitionId, objectField2);
+
+		Page<ObjectField> page =
+			objectFieldResource.getObjectDefinitionObjectFieldsPage(
+				objectDefinitionId, null, null, null, null);
+
+		for (EntityField entityField : entityFields) {
+			Page<ObjectField> ascPage =
+				objectFieldResource.getObjectDefinitionObjectFieldsPage(
+					objectDefinitionId, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
+					entityField.getName() + ":asc");
+
+			assertContains(objectField1, (List<ObjectField>)ascPage.getItems());
+			assertContains(objectField2, (List<ObjectField>)ascPage.getItems());
+
+			Page<ObjectField> descPage =
+				objectFieldResource.getObjectDefinitionObjectFieldsPage(
+					objectDefinitionId, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
+					entityField.getName() + ":desc");
+
+			assertContains(
+				objectField2, (List<ObjectField>)descPage.getItems());
+			assertContains(
+				objectField1, (List<ObjectField>)descPage.getItems());
+		}
 	}
 
 	protected ObjectField
@@ -364,7 +1098,7 @@ public abstract class BaseObjectFieldResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteObjectField() throws Exception {
-		ObjectField objectField = testGraphQLObjectField_addObjectField();
+		ObjectField objectField = testGraphQLDeleteObjectField_addObjectField();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -377,7 +1111,6 @@ public abstract class BaseObjectFieldResourceTestCase {
 							}
 						})),
 				"JSONObject/data", "Object/deleteObjectField"));
-
 		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
@@ -391,6 +1124,12 @@ public abstract class BaseObjectFieldResourceTestCase {
 			"JSONArray/errors");
 
 		Assert.assertTrue(errorsJSONArray.length() > 0);
+	}
+
+	protected ObjectField testGraphQLDeleteObjectField_addObjectField()
+		throws Exception {
+
+		return testGraphQLObjectField_addObjectField();
 	}
 
 	@Test
@@ -411,7 +1150,7 @@ public abstract class BaseObjectFieldResourceTestCase {
 
 	@Test
 	public void testGraphQLGetObjectField() throws Exception {
-		ObjectField objectField = testGraphQLObjectField_addObjectField();
+		ObjectField objectField = testGraphQLGetObjectField_addObjectField();
 
 		Assert.assertTrue(
 			equals(
@@ -452,6 +1191,12 @@ public abstract class BaseObjectFieldResourceTestCase {
 				"Object/code"));
 	}
 
+	protected ObjectField testGraphQLGetObjectField_addObjectField()
+		throws Exception {
+
+		return testGraphQLObjectField_addObjectField();
+	}
+
 	@Test
 	public void testPatchObjectField() throws Exception {
 		ObjectField postObjectField = testPatchObjectField_addObjectField();
@@ -464,8 +1209,8 @@ public abstract class BaseObjectFieldResourceTestCase {
 
 		ObjectField expectedPatchObjectField = postObjectField.clone();
 
-		_beanUtilsBean.copyProperties(
-			expectedPatchObjectField, randomPatchObjectField);
+		BeanTestUtil.copyProperties(
+			randomPatchObjectField, expectedPatchObjectField);
 
 		ObjectField getObjectField = objectFieldResource.getObjectField(
 			patchObjectField.getId());
@@ -504,6 +1249,9 @@ public abstract class BaseObjectFieldResourceTestCase {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
+
+	@Rule
+	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	protected ObjectField testGraphQLObjectField_addObjectField()
 		throws Exception {
@@ -613,6 +1361,24 @@ public abstract class BaseObjectFieldResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("defaultValue", additionalAssertFieldName)) {
+				if (objectField.getDefaultValue() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (objectField.getExternalReferenceCode() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("indexed", additionalAssertFieldName)) {
 				if (objectField.getIndexed() == null) {
 					valid = false;
@@ -648,6 +1414,19 @@ public abstract class BaseObjectFieldResourceTestCase {
 			}
 
 			if (Objects.equals(
+					"listTypeDefinitionExternalReferenceCode",
+					additionalAssertFieldName)) {
+
+				if (objectField.getListTypeDefinitionExternalReferenceCode() ==
+						null) {
+
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
 					"listTypeDefinitionId", additionalAssertFieldName)) {
 
 				if (objectField.getListTypeDefinitionId() == null) {
@@ -657,8 +1436,44 @@ public abstract class BaseObjectFieldResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("localized", additionalAssertFieldName)) {
+				if (objectField.getLocalized() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("name", additionalAssertFieldName)) {
 				if (objectField.getName() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"objectFieldSettings", additionalAssertFieldName)) {
+
+				if (objectField.getObjectFieldSettings() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("readOnly", additionalAssertFieldName)) {
+				if (objectField.getReadOnly() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"readOnlyConditionExpression", additionalAssertFieldName)) {
+
+				if (objectField.getReadOnlyConditionExpression() == null) {
 					valid = false;
 				}
 
@@ -681,8 +1496,32 @@ public abstract class BaseObjectFieldResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("state", additionalAssertFieldName)) {
+				if (objectField.getState() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("system", additionalAssertFieldName)) {
+				if (objectField.getSystem() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("type", additionalAssertFieldName)) {
 				if (objectField.getType() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("unique", additionalAssertFieldName)) {
+				if (objectField.getUnique() == null) {
 					valid = false;
 				}
 
@@ -698,6 +1537,13 @@ public abstract class BaseObjectFieldResourceTestCase {
 	}
 
 	protected void assertValid(Page<ObjectField> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ObjectField> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ObjectField> objectFields = page.getItems();
@@ -712,6 +1558,25 @@ public abstract class BaseObjectFieldResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -813,6 +1678,30 @@ public abstract class BaseObjectFieldResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("defaultValue", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						objectField1.getDefaultValue(),
+						objectField2.getDefaultValue())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						objectField1.getExternalReferenceCode(),
+						objectField2.getExternalReferenceCode())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("id", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						objectField1.getId(), objectField2.getId())) {
@@ -869,6 +1758,22 @@ public abstract class BaseObjectFieldResourceTestCase {
 			}
 
 			if (Objects.equals(
+					"listTypeDefinitionExternalReferenceCode",
+					additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						objectField1.
+							getListTypeDefinitionExternalReferenceCode(),
+						objectField2.
+							getListTypeDefinitionExternalReferenceCode())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
 					"listTypeDefinitionId", additionalAssertFieldName)) {
 
 				if (!Objects.deepEquals(
@@ -881,9 +1786,57 @@ public abstract class BaseObjectFieldResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("localized", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						objectField1.getLocalized(),
+						objectField2.getLocalized())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("name", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						objectField1.getName(), objectField2.getName())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"objectFieldSettings", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						objectField1.getObjectFieldSettings(),
+						objectField2.getObjectFieldSettings())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("readOnly", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						objectField1.getReadOnly(),
+						objectField2.getReadOnly())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"readOnlyConditionExpression", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						objectField1.getReadOnlyConditionExpression(),
+						objectField2.getReadOnlyConditionExpression())) {
 
 					return false;
 				}
@@ -913,9 +1866,39 @@ public abstract class BaseObjectFieldResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("state", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						objectField1.getState(), objectField2.getState())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("system", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						objectField1.getSystem(), objectField2.getSystem())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("type", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						objectField1.getType(), objectField2.getType())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("unique", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						objectField1.getUnique(), objectField2.getUnique())) {
 
 					return false;
 				}
@@ -960,14 +1943,16 @@ public abstract class BaseObjectFieldResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -984,6 +1969,10 @@ public abstract class BaseObjectFieldResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -993,18 +1982,18 @@ public abstract class BaseObjectFieldResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1035,6 +2024,98 @@ public abstract class BaseObjectFieldResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("defaultValue")) {
+			Object object = objectField.getDefaultValue();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("externalReferenceCode")) {
+			Object object = objectField.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("id")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
@@ -1051,9 +2132,47 @@ public abstract class BaseObjectFieldResourceTestCase {
 		}
 
 		if (entityFieldName.equals("indexedLanguageId")) {
-			sb.append("'");
-			sb.append(String.valueOf(objectField.getIndexedLanguageId()));
-			sb.append("'");
+			Object object = objectField.getIndexedLanguageId();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1063,15 +2182,161 @@ public abstract class BaseObjectFieldResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("listTypeDefinitionExternalReferenceCode")) {
+			Object object =
+				objectField.getListTypeDefinitionExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("listTypeDefinitionId")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("localized")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("name")) {
-			sb.append("'");
-			sb.append(String.valueOf(objectField.getName()));
-			sb.append("'");
+			Object object = objectField.getName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("objectFieldSettings")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("readOnly")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("readOnlyConditionExpression")) {
+			Object object = objectField.getReadOnlyConditionExpression();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1086,7 +2351,22 @@ public abstract class BaseObjectFieldResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("state")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("system")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("type")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("unique")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
 		}
@@ -1135,14 +2415,26 @@ public abstract class BaseObjectFieldResourceTestCase {
 	protected ObjectField randomObjectField() throws Exception {
 		return new ObjectField() {
 			{
+				defaultValue = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				externalReferenceCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
 				indexed = RandomTestUtil.randomBoolean();
 				indexedAsKeyword = RandomTestUtil.randomBoolean();
 				indexedLanguageId = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
+				listTypeDefinitionExternalReferenceCode =
+					StringUtil.toLowerCase(RandomTestUtil.randomString());
 				listTypeDefinitionId = RandomTestUtil.randomLong();
+				localized = RandomTestUtil.randomBoolean();
 				name = StringUtil.toLowerCase(RandomTestUtil.randomString());
+				readOnlyConditionExpression = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				required = RandomTestUtil.randomBoolean();
+				state = RandomTestUtil.randomBoolean();
+				system = RandomTestUtil.randomBoolean();
+				unique = RandomTestUtil.randomBoolean();
 			}
 		};
 	}
@@ -1161,6 +2453,115 @@ public abstract class BaseObjectFieldResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1236,18 +2637,6 @@ public abstract class BaseObjectFieldResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseObjectFieldResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

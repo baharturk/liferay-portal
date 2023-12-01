@@ -1,15 +1,8 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import textMatchOverMultipleFields from '../../../src/main/resources/META-INF/resources/sxp_blueprint_admin/js/sxp_elements/textMatchOverMultipleFields';
 import {
 	DEFAULT_ADVANCED_CONFIGURATION,
 	DEFAULT_HIGHLIGHT_CONFIGURATION,
@@ -108,8 +101,6 @@ export const INDEX_FIELDS = [
 	},
 ];
 
-export const QUERY_SXP_ELEMENTS = [textMatchOverMultipleFields];
-
 export const INITIAL_CONFIGURATION = {
 	advancedConfiguration: DEFAULT_ADVANCED_CONFIGURATION,
 	aggregationConfiguration: {},
@@ -161,47 +152,75 @@ export function mockClassNames(prefix, isObject = true, itemCount = 10) {
 
 export function mockSearchResults(itemsPerPage = 10) {
 	const hits = [];
+	const documents = [];
 
-	for (var i = 1; i <= itemsPerPage; i++) {
+	for (let i = 1; i <= itemsPerPage; i++) {
 		const score = Math.random() * 100;
+
+		const fields = {
+			assetEntryId: [`4273${i}`],
+			classPK: ['0'],
+			content_en_US: ['Web Content'],
+			createDate: ['20211102190832'],
+			ddmTemplateKey: ['BASIC-WEB-CONTENT'],
+			defaultLanguageId: ['en_US'],
+			entryClassName: ['com.liferay.journal.model.JournalArticle'],
+			entryClassPK: ['40116'],
+			modified: ['20211102192146'],
+			scopeGroupId: ['20123'],
+			title_en_US: [`Article Number ${i}`],
+			userId: ['20127'],
+			userName: ['test test'],
+			visible: ['true'],
+		};
+
+		const documentFields = {};
+
+		documentFields['assetTitle'] = {values: [`Article Number ${i}`]};
+
+		Object.entries(fields).forEach(([key, value]) => {
+			documentFields[key] = {values: value};
+		});
 
 		hits.push({
 			_explanation: {},
 			_id: `com.liferay.journal.model.JournalArticle_PORTLET_${i}`,
 			_index: 'liferay-20099',
 			_score: score,
-			_type: 'LiferayDocumentType',
-			fields: {
-				classPK: ['0'],
-				content_en_US: ['Web Content'],
-				createDate: ['20211102190832'],
-				ddmTemplateKey: ['BASIC-WEB-CONTENT'],
-				defaultLanguageId: ['en_US'],
-				entryClassName: ['com.liferay.journal.model.JournalArticle'],
-				entryClassPK: ['40116'],
-				modified: ['20211102192146'],
-				scopeGroupId: ['20123'],
-				title_en_US: [`Article Number ${i}`],
-				userId: ['20127'],
-				userName: ['test test'],
-				visible: ['true'],
-			},
+			_type: '_doc',
+			fields,
+		});
+
+		documents.push({
+			documentFields,
+			explanation: '',
+			id: `com.liferay.journal.model.JournalArticle_PORTLET_${i}`,
+			score,
 		});
 	}
+
+	const response = {
+		hits: {
+			hits,
+			total: {
+				value: 2,
+			},
+		},
+		timed_out: false,
+	};
+
+	const searchHits = {
+		hits: documents,
+		maxScore: 65.878,
+		totalHits: 1000,
+	};
 
 	return {
 		page: 0,
 		pageSize: itemsPerPage,
 		requestString: '',
-		responseString: JSON.stringify({
-			hits: {
-				hits,
-				total: {
-					value: 2,
-				},
-			},
-			timed_out: false,
-		}),
-		totalHits: 1000,
+		response,
+		responseString: JSON.stringify(response),
+		searchHits,
 	};
 }

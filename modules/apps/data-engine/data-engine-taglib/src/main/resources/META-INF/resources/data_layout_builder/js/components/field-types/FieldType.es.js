@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayButtonWithIcon} from '@clayui/button';
@@ -18,7 +9,11 @@ import ClayLayout from '@clayui/layout';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import ClaySticker from '@clayui/sticker';
 import classnames from 'classnames';
-import {DRAG_TYPES} from 'data-engine-js-components-web';
+import {
+	DRAG_TYPES,
+	useSetKeyboardDNDSourceItem,
+} from 'data-engine-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 import {useDrag} from 'react-dnd';
 import {getEmptyImage} from 'react-dnd-html5-backend';
@@ -56,6 +51,8 @@ const FieldType = (props) => {
 		onDoubleClick,
 	} = props;
 
+	const setKeyboardDNDSourceItem = useSetKeyboardDNDSourceItem();
+
 	const [{dragging}, drag, preview] = useDrag({
 		canDrag: (_) => !disabled && draggable,
 		collect: (monitor) => ({
@@ -84,6 +81,17 @@ const FieldType = (props) => {
 		onDoubleClick?.({...props});
 	};
 
+	const handleOnKeyDown = (event) => {
+		if (event.key === ' ' || event.key === 'Enter') {
+			event.preventDefault();
+
+			setKeyboardDNDSourceItem({
+				dragType: 'add',
+				fieldType: props,
+			});
+		}
+	};
+
 	const [loading, setLoading] = useState(false);
 
 	const fieldIcon = ICONS[icon] ? ICONS[icon] : icon;
@@ -97,15 +105,27 @@ const FieldType = (props) => {
 				loading,
 			})}
 			data-field-type-name={name}
-			onClick={onClick && handleOnClick}
-			onDoubleClick={handleOnDoubleClick}
-			ref={drag}
+			onClick={!disabled && onClick ? handleOnClick : null}
+			onDoubleClick={disabled ? null : handleOnDoubleClick}
+			ref={disabled ? null : drag}
+			role="button"
 			title={label}
 			verticalAlign="center"
 		>
 			{draggable && dragAlignment === 'left' && (
 				<ClayLayout.ContentCol className="pl-2 pr-2">
-					<ClayIcon symbol="drag" />
+					<ClayButtonWithIcon
+						aria-label={sub(
+							Liferay.Language.get('press-enter-to-add-x-field'),
+							[label]
+						)}
+						disabled={disabled}
+						displayType="unstyled"
+						onKeyDown={disabled ? null : handleOnKeyDown}
+						role="application"
+						size="xs"
+						symbol="drag"
+					/>
 				</ClayLayout.ContentCol>
 			)}
 

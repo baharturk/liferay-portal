@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.service.base;
@@ -41,6 +32,8 @@ import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -58,8 +51,6 @@ import com.liferay.search.experiences.service.SXPBlueprintLocalServiceUtil;
 import com.liferay.search.experiences.service.persistence.SXPBlueprintPersistence;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -276,6 +267,23 @@ public abstract class SXPBlueprintLocalServiceBaseImpl
 			uuid, companyId, null);
 	}
 
+	@Override
+	public SXPBlueprint fetchSXPBlueprintByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return sxpBlueprintPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
+	public SXPBlueprint getSXPBlueprintByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return sxpBlueprintPersistence.findByERC_C(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the sxp blueprint with the primary key.
 	 *
@@ -451,6 +459,11 @@ public abstract class SXPBlueprintLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement SXPBlueprintLocalServiceImpl#deleteSXPBlueprint(SXPBlueprint) to avoid orphaned data");
+		}
+
 		return sxpBlueprintLocalService.deleteSXPBlueprint(
 			(SXPBlueprint)persistedModel);
 	}
@@ -531,7 +544,7 @@ public abstract class SXPBlueprintLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		SXPBlueprintLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -546,7 +559,7 @@ public abstract class SXPBlueprintLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		sxpBlueprintLocalService = (SXPBlueprintLocalService)aopProxy;
 
-		_setLocalServiceUtilService(sxpBlueprintLocalService);
+		SXPBlueprintLocalServiceUtil.setService(sxpBlueprintLocalService);
 	}
 
 	/**
@@ -591,22 +604,6 @@ public abstract class SXPBlueprintLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		SXPBlueprintLocalService sxpBlueprintLocalService) {
-
-		try {
-			Field field = SXPBlueprintLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, sxpBlueprintLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	protected SXPBlueprintLocalService sxpBlueprintLocalService;
 
 	@Reference
@@ -615,5 +612,8 @@ public abstract class SXPBlueprintLocalServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		SXPBlueprintLocalServiceBaseImpl.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.source.formatter;
@@ -30,12 +21,49 @@ import com.liferay.portal.tools.ArgumentsUtil;
 import com.liferay.portal.tools.GitException;
 import com.liferay.portal.tools.GitUtil;
 import com.liferay.portal.tools.ToolsUtil;
-import com.liferay.source.formatter.checks.configuration.ConfigurationLoader;
-import com.liferay.source.formatter.checks.configuration.SourceCheckConfiguration;
-import com.liferay.source.formatter.checks.configuration.SourceFormatterConfiguration;
-import com.liferay.source.formatter.checks.configuration.SourceFormatterSuppressions;
-import com.liferay.source.formatter.checks.configuration.SuppressionsLoader;
-import com.liferay.source.formatter.checks.util.SourceUtil;
+import com.liferay.source.formatter.check.configuration.ConfigurationLoader;
+import com.liferay.source.formatter.check.configuration.SourceCheckConfiguration;
+import com.liferay.source.formatter.check.configuration.SourceFormatterConfiguration;
+import com.liferay.source.formatter.check.configuration.SourceFormatterSuppressions;
+import com.liferay.source.formatter.check.configuration.SuppressionsLoader;
+import com.liferay.source.formatter.check.util.SourceUtil;
+import com.liferay.source.formatter.exception.SourceMismatchException;
+import com.liferay.source.formatter.processor.BNDRunSourceProcessor;
+import com.liferay.source.formatter.processor.BNDSourceProcessor;
+import com.liferay.source.formatter.processor.CETSourceProcessor;
+import com.liferay.source.formatter.processor.CQLSourceProcessor;
+import com.liferay.source.formatter.processor.CSSSourceProcessor;
+import com.liferay.source.formatter.processor.CodeownersSourceProcessor;
+import com.liferay.source.formatter.processor.ConfigSourceProcessor;
+import com.liferay.source.formatter.processor.DTDSourceProcessor;
+import com.liferay.source.formatter.processor.DockerfileSourceProcessor;
+import com.liferay.source.formatter.processor.FTLSourceProcessor;
+import com.liferay.source.formatter.processor.GradleSourceProcessor;
+import com.liferay.source.formatter.processor.GroovySourceProcessor;
+import com.liferay.source.formatter.processor.HTMLSourceProcessor;
+import com.liferay.source.formatter.processor.JSONSourceProcessor;
+import com.liferay.source.formatter.processor.JSPSourceProcessor;
+import com.liferay.source.formatter.processor.JSSourceProcessor;
+import com.liferay.source.formatter.processor.JavaSourceProcessor;
+import com.liferay.source.formatter.processor.LDIFSourceProcessor;
+import com.liferay.source.formatter.processor.LFRBuildSourceProcessor;
+import com.liferay.source.formatter.processor.LibrarySourceProcessor;
+import com.liferay.source.formatter.processor.MarkdownSourceProcessor;
+import com.liferay.source.formatter.processor.PackageinfoSourceProcessor;
+import com.liferay.source.formatter.processor.PoshiSourceProcessor;
+import com.liferay.source.formatter.processor.PropertiesSourceProcessor;
+import com.liferay.source.formatter.processor.PythonSourceProcessor;
+import com.liferay.source.formatter.processor.SHSourceProcessor;
+import com.liferay.source.formatter.processor.SQLSourceProcessor;
+import com.liferay.source.formatter.processor.SourceProcessor;
+import com.liferay.source.formatter.processor.SoySourceProcessor;
+import com.liferay.source.formatter.processor.TFSourceProcessor;
+import com.liferay.source.formatter.processor.TLDSourceProcessor;
+import com.liferay.source.formatter.processor.TSSourceProcessor;
+import com.liferay.source.formatter.processor.TXTSourceProcessor;
+import com.liferay.source.formatter.processor.UpgradeSourceProcessor;
+import com.liferay.source.formatter.processor.XMLSourceProcessor;
+import com.liferay.source.formatter.processor.YMLSourceProcessor;
 import com.liferay.source.formatter.util.CheckType;
 import com.liferay.source.formatter.util.DebugUtil;
 import com.liferay.source.formatter.util.FileUtil;
@@ -66,6 +94,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Hugo Huijser
@@ -99,6 +129,10 @@ public class SourceFormatter {
 					ArgumentsUtil.getString(
 						arguments, "source.check.names", null),
 					StringPool.COMMA));
+			sourceFormatterArgs.setCheckVulnerabilities(
+				ArgumentsUtil.getBoolean(
+					arguments, "check.vulnerabilities",
+					SourceFormatterArgs.CHECK_VULNERABILITIES));
 			sourceFormatterArgs.setFailOnAutoFix(
 				ArgumentsUtil.getBoolean(
 					arguments, "source.fail.on.auto.fix",
@@ -119,6 +153,10 @@ public class SourceFormatter {
 				ArgumentsUtil.getBoolean(
 					arguments, "format.local.changes",
 					SourceFormatterArgs.FORMAT_LOCAL_CHANGES));
+			sourceFormatterArgs.setUseCiGithubAccessToken(
+				ArgumentsUtil.getBoolean(
+					arguments, "use.ci.github.access.token",
+					SourceFormatterArgs.USE_CI_GITHUB_ACCESS_TOKEN));
 			sourceFormatterArgs.setGitWorkingBranchName(
 				ArgumentsUtil.getString(
 					arguments, "git.working.branch.name",
@@ -193,6 +231,10 @@ public class SourceFormatter {
 			sourceFormatterArgs.setIncludeSubrepositories(
 				includeSubrepositories);
 
+			sourceFormatterArgs.setJavaParserEnabled(
+				ArgumentsUtil.getBoolean(
+					arguments, "java.parser.enabled",
+					SourceFormatterArgs.JAVA_PARSER_ENABLED));
 			sourceFormatterArgs.setMaxLineLength(
 				ArgumentsUtil.getInteger(
 					arguments, "max.line.length",
@@ -285,6 +327,14 @@ public class SourceFormatter {
 			_validateCommitMessages();
 		}
 
+		if (!_sourceFormatterArgs.isJavaParserEnabled()) {
+			System.out.println(
+				StringBundler.concat(
+					"WARNING: Setting property 'java.parser.enabled' to ",
+					"'false' may prevent certain Java/JSP checks from working ",
+					"properly."));
+		}
+
 		_sourceProcessors.add(new BNDRunSourceProcessor());
 		_sourceProcessors.add(new BNDSourceProcessor());
 		_sourceProcessors.add(new CodeownersSourceProcessor());
@@ -293,7 +343,6 @@ public class SourceFormatter {
 		_sourceProcessors.add(new CSSSourceProcessor());
 		_sourceProcessors.add(new DockerfileSourceProcessor());
 		_sourceProcessors.add(new DTDSourceProcessor());
-		_sourceProcessors.add(new LFRBuildSourceProcessor());
 		_sourceProcessors.add(new FTLSourceProcessor());
 		_sourceProcessors.add(new GradleSourceProcessor());
 		_sourceProcessors.add(new GroovySourceProcessor());
@@ -302,6 +351,9 @@ public class SourceFormatter {
 		_sourceProcessors.add(new JSONSourceProcessor());
 		_sourceProcessors.add(new JSPSourceProcessor());
 		_sourceProcessors.add(new JSSourceProcessor());
+		_sourceProcessors.add(new LDIFSourceProcessor());
+		_sourceProcessors.add(new LFRBuildSourceProcessor());
+		_sourceProcessors.add(new LibrarySourceProcessor());
 		_sourceProcessors.add(new MarkdownSourceProcessor());
 		_sourceProcessors.add(new PackageinfoSourceProcessor());
 		_sourceProcessors.add(new PoshiSourceProcessor());
@@ -310,12 +362,15 @@ public class SourceFormatter {
 		_sourceProcessors.add(new SHSourceProcessor());
 		_sourceProcessors.add(new SoySourceProcessor());
 		_sourceProcessors.add(new SQLSourceProcessor());
+		_sourceProcessors.add(new TFSourceProcessor());
 		_sourceProcessors.add(new TLDSourceProcessor());
 		_sourceProcessors.add(new TSSourceProcessor());
 		_sourceProcessors.add(new TXTSourceProcessor());
 		_sourceProcessors.add(new UpgradeSourceProcessor());
 		_sourceProcessors.add(new XMLSourceProcessor());
 		_sourceProcessors.add(new YMLSourceProcessor());
+
+		_sourceProcessors.add(new CETSourceProcessor());
 
 		ExecutorService executorService = Executors.newFixedThreadPool(
 			_sourceProcessors.size());
@@ -560,6 +615,13 @@ public class SourceFormatter {
 						"/portal-impl/src/com/liferay/portlet/social/util" +
 							"/SocialConfigurationImpl.java");
 			}
+			else if (_isFrontendPackageChanges(recentChangesFileName)) {
+				dependentFileNames.addAll(
+					SourceFormatterUtil.filterFileNames(
+						_allFileNames, new String[0],
+						new String[] {"**/package.json"},
+						_sourceFormatterExcludes, false));
+			}
 		}
 
 		if (_sourceFormatterArgs.isFormatCurrentBranch()) {
@@ -594,6 +656,15 @@ public class SourceFormatter {
 							"**/source-formatter-suppressions.xml"
 						},
 						_sourceFormatterExcludes, false));
+			}
+
+			if (_isFeatureFlagChanges()) {
+				File portalDir = SourceFormatterUtil.getPortalDir(
+					_sourceFormatterArgs.getBaseDirName(),
+					_sourceFormatterArgs.getMaxLineLength());
+
+				dependentFileNames.add(
+					portalDir + "/portal-impl/src/portal.properties");
 			}
 		}
 
@@ -695,7 +766,7 @@ public class SourceFormatter {
 		}
 
 		return StringBundler.concat(
-			"Found ", index - 1, " formatting issues:\n", sb.toString());
+			"Found ", index - 1, " formatting issues:\n", sb);
 	}
 
 	private List<ExcludeSyntaxPattern> _getExcludeSyntaxPatterns(
@@ -929,7 +1000,6 @@ public class SourceFormatter {
 				new ExcludeSyntaxPattern(ExcludeSyntax.GLOB, "**/.m2/**"),
 				new ExcludeSyntaxPattern(ExcludeSyntax.GLOB, "**/.settings/**"),
 				new ExcludeSyntaxPattern(ExcludeSyntax.GLOB, "**/bin/**"),
-				new ExcludeSyntaxPattern(ExcludeSyntax.GLOB, "**/build/**"),
 				new ExcludeSyntaxPattern(ExcludeSyntax.GLOB, "**/classes/**"),
 				new ExcludeSyntaxPattern(
 					ExcludeSyntax.GLOB, "**/liferay-theme.json"),
@@ -947,17 +1017,31 @@ public class SourceFormatter {
 				new ExcludeSyntaxPattern(
 					ExcludeSyntax.GLOB, "**/node_modules_cache/**"),
 				new ExcludeSyntaxPattern(
+					ExcludeSyntax.GLOB,
+					"**/test*/**/dependencies/*.[jlw]ar/**"),
+				new ExcludeSyntaxPattern(
+					ExcludeSyntax.GLOB, "**/test*/**/dependencies/*.zip/**"),
+				new ExcludeSyntaxPattern(
 					ExcludeSyntax.REGEX,
-					"^((?!/frontend-js-node-shims/src/).)*/node_modules/.*")));
+					".*/frontend-theme-unstyled/.*/_unstyled/css/clay/.+"),
+				new ExcludeSyntaxPattern(
+					ExcludeSyntax.REGEX,
+					".*/frontend-theme-unstyled/.*/_unstyled/images/(aui|" +
+						"clay|lexicon)/.+"),
+				new ExcludeSyntaxPattern(
+					ExcludeSyntax.REGEX,
+					"^((?!/frontend-js-node-shims/src/).)*/node_modules/.*"),
+				new ExcludeSyntaxPattern(
+					ExcludeSyntax.REGEX,
+					".*(?<!/gradle-plugins-source-formatter)/build/.*")));
 
 		_portalSource = _containsDir("portal-impl");
 
 		if (_portalSource) {
-			File portalDir = SourceFormatterUtil.getPortalDir(
-				_sourceFormatterArgs.getBaseDirName(),
-				_sourceFormatterArgs.getMaxLineLength());
-
-			_excludeWorkingDirCheckoutPrivateApps(portalDir);
+			_excludeWorkingDirCheckoutPrivateApps(
+				SourceFormatterUtil.getPortalDir(
+					_sourceFormatterArgs.getBaseDirName(),
+					_sourceFormatterArgs.getMaxLineLength()));
 		}
 
 		_propertiesMap = new HashMap<>();
@@ -972,7 +1056,7 @@ public class SourceFormatter {
 			parentDirName += "../";
 		}
 
-		_allFileNames = SourceFormatterUtil.scanForFiles(
+		_allFileNames = SourceFormatterUtil.scanForFileNames(
 			_sourceFormatterArgs.getBaseDirName(), new String[0],
 			new String[] {
 				"**/*.*", "**/CODEOWNERS", "**/Dockerfile", "**/packageinfo"
@@ -1031,12 +1115,12 @@ public class SourceFormatter {
 
 		_projectPathPrefix = _getProjectPathPrefix();
 
-		List<File> suppressionsFiles = SourceFormatterUtil.getSuppressionsFiles(
-			_sourceFormatterArgs.getBaseDirName(), _allFileNames,
-			_sourceFormatterExcludes, _sourceFormatterArgs.getMaxDirLevel());
-
 		_sourceFormatterSuppressions = SuppressionsLoader.loadSuppressions(
-			_sourceFormatterArgs.getBaseDirName(), suppressionsFiles,
+			_sourceFormatterArgs.getBaseDirName(),
+			SourceFormatterUtil.getSuppressionsFiles(
+				_sourceFormatterArgs.getBaseDirName(), _allFileNames,
+				_sourceFormatterExcludes,
+				_sourceFormatterArgs.getMaxDirLevel()),
 			_propertiesMap);
 
 		_sourceFormatterConfiguration = ConfigurationLoader.loadConfiguration(
@@ -1045,6 +1129,43 @@ public class SourceFormatter {
 		if (_sourceFormatterArgs.isShowDebugInformation()) {
 			DebugUtil.addCheckNames(CheckType.SOURCE_CHECK, _getCheckNames());
 		}
+	}
+
+	private boolean _isFeatureFlagChanges() throws Exception {
+		String currentBranchDiff = GitUtil.getCurrentBranchDiff(
+			_sourceFormatterArgs.getBaseDirName(),
+			_sourceFormatterArgs.getGitWorkingBranchName());
+
+		for (String line : StringUtil.split(currentBranchDiff, "\n")) {
+			if ((line.startsWith(StringPool.MINUS) ||
+				 line.startsWith(StringPool.PLUS)) &&
+				(line.contains("feature.flag") ||
+				 line.contains("FeatureFlagManagerUtil.isEnabled(") ||
+				 line.contains("Liferay-Site-Initializer-Feature-Flag:") ||
+				 line.contains("Liferay.FeatureFlags['") ||
+				 line.contains("\"featureFlag\": \""))) {
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private boolean _isFrontendPackageChanges(String recentChangesFileName) {
+		if (recentChangesFileName.endsWith(
+				"/modules/apps/frontend-js/frontend-js-react-web" +
+					"/package.json") ||
+			recentChangesFileName.endsWith(
+				"/modules/apps/frontend-js/frontend-js-spa-web/package.json") ||
+			recentChangesFileName.endsWith(
+				"/modules/apps/frontend-taglib/frontend-taglib-clay" +
+					"/package.json")) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	private boolean _isSubrepository() throws Exception {
@@ -1174,11 +1295,30 @@ public class SourceFormatter {
 
 		JIRAUtil.validateJIRAProjectNames(
 			commitMessages, _getPropertyValues("jira.project.keys"));
-		JIRAUtil.validateJIRATicketIds(commitMessages, 20);
 
-		JIRAUtil.validateJIRASecurityKeywords(
-			commitMessages,
-			_getPropertyValues("jira.security.vulnerability.keywords"), 20);
+		for (String commitMessage : commitMessages) {
+			String[] parts = commitMessage.split(":", 2);
+
+			for (String keyword :
+					_getPropertyValues("git.commit.vulnerability.keywords")) {
+
+				Pattern pattern = Pattern.compile(
+					"\\b_*(" + keyword + ")_*\\b", Pattern.CASE_INSENSITIVE);
+
+				Matcher matcher = pattern.matcher(parts[1]);
+
+				if (matcher.find()) {
+					throw new Exception(
+						StringBundler.concat(
+							"Found formatting issues in SHA ", parts[0], ":\n",
+							"The commit message contains the word '", keyword,
+							"', which could reveal potential security ",
+							"vulnerablities. Please see the vulnerability ",
+							"keywords that are specified in source-formatter.",
+							"properties in the liferay-portal repository."));
+				}
+			}
+		}
 	}
 
 	private static final String _PROPERTIES_FILE_NAME =

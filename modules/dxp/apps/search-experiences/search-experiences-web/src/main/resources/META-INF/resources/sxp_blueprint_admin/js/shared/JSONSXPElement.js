@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -19,8 +13,9 @@ import getCN from 'classnames';
 import {PropTypes} from 'prop-types';
 import React, {useContext, useEffect, useState} from 'react';
 
+import sxpElementSchema from '../../schemas/sxp-query-element.schema.json';
 import {DEFAULT_SXP_ELEMENT_ICON} from '../utils/data';
-import {getLocalizedText} from '../utils/language';
+import getSXPElementTitleAndDescription from '../utils/sxp_element/get_sxp_element_title_and_description';
 import ThemeContext from './ThemeContext';
 import JSONInput from './sxp_element/JSONInput';
 
@@ -33,8 +28,9 @@ function JSONSXPElement({
 	isSubmitting,
 	onDeleteSXPElement,
 	prefixedId,
-	setFieldTouched,
-	setFieldValue,
+	readOnly,
+	setFieldTouched = () => {},
+	setFieldValue = () => {},
 	touched = {},
 	uiConfigurationValues = {},
 }) {
@@ -43,8 +39,10 @@ function JSONSXPElement({
 	const [active, setActive] = useState(false);
 	const [collapse, setCollapse] = useState(collapseAll);
 
-	const description = getLocalizedText(sxpElement.description_i18n, locale);
-	const title = getLocalizedText(sxpElement.title_i18n, locale);
+	const [title, description] = getSXPElementTitleAndDescription(
+		sxpElement,
+		locale
+	);
 
 	useEffect(() => {
 		setCollapse(collapseAll);
@@ -86,32 +84,34 @@ function JSONSXPElement({
 						)}
 					</ClayList.ItemField>
 
-					<ClayDropDown
-						active={active}
-						alignmentPosition={3}
-						onActiveChange={setActive}
-						trigger={
-							<ClayList.ItemField>
-								<ClayButton
-									aria-label={Liferay.Language.get(
-										'dropdown'
-									)}
-									className="component-action"
-									displayType="unstyled"
+					{onDeleteSXPElement && (
+						<ClayDropDown
+							active={active}
+							alignmentPosition={3}
+							onActiveChange={setActive}
+							trigger={
+								<ClayList.ItemField>
+									<ClayButton
+										aria-label={Liferay.Language.get(
+											'dropdown'
+										)}
+										className="component-action"
+										displayType="unstyled"
+									>
+										<ClayIcon symbol="ellipsis-v" />
+									</ClayButton>
+								</ClayList.ItemField>
+							}
+						>
+							<ClayDropDown.ItemList>
+								<ClayDropDown.Item
+									onClick={() => onDeleteSXPElement(id)}
 								>
-									<ClayIcon symbol="ellipsis-v" />
-								</ClayButton>
-							</ClayList.ItemField>
-						}
-					>
-						<ClayDropDown.ItemList>
-							<ClayDropDown.Item
-								onClick={() => onDeleteSXPElement(id)}
-							>
-								{Liferay.Language.get('remove')}
-							</ClayDropDown.Item>
-						</ClayDropDown.ItemList>
-					</ClayDropDown>
+									{Liferay.Language.get('remove')}
+								</ClayDropDown.Item>
+							</ClayDropDown.ItemList>
+						</ClayDropDown>
+					)}
 
 					<ClayList.ItemField>
 						<ClayButton
@@ -143,8 +143,10 @@ function JSONSXPElement({
 					})}
 				>
 					<JSONInput
+						autocompleteSchema={sxpElementSchema}
 						disabled={isSubmitting}
 						name={_inputName(index)}
+						readOnly={readOnly}
 						setFieldTouched={setFieldTouched}
 						setFieldValue={setFieldValue}
 						value={
@@ -176,6 +178,7 @@ JSONSXPElement.propTypes = {
 	isSubmitting: PropTypes.bool,
 	onDeleteSXPElement: PropTypes.func,
 	prefixedId: PropTypes.string,
+	readOnly: PropTypes.bool,
 	setFieldTouched: PropTypes.func,
 	setFieldValue: PropTypes.func,
 	sxpElement: PropTypes.object,

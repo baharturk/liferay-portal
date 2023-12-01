@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.web.internal.display.context;
@@ -18,20 +9,18 @@ import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.service.FragmentCollectionServiceUtil;
 import com.liferay.fragment.web.internal.util.FragmentPortletUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PortalInstances;
-
-import java.util.List;
 
 import javax.portlet.PortletURL;
 import javax.portlet.RenderRequest;
@@ -89,16 +78,13 @@ public class FragmentCollectionsDisplayContext {
 		SearchContainer<FragmentCollection> searchContainer =
 			new SearchContainer(
 				_renderRequest, _getPortletURL(), null,
-				"there-are-no-collections");
+				"there-are-no-fragment-sets");
 
 		searchContainer.setOrderByCol(_getOrderByCol());
 		searchContainer.setOrderByComparator(
 			FragmentPortletUtil.getFragmentCollectionOrderByComparator(
 				_getOrderByCol(), getOrderByType()));
 		searchContainer.setOrderByType(getOrderByType());
-
-		List<FragmentCollection> fragmentCollections = null;
-		int fragmentCollectionsCount = 0;
 
 		long[] groupIds = {themeDisplay.getScopeGroupId()};
 
@@ -117,33 +103,29 @@ public class FragmentCollectionsDisplayContext {
 			groupIds = ArrayUtil.append(groupIds, CompanyConstants.SYSTEM);
 		}
 
-		if (_isSearch()) {
-			fragmentCollections =
-				FragmentCollectionServiceUtil.getFragmentCollections(
-					groupIds, _getKeywords(), searchContainer.getStart(),
-					searchContainer.getEnd(),
-					searchContainer.getOrderByComparator());
+		long[] allGroupIds = groupIds;
 
-			fragmentCollectionsCount =
+		if (_isSearch()) {
+			searchContainer.setResultsAndTotal(
+				() -> FragmentCollectionServiceUtil.getFragmentCollections(
+					allGroupIds, _getKeywords(), searchContainer.getStart(),
+					searchContainer.getEnd(),
+					searchContainer.getOrderByComparator()),
 				FragmentCollectionServiceUtil.getFragmentCollectionsCount(
-					groupIds, _getKeywords());
+					allGroupIds, _getKeywords()));
 		}
 		else {
-			fragmentCollections =
-				FragmentCollectionServiceUtil.getFragmentCollections(
-					groupIds, searchContainer.getStart(),
+			searchContainer.setResultsAndTotal(
+				() -> FragmentCollectionServiceUtil.getFragmentCollections(
+					allGroupIds, searchContainer.getStart(),
 					searchContainer.getEnd(),
-					searchContainer.getOrderByComparator());
-
-			fragmentCollectionsCount =
+					searchContainer.getOrderByComparator()),
 				FragmentCollectionServiceUtil.getFragmentCollectionsCount(
-					groupIds);
+					allGroupIds));
 		}
 
-		searchContainer.setResults(fragmentCollections);
 		searchContainer.setRowChecker(
 			new EmptyOnClickRowChecker(_renderResponse));
-		searchContainer.setTotal(fragmentCollectionsCount);
 
 		_searchContainer = searchContainer;
 

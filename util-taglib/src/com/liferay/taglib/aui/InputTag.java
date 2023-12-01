@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.aui;
 
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.servlet.taglib.aui.ValidatorTag;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -54,7 +46,17 @@ public class InputTag extends BaseInputTag {
 		addModelValidatorTags();
 
 		if (getRequired()) {
-			addRequiredValidatorTag();
+			String label = getLabel();
+
+			if (label == null) {
+				label = LanguageUtil.get(
+					getRequest(),
+					TextFormatter.format(getName(), TextFormatter.K));
+			}
+
+			addRequiredValidatorTag(
+				LanguageUtil.format(
+					getRequest(), "the-x-field-is-required", label));
 		}
 
 		return super.doStartTag();
@@ -77,9 +79,7 @@ public class InputTag extends BaseInputTag {
 
 				baseType = type;
 			}
-			else if (Objects.equals(type, "toggle-card") ||
-					 Objects.equals(type, "toggle-switch")) {
-
+			else if (Objects.equals(type, "toggle-switch")) {
 				baseType = "checkbox";
 			}
 		}
@@ -150,6 +150,21 @@ public class InputTag extends BaseInputTag {
 			String validatorErrorMessage = (String)modelValidator.getObject(2);
 			String validatorValue = (String)modelValidator.getObject(3);
 			boolean customValidator = (Boolean)modelValidator.getObject(4);
+
+			if (Objects.equals(validatorName, "required") &&
+				Validator.isNull(validatorErrorMessage)) {
+
+				String label = getLabel();
+
+				if (label == null) {
+					label = LanguageUtil.get(
+						getRequest(),
+						TextFormatter.format(getName(), TextFormatter.K));
+				}
+
+				validatorErrorMessage = LanguageUtil.format(
+					getRequest(), "the-x-field-is-required", label);
+			}
 
 			ValidatorTag validatorTag = new ValidatorTagImpl(
 				validatorName, validatorErrorMessage, validatorValue,
@@ -236,9 +251,7 @@ public class InputTag extends BaseInputTag {
 
 				id = AUIUtil.normalizeId(fieldParam);
 			}
-			else if (!Objects.equals(type, "assetTags") &&
-					 !Objects.equals(type, "radio")) {
-
+			else if (!Objects.equals(type, "radio")) {
 				id = AUIUtil.normalizeId(name);
 			}
 			else {
@@ -249,10 +262,6 @@ public class InputTag extends BaseInputTag {
 		}
 
 		String forLabel = id;
-
-		if (Objects.equals(type, "assetTags")) {
-			forLabel = forLabel.concat("assetTagNames");
-		}
 
 		String languageId = getLanguageId();
 

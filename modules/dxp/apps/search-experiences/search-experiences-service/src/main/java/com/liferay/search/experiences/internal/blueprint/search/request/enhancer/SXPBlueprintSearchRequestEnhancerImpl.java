@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.internal.blueprint.search.request.enhancer;
@@ -19,7 +10,7 @@ import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -27,6 +18,8 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.aggregation.Aggregations;
+import com.liferay.portal.search.collapse.CollapseBuilderFactory;
+import com.liferay.portal.search.collapse.InnerHitBuilderFactory;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
 import com.liferay.portal.search.geolocation.GeoBuilders;
 import com.liferay.portal.search.highlight.FieldConfigBuilderFactory;
@@ -57,6 +50,7 @@ import com.liferay.search.experiences.internal.blueprint.search.request.body.con
 import com.liferay.search.experiences.internal.blueprint.search.request.body.contributor.SXPSearchRequestBodyContributor;
 import com.liferay.search.experiences.internal.blueprint.search.request.body.contributor.SortSXPSearchRequestBodyContributor;
 import com.liferay.search.experiences.internal.blueprint.search.request.body.contributor.SuggestSXPSearchRequestBodyContributor;
+import com.liferay.search.experiences.internal.blueprint.sort.SortConverter;
 import com.liferay.search.experiences.rest.dto.v1_0.Configuration;
 import com.liferay.search.experiences.rest.dto.v1_0.ElementDefinition;
 import com.liferay.search.experiences.rest.dto.v1_0.ElementInstance;
@@ -88,10 +82,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Petteri Karttunen
  */
-@Component(
-	enabled = false, immediate = true,
-	service = SXPBlueprintSearchRequestEnhancer.class
-)
+@Component(enabled = false, service = SXPBlueprintSearchRequestEnhancer.class)
 public class SXPBlueprintSearchRequestEnhancerImpl
 	implements SXPBlueprintSearchRequestEnhancer {
 
@@ -117,11 +108,17 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 	protected void activate() {
 		HighlightConverter highlightConverter = new HighlightConverter(
 			_fieldConfigBuilderFactory, _highlightBuilderFactory);
+
 		QueryConverter queryConverter = new QueryConverter(_queries);
 		ScriptConverter scriptConverter = new ScriptConverter(_scripts);
 
+		SortConverter sortConverter = new SortConverter(
+			_geoBuilders, queryConverter, scriptConverter, _sorts);
+
 		_sxpSearchRequestBodyContributors = Arrays.asList(
-			new AdvancedSXPSearchRequestBodyContributor(),
+			new AdvancedSXPSearchRequestBodyContributor(
+				_collapseBuilderFactory, _innerHitBuilderFactory,
+				sortConverter),
 			new AggsSXPSearchRequestBodyContributor(
 				_aggregations, _geoBuilders, highlightConverter, queryConverter,
 				scriptConverter, _significanceHeuristics, _sorts),
@@ -131,8 +128,7 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 				_complexQueryPartBuilderFactory, queryConverter,
 				_rescoreBuilderFactory),
 			new SuggestSXPSearchRequestBodyContributor(),
-			new SortSXPSearchRequestBodyContributor(
-				_geoBuilders, queryConverter, scriptConverter, _sorts));
+			new SortSXPSearchRequestBodyContributor(sortConverter));
 	}
 
 	private void _contributeSXPSearchRequestBodyContributors(
@@ -463,12 +459,12 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 				fields.add(_toFieldMappingString((JSONObject)item));
 			}
 
-			return JSONFactoryUtil.createJSONArray(fields);
+			return _jsonFactory.createJSONArray(fields);
 		}
 
 		if ((value instanceof String) && Objects.equals(type, "json")) {
 			try {
-				return JSONFactoryUtil.createJSONObject((String)value);
+				return _jsonFactory.createJSONObject((String)value);
 			}
 			catch (JSONException jsonException) {
 				return ReflectionUtil.throwException(jsonException);
@@ -492,6 +488,9 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 	private Aggregations _aggregations;
 
 	@Reference
+	private CollapseBuilderFactory _collapseBuilderFactory;
+
+	@Reference
 	private ComplexQueryPartBuilderFactory _complexQueryPartBuilderFactory;
 
 	@Reference
@@ -505,6 +504,12 @@ public class SXPBlueprintSearchRequestEnhancerImpl
 
 	@Reference
 	private HighlightBuilderFactory _highlightBuilderFactory;
+
+	@Reference
+	private InnerHitBuilderFactory _innerHitBuilderFactory;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Queries _queries;

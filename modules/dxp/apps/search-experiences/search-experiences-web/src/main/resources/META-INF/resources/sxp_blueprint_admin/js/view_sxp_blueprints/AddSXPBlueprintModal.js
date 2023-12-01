@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -17,15 +11,16 @@ import getCN from 'classnames';
 import {fetch, navigate} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
-import {DEFAULT_ERROR} from '../utils/constants';
 import {
 	DEFAULT_ADVANCED_CONFIGURATION,
 	DEFAULT_HIGHLIGHT_CONFIGURATION,
 	DEFAULT_PARAMETER_CONFIGURATION,
 	DEFAULT_SORT_CONFIGURATION,
 } from '../utils/data';
-import {fetchData} from '../utils/fetch';
-import {filterAndSortClassNames} from '../utils/utils';
+import {DEFAULT_ERROR} from '../utils/errorMessages';
+import fetchData, {DEFAULT_HEADERS} from '../utils/fetch/fetch_data';
+import filterAndSortClassNames from '../utils/functions/filter_and_sort_class_names';
+import {setInitialSuccessToast} from '../utils/toasts';
 
 const ADD_EVENT = 'addSXPBlueprint';
 
@@ -75,9 +70,7 @@ const AddModal = ({
 				elementInstances: [],
 				title_i18n: {[defaultLocale]: titleInputValue},
 			}),
-			headers: new Headers({
-				'Content-Type': 'application/json',
-			}),
+			headers: DEFAULT_HEADERS,
 			method: 'POST',
 		})
 			.then((response) => {
@@ -88,26 +81,40 @@ const AddModal = ({
 				return response.json();
 			})
 			.then((responseContent) => {
-				if (isMounted()) {
-					if (responseContent.error) {
-						_handleFormError(responseContent);
+				if (!isMounted()) {
+					return;
+				}
+
+				if (responseContent.error) {
+					_handleFormError(responseContent);
+				}
+				else {
+					onClose();
+
+					if (responseContent.id) {
+						const url = new URL(editSXPBlueprintURL);
+
+						url.searchParams.set(
+							`${portletNamespace}sxpBlueprintId`,
+							responseContent.id
+						);
+
+						setInitialSuccessToast(
+							Liferay.Language.get(
+								'the-blueprint-was-created-successfully'
+							)
+						);
+
+						navigate(url);
 					}
 					else {
-						onClose();
+						setInitialSuccessToast(
+							Liferay.Language.get(
+								'the-blueprint-was-created-successfully'
+							)
+						);
 
-						if (responseContent.id) {
-							const url = new URL(editSXPBlueprintURL);
-
-							url.searchParams.set(
-								`${portletNamespace}sxpBlueprintId`,
-								responseContent.id
-							);
-
-							navigate(url);
-						}
-						else {
-							navigate(window.location.href);
-						}
+						navigate(window.location.href);
 					}
 				}
 			})
@@ -120,7 +127,7 @@ const AddModal = ({
 
 	return (
 		<ClayModal
-			className="sxp-blueprint-edit-title-modal"
+			className="sxp-add-blueprint-modal-root"
 			observer={observer}
 			size="md"
 		>
@@ -139,7 +146,7 @@ const AddModal = ({
 							className="control-label"
 							htmlFor={`${portletNamespace}title`}
 						>
-							{Liferay.Language.get('name')}
+							{Liferay.Language.get('title')}
 
 							<span className="reference-mark">
 								<ClayIcon symbol="asterisk" />
@@ -291,13 +298,11 @@ export function AddSXPBlueprintModal({
 					'/o/search-experiences-rest/v1.0/query-prefilter-contributors',
 			},
 		].forEach(({setProperty, url}) =>
-			fetchData(
-				url,
-				{method: 'GET'},
-				(responseContent) =>
-					setProperty(filterAndSortClassNames(responseContent.items)),
-				() => setProperty([])
-			)
+			fetchData(url)
+				.then((responseContent) =>
+					setProperty(filterAndSortClassNames(responseContent.items))
+				)
+				.catch(() => setProperty([]))
 		);
 	}, []); //eslint-disable-line
 

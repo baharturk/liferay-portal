@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.web.internal.portlet.action;
@@ -28,7 +19,7 @@ import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
@@ -48,7 +39,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"javax.portlet.name=" + CPPortletKeys.COMMERCE_PAYMENT_METHODS,
 		"mvc.command.name=/commerce_payment_methods/edit_commerce_payment_method_group_rel"
@@ -123,14 +113,13 @@ public class EditCommercePaymentMethodGroupRelMVCActionCommand
 		UploadPortletRequest uploadPortletRequest =
 			_portal.getUploadPortletRequest(actionRequest);
 
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "nameMapAsXML");
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(
-				actionRequest, "descriptionMapAsXML");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "descriptionMapAsXML");
+		boolean active = ParamUtil.getBoolean(actionRequest, "active");
 		File imageFile = uploadPortletRequest.getFile("imageFile");
 		double priority = ParamUtil.getDouble(actionRequest, "priority");
-		boolean active = ParamUtil.getBoolean(actionRequest, "active");
 
 		long commercePaymentMethodGroupRelId = ParamUtil.getLong(
 			actionRequest, "commercePaymentMethodGroupRelId");
@@ -149,8 +138,8 @@ public class EditCommercePaymentMethodGroupRelMVCActionCommand
 				_commercePaymentMethodGroupRelService.
 					addCommercePaymentMethodGroupRel(
 						commerceChannel.getGroupId(), nameMap, descriptionMap,
-						imageFile, commercePaymentMethodEngineKey, priority,
-						active);
+						active, imageFile, commercePaymentMethodEngineKey,
+						priority, null);
 		}
 		else {
 			commercePaymentMethodGroupRel =
@@ -169,6 +158,9 @@ public class EditCommercePaymentMethodGroupRelMVCActionCommand
 	@Reference
 	private CommercePaymentMethodGroupRelService
 		_commercePaymentMethodGroupRelService;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

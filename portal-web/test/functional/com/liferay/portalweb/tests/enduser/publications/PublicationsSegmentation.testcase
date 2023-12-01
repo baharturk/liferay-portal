@@ -1,22 +1,23 @@
 @component-name = "portal-publications"
 definition {
 
+	property osgi.module.configuration.file.names = "com.liferay.change.tracking.configuration.CTSettingsConfiguration.config";
+	property osgi.module.configurations = "enabled=B\"true\"";
 	property portal.release = "true";
 	property portal.upstream = "true";
+	property testray.component.names = "Segmentation";
 	property testray.main.component.name = "Publications";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
-
-		JSONPublications.enablePublications();
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -25,9 +26,11 @@ definition {
 	}
 
 	@description = "Assert we can publish a publication with an edited Segment."
-	@priority = "4"
+	@priority = 4
 	test CanPublishEditedSegment {
-		Segmentation.openSegmentsAdmin(siteURLKey = "guest");
+		HeadlessSite.addSite(siteName = "Site Name");
+
+		Segmentation.openSegmentsAdmin(siteURLKey = "site-name");
 
 		LexiconEntry.gotoAdd();
 
@@ -51,11 +54,11 @@ definition {
 
 		Button.clickSave();
 
-		JSONPublications.publishPublication(publicationName = "Publication Name");
+		Publications.publishPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name");
 
-		Publications.viewPublicationPublished(publicationName = "Publication Name");
-
-		Segmentation.openSegmentsAdmin(siteURLKey = "guest");
+		Segmentation.openSegmentsAdmin(siteURLKey = "site-name");
 
 		AssertElementPresent(
 			key_tableEntry = "Edited Segment Title",
@@ -63,7 +66,7 @@ definition {
 	}
 
 	@description = "Assert we can publish a publication with a Segment and Page Experience."
-	@priority = "4"
+	@priority = 4
 	test CanPublishWithSegmentAndPageExperience {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
 
@@ -86,12 +89,14 @@ definition {
 
 		JSONPublications.selectPublication(publicationName = "Publication Name");
 
+		HeadlessSite.addSite(siteName = "Site Name");
+
 		JSONLayout.addPublicLayout(
-			groupName = "Guest",
+			groupName = "Site Name",
 			layoutName = "Experience Content Page",
 			type = "content");
 
-		Segmentation.openSegmentsAdmin(siteURLKey = "guest");
+		Segmentation.openSegmentsAdmin(siteURLKey = "site-name");
 
 		LexiconEntry.gotoAdd();
 
@@ -105,7 +110,7 @@ definition {
 
 		Button.clickSave();
 
-		Navigator.openWithAppendToBaseURL(urlAppend = "web/guest/experience-content-page");
+		Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name/experience-content-page");
 
 		ContentPages.gotoPageEditor();
 
@@ -130,17 +135,17 @@ definition {
 
 		PageEditor.prioritizeExperience(experienceName = "New Experience");
 
-		PageEditor.clickPublish();
+		PageEditor.publish();
 
-		JSONPublications.publishPublication(publicationName = "Publication Name");
-
-		Publications.viewPublicationPublished(publicationName = "Publication Name");
+		Publications.publishPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name");
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "userea@liferay.com",
 			userLoginFullName = "userfn userln");
 
-		Navigator.openWithAppendToBaseURL(urlAppend = "web/guest/experience-content-page");
+		Navigator.openWithAppendToBaseURL(urlAppend = "web/site-name/experience-content-page");
 
 		AssertTextEquals(
 			locator1 = "Experience#FRAGMENT_HEADING",
@@ -148,9 +153,11 @@ definition {
 	}
 
 	@description = "Assert we can resolve conflicting Segment changes by discarding."
-	@priority = "4"
+	@priority = 4
 	test CanResolveConflictingPublicationsByDiscarding {
-		Segmentation.openSegmentsAdmin(siteURLKey = "guest");
+		HeadlessSite.addSite(siteName = "Site Name");
+
+		Segmentation.openSegmentsAdmin(siteURLKey = "site-name");
 
 		LexiconEntry.gotoAdd();
 
@@ -180,9 +187,9 @@ definition {
 
 		Segmentation.deleteSegment(entry = "Segment Title");
 
-		JSONPublications.publishPublication(publicationName = "Publication Name 2");
-
-		Publications.viewPublicationPublished(publicationName = "Publication Name 2");
+		Publications.publishPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name 2");
 
 		Publications.selectPublication(publicationName = "Publication Name 1");
 
@@ -190,13 +197,13 @@ definition {
 
 		Publications.viewNeedsManualResolution(
 			entryTitle = "Segments Entry",
-			warningMessage = "Deletion Modification Conflict: Modification conflicts with a deletion.");
+			warningMessage = "Missing Entity");
 
-		PublicationsNavigator.gotoViewChangeDiffInConflictingPublications(entryTitle = "Segments Entry");
+		PublicationsNavigator.gotoViewConflictingChangeDetails(entryTitle = "Edited Segment Title");
 
 		PublicationsChanges.discardChanges(
-			changeCategory = "Asset",
-			changeTitle = "Segments Entry",
+			changeCategory = "Segments Entry",
+			changeTitle = "Edited Segment Title",
 			conflictingChanges = "true",
 			entryTitle = "Segments Entry");
 	}

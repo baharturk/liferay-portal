@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shop.by.diagram.service.base;
@@ -17,14 +8,13 @@ package com.liferay.commerce.shop.by.diagram.service.base;
 import com.liferay.commerce.shop.by.diagram.model.CSDiagramSetting;
 import com.liferay.commerce.shop.by.diagram.service.CSDiagramSettingLocalService;
 import com.liferay.commerce.shop.by.diagram.service.CSDiagramSettingLocalServiceUtil;
-import com.liferay.commerce.shop.by.diagram.service.persistence.CSDiagramEntryPersistence;
-import com.liferay.commerce.shop.by.diagram.service.persistence.CSDiagramPinPersistence;
 import com.liferay.commerce.shop.by.diagram.service.persistence.CSDiagramSettingPersistence;
 import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
 import com.liferay.exportimport.kernel.lar.ManifestSummary;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
@@ -40,20 +30,22 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -415,6 +407,11 @@ public abstract class CSDiagramSettingLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement CSDiagramSettingLocalServiceImpl#deleteCSDiagramSetting(CSDiagramSetting) to avoid orphaned data");
+		}
+
 		return csDiagramSettingLocalService.deleteCSDiagramSetting(
 			(CSDiagramSetting)persistedModel);
 	}
@@ -497,14 +494,14 @@ public abstract class CSDiagramSettingLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		CSDiagramSettingLocalServiceUtil.setService(null);
 	}
 
 	@Override
 	public Class<?>[] getAopInterfaces() {
 		return new Class<?>[] {
 			CSDiagramSettingLocalService.class, IdentifiableOSGiService.class,
-			PersistedModelLocalService.class
+			CTService.class, PersistedModelLocalService.class
 		};
 	}
 
@@ -512,7 +509,8 @@ public abstract class CSDiagramSettingLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		csDiagramSettingLocalService = (CSDiagramSettingLocalService)aopProxy;
 
-		_setLocalServiceUtilService(csDiagramSettingLocalService);
+		CSDiagramSettingLocalServiceUtil.setService(
+			csDiagramSettingLocalService);
 	}
 
 	/**
@@ -525,8 +523,23 @@ public abstract class CSDiagramSettingLocalServiceBaseImpl
 		return CSDiagramSettingLocalService.class.getName();
 	}
 
-	protected Class<?> getModelClass() {
+	@Override
+	public CTPersistence<CSDiagramSetting> getCTPersistence() {
+		return csDiagramSettingPersistence;
+	}
+
+	@Override
+	public Class<CSDiagramSetting> getModelClass() {
 		return CSDiagramSetting.class;
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CSDiagramSetting>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return updateUnsafeFunction.apply(csDiagramSettingPersistence);
 	}
 
 	protected String getModelClassName() {
@@ -557,29 +570,6 @@ public abstract class CSDiagramSettingLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		CSDiagramSettingLocalService csDiagramSettingLocalService) {
-
-		try {
-			Field field =
-				CSDiagramSettingLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, csDiagramSettingLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
-	@Reference
-	protected CSDiagramEntryPersistence csDiagramEntryPersistence;
-
-	@Reference
-	protected CSDiagramPinPersistence csDiagramPinPersistence;
-
 	protected CSDiagramSettingLocalService csDiagramSettingLocalService;
 
 	@Reference
@@ -589,16 +579,7 @@ public abstract class CSDiagramSettingLocalServiceBaseImpl
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		CSDiagramSettingLocalServiceBaseImpl.class);
 
 }

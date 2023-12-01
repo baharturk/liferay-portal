@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.base;
@@ -20,6 +11,8 @@ import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.BaseServiceImpl;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -27,14 +20,6 @@ import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.service.SegmentsEntryService;
 import com.liferay.segments.service.SegmentsEntryServiceUtil;
 import com.liferay.segments.service.persistence.SegmentsEntryPersistence;
-import com.liferay.segments.service.persistence.SegmentsEntryRelPersistence;
-import com.liferay.segments.service.persistence.SegmentsEntryRolePersistence;
-import com.liferay.segments.service.persistence.SegmentsExperiencePersistence;
-import com.liferay.segments.service.persistence.SegmentsExperimentFinder;
-import com.liferay.segments.service.persistence.SegmentsExperimentPersistence;
-import com.liferay.segments.service.persistence.SegmentsExperimentRelPersistence;
-
-import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -63,7 +48,7 @@ public abstract class SegmentsEntryServiceBaseImpl
 	 */
 	@Deactivate
 	protected void deactivate() {
-		_setServiceUtilService(null);
+		SegmentsEntryServiceUtil.setService(null);
 	}
 
 	@Override
@@ -77,7 +62,7 @@ public abstract class SegmentsEntryServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		segmentsEntryService = (SegmentsEntryService)aopProxy;
 
-		_setServiceUtilService(segmentsEntryService);
+		SegmentsEntryServiceUtil.setService(segmentsEntryService);
 	}
 
 	/**
@@ -122,22 +107,6 @@ public abstract class SegmentsEntryServiceBaseImpl
 		}
 	}
 
-	private void _setServiceUtilService(
-		SegmentsEntryService segmentsEntryService) {
-
-		try {
-			Field field = SegmentsEntryServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, segmentsEntryService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	@Reference
 	protected com.liferay.segments.service.SegmentsEntryLocalService
 		segmentsEntryLocalService;
@@ -148,44 +117,10 @@ public abstract class SegmentsEntryServiceBaseImpl
 	protected SegmentsEntryPersistence segmentsEntryPersistence;
 
 	@Reference
-	protected SegmentsEntryRelPersistence segmentsEntryRelPersistence;
-
-	@Reference
-	protected SegmentsEntryRolePersistence segmentsEntryRolePersistence;
-
-	@Reference
-	protected SegmentsExperiencePersistence segmentsExperiencePersistence;
-
-	@Reference
-	protected SegmentsExperimentPersistence segmentsExperimentPersistence;
-
-	@Reference
-	protected SegmentsExperimentFinder segmentsExperimentFinder;
-
-	@Reference
-	protected SegmentsExperimentRelPersistence segmentsExperimentRelPersistence;
-
-	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameService
-		classNameService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserService userService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		SegmentsEntryServiceBaseImpl.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.internal.provider;
@@ -42,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Eduardo García
  */
-@Component(immediate = true, service = SegmentsEntryProviderRegistry.class)
+@Component(service = SegmentsEntryProviderRegistry.class)
 public class SegmentsEntryProviderRegistryImpl
 	implements SegmentsEntryProviderRegistry {
 
@@ -117,21 +108,24 @@ public class SegmentsEntryProviderRegistryImpl
 
 	@Override
 	public long[] getSegmentsEntryIds(
-			long groupId, String className, long classPK, Context context)
+			long groupId, String className, long classPK, Context context,
+			long[] segmentEntryIds)
 		throws PortalException {
 
-		long[] segmentsEntryIds = new long[0];
+		long[] finalSegmentsEntryIds = new long[0];
 
 		for (SegmentsEntryProvider segmentsEntryProvider :
 				_serviceTrackerList) {
 
-			segmentsEntryIds = ArrayUtil.append(
-				segmentsEntryIds,
+			finalSegmentsEntryIds = ArrayUtil.append(
+				finalSegmentsEntryIds,
 				segmentsEntryProvider.getSegmentsEntryIds(
-					groupId, className, classPK, context, segmentsEntryIds));
+					groupId, className, classPK, context, segmentEntryIds,
+					finalSegmentsEntryIds));
 		}
 
-		Set<Long> segmentsEntryIdsSet = SetUtil.fromArray(segmentsEntryIds);
+		Set<Long> segmentsEntryIdsSet = SetUtil.fromArray(
+			finalSegmentsEntryIds);
 
 		return ArrayUtil.toLongArray(segmentsEntryIdsSet);
 	}

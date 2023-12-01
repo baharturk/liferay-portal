@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service.impl;
 
 import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.service.base.ObjectRelationshipServiceBaseImpl;
 import com.liferay.object.service.persistence.ObjectDefinitionPersistence;
@@ -22,6 +14,7 @@ import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.ServiceContext;
 
 import java.util.List;
 import java.util.Locale;
@@ -46,9 +39,10 @@ public class ObjectRelationshipServiceImpl
 
 	@Override
 	public ObjectRelationship addObjectRelationship(
-			long objectDefinitionId1, long objectDefinitionId2,
+			String externalReferenceCode, long objectDefinitionId1,
+			long objectDefinitionId2, long parameterObjectFieldId,
 			String deletionType, Map<Locale, String> labelMap, String name,
-			String type)
+			boolean system, String type, ObjectField objectField)
 		throws PortalException {
 
 		ObjectDefinition objectDefinition =
@@ -59,8 +53,28 @@ public class ObjectRelationshipServiceImpl
 			ActionKeys.UPDATE);
 
 		return objectRelationshipLocalService.addObjectRelationship(
-			getUserId(), objectDefinitionId1, objectDefinitionId2, deletionType,
-			labelMap, name, type);
+			externalReferenceCode, getUserId(), objectDefinitionId1,
+			objectDefinitionId2, parameterObjectFieldId, deletionType, labelMap,
+			name, system, type, objectField);
+	}
+
+	@Override
+	public void addObjectRelationshipMappingTableValues(
+			long objectRelationshipId, long primaryKey1, long primaryKey2,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		ObjectRelationship objectRelationship =
+			objectRelationshipPersistence.findByPrimaryKey(
+				objectRelationshipId);
+
+		_objectDefinitionModelResourcePermission.check(
+			getPermissionChecker(), objectRelationship.getObjectDefinitionId1(),
+			ActionKeys.UPDATE);
+
+		objectRelationshipLocalService.addObjectRelationshipMappingTableValues(
+			getUserId(), objectRelationshipId, primaryKey1, primaryKey2,
+			serviceContext);
 	}
 
 	@Override
@@ -81,6 +95,25 @@ public class ObjectRelationshipServiceImpl
 	}
 
 	@Override
+	public ObjectRelationship fetchObjectRelationshipByExternalReferenceCode(
+			String externalReferenceCode, long companyId,
+			long objectDefinitionId1)
+		throws PortalException {
+
+		ObjectRelationship objectRelationship =
+			objectRelationshipLocalService.
+				fetchObjectRelationshipByExternalReferenceCode(
+					externalReferenceCode, companyId, objectDefinitionId1);
+
+		if (objectRelationship != null) {
+			_objectDefinitionModelResourcePermission.check(
+				getPermissionChecker(), objectDefinitionId1, ActionKeys.VIEW);
+		}
+
+		return objectRelationship;
+	}
+
+	@Override
 	public ObjectRelationship getObjectRelationship(long objectRelationshipId)
 		throws PortalException {
 
@@ -94,6 +127,18 @@ public class ObjectRelationshipServiceImpl
 
 		return objectRelationshipLocalService.getObjectRelationship(
 			objectRelationshipId);
+	}
+
+	@Override
+	public ObjectRelationship getObjectRelationship(
+			long objectDefinitionId1, String name)
+		throws PortalException {
+
+		_objectDefinitionModelResourcePermission.check(
+			getPermissionChecker(), objectDefinitionId1, ActionKeys.VIEW);
+
+		return objectRelationshipLocalService.getObjectRelationship(
+			objectDefinitionId1, name);
 	}
 
 	@Override
@@ -114,8 +159,9 @@ public class ObjectRelationshipServiceImpl
 
 	@Override
 	public ObjectRelationship updateObjectRelationship(
-			long objectRelationshipId, String deletionType,
-			Map<Locale, String> labelMap)
+			String externalReferenceCode, long objectRelationshipId,
+			long parameterObjectFieldId, String deletionType, boolean edge,
+			Map<Locale, String> labelMap, ObjectField objectField)
 		throws PortalException {
 
 		ObjectRelationship objectRelationship =
@@ -127,7 +173,8 @@ public class ObjectRelationshipServiceImpl
 			ActionKeys.UPDATE);
 
 		return objectRelationshipLocalService.updateObjectRelationship(
-			objectRelationshipId, deletionType, labelMap);
+			externalReferenceCode, objectRelationshipId, parameterObjectFieldId,
+			deletionType, edge, labelMap, objectField);
 	}
 
 	@Reference(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.language.override.model.impl;
@@ -31,22 +22,18 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.language.override.model.PLOEntry;
 import com.liferay.portal.language.override.model.PLOEntryModel;
-import com.liferay.portal.language.override.model.PLOEntrySoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -144,56 +131,6 @@ public class PLOEntryModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static PLOEntry toModel(PLOEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		PLOEntry model = new PLOEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setPloEntryId(soapModel.getPloEntryId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setKey(soapModel.getKey());
-		model.setLanguageId(soapModel.getLanguageId());
-		model.setValue(soapModel.getValue());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<PLOEntry> toModels(PLOEntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<PLOEntry> models = new ArrayList<PLOEntry>(soapModels.length);
-
-		for (PLOEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public PLOEntryModelImpl() {
 	}
 
@@ -269,89 +206,80 @@ public class PLOEntryModelImpl
 	public Map<String, Function<PLOEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<PLOEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, PLOEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			PLOEntry.class.getClassLoader(), PLOEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<PLOEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<PLOEntry> constructor =
-				(Constructor<PLOEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<PLOEntry, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<PLOEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", PLOEntry::getMvccVersion);
+			attributeGetterFunctions.put("ploEntryId", PLOEntry::getPloEntryId);
+			attributeGetterFunctions.put("companyId", PLOEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", PLOEntry::getUserId);
+			attributeGetterFunctions.put("createDate", PLOEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", PLOEntry::getModifiedDate);
+			attributeGetterFunctions.put("key", PLOEntry::getKey);
+			attributeGetterFunctions.put("languageId", PLOEntry::getLanguageId);
+			attributeGetterFunctions.put("value", PLOEntry::getValue);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<PLOEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<PLOEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<PLOEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<PLOEntry, Object>>();
-		Map<String, BiConsumer<PLOEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<PLOEntry, ?>>();
+		private static final Map<String, BiConsumer<PLOEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", PLOEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<PLOEntry, Long>)PLOEntry::setMvccVersion);
-		attributeGetterFunctions.put("ploEntryId", PLOEntry::getPloEntryId);
-		attributeSetterBiConsumers.put(
-			"ploEntryId", (BiConsumer<PLOEntry, Long>)PLOEntry::setPloEntryId);
-		attributeGetterFunctions.put("companyId", PLOEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<PLOEntry, Long>)PLOEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", PLOEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<PLOEntry, Long>)PLOEntry::setUserId);
-		attributeGetterFunctions.put("createDate", PLOEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<PLOEntry, Date>)PLOEntry::setCreateDate);
-		attributeGetterFunctions.put("modifiedDate", PLOEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<PLOEntry, Date>)PLOEntry::setModifiedDate);
-		attributeGetterFunctions.put("key", PLOEntry::getKey);
-		attributeSetterBiConsumers.put(
-			"key", (BiConsumer<PLOEntry, String>)PLOEntry::setKey);
-		attributeGetterFunctions.put("languageId", PLOEntry::getLanguageId);
-		attributeSetterBiConsumers.put(
-			"languageId",
-			(BiConsumer<PLOEntry, String>)PLOEntry::setLanguageId);
-		attributeGetterFunctions.put("value", PLOEntry::getValue);
-		attributeSetterBiConsumers.put(
-			"value", (BiConsumer<PLOEntry, String>)PLOEntry::setValue);
+		static {
+			Map<String, BiConsumer<PLOEntry, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<PLOEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<PLOEntry, Long>)PLOEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ploEntryId",
+				(BiConsumer<PLOEntry, Long>)PLOEntry::setPloEntryId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<PLOEntry, Long>)PLOEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<PLOEntry, Long>)PLOEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<PLOEntry, Date>)PLOEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<PLOEntry, Date>)PLOEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"key", (BiConsumer<PLOEntry, String>)PLOEntry::setKey);
+			attributeSetterBiConsumers.put(
+				"languageId",
+				(BiConsumer<PLOEntry, String>)PLOEntry::setLanguageId);
+			attributeSetterBiConsumers.put(
+				"value", (BiConsumer<PLOEntry, String>)PLOEntry::setValue);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -821,41 +749,12 @@ public class PLOEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<PLOEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<PLOEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<PLOEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((PLOEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, PLOEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					PLOEntry.class, ModelWrapper.class);
 
 	}
 
@@ -873,8 +772,9 @@ public class PLOEntryModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<PLOEntry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<PLOEntry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

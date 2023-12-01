@@ -1,50 +1,41 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-calendar-remote-services',
 	(A) => {
-		var Lang = A.Lang;
+		const Lang = A.Lang;
 
-		var isString = Lang.isString;
-		var toInt = Lang.toInt;
+		const isString = Lang.isString;
+		const toInt = Lang.toInt;
 
-		var CalendarUtil = Liferay.CalendarUtil;
-		var MessageUtil = Liferay.CalendarMessageUtil;
+		const CalendarUtil = Liferay.CalendarUtil;
+		const MessageUtil = Liferay.CalendarMessageUtil;
 
-		var STR_BLANK = '';
+		const STR_BLANK = '';
 
-		var CalendarRemoteServices = A.Base.create(
+		const CalendarRemoteServices = A.Base.create(
 			'calendar-remote-services',
 			A.Base,
 			[Liferay.PortletBase],
 			{
 				_invokeActionURL(config) {
-					var instance = this;
+					const instance = this;
 
-					var actionParameters = {
+					const actionParameters = {
 						'javax.portlet.action': config.actionName,
 					};
 
 					A.mix(actionParameters, config.queryParameters);
 
-					var url = Liferay.Util.PortletURL.createActionURL(
+					const url = Liferay.Util.PortletURL.createActionURL(
 						instance.get('baseActionURL'),
 						actionParameters
 					);
 
-					var payload;
+					let payload;
 
 					if (config.payload) {
 						payload = Liferay.Util.ns(
@@ -72,21 +63,20 @@ AUI.add(
 				},
 
 				_invokeResourceURL(config) {
-					var instance = this;
+					const instance = this;
 
-					var resourceParameters = {
-						doAsUserId: Liferay.ThemeDisplay.getDoAsUserIdEncoded(),
+					const resourceParameters = {
 						p_p_resource_id: config.resourceId,
 					};
 
 					A.mix(resourceParameters, config.queryParameters);
 
-					var url = Liferay.Util.PortletURL.createResourceURL(
+					const url = Liferay.Util.PortletURL.createResourceURL(
 						instance.get('baseResourceURL'),
 						resourceParameters
 					);
 
-					var payload;
+					let payload;
 
 					if (config.payload) {
 						payload = Liferay.Util.ns(
@@ -118,7 +108,7 @@ AUI.add(
 				},
 
 				_invokeService(payload, callback) {
-					var instance = this;
+					const instance = this;
 
 					callback = callback || {};
 
@@ -146,7 +136,7 @@ AUI.add(
 				},
 
 				deleteCalendar(calendarId, callback) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeService(
 						{
@@ -163,7 +153,7 @@ AUI.add(
 				},
 
 				deleteEvent(schedulerEvent, success) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeService(
 						{
@@ -187,7 +177,7 @@ AUI.add(
 				},
 
 				deleteEventInstance(schedulerEvent, allFollowing, success) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeService(
 						{
@@ -216,7 +206,7 @@ AUI.add(
 				},
 
 				getCalendar(calendarId, callback) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeResourceURL({
 						callback,
@@ -228,7 +218,7 @@ AUI.add(
 				},
 
 				getCalendarBookingInvitees(calendarBookingId, callback) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeResourceURL({
 						callback,
@@ -246,7 +236,7 @@ AUI.add(
 					ruleName,
 					callback
 				) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeResourceURL({
 						callback,
@@ -261,20 +251,21 @@ AUI.add(
 				},
 
 				getCurrentTime(callback) {
-					var instance = this;
+					const instance = this;
 
-					var lastCurrentTime = instance.lastCurrentTime;
+					const lastCurrentTime = instance.lastCurrentTime;
 
 					if (lastCurrentTime) {
-						var lastBrowserTime = instance.lastBrowserTime;
+						const lastBrowserTime = instance.lastBrowserTime;
 
-						var browserTime = new Date();
+						const browserTime = new Date();
 
-						var timeDiff = Math.abs(
+						const timeDiff = Math.abs(
 							browserTime.getTime() - lastBrowserTime.getTime()
 						);
 
-						var currentTime = lastCurrentTime.getTime() + timeDiff;
+						const currentTime =
+							lastCurrentTime.getTime() + timeDiff;
 
 						lastCurrentTime.setTime(currentTime);
 
@@ -302,7 +293,7 @@ AUI.add(
 				},
 
 				getEvent(calendarBookingId, success, failure) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeService(
 						{
@@ -325,7 +316,7 @@ AUI.add(
 					status,
 					callback
 				) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeResourceURL({
 						callback,
@@ -349,7 +340,7 @@ AUI.add(
 				},
 
 				getResourceCalendars(calendarResourceId, callback) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeResourceURL({
 						callback,
@@ -366,7 +357,7 @@ AUI.add(
 					endDate,
 					callback
 				) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeResourceURL({
 						callback(result) {
@@ -396,9 +387,9 @@ AUI.add(
 					updateInstance,
 					allFollowing
 				) {
-					var instance = this;
+					const instance = this;
 
-					var scheduler = schedulerEvent.get('scheduler');
+					const scheduler = schedulerEvent.get('scheduler');
 
 					instance._invokeService(
 						{
@@ -426,7 +417,7 @@ AUI.add(
 								});
 
 								if (data && !data.exception && scheduler) {
-									var eventRecorder = scheduler.get(
+									const eventRecorder = scheduler.get(
 										'eventRecorder'
 									);
 
@@ -440,7 +431,7 @@ AUI.add(
 				},
 
 				updateCalendarColor(calendarId, color) {
-					var instance = this;
+					const instance = this;
 
 					instance._invokeService({
 						'/calendar.calendar/update-color': {
@@ -456,10 +447,10 @@ AUI.add(
 					allFollowing,
 					success
 				) {
-					var instance = this;
+					const instance = this;
 
-					var endDate = schedulerEvent.get('endDate');
-					var startDate = schedulerEvent.get('startDate');
+					const endDate = schedulerEvent.get('endDate');
+					const startDate = schedulerEvent.get('startDate');
 
 					instance._invokeActionURL({
 						actionName: 'updateSchedulerCalendarBooking',

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.metrics.integration.internal.helper;
@@ -19,18 +10,22 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
 import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
 import com.liferay.portal.workflow.kaleo.definition.NodeType;
+import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import com.liferay.portal.workflow.kaleo.model.KaleoInstance;
 import com.liferay.portal.workflow.kaleo.model.KaleoNode;
@@ -38,15 +33,19 @@ import com.liferay.portal.workflow.kaleo.model.KaleoTask;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskAssignmentInstance;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskInstanceToken;
 import com.liferay.portal.workflow.kaleo.model.KaleoTransition;
+import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoNodeLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoTaskAssignmentInstanceLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoTaskLocalService;
 import com.liferay.portal.workflow.metrics.model.AddNodeRequest;
+import com.liferay.portal.workflow.metrics.model.AddProcessRequest;
 import com.liferay.portal.workflow.metrics.model.AddTaskRequest;
 import com.liferay.portal.workflow.metrics.model.AddTransitionRequest;
 import com.liferay.portal.workflow.metrics.model.Assignment;
+import com.liferay.portal.workflow.metrics.model.DeleteProcessRequest;
 import com.liferay.portal.workflow.metrics.model.DeleteTransitionRequest;
 import com.liferay.portal.workflow.metrics.model.RoleAssignment;
+import com.liferay.portal.workflow.metrics.model.UpdateProcessRequest;
 import com.liferay.portal.workflow.metrics.model.UserAssignment;
 
 import java.util.ArrayList;
@@ -56,8 +55,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -65,7 +62,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Rafael Praxedes
  */
-@Component(immediate = true, service = IndexerHelper.class)
+@Component(service = IndexerHelper.class)
 public class IndexerHelper {
 
 	public AddNodeRequest createAddNodeRequest(
@@ -121,6 +118,61 @@ public class IndexerHelper {
 			false
 		).type(
 			NodeType.TASK.name()
+		).build();
+	}
+
+	public AddProcessRequest createAddProcessRequest(
+		long companyId, KaleoDefinition kaleoDefinition) {
+
+		AddProcessRequest.Builder builder = new AddProcessRequest.Builder();
+
+		builder.active(
+			kaleoDefinition.isActive()
+		).companyId(
+			kaleoDefinition.getCompanyId()
+		).createDate(
+			kaleoDefinition.getCreateDate()
+		).description(
+			kaleoDefinition.getDescription()
+		).modifiedDate(
+			kaleoDefinition.getModifiedDate()
+		).name(
+			kaleoDefinition.getName()
+		).processId(
+			kaleoDefinition.getKaleoDefinitionId()
+		).title(
+			kaleoDefinition.getTitle(
+				_localization.getDefaultLanguageId(kaleoDefinition.getTitle()))
+		).titleMap(
+			kaleoDefinition.getTitleMap()
+		);
+
+		String version = StringBundler.concat(
+			kaleoDefinition.getVersion(), CharPool.PERIOD, 0);
+
+		builder.version(version);
+
+		try {
+			List<KaleoDefinitionVersion> kaleoDefinitionVersions =
+				_kaleoDefinitionVersionLocalService.getKaleoDefinitionVersions(
+					companyId, kaleoDefinition.getName());
+
+			if (kaleoDefinitionVersions != null) {
+				return builder.versions(
+					TransformUtil.transformToArray(
+						kaleoDefinitionVersions,
+						KaleoDefinitionVersion::getVersion, String.class)
+				).build();
+			}
+		}
+		catch (PortalException portalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(portalException);
+			}
+		}
+
+		return builder.versions(
+			new String[] {version}
 		).build();
 	}
 
@@ -233,7 +285,7 @@ public class IndexerHelper {
 				assetRenderer.getClassName(), assetRenderer.getClassPK());
 
 			if (assetEntry != null) {
-				return LocalizationUtil.populateLocalizationMap(
+				return _localization.populateLocalizationMap(
 					assetEntry.getTitleMap(), assetEntry.getDefaultLanguageId(),
 					assetEntry.getGroupId());
 			}
@@ -246,7 +298,7 @@ public class IndexerHelper {
 			Map<Locale, String> localizationMap = new HashMap<>();
 
 			for (Locale availableLocale :
-					LanguageUtil.getAvailableLocales(groupId)) {
+					_language.getAvailableLocales(groupId)) {
 
 				localizationMap.put(
 					availableLocale,
@@ -264,9 +316,7 @@ public class IndexerHelper {
 
 		Map<Locale, String> localizationMap = new HashMap<>();
 
-		for (Locale availableLocale :
-				LanguageUtil.getAvailableLocales(groupId)) {
-
+		for (Locale availableLocale : _language.getAvailableLocales(groupId)) {
 			localizationMap.put(
 				availableLocale,
 				ResourceActionsUtil.getModelResource(
@@ -274,6 +324,19 @@ public class IndexerHelper {
 		}
 
 		return localizationMap;
+	}
+
+	public DeleteProcessRequest createDeleteProcessRequest(
+		KaleoDefinition kaleoDefinition) {
+
+		DeleteProcessRequest.Builder builder =
+			new DeleteProcessRequest.Builder();
+
+		return builder.companyId(
+			kaleoDefinition.getCompanyId()
+		).processId(
+			kaleoDefinition.getKaleoDefinitionId()
+		).build();
 	}
 
 	public DeleteTransitionRequest createDeleteTransitionRequest(
@@ -289,13 +352,38 @@ public class IndexerHelper {
 		).build();
 	}
 
+	public UpdateProcessRequest createUpdateProcessRequest(
+		KaleoDefinition kaleoDefinition) {
+
+		UpdateProcessRequest.Builder builder =
+			new UpdateProcessRequest.Builder();
+
+		return builder.active(
+			kaleoDefinition.isActive()
+		).companyId(
+			kaleoDefinition.getCompanyId()
+		).description(
+			kaleoDefinition.getDescription()
+		).modifiedDate(
+			kaleoDefinition.getModifiedDate()
+		).processId(
+			kaleoDefinition.getKaleoDefinitionId()
+		).title(
+			kaleoDefinition.getTitle(
+				_localization.getDefaultLanguageId(kaleoDefinition.getTitle()))
+		).titleMap(
+			kaleoDefinition.getTitleMap()
+		).version(
+			StringBundler.concat(
+				kaleoDefinition.getVersion(), CharPool.PERIOD, 0)
+		).build();
+	}
+
 	public List<Assignment> toAssignments(
 		List<KaleoTaskAssignmentInstance> kaleoTaskAssignmentInstances) {
 
-		List<Assignment> assignments = new ArrayList<>();
-
 		if (ListUtil.isEmpty(kaleoTaskAssignmentInstances)) {
-			return assignments;
+			return Collections.emptyList();
 		}
 
 		KaleoTaskAssignmentInstance firstKaleoTaskAssignmentInstance =
@@ -308,29 +396,27 @@ public class IndexerHelper {
 			User user = _userLocalService.fetchUser(
 				firstKaleoTaskAssignmentInstance.getAssigneeClassPK());
 
-			assignments.add(
+			return Collections.singletonList(
 				new UserAssignment(
 					firstKaleoTaskAssignmentInstance.getAssigneeClassPK(),
 					user.getFullName()));
 		}
-		else {
-			Stream.of(
-				kaleoTaskAssignmentInstances
-			).flatMap(
-				List::stream
-			).collect(
-				Collectors.groupingBy(
-					KaleoTaskAssignmentInstance::getAssigneeClassPK,
-					Collectors.mapping(
-						KaleoTaskAssignmentInstance::getGroupId,
-						Collectors.toList()))
-			).forEach(
-				(assignmentId, assignmentGroupIds) -> assignments.add(
-					new RoleAssignment(assignmentId, assignmentGroupIds))
-			);
+
+		Map<Long, List<Long>> assigneeClassPKGroupIds = new HashMap<>();
+
+		for (KaleoTaskAssignmentInstance kaleoTaskAssignmentInstance :
+				kaleoTaskAssignmentInstances) {
+
+			List<Long> groupIds = assigneeClassPKGroupIds.computeIfAbsent(
+				kaleoTaskAssignmentInstance.getAssigneeClassPK(),
+				key -> new ArrayList<>());
+
+			groupIds.add(kaleoTaskAssignmentInstance.getGroupId());
 		}
 
-		return assignments;
+		return TransformUtil.transform(
+			assigneeClassPKGroupIds.entrySet(),
+			entry -> new RoleAssignment(entry.getKey(), entry.getValue()));
 	}
 
 	private AssetRenderer<?> _getAssetRenderer(String className, long classPK) {
@@ -344,7 +430,7 @@ public class IndexerHelper {
 			}
 			catch (PortalException portalException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
+					_log.debug(portalException);
 				}
 			}
 		}
@@ -374,6 +460,10 @@ public class IndexerHelper {
 	private AssetEntryLocalService _assetEntryLocalService;
 
 	@Reference
+	private KaleoDefinitionVersionLocalService
+		_kaleoDefinitionVersionLocalService;
+
+	@Reference
 	private KaleoNodeLocalService _kaleoNodeLocalService;
 
 	@Reference
@@ -382,6 +472,12 @@ public class IndexerHelper {
 
 	@Reference
 	private KaleoTaskLocalService _kaleoTaskLocalService;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private UserLocalService _userLocalService;

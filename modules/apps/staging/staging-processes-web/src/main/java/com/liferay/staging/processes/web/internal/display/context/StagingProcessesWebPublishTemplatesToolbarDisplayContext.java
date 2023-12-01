@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.staging.processes.web.internal.display.context;
@@ -21,19 +12,18 @@ import com.liferay.exportimport.util.comparator.ExportImportConfigurationNameCom
 import com.liferay.frontend.taglib.clay.servlet.taglib.display.context.BaseManagementToolbarDisplayContext;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.staging.processes.web.internal.search.PublishConfigurationDisplayTerms;
 import com.liferay.staging.processes.web.internal.search.PublishConfigurationSearchTerms;
 
-import java.util.List;
 import java.util.Objects;
 
 import javax.portlet.PortletURL;
@@ -57,15 +47,14 @@ public class StagingProcessesWebPublishTemplatesToolbarDisplayContext
 		super(
 			httpServletRequest, liferayPortletRequest, liferayPortletResponse);
 
-		long companyId = PortalUtil.getCompanyId(liferayPortletRequest);
-		long groupId = (long)pageContext.getAttribute("groupId");
-
 		_stagingGroupId = (long)pageContext.getAttribute("stagingGroupId");
 
 		Group stagingGroup = GroupLocalServiceUtil.fetchGroup(_stagingGroupId);
 
 		_searchContainer = _createSearchContainer(
-			companyId, groupId, iteratorURL, stagingGroup.isStagedRemotely());
+			PortalUtil.getCompanyId(liferayPortletRequest),
+			(long)pageContext.getAttribute("groupId"), iteratorURL,
+			stagingGroup.isStagedRemotely());
 	}
 
 	@Override
@@ -91,7 +80,6 @@ public class StagingProcessesWebPublishTemplatesToolbarDisplayContext
 					ParamUtil.getString(
 						httpServletRequest, "layoutSetBranchName"),
 					"privateLayout", Boolean.FALSE.toString());
-
 				dropdownItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "new"));
 			}
@@ -143,24 +131,23 @@ public class StagingProcessesWebPublishTemplatesToolbarDisplayContext
 				ExportImportConfigurationConstants.TYPE_PUBLISH_LAYOUT_REMOTE;
 		}
 
+		int exportImportConfigurationTypeFilter = exportImportConfigurationType;
+
 		PublishConfigurationSearchTerms searchTerms =
 			(PublishConfigurationSearchTerms)searchContainer.getSearchTerms();
 
-		List<ExportImportConfiguration> results =
-			ExportImportConfigurationLocalServiceUtil.
-				getExportImportConfigurations(
-					companyId, groupId, searchTerms.getKeywords(),
-					exportImportConfigurationType, searchContainer.getStart(),
-					searchContainer.getEnd(),
-					searchContainer.getOrderByComparator());
-		int total =
+		searchContainer.setResultsAndTotal(
+			() ->
+				ExportImportConfigurationLocalServiceUtil.
+					getExportImportConfigurations(
+						companyId, groupId, searchTerms.getKeywords(),
+						exportImportConfigurationTypeFilter,
+						searchContainer.getStart(), searchContainer.getEnd(),
+						searchContainer.getOrderByComparator()),
 			ExportImportConfigurationLocalServiceUtil.
 				getExportImportConfigurationsCount(
 					companyId, groupId, searchTerms.getKeywords(),
-					exportImportConfigurationType);
-
-		searchContainer.setResults(results);
-		searchContainer.setTotal(total);
+					exportImportConfigurationTypeFilter));
 
 		return searchContainer;
 	}

@@ -1,20 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayIcon from '@clayui/icon';
 import {State} from '@liferay/frontend-js-state-web';
 import classNames from 'classnames';
+import {
+	STATUS_CODE,
+	formatStorage,
+	openSelectionModal,
+	sub,
+} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useEffect, useRef, useState} from 'react';
 
@@ -30,7 +27,6 @@ import ProgressWrapper from './ProgressWrapper';
 
 const CSS_DROP_ACTIVE = 'drop-active';
 const CSS_PROGRESS_ACTIVE = 'progress-active';
-const STATUS_CODE = Liferay.STATUS_CODE;
 
 const STR_SPACE = ' ';
 
@@ -82,7 +78,7 @@ const ImageSelector = ({
 		}
 		else if (errorType === STATUS_CODE.SC_FILE_EXTENSION_EXCEPTION) {
 			if (validExtensions) {
-				message = Liferay.Util.sub(
+				message = sub(
 					Liferay.Language.get(
 						'please-enter-a-file-with-a-valid-extension-x'
 					),
@@ -90,7 +86,7 @@ const ImageSelector = ({
 				);
 			}
 			else {
-				message = Liferay.Util.sub(
+				message = sub(
 					Liferay.Language.get(
 						'please-enter-a-file-with-a-valid-file-type'
 					)
@@ -103,22 +99,22 @@ const ImageSelector = ({
 			);
 		}
 		else if (errorType === STATUS_CODE.SC_FILE_SIZE_EXCEPTION) {
-			message = Liferay.Util.sub(
+			message = sub(
 				Liferay.Language.get(
 					'please-enter-a-file-with-a-valid-file-size-no-larger-than-x'
 				),
-				[Liferay.Util.formatStorage(parseInt(maxFileSize, 10))]
+				[formatStorage(parseInt(maxFileSize, 10))]
 			);
 		}
 		else if (errorType === STATUS_CODE.SC_UPLOAD_REQUEST_SIZE_EXCEPTION) {
 			const maxUploadRequestSize =
 				Liferay.PropsValues.UPLOAD_SERVLET_REQUEST_IMPL_MAX_SIZE;
 
-			message = Liferay.Util.sub(
+			message = sub(
 				Liferay.Language.get(
 					'request-is-larger-than-x-and-could-not-be-processed'
 				),
-				[Liferay.Util.formatStorage(maxUploadRequestSize)]
+				[formatStorage(maxUploadRequestSize)]
 			);
 		}
 
@@ -135,7 +131,34 @@ const ImageSelector = ({
 	const handleFileSelect = (event) => {
 		rootNodeRef.current.classList.remove(CSS_DROP_ACTIVE);
 
-		const file = event.fileList[0];
+		const fileList = event.fileList;
+
+		if (fileList.length > 1) {
+			setErrorMessage(
+				sub(
+					Liferay.Language.get(
+						'multiple-file-upload-is-not-supported-please-enter-a-single-file'
+					)
+				)
+			);
+
+			return;
+		}
+
+		const file = fileList[0];
+
+		if (file.get('size') > maxFileSize) {
+			setErrorMessage(
+				sub(
+					Liferay.Language.get(
+						'please-enter-a-file-with-a-valid-file-size-no-larger-than-x'
+					),
+					[formatStorage(parseInt(maxFileSize, 10))]
+				)
+			);
+
+			return;
+		}
 
 		setFileName(file.get('name'));
 
@@ -148,7 +171,7 @@ const ImageSelector = ({
 			queue.startUpload();
 		}
 
-		uploader.uploadThese(event.fileList);
+		uploader.upload(file);
 	};
 
 	const handleImageCropped = (cropRegion) => {
@@ -156,7 +179,7 @@ const ImageSelector = ({
 	};
 
 	const handleSelectFileClick = () => {
-		Liferay.Util.openSelectionModal({
+		openSelectionModal({
 			onSelect: (selectedItem) => {
 				if (selectedItem) {
 					const itemValue = JSON.parse(selectedItem.value);
@@ -209,16 +232,16 @@ const ImageSelector = ({
 
 		setProgressValue(Math.ceil(percentLoaded));
 
-		const bytesLoaded = Liferay.Util.formatStorage(event.bytesLoaded);
+		const bytesLoaded = formatStorage(event.bytesLoaded);
 
-		const bytesTotal = Liferay.Util.formatStorage(event.bytesTotal);
+		const bytesTotal = formatStorage(event.bytesTotal);
 
 		const bytesLoadedSpaceIndex = bytesLoaded.indexOf(STR_SPACE);
 
 		const bytesTotalSpaceIndex = bytesTotal.indexOf(STR_SPACE);
 
 		setProgressData(
-			Liferay.Util.sub(
+			sub(
 				TPL_PROGRESS_DATA,
 				bytesLoaded.substring(0, bytesLoadedSpaceIndex),
 				bytesLoaded.substring(bytesLoadedSpaceIndex + 1),

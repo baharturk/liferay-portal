@@ -1,17 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {ReactPortal, useIsMounted} from '@liferay/frontend-js-react-web';
 import PropTypes from 'prop-types';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
@@ -23,11 +15,18 @@ const GlobalContext = React.createContext([{document, window}, () => {}]);
 
 export function GlobalContextFrame({children, useIframe}) {
 	const [baseElement, setBaseElement] = useState(null);
-	const localContext = useMemo(() => ({document, window}), []);
-	const [iframeContext, setIFrameContext] = useState(null);
+	const [iframeContext, setIframeContext] = useState(null);
 	const [iframeElement, setIframeElement] = useState(null);
 	const isMounted = useIsMounted();
+	const [loadIframe, setLoadIframe] = useState(false);
+	const localContext = useMemo(() => ({document, window}), []);
 	const [, setGlobalContext] = useContext(GlobalContext);
+
+	useEffect(() => {
+		if (useIframe && !loadIframe) {
+			setLoadIframe(true);
+		}
+	}, [useIframe, loadIframe]);
 
 	useEffect(() => {
 		let timeoutId = null;
@@ -67,7 +66,7 @@ export function GlobalContextFrame({children, useIframe}) {
 				iframeElement.contentWindow.requestAnimationFrame(() => {
 					setBaseElement(element);
 
-					setIFrameContext({
+					setIframeContext({
 						document: iframeElement.contentDocument,
 						iframe: iframeElement,
 						window: iframeElement.contentWindow,
@@ -82,7 +81,6 @@ export function GlobalContextFrame({children, useIframe}) {
 		if (iframeElement) {
 			iframeElement.addEventListener('load', handleIframeLoaded);
 			iframeElement.src = config.getIframeContentURL;
-			iframeElement.classList.add('page-editor__global-context-iframe');
 		}
 
 		return () => {
@@ -94,7 +92,7 @@ export function GlobalContextFrame({children, useIframe}) {
 
 			if (isMounted()) {
 				setBaseElement(null);
-				setIFrameContext(null);
+				setIframeContext(null);
 			}
 		};
 	}, [iframeElement, isMounted]);
@@ -111,7 +109,7 @@ export function GlobalContextFrame({children, useIframe}) {
 			'page-editor__global-context-iframe--loading'
 		);
 	}
-	else if (!useIframe || !iframeContext) {
+	else if (!useIframe) {
 		content = <>{children}</>;
 		context = localContext;
 
@@ -122,9 +120,8 @@ export function GlobalContextFrame({children, useIframe}) {
 		}
 	}
 	else {
-		iframeElement.classList.add(
-			'page-editor__global-context-iframe--loading'
-		);
+		content = <ClayLoadingIndicator />;
+		context = localContext;
 	}
 
 	useEffect(() => {
@@ -134,7 +131,22 @@ export function GlobalContextFrame({children, useIframe}) {
 	return (
 		<>
 			{content}
-			<RawDOM TagName="iframe" elementRef={setIframeElement} />
+
+			{loadIframe ? (
+				<RawDOM
+					TagName="iframe"
+					elementRef={(element) => {
+						if (element) {
+							element.classList.add(
+								'page-editor__global-context-iframe',
+								'page-editor__global-context-iframe--loading'
+							);
+						}
+
+						setIframeElement(element);
+					}}
+				/>
+			) : null}
 		</>
 	);
 }

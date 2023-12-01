@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -37,15 +28,16 @@ import java.util.regex.Pattern;
 
 import org.dom4j.Element;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
  * @author Kevin Yen
  */
-public class BatchBuild extends BaseBuild {
+public class BatchBuild extends BaseParentBuild {
 
 	@Override
-	public void addTimelineData(BaseBuild.TimelineData timelineData) {
+	public void addTimelineData(TimelineData timelineData) {
 		addDownstreamBuildsTimelineData(timelineData);
 	}
 
@@ -71,6 +63,17 @@ public class BatchBuild extends BaseBuild {
 		return batchName;
 	}
 
+	@Override
+	public String getBuildName() {
+		String buildName = getJobVariant();
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(buildName)) {
+			buildName = getJobName();
+		}
+
+		return buildName;
+	}
+
 	public List<AxisBuild> getDownstreamAxisBuilds() {
 		List<AxisBuild> downstreamAxisBuilds = new ArrayList<>();
 
@@ -92,8 +95,7 @@ public class BatchBuild extends BaseBuild {
 
 	@Override
 	public Element getGitHubMessageElement() {
-		Collections.sort(
-			downstreamBuilds, new BaseBuild.BuildDisplayNameComparator());
+		sortDownstreamBuilds();
 
 		Element messageElement = super.getGitHubMessageElement();
 
@@ -288,54 +290,6 @@ public class BatchBuild extends BaseBuild {
 		return getTotalSlavesUsedCount(status, modifiedBuildsOnly, true);
 	}
 
-	@Override
-	public synchronized void update() {
-		super.update();
-
-		if (badBuildNumbers.size() >= REINVOCATIONS_SIZE_MAX) {
-			return;
-		}
-
-		String status = getStatus();
-		String result = getResult();
-
-		if ((status.equals("completed") && result.equals("SUCCESS")) ||
-			fromArchive) {
-
-			return;
-		}
-
-		boolean reinvoked = false;
-
-		List<Build> builds = new ArrayList<>();
-
-		builds.add(this);
-
-		builds.addAll(getDownstreamBuilds("completed"));
-
-		for (Build build : builds) {
-			if (reinvoked) {
-				break;
-			}
-
-			for (ReinvokeRule reinvokeRule : reinvokeRules) {
-				String buildResult = build.getResult();
-
-				if ((buildResult == null) || buildResult.equals("SUCCESS") ||
-					!reinvokeRule.matches(build)) {
-
-					continue;
-				}
-
-				reinvoke(reinvokeRule);
-
-				reinvoked = true;
-
-				break;
-			}
-		}
-	}
-
 	protected BatchBuild(String url) {
 		this(url, null);
 	}
@@ -362,6 +316,37 @@ public class BatchBuild extends BaseBuild {
 		else {
 			batchName = null;
 		}
+	}
+
+	@Override
+	protected void findDownstreamBuilds() {
+		List<String> downstreamBuildURLs = new ArrayList<>();
+
+		JSONObject buildJSONObject = getBuildJSONObject("runs[number,url]");
+
+		if ((buildJSONObject != null) && buildJSONObject.has("runs")) {
+			JSONArray runsJSONArray = buildJSONObject.getJSONArray("runs");
+
+			if (runsJSONArray != null) {
+				for (int i = 0; i < runsJSONArray.length(); i++) {
+					JSONObject runJSONObject = runsJSONArray.getJSONObject(i);
+
+					if (runJSONObject.getInt("number") != getBuildNumber()) {
+						continue;
+					}
+
+					String url = runJSONObject.getString("url");
+
+					if (hasBuildURL(url) || downstreamBuildURLs.contains(url)) {
+						continue;
+					}
+
+					downstreamBuildURLs.add(url);
+				}
+			}
+		}
+
+		addDownstreamBuilds(downstreamBuildURLs.toArray(new String[0]));
 	}
 
 	protected AxisBuild getAxisBuild(String axisVariable) {

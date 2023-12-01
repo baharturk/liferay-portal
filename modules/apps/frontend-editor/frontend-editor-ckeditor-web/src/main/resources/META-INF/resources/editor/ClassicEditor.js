@@ -1,111 +1,41 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import PropTypes from 'prop-types';
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {forwardRef} from 'react';
 
-import {Editor} from './Editor';
+import BaseEditor from './BaseEditor';
 
-const ClassicEditor = React.forwardRef(
+const ClassicEditor = forwardRef(
 	(
 		{
-			contents = '',
+			className,
+			contents,
 			editorConfig,
 			initialToolbarSet = 'simple',
 			name,
-			onChange,
-			onChangeMethodName,
 			title,
 			...otherProps
 		},
 		ref
 	) => {
-		const editorRef = useRef();
-
-		const getHTML = useCallback(() => {
-			let data = contents;
-
-			const editor = editorRef.current.editor;
-
-			if (editor && editor.instanceReady) {
-				data = editor.getData();
-
-				if (
-					CKEDITOR.env.gecko &&
-					CKEDITOR.tools.trim(data) === '<br />'
-				) {
-					data = '';
-				}
-
-				data = data.replace(/(\u200B){7}/, '');
-			}
-
-			return data;
-		}, [contents]);
-
-		const onChangeCallback = () => {
-			if (!onChangeMethodName && !onChange) {
-				return;
-			}
-
-			const editor = editorRef.current.editor;
-
-			if (editor.checkDirty()) {
-				if (onChangeMethodName) {
-					window[onChangeMethodName](getHTML());
-				}
-				else {
-					onChange(getHTML());
-				}
-
-				editor.resetDirty();
-			}
-		};
-
-		const editorRefsCallback = useCallback(
-			(element) => {
-				if (ref) {
-					ref.current = element;
-				}
-				editorRef.current = element;
-			},
-			[ref, editorRef]
-		);
-
-		useEffect(() => {
-			window[name] = {
-				getHTML,
-				getText() {
-					return contents;
-				},
-			};
-		}, [contents, getHTML, name]);
-
 		return (
-			<div id={`${name}Container`}>
+			<div className={className} id={`${name}Container`}>
 				{title && (
 					<label className="control-label" htmlFor={name}>
 						{title}
 					</label>
 				)}
 
-				<Editor
+				<BaseEditor
 					className="lfr-editable"
 					config={{
 						toolbar: initialToolbarSet,
 						...editorConfig,
 					}}
+					contents={contents}
 					name={name}
 					onBeforeLoad={(CKEDITOR) => {
 						CKEDITOR.disableAutoInline = true;
@@ -118,23 +48,27 @@ const ClassicEditor = React.forwardRef(
 								: Liferay.zIndex.WINDOW + 10;
 						};
 					}}
-					onChange={onChangeCallback}
 					onDrop={(event) => {
 						const data = event.data.dataTransfer.getData(
 							'text/html'
 						);
-						const editor = event.editor;
 
-						if (data) {
-							const fragment = CKEDITOR.htmlParser.fragment.fromHtml(
-								data
-							);
+						if (!data) {
+							return;
+						}
 
-							const name = fragment.children[0].name;
+						const fragment = CKEDITOR.htmlParser.fragment.fromHtml(
+							data
+						);
 
-							if (name) {
-								return editor.pasteFilter.check(name);
-							}
+						let element = fragment.children[0];
+
+						if (element.hasClass('cke_widget_image')) {
+							element = element.children[0];
+						}
+
+						if (event.editor.pasteFilter && element.name) {
+							return event.editor.pasteFilter.check(element.name);
 						}
 					}}
 					onInstanceReady={({editor}) => {
@@ -145,7 +79,7 @@ const ClassicEditor = React.forwardRef(
 							noSnapshot: true,
 						});
 					}}
-					ref={editorRefsCallback}
+					ref={ref}
 					{...otherProps}
 				/>
 			</div>
@@ -158,8 +92,6 @@ ClassicEditor.propTypes = {
 	editorConfig: PropTypes.object,
 	initialToolbarSet: PropTypes.string,
 	name: PropTypes.string,
-	onChange: PropTypes.func,
-	onChangeMethodName: PropTypes.string,
 	title: PropTypes.string,
 };
 

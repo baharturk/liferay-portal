@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import 'leaflet/dist/leaflet.css';
-import React from 'react';
+import ClayIcon from '@clayui/icon';
+import React, {useCallback, useState} from 'react';
 
 import {FieldBase} from '../FieldBase/ReactFieldBase.es';
 import {MAP_PROVIDER, useGeolocation} from './useGeolocation.es';
@@ -42,13 +34,24 @@ const Geolocation = ({
 	viewMode,
 	...otherProps
 }) => {
+	const [address, setAddress] = useState();
+
+	const handleChange = useCallback(
+		({newVal: {address, location}}) => {
+			setAddress(address);
+
+			onChange({location: JSON.stringify(location)});
+		},
+		[onChange, setAddress]
+	);
+
 	useGeolocation({
 		disabled,
 		googleMapsAPIKey,
 		instanceId,
 		mapProviderKey,
 		name,
-		onChange,
+		onChange: handleChange,
 		value,
 		viewMode,
 	});
@@ -56,23 +59,31 @@ const Geolocation = ({
 	return (
 		<div {...otherProps} className="ddm-geolocation field-labels-inline">
 			{!disabled || viewMode ? (
-				<dl>
-					<dt className="text-capitalize"></dt>
+				<div>
+					<div>
+						<ClayIcon symbol="geolocation" />
 
-					<dd>
-						<NoRender
-							className="lfr-map"
-							id={`map_${instanceId}`}
-							style={{height: '280px'}}
-						/>
+						{address}
+					</div>
 
-						<input
-							id={`input_value_${instanceId}`}
-							name={name}
-							type="hidden"
-						/>
-					</dd>
-				</dl>
+					<dl>
+						<dt className="text-capitalize"></dt>
+
+						<dd>
+							<NoRender
+								className="lfr-map"
+								id={`map_${instanceId}`}
+								style={{height: '280px'}}
+							/>
+
+							<input
+								id={`input_value_${instanceId}`}
+								name={name}
+								type="hidden"
+							/>
+						</dd>
+					</dl>
+				</div>
 			) : (
 				<img
 					alt={Liferay.Language.get('geolocation')}
@@ -96,20 +107,30 @@ const Main = ({
 	value,
 	viewMode,
 	...otherProps
-}) => (
-	<FieldBase name={name} readOnly={readOnly} {...otherProps}>
-		<Geolocation
-			disabled={readOnly}
-			googleMapsAPIKey={googleMapsAPIKey}
-			instanceId={instanceId}
-			mapProviderKey={mapProviderKey}
-			name={name}
-			onChange={(value) => onChange({}, value)}
-			value={value}
-			viewMode={viewMode}
-		/>
-	</FieldBase>
-);
+}) => {
+	const [defaultPlaceLocation, setDefaultPlaceLocation] = useState('');
+
+	return (
+		<FieldBase name={name} readOnly={readOnly} {...otherProps}>
+			<Geolocation
+				disabled={readOnly}
+				googleMapsAPIKey={googleMapsAPIKey}
+				instanceId={instanceId}
+				mapProviderKey={mapProviderKey}
+				name={name}
+				onChange={({location}) => {
+					setDefaultPlaceLocation(JSON.stringify(location));
+
+					if (defaultPlaceLocation) {
+						onChange({}, location);
+					}
+				}}
+				value={value}
+				viewMode={viewMode}
+			/>
+		</FieldBase>
+	);
+};
 
 Main.displayName = 'Geolocation';
 

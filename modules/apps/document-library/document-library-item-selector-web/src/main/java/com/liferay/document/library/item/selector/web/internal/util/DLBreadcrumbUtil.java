@@ -1,27 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.item.selector.web.internal.util;
 
 import com.liferay.document.library.kernel.model.DLFolderConstants;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.GroupServiceUtil;
+import com.liferay.portal.kernel.service.RepositoryServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -112,17 +108,21 @@ public class DLBreadcrumbUtil {
 		Folder folder, HttpServletRequest httpServletRequest,
 		long repositoryId) {
 
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
 		if (folder != null) {
+			if (folder.isMountPoint()) {
+				return themeDisplay.getScopeGroupId();
+			}
+
 			return folder.getRepositoryId();
 		}
 
 		if (repositoryId != 0) {
 			return repositoryId;
 		}
-
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
 
 		return themeDisplay.getScopeGroupId();
 	}
@@ -143,7 +143,17 @@ public class DLBreadcrumbUtil {
 		Group group = themeDisplay.getScopeGroup();
 
 		if (repositoryId != 0) {
-			group = GroupServiceUtil.getGroup(repositoryId);
+			try {
+				group = GroupServiceUtil.getGroup(repositoryId);
+			}
+			catch (PortalException portalException) {
+				_log.error(portalException);
+
+				Repository repository = RepositoryServiceUtil.getRepository(
+					repositoryId);
+
+				group = GroupServiceUtil.getGroup(repository.getGroupId());
+			}
 		}
 		else if (folder != null) {
 			group = GroupServiceUtil.getGroup(folder.getGroupId());
@@ -151,5 +161,8 @@ public class DLBreadcrumbUtil {
 
 		return group.getDescriptiveName(themeDisplay.getLocale());
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		DLBreadcrumbUtil.class);
 
 }

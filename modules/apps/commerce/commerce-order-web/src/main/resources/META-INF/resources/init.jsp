@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -23,12 +14,15 @@ taglib uri="http://liferay.com/tld/clay" prefix="clay" %><%@
 taglib uri="http://liferay.com/tld/commerce-ui" prefix="commerce-ui" %><%@
 taglib uri="http://liferay.com/tld/expando" prefix="liferay-expando" %><%@
 taglib uri="http://liferay.com/tld/frontend" prefix="liferay-frontend" %><%@
+taglib uri="http://liferay.com/tld/frontend-data-set" prefix="frontend-data-set" %><%@
 taglib uri="http://liferay.com/tld/portlet" prefix="liferay-portlet" %><%@
 taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
-taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
+taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %><%@
+taglib uri="http://liferay.com/tld/user" prefix="liferay-user" %>
 
-<%@ page import="com.liferay.commerce.constants.CommerceOrderPaymentConstants" %><%@
-page import="com.liferay.commerce.constants.CommerceShipmentDataSetConstants" %><%@
+<%@ page import="com.liferay.account.model.AccountEntry" %><%@
+page import="com.liferay.commerce.constants.CommerceOrderPaymentConstants" %><%@
+page import="com.liferay.commerce.constants.CommerceShipmentFDSNames" %><%@
 page import="com.liferay.commerce.currency.model.CommerceCurrency" %><%@
 page import="com.liferay.commerce.exception.CommerceOrderBillingAddressException" %><%@
 page import="com.liferay.commerce.exception.CommerceOrderItemRequestedDeliveryDateException" %><%@
@@ -51,16 +45,17 @@ page import="com.liferay.commerce.model.CommerceOrderType" %><%@
 page import="com.liferay.commerce.model.CommerceShipment" %><%@
 page import="com.liferay.commerce.notification.model.CommerceNotificationQueueEntry" %><%@
 page import="com.liferay.commerce.order.CommerceOrderValidatorResult" %><%@
+page import="com.liferay.commerce.order.web.internal.constants.CommerceOrderFDSNames" %><%@
+page import="com.liferay.commerce.order.web.internal.constants.CommerceOrderScreenNavigationConstants" %><%@
+page import="com.liferay.commerce.order.web.internal.constants.CommerceOrderTypeScreenNavigationConstants" %><%@
 page import="com.liferay.commerce.order.web.internal.display.context.CommerceOrderEditDisplayContext" %><%@
 page import="com.liferay.commerce.order.web.internal.display.context.CommerceOrderListDisplayContext" %><%@
 page import="com.liferay.commerce.order.web.internal.display.context.CommerceOrderNoteEditDisplayContext" %><%@
 page import="com.liferay.commerce.order.web.internal.display.context.CommerceOrderTypeDisplayContext" %><%@
 page import="com.liferay.commerce.order.web.internal.display.context.CommerceOrderTypeQualifiersDisplayContext" %><%@
-page import="com.liferay.commerce.order.web.internal.frontend.constants.CommerceOrderDataSetConstants" %><%@
 page import="com.liferay.commerce.order.web.internal.security.permission.resource.CommerceOrderPermission" %><%@
-page import="com.liferay.commerce.order.web.internal.servlet.taglib.ui.constants.CommerceOrderScreenNavigationConstants" %><%@
-page import="com.liferay.commerce.order.web.internal.servlet.taglib.ui.constants.CommerceOrderTypeScreenNavigationConstants" %><%@
 page import="com.liferay.commerce.product.model.CPMeasurementUnit" %><%@
+page import="com.liferay.commerce.term.model.CommerceTermEntry" %><%@
 page import="com.liferay.petra.string.StringBundler" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
 page import="com.liferay.portal.kernel.bean.BeanParamUtil" %><%@
@@ -84,6 +79,9 @@ page import="com.liferay.portal.kernel.workflow.WorkflowConstants" %>
 <%@ page import="java.util.Calendar" %><%@
 page import="java.util.Collections" %><%@
 page import="java.util.Date" %><%@
+page import="java.util.HashMap" %><%@
+page import="java.util.List" %><%@
+page import="java.util.Map" %><%@
 page import="java.util.Objects" %>
 
 <%@ page import="javax.portlet.PortletURL" %>
@@ -93,7 +91,3 @@ page import="java.util.Objects" %>
 <liferay-theme:defineObjects />
 
 <portlet:defineObjects />
-
-<%
-String redirect = ParamUtil.getString(request, "redirect");
-%>

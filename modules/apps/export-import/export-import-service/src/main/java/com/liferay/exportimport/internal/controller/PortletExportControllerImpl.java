@@ -1,23 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.controller;
 
-import com.liferay.asset.kernel.model.AssetLink;
-import com.liferay.asset.kernel.model.adapter.StagedAssetLink;
-import com.liferay.asset.kernel.service.AssetEntryLocalService;
-import com.liferay.asset.kernel.service.AssetLinkLocalService;
+import com.liferay.asset.link.model.AssetLink;
+import com.liferay.asset.link.model.adapter.StagedAssetLink;
+import com.liferay.asset.link.service.AssetLinkLocalService;
 import com.liferay.exportimport.changeset.constants.ChangesetPortletKeys;
 import com.liferay.exportimport.configuration.ExportImportServiceConfiguration;
 import com.liferay.exportimport.constants.ExportImportConstants;
@@ -49,11 +39,12 @@ import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortle
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskThreadLocal;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.NoSuchPortletPreferencesException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.lock.Lock;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -65,8 +56,6 @@ import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.PortletItem;
 import com.liferay.portal.kernel.model.PortletPreferences;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.model.adapter.ModelAdapterUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -93,6 +82,7 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.Node;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.zip.ZipWriter;
+import com.liferay.portal.model.adapter.util.ModelAdapterUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -100,9 +90,9 @@ import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -123,7 +113,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Máté Thurzó
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.portal.kernel.model.Portlet",
 	service = {ExportImportController.class, PortletExportController.class}
 )
@@ -500,9 +489,7 @@ public class PortletExportControllerImpl implements PortletExportController {
 				// LPS-52675
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(
-						noSuchPortletPreferencesException,
-						noSuchPortletPreferencesException);
+					_log.debug(noSuchPortletPreferencesException);
 				}
 			}
 		}
@@ -577,7 +564,7 @@ public class PortletExportControllerImpl implements PortletExportController {
 		}
 		catch (IOException ioException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(ioException.getMessage());
+				_log.warn(ioException);
 			}
 		}
 	}
@@ -661,6 +648,8 @@ public class PortletExportControllerImpl implements PortletExportController {
 				portletDataContext, portletId, jxPortletPreferences);
 		}
 		finally {
+			portletDataContext.clearScopedPrimaryKeys();
+
 			portletDataContext.setGroupId(groupId);
 			portletDataContext.setStartDate(originalStartDate);
 		}
@@ -770,11 +759,8 @@ public class PortletExportControllerImpl implements PortletExportController {
 
 			serviceContext.setCompanyId(layout.getCompanyId());
 			serviceContext.setSignedIn(false);
-
-			long defaultUserId = _userLocalService.getDefaultUserId(
-				layout.getCompanyId());
-
-			serviceContext.setUserId(defaultUserId);
+			serviceContext.setUserId(
+				_userLocalService.getGuestUserId(layout.getCompanyId()));
 
 			ServiceContextThreadLocal.pushServiceContext(serviceContext);
 		}
@@ -825,7 +811,7 @@ public class PortletExportControllerImpl implements PortletExportController {
 		headerElement.addAttribute(
 			"available-locales",
 			StringUtil.merge(
-				LanguageUtil.getAvailableLocales(
+				_language.getAvailableLocales(
 					_portal.getSiteGroupId(
 						portletDataContext.getScopeGroupId()))));
 		headerElement.addAttribute(
@@ -858,11 +844,8 @@ public class PortletExportControllerImpl implements PortletExportController {
 			"schema-version",
 			ExportImportConstants.EXPORT_IMPORT_SCHEMA_VERSION);
 
-		Element missingReferencesElement = rootElement.addElement(
-			"missing-references");
-
 		portletDataContext.setMissingReferencesElement(
-			missingReferencesElement);
+			rootElement.addElement("missing-references"));
 
 		Map<String, Boolean> exportPortletControlsMap =
 			_exportImportHelper.getExportPortletControlsMap(
@@ -994,65 +977,6 @@ public class PortletExportControllerImpl implements PortletExportController {
 			PROCESS_FLAG_PORTLET_EXPORT_IN_PROCESS;
 	}
 
-	@Reference(unbind = "-")
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		_assetEntryLocalService = assetEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setAssetLinkLocalService(
-		AssetLinkLocalService assetLinkLocalService) {
-
-		_assetLinkLocalService = assetLinkLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setExportImportLifecycleManager(
-		ExportImportLifecycleManager exportImportLifecycleManager) {
-
-		_exportImportLifecycleManager = exportImportLifecycleManager;
-	}
-
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setLayoutLocalService(
-		LayoutLocalService layoutLocalService) {
-
-		_layoutLocalService = layoutLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortletItemLocalService(
-		PortletItemLocalService portletItemLocalService) {
-
-		_portletItemLocalService = portletItemLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortletLocalService(
-		PortletLocalService portletLocalService) {
-
-		_portletLocalService = portletLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortletPreferencesLocalService(
-		PortletPreferencesLocalService portletPreferencesLocalService) {
-
-		_portletPreferencesLocalService = portletPreferencesLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
 	private void _exportPortletPreference(
 			PortletDataContext portletDataContext, long ownerId, int ownerType,
 			boolean defaultUser, PortletPreferences portletPreferences,
@@ -1074,6 +998,8 @@ public class PortletExportControllerImpl implements PortletExportController {
 
 			Element exportDataRootElement =
 				portletDataContext.getExportDataRootElement();
+			Set<String> oldScopedPrimaryKeys = new HashSet<>(
+				portletDataContext.getScopedPrimaryKeys());
 
 			try {
 				portletDataContext.clearScopedPrimaryKeys();
@@ -1108,6 +1034,7 @@ public class PortletExportControllerImpl implements PortletExportController {
 				}
 			}
 			finally {
+				portletDataContext.addScopedPrimaryKeys(oldScopedPrimaryKeys);
 				portletDataContext.setExportDataRootElement(
 					exportDataRootElement);
 			}
@@ -1177,9 +1104,7 @@ public class PortletExportControllerImpl implements PortletExportController {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					noSuchPortletPreferencesException,
-					noSuchPortletPreferencesException);
+				_log.debug(noSuchPortletPreferencesException);
 			}
 
 			return;
@@ -1267,9 +1192,7 @@ public class PortletExportControllerImpl implements PortletExportController {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					noSuchPortletPreferencesException,
-					noSuchPortletPreferencesException);
+				_log.debug(noSuchPortletPreferencesException);
 			}
 
 			return;
@@ -1293,14 +1216,13 @@ public class PortletExportControllerImpl implements PortletExportController {
 	private PortletDataHandler _getPortletDataHandler(
 		PortletDataContext portletDataContext, Portlet portlet) {
 
-		Optional<Portlet> portletOptional = _replacePortlet(
-			portletDataContext, portlet);
+		portlet = _replacePortlet(portletDataContext, portlet);
 
-		return portletOptional.map(
-			Portlet::getPortletDataHandlerInstance
-		).orElse(
-			null
-		);
+		if (portlet != null) {
+			return portlet.getPortletDataHandlerInstance();
+		}
+
+		return null;
 	}
 
 	private boolean _hasPortletId(
@@ -1350,13 +1272,13 @@ public class PortletExportControllerImpl implements PortletExportController {
 			return exportImportServiceConfiguration.includeAllAssetLinks();
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return false;
 	}
 
-	private Optional<Portlet> _replacePortlet(
+	private Portlet _replacePortlet(
 		PortletDataContext portletDataContext, Portlet portlet) {
 
 		if (ExportImportDateUtil.isRangeFromLastPublishDate(
@@ -1365,26 +1287,23 @@ public class PortletExportControllerImpl implements PortletExportController {
 			String changesetPortletId = ChangesetPortletKeys.CHANGESET;
 
 			if (ExportImportThreadLocal.isPortletStagingInProcess()) {
-				Portlet changesetPortlet = _portletLocalService.getPortletById(
-					changesetPortletId);
-
-				return Optional.of(changesetPortlet);
+				return _portletLocalService.getPortletById(changesetPortletId);
 			}
 
 			if (ExportImportThreadLocal.isLayoutStagingInProcess() &&
 				!changesetPortletId.equals(portlet.getPortletId())) {
 
-				return Optional.empty();
+				return null;
 			}
 		}
 
-		return Optional.of(portlet);
+		return portlet;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		PortletExportControllerImpl.class);
 
-	private AssetEntryLocalService _assetEntryLocalService;
+	@Reference
 	private AssetLinkLocalService _assetLinkLocalService;
 
 	@Reference
@@ -1396,14 +1315,22 @@ public class PortletExportControllerImpl implements PortletExportController {
 	@Reference
 	private ExportImportHelper _exportImportHelper;
 
+	@Reference
 	private ExportImportLifecycleManager _exportImportLifecycleManager;
 
 	@Reference
 	private ExportImportProcessCallbackRegistry
 		_exportImportProcessCallbackRegistry;
 
+	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
+
+	@Reference
 	private LayoutLocalService _layoutLocalService;
+
 	private final PermissionExporter _permissionExporter =
 		PermissionExporter.getInstance();
 
@@ -1420,14 +1347,20 @@ public class PortletExportControllerImpl implements PortletExportController {
 	private PortletDataHandlerStatusMessageSender
 		_portletDataHandlerStatusMessageSender;
 
+	@Reference
 	private PortletItemLocalService _portletItemLocalService;
+
+	@Reference
 	private PortletLocalService _portletLocalService;
+
+	@Reference
 	private PortletPreferencesLocalService _portletPreferencesLocalService;
 
 	@Reference
 	private PortletPreferenceValueLocalService
 		_portletPreferenceValueLocalService;
 
+	@Reference
 	private UserLocalService _userLocalService;
 
 	private class UpdatePortletLastPublishDateCallable

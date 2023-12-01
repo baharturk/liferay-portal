@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.demo.internal;
@@ -39,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Sergio González
  */
-@Component(immediate = true, service = PortalInstanceLifecycleListener.class)
+@Component(service = PortalInstanceLifecycleListener.class)
 public class MBDemo extends BasePortalInstanceLifecycleListener {
 
 	@Override
@@ -122,52 +113,26 @@ public class MBDemo extends BasePortalInstanceLifecycleListener {
 		_rootMBCategoryDemoDataCreator.delete();
 	}
 
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
-	}
-
-	@Reference(target = "(source=liferay)", unbind = "-")
-	protected void setLiferayMBCategoryDemoDataCreator(
-		MBCategoryDemoDataCreator mbCategoryDemoDataCreator) {
-
-		_mbCategoryDemoDataCreator = mbCategoryDemoDataCreator;
-	}
-
-	@Reference(target = "(source=liferay)", unbind = "-")
-	protected void setLiferayRootMBCategoryDemoDataCreator(
-		RootMBCategoryDemoDataCreator rootMBCategoryDemoDataCreator) {
-
-		_rootMBCategoryDemoDataCreator = rootMBCategoryDemoDataCreator;
-	}
-
-	@Reference(target = "(source=lorem-ipsum)", unbind = "-")
-	protected void setLoremIpsumMBThreadDemoDataCreator(
-		MBThreadDemoDataCreator mbThreadDemoDataCreator) {
-
-		_mbThreadDemoDataCreator = mbThreadDemoDataCreator;
-	}
-
-	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
-	protected void setModuleServiceLifecycle(
-		ModuleServiceLifecycle moduleServiceLifecycle) {
-	}
-
-	@Reference(unbind = "-")
-	protected void setOmniAdminUserDemoDataCreator(
-		OmniAdminUserDemoDataCreator omniAdminUserDemoDataCreator) {
-
-		_omniAdminUserDemoDataCreator = omniAdminUserDemoDataCreator;
-	}
-
 	private <T> T _getRandomElement(List<T> list) {
 		return list.get(RandomUtil.nextInt(list.size()));
 	}
 
+	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference(target = "(source=liferay)")
 	private MBCategoryDemoDataCreator _mbCategoryDemoDataCreator;
+
+	@Reference(target = "(source=lorem-ipsum)")
 	private MBThreadDemoDataCreator _mbThreadDemoDataCreator;
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
+	private ModuleServiceLifecycle _moduleServiceLifecycle;
+
+	@Reference
 	private OmniAdminUserDemoDataCreator _omniAdminUserDemoDataCreator;
+
+	@Reference(target = "(source=liferay)")
 	private RootMBCategoryDemoDataCreator _rootMBCategoryDemoDataCreator;
 
 }

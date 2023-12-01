@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.monitoring.internal.jmx;
@@ -41,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.monitoring.internal.configuration.MonitoringConfiguration",
-	enabled = false, immediate = true,
+	enabled = false,
 	property = {
 		"jmx.objectname=com.liferay.portal.monitoring:classification=monitoring_service,name=MonitoringConfigurationManager",
 		"jmx.objectname.cache.key=MonitoringProcessorManager"
@@ -230,36 +221,18 @@ public class MonitoringConfigurationManager
 			_monitoringConfiguration.monitorServiceRequest());
 	}
 
-	@Reference(unbind = "-")
-	protected void setMonitoringControl(MonitoringControl monitoringControl) {
-		_monitoringControl = monitoringControl;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortalMonitoringControl(
-		PortalMonitoringControl portalMonitoringControl) {
-
-		_portalMonitoringControl = portalMonitoringControl;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortletMonitoringControl(
-		PortletMonitoringControl portletMonitoringControl) {
-
-		_portletMonitoringControl = portletMonitoringControl;
-	}
-
-	@Reference(unbind = "-")
-	protected void setServiceMonitoringControl(
-		ServiceMonitoringControl serviceMonitoringControl) {
-
-		_serviceMonitoringControl = serviceMonitoringControl;
-	}
-
 	private volatile MonitoringConfiguration _monitoringConfiguration;
+
+	@Reference
 	private MonitoringControl _monitoringControl;
+
+	@Reference
 	private PortalMonitoringControl _portalMonitoringControl;
+
+	@Reference
 	private PortletMonitoringControl _portletMonitoringControl;
+
+	@Reference
 	private ServiceMonitoringControl _serviceMonitoringControl;
 
 }

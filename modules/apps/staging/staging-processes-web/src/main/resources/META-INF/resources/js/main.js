@@ -1,43 +1,34 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-staging-processes-export-import',
 	(A) => {
-		var Lang = A.Lang;
+		const Lang = A.Lang;
 
-		var ADate = A.Date;
+		const ADate = A.Date;
 
-		var FAILURE_TIMEOUT = 10000;
+		const FAILURE_TIMEOUT = 10000;
 
-		var RENDER_INTERVAL_IDLE = 60000;
+		const RENDER_INTERVAL_IDLE = 60000;
 
-		var RENDER_INTERVAL_IN_PROGRESS = 2000;
+		const RENDER_INTERVAL_IN_PROGRESS = 2000;
 
-		var STR_CHECKED = 'checked';
+		const STR_CHECKED = 'checked';
 
-		var STR_CLICK = 'click';
+		const STR_CLICK = 'click';
 
-		var STR_EMPTY = '';
+		const STR_EMPTY = '';
 
-		var STR_HIDE = 'hide';
+		const STR_HIDE = 'hide';
 
-		var defaultConfig = {
+		const defaultConfig = {
 			setter: '_setNode',
 		};
 
-		var ExportImport = A.Component.create({
+		const ExportImport = A.Component.create({
 			ATTRS: {
 				archivedSetupsNode: defaultConfig,
 				commentsNode: defaultConfig,
@@ -65,19 +56,19 @@ AUI.add(
 
 			prototype: {
 				_bindUI() {
-					var instance = this;
+					const instance = this;
 
-					var form = instance.get('form');
+					const form = instance.get('form');
 
 					if (form) {
 						form.delegate(
 							STR_CLICK,
 							(event) => {
-								var portletId = event.currentTarget.attr(
+								const portletId = event.currentTarget.attr(
 									'data-portletid'
 								);
 
-								var portletTitle = event.currentTarget.attr(
+								let portletTitle = event.currentTarget.attr(
 									'data-portlettitle'
 								);
 
@@ -87,7 +78,7 @@ AUI.add(
 									);
 								}
 
-								var contentDialog = instance._getContentDialog(
+								const contentDialog = instance._getContentDialog(
 									portletId,
 									portletTitle
 								);
@@ -102,7 +93,7 @@ AUI.add(
 						`[id^=${instance.ns('PORTLET_DATA')}]`
 					);
 
-					if (checkboxes.length > 0) {
+					if (checkboxes.length) {
 						document.body.addEventListener('click', (event) => {
 							const {id} = event.target;
 
@@ -111,7 +102,7 @@ AUI.add(
 									`[data-root-control-id=${id}]`
 								);
 
-								if (controlCheckboxes.length > 0) {
+								if (controlCheckboxes.length) {
 									controlCheckboxes.forEach(
 										(controlCheckbox) => {
 											if (!controlCheckbox.checked) {
@@ -137,7 +128,7 @@ AUI.add(
 						});
 					}
 
-					var changeToPublicLayoutsButton = instance.byId(
+					const changeToPublicLayoutsButton = instance.byId(
 						'changeToPublicLayoutsButton'
 					);
 
@@ -147,7 +138,7 @@ AUI.add(
 						});
 					}
 
-					var changeToPrivateLayoutsButton = instance.byId(
+					const changeToPrivateLayoutsButton = instance.byId(
 						'changeToPrivateLayoutsButton'
 					);
 
@@ -157,19 +148,19 @@ AUI.add(
 						});
 					}
 
-					var contentOptionsLink = instance.byId(
+					const contentOptionsLink = instance.byId(
 						'contentOptionsLink'
 					);
 
 					if (contentOptionsLink) {
 						contentOptionsLink.on(STR_CLICK, () => {
-							var contentOptionsDialog = instance._getContentOptionsDialog();
+							const contentOptionsDialog = instance._getContentOptionsDialog();
 
 							contentOptionsDialog.show();
 						});
 					}
 
-					var deletionsNode = instance.get('deletionsNode');
+					const deletionsNode = instance.get('deletionsNode');
 
 					if (deletionsNode) {
 						deletionsNode.on('change', () => {
@@ -177,19 +168,19 @@ AUI.add(
 						});
 					}
 
-					var globalConfigurationLink = instance.byId(
+					const globalConfigurationLink = instance.byId(
 						'globalConfigurationLink'
 					);
 
 					if (globalConfigurationLink) {
 						globalConfigurationLink.on(STR_CLICK, () => {
-							var globalConfigurationDialog = instance._getGlobalConfigurationDialog();
+							const globalConfigurationDialog = instance._getGlobalConfigurationDialog();
 
 							globalConfigurationDialog.show();
 						});
 					}
 
-					var rangeLink = instance.byId('rangeLink');
+					const rangeLink = instance.byId('rangeLink');
 
 					if (rangeLink) {
 						rangeLink.on(STR_CLICK, () => {
@@ -199,13 +190,13 @@ AUI.add(
 						});
 					}
 
-					var scheduledPublishingEventsLink = instance.byId(
+					const scheduledPublishingEventsLink = instance.byId(
 						'scheduledPublishingEventsLink'
 					);
 
 					if (scheduledPublishingEventsLink) {
 						scheduledPublishingEventsLink.on(STR_CLICK, () => {
-							var scheduledPublishingEventsDialog = instance._getScheduledPublishingEventsDialog();
+							const scheduledPublishingEventsDialog = instance._getScheduledPublishingEventsDialog();
 
 							scheduledPublishingEventsDialog.show();
 						});
@@ -213,9 +204,9 @@ AUI.add(
 				},
 
 				_changeLayouts(privateLayout) {
-					var instance = this;
+					const instance = this;
 
-					var privateLayoutNode = instance.byId('privateLayout');
+					const privateLayoutNode = instance.byId('privateLayout');
 
 					privateLayoutNode.val(privateLayout);
 
@@ -225,11 +216,11 @@ AUI.add(
 				},
 
 				_getContentDialog(portletId, portletTitle) {
-					var instance = this;
+					const instance = this;
 
-					var contentNode = instance.byId('content_' + portletId);
+					const contentNode = instance.byId('content_' + portletId);
 
-					var contentDialog = contentNode.getData('contentDialog');
+					let contentDialog = contentNode.getData('contentDialog');
 
 					if (!contentDialog) {
 						contentNode.show();
@@ -293,11 +284,11 @@ AUI.add(
 				},
 
 				_getContentOptionsDialog() {
-					var instance = this;
+					const instance = this;
 
-					var contentOptionsDialog = instance._contentOptionsDialog;
+					let contentOptionsDialog = instance._contentOptionsDialog;
 
-					var contentOptionsNode = instance.byId('contentOptions');
+					const contentOptionsNode = instance.byId('contentOptions');
 
 					if (!contentOptionsDialog) {
 						contentOptionsNode.show();
@@ -360,13 +351,13 @@ AUI.add(
 				},
 
 				_getGlobalConfigurationDialog() {
-					var instance = this;
+					const instance = this;
 
-					var globalConfigurationDialog =
+					let globalConfigurationDialog =
 						instance._globalConfigurationDialog;
 
 					if (!globalConfigurationDialog) {
-						var globalConfigurationNode = instance.byId(
+						const globalConfigurationNode = instance.byId(
 							'globalConfiguration'
 						);
 
@@ -426,9 +417,9 @@ AUI.add(
 				},
 
 				_getNotificationMessage(dateChecker) {
-					var instance = this;
+					const instance = this;
 
-					var message;
+					let message;
 
 					if (!instance._rangeEndsLater()) {
 						message = Liferay.Language.get(
@@ -448,13 +439,13 @@ AUI.add(
 				},
 
 				_getScheduledPublishingEventsDialog() {
-					var instance = this;
+					const instance = this;
 
-					var scheduledPublishingEventsDialog =
+					let scheduledPublishingEventsDialog =
 						instance._scheduledPublishingEventsDialog;
 
 					if (!scheduledPublishingEventsDialog) {
-						var scheduledPublishingEventsNode = instance.byId(
+						const scheduledPublishingEventsNode = instance.byId(
 							'scheduledPublishingEvents'
 						);
 
@@ -497,32 +488,32 @@ AUI.add(
 				},
 
 				_getSelectedDates() {
-					var instance = this;
+					const instance = this;
 
-					var startDatePicker = Liferay.component(
+					const startDatePicker = Liferay.component(
 						instance.ns('startDateDatePicker')
 					);
-					var startTimePicker = Liferay.component(
+					const startTimePicker = Liferay.component(
 						instance.ns('startTimeTimePicker')
 					);
 
-					var endDatePicker = Liferay.component(
+					const endDatePicker = Liferay.component(
 						instance.ns('endDateDatePicker')
 					);
-					var endTimePicker = Liferay.component(
+					const endTimePicker = Liferay.component(
 						instance.ns('endTimeTimePicker')
 					);
 
-					var endDate = endDatePicker.getDate();
-					var endTime = endTimePicker.getTime();
+					const endDate = endDatePicker.getDate();
+					const endTime = endTimePicker.getTime();
 
 					endDate.setHours(endTime.getHours());
 					endDate.setMinutes(endTime.getMinutes());
 					endDate.setSeconds(0);
 					endDate.setMilliseconds(0);
 
-					var startDate = startDatePicker.getDate();
-					var startTime = startTimePicker.getTime();
+					const startDate = startDatePicker.getDate();
+					const startTime = startTimePicker.getTime();
 
 					startDate.setHours(startTime.getHours());
 					startDate.setMinutes(startTime.getMinutes());
@@ -536,11 +527,11 @@ AUI.add(
 				},
 
 				_getValue(nodeName) {
-					var instance = this;
+					const instance = this;
 
-					var value = STR_EMPTY;
+					let value = STR_EMPTY;
 
-					var node = instance.get(nodeName);
+					const node = instance.get(nodeName);
 
 					if (node) {
 						value = node.val();
@@ -550,7 +541,7 @@ AUI.add(
 				},
 
 				_initLabels() {
-					var instance = this;
+					const instance = this;
 
 					instance.all('.content-link').each((item) => {
 						instance._setContentLabels(item.attr('data-portletid'));
@@ -562,9 +553,9 @@ AUI.add(
 				},
 
 				_isBackgroundTaskInProgress() {
-					var instance = this;
+					const instance = this;
 
-					var processesNode = instance.get('processesNode');
+					const processesNode = instance.get('processesNode');
 
 					return !!processesNode.one(
 						'.background-task-status-in-progress'
@@ -572,23 +563,23 @@ AUI.add(
 				},
 
 				_isChecked(nodeName) {
-					var instance = this;
+					const instance = this;
 
-					var node = instance.get(nodeName);
+					const node = instance.get(nodeName);
 
 					return node && node.attr(STR_CHECKED);
 				},
 
 				_onViewBackgroundTaskDetails(config) {
-					var instance = this;
+					const instance = this;
 
-					var node = instance.byId(instance.ns(config.nodeId));
+					const node = instance.byId(instance.ns(config.nodeId));
 
-					var bodyNode = node.cloneNode(true);
+					const bodyNode = node.cloneNode(true);
 
 					bodyNode.show();
 
-					var title = config.title;
+					let title = config.title;
 
 					if (title) {
 						title = title.trim();
@@ -607,9 +598,9 @@ AUI.add(
 				},
 
 				_preventNameRequiredChecking() {
-					var instance = this;
+					const instance = this;
 
-					var nameRequiredNode = instance.byId('nameRequired');
+					const nameRequiredNode = instance.byId('nameRequired');
 
 					if (nameRequiredNode) {
 						nameRequiredNode.val('0');
@@ -617,17 +608,17 @@ AUI.add(
 				},
 
 				_rangeEndsInPast(today) {
-					var instance = this;
+					const instance = this;
 
-					var selectedDates = instance._getSelectedDates();
+					const selectedDates = instance._getSelectedDates();
 
 					return ADate.isGreaterOrEqual(today, selectedDates.endDate);
 				},
 
 				_rangeEndsLater() {
-					var instance = this;
+					const instance = this;
 
-					var selectedDates = instance._getSelectedDates();
+					const selectedDates = instance._getSelectedDates();
 
 					return ADate.isGreater(
 						selectedDates.endDate,
@@ -636,9 +627,9 @@ AUI.add(
 				},
 
 				_rangeStartsInPast(today) {
-					var instance = this;
+					const instance = this;
 
-					var selectedDates = instance._getSelectedDates();
+					const selectedDates = instance._getSelectedDates();
 
 					return ADate.isGreaterOrEqual(
 						today,
@@ -647,7 +638,7 @@ AUI.add(
 				},
 
 				_refreshDeletions() {
-					var instance = this;
+					const instance = this;
 
 					if (instance._isChecked('deletionsNode')) {
 						instance.all('.deletions').each((item) => {
@@ -662,13 +653,13 @@ AUI.add(
 				},
 
 				_reloadForm() {
-					var instance = this;
+					const instance = this;
 
-					var cmdNode = instance.byId('cmd');
-					var redirectNode = instance.byId('redirect');
+					const cmdNode = instance.byId('cmd');
+					const redirectNode = instance.byId('redirect');
 
 					if (cmdNode.val() === 'add' || cmdNode.val() === 'update') {
-						var redirectParameters = {
+						const redirectParameters = {
 							cmd: cmdNode.val(),
 						};
 
@@ -687,31 +678,33 @@ AUI.add(
 								'custom';
 						}
 
-						var groupIdNode = instance.byId('groupId');
+						const groupIdNode = instance.byId('groupId');
 
 						if (groupIdNode) {
 							redirectParameters.groupId = groupIdNode.val();
 						}
 
-						var liveGroupIdNode = instance.byId('liveGroupId');
+						const liveGroupIdNode = instance.byId('liveGroupId');
 
 						if (liveGroupIdNode) {
 							redirectParameters.liveGroupId = liveGroupIdNode.val();
 						}
 
-						var privateLayoutNode = instance.byId('privateLayout');
+						const privateLayoutNode = instance.byId(
+							'privateLayout'
+						);
 
 						if (privateLayoutNode) {
 							redirectParameters.privateLayout = privateLayoutNode.val();
 						}
 
-						var rootNodeNameNode = instance.byId('rootNodeName');
+						const rootNodeNameNode = instance.byId('rootNodeName');
 
 						if (rootNodeNameNode) {
 							redirectParameters.rootNodeName = rootNodeNameNode.val();
 						}
 
-						var redirectPortletURL = Liferay.Util.PortletURL.createPortletURL(
+						const redirectPortletURL = Liferay.Util.PortletURL.createPortletURL(
 							redirectNode.val(),
 							redirectParameters
 						);
@@ -720,15 +713,15 @@ AUI.add(
 					}
 
 					if (cmdNode) {
-						var form = instance.get('form');
+						const form = instance.get('form');
 
-						var formPortletURL = Liferay.Util.PortletURL.createActionURL(
+						const formPortletURL = Liferay.Util.PortletURL.createActionURL(
 							form.get('action')
 						);
 
 						form.set('action', formPortletURL.toString());
 
-						var currentURL = instance.byId('currentURL');
+						const currentURL = instance.byId('currentURL');
 
 						redirectNode.val(currentURL);
 
@@ -739,9 +732,9 @@ AUI.add(
 				},
 
 				_renderProcesses() {
-					var instance = this;
+					const instance = this;
 
-					var checkedCheckboxes = A.all(
+					const checkedCheckboxes = A.all(
 						'input[name="' + instance.ns('rowIds') + '"]:checked'
 					);
 
@@ -751,7 +744,7 @@ AUI.add(
 						return;
 					}
 
-					var processesNode = instance.get('processesNode');
+					const processesNode = instance.get('processesNode');
 
 					if (processesNode && instance._processesResourceURL) {
 						Liferay.Util.fetch(instance._processesResourceURL)
@@ -785,7 +778,7 @@ AUI.add(
 				},
 
 				_restoreNodeCheckedState(node, state) {
-					var val = state.value;
+					const val = state.value;
 
 					if (val !== undefined) {
 						node.set('checked', val);
@@ -793,7 +786,7 @@ AUI.add(
 				},
 
 				_restoreNodeHiddenState(node, state) {
-					var hiddenList = node.ancestorsByClassName(STR_HIDE);
+					let hiddenList = node.ancestorsByClassName(STR_HIDE);
 
 					hiddenList.each((hiddenNode) => {
 						hiddenNode.removeClass(STR_HIDE);
@@ -809,20 +802,20 @@ AUI.add(
 				},
 
 				_restoreNodeInputStates(node) {
-					var instance = this;
+					const instance = this;
 
-					var inputNodes = [];
+					let inputNodes = [];
 
-					var inputStates = instance._nodeInputStates;
+					const inputStates = instance._nodeInputStates;
 
 					if (node && node.getElementsByTagName) {
 						inputNodes = node.getElementsByTagName('input');
 					}
 
 					inputNodes.each((node) => {
-						var id = node.get('id');
+						const id = node.get('id');
 
-						var state = inputStates[id];
+						const state = inputStates[id];
 
 						if (state !== undefined) {
 							instance._restoreNodeCheckedState(node, state);
@@ -832,9 +825,9 @@ AUI.add(
 				},
 
 				_scheduleRenderProcess() {
-					var instance = this;
+					const instance = this;
 
-					var renderInterval = RENDER_INTERVAL_IDLE;
+					let renderInterval = RENDER_INTERVAL_IDLE;
 
 					if (instance._isBackgroundTaskInProgress()) {
 						renderInterval = RENDER_INTERVAL_IN_PROGRESS;
@@ -848,16 +841,16 @@ AUI.add(
 				},
 
 				_setContentLabels(portletId) {
-					var instance = this;
+					const instance = this;
 
-					var contentNode = instance.byId('content_' + portletId);
+					const contentNode = instance.byId('content_' + portletId);
 
-					var inputs = contentNode.all('.field');
+					const inputs = contentNode.all('.field');
 
-					var selectedContent = [];
+					const selectedContent = [];
 
 					inputs.each((item) => {
-						var checked = item.attr(STR_CHECKED);
+						const checked = item.attr(STR_CHECKED);
 
 						if (checked) {
 							selectedContent.push(item.attr('data-name'));
@@ -887,9 +880,9 @@ AUI.add(
 				},
 
 				_setContentOptionsLabels() {
-					var instance = this;
+					const instance = this;
 
-					var selectedContentOptions = [];
+					const selectedContentOptions = [];
 
 					if (instance._isChecked('commentsNode')) {
 						selectedContentOptions.push(
@@ -911,9 +904,9 @@ AUI.add(
 				},
 
 				_setGlobalConfigurationLabels() {
-					var instance = this;
+					const instance = this;
 
-					var selectedGlobalConfiguration = [];
+					const selectedGlobalConfiguration = [];
 
 					if (instance._isChecked('setupNode')) {
 						selectedGlobalConfiguration.push(
@@ -941,9 +934,9 @@ AUI.add(
 				},
 
 				_setLabels(linkId, labelDivId, label) {
-					var instance = this;
+					const instance = this;
 
-					var linkNode = instance.byId(linkId);
+					const linkNode = instance.byId(linkId);
 
 					if (linkNode) {
 						if (label !== STR_EMPTY) {
@@ -954,7 +947,7 @@ AUI.add(
 						}
 					}
 
-					var labelNode = instance.byId(labelDivId);
+					const labelNode = instance.byId(labelDivId);
 
 					if (labelNode) {
 						labelNode.html(label);
@@ -962,7 +955,7 @@ AUI.add(
 				},
 
 				_setNode(val) {
-					var instance = this;
+					const instance = this;
 
 					if (Lang.isString(val)) {
 						val = instance.one(val);
@@ -975,22 +968,22 @@ AUI.add(
 				},
 
 				_storeNodeInputStates(node) {
-					var instance = this;
+					const instance = this;
 
-					var inputNodes = [];
+					let inputNodes = [];
 
-					var inputStates = instance._nodeInputStates;
+					const inputStates = instance._nodeInputStates;
 
 					if (node && node.getElementsByTagName) {
 						inputNodes = node.getElementsByTagName('input');
 					}
 
 					inputNodes.each((node) => {
-						var hiddenList = node.ancestorsByClassName(STR_HIDE);
+						let hiddenList = node.ancestorsByClassName(STR_HIDE);
 
-						var id = node.get('id');
+						const id = node.get('id');
 
-						var val = node.get('checked');
+						const val = node.get('checked');
 
 						if (hiddenList.size() === 0) {
 							hiddenList = null;
@@ -1004,9 +997,9 @@ AUI.add(
 				},
 
 				_updateDateRange() {
-					var instance = this;
+					const instance = this;
 
-					var dateChecker = instance.getDateRangeChecker();
+					const dateChecker = instance.getDateRangeChecker();
 
 					if (dateChecker.validRange) {
 						instance._reloadForm();
@@ -1021,9 +1014,9 @@ AUI.add(
 				},
 
 				_updateincompleteProcessMessage(inProgress, content) {
-					var instance = this;
+					const instance = this;
 
-					var incompleteProcessMessageNode = instance.get(
+					const incompleteProcessMessageNode = instance.get(
 						'incompleteProcessMessageNode'
 					);
 
@@ -1048,7 +1041,7 @@ AUI.add(
 				},
 
 				destructor() {
-					var instance = this;
+					const instance = this;
 
 					if (instance._contentOptionsDialog) {
 						instance._contentOptionsDialog.destroy();
@@ -1068,21 +1061,21 @@ AUI.add(
 				},
 
 				getDateRangeChecker() {
-					var instance = this;
+					const instance = this;
 
-					var today = new Date();
+					const today = new Date();
 
-					var todayMS = +today;
+					const todayMS = +today;
 
-					var clientTZOffset = today.getTimezoneOffset();
+					const clientTZOffset = today.getTimezoneOffset();
 
-					var serverTZOffset = this.get('timeZoneOffset');
+					const serverTZOffset = this.get('timeZoneOffset');
 
-					var adjustedDate = new Date(
+					const adjustedDate = new Date(
 						todayMS + serverTZOffset + clientTZOffset * 60 * 1000
 					);
 
-					var dateRangeChecker = {
+					const dateRangeChecker = {
 						todayUsed: adjustedDate,
 						validRange: true,
 					};
@@ -1098,7 +1091,7 @@ AUI.add(
 				},
 
 				initializer(config) {
-					var instance = this;
+					const instance = this;
 
 					instance._bindUI();
 
@@ -1114,7 +1107,7 @@ AUI.add(
 					instance._processesResourceURL =
 						config.processesResourceURL;
 
-					var eventHandles = [
+					const eventHandles = [
 						Liferay.on(
 							instance.ns('viewBackgroundTaskDetails'),
 							instance._onViewBackgroundTaskDetails,
@@ -1132,17 +1125,19 @@ AUI.add(
 				},
 
 				showNotification(dateChecker) {
-					var instance = this;
+					const instance = this;
 
-					var message = instance._getNotificationMessage(dateChecker);
+					const message = instance._getNotificationMessage(
+						dateChecker
+					);
 
 					Liferay.Util.openToast({
 						message,
 						toastProps: {
 							autoClose: 10000,
 							style: {left: 0, top: 0},
-							type: 'warning',
 						},
+						type: 'warning',
 					});
 				},
 			},
@@ -1158,7 +1153,6 @@ AUI.add(
 			'aui-modal',
 			'aui-parse-content',
 			'aui-toggler',
-			'aui-tree-view',
 			'liferay-portlet-base',
 			'liferay-util-window',
 		],

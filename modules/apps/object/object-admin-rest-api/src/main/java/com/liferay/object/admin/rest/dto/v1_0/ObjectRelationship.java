@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.dto.v1_0;
@@ -129,6 +120,60 @@ public class ObjectRelationship implements Serializable {
 	protected DeletionType deletionType;
 
 	@Schema
+	public Boolean getEdge() {
+		return edge;
+	}
+
+	public void setEdge(Boolean edge) {
+		this.edge = edge;
+	}
+
+	@JsonIgnore
+	public void setEdge(UnsafeSupplier<Boolean, Exception> edgeUnsafeSupplier) {
+		try {
+			edge = edgeUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean edge;
+
+	@Schema
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String externalReferenceCode;
+
+	@Schema
 	public Long getId() {
 		return id;
 	}
@@ -210,6 +255,72 @@ public class ObjectRelationship implements Serializable {
 	protected String name;
 
 	@Schema
+	public String getObjectDefinitionExternalReferenceCode1() {
+		return objectDefinitionExternalReferenceCode1;
+	}
+
+	public void setObjectDefinitionExternalReferenceCode1(
+		String objectDefinitionExternalReferenceCode1) {
+
+		this.objectDefinitionExternalReferenceCode1 =
+			objectDefinitionExternalReferenceCode1;
+	}
+
+	@JsonIgnore
+	public void setObjectDefinitionExternalReferenceCode1(
+		UnsafeSupplier<String, Exception>
+			objectDefinitionExternalReferenceCode1UnsafeSupplier) {
+
+		try {
+			objectDefinitionExternalReferenceCode1 =
+				objectDefinitionExternalReferenceCode1UnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String objectDefinitionExternalReferenceCode1;
+
+	@Schema
+	public String getObjectDefinitionExternalReferenceCode2() {
+		return objectDefinitionExternalReferenceCode2;
+	}
+
+	public void setObjectDefinitionExternalReferenceCode2(
+		String objectDefinitionExternalReferenceCode2) {
+
+		this.objectDefinitionExternalReferenceCode2 =
+			objectDefinitionExternalReferenceCode2;
+	}
+
+	@JsonIgnore
+	public void setObjectDefinitionExternalReferenceCode2(
+		UnsafeSupplier<String, Exception>
+			objectDefinitionExternalReferenceCode2UnsafeSupplier) {
+
+		try {
+			objectDefinitionExternalReferenceCode2 =
+				objectDefinitionExternalReferenceCode2UnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String objectDefinitionExternalReferenceCode2;
+
+	@Schema
 	public Long getObjectDefinitionId1() {
 		return objectDefinitionId1;
 	}
@@ -266,6 +377,38 @@ public class ObjectRelationship implements Serializable {
 	protected Long objectDefinitionId2;
 
 	@Schema
+	public Boolean getObjectDefinitionModifiable2() {
+		return objectDefinitionModifiable2;
+	}
+
+	public void setObjectDefinitionModifiable2(
+		Boolean objectDefinitionModifiable2) {
+
+		this.objectDefinitionModifiable2 = objectDefinitionModifiable2;
+	}
+
+	@JsonIgnore
+	public void setObjectDefinitionModifiable2(
+		UnsafeSupplier<Boolean, Exception>
+			objectDefinitionModifiable2UnsafeSupplier) {
+
+		try {
+			objectDefinitionModifiable2 =
+				objectDefinitionModifiable2UnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean objectDefinitionModifiable2;
+
+	@Schema
 	public String getObjectDefinitionName2() {
 		return objectDefinitionName2;
 	}
@@ -292,6 +435,179 @@ public class ObjectRelationship implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String objectDefinitionName2;
+
+	@Schema
+	public Boolean getObjectDefinitionSystem2() {
+		return objectDefinitionSystem2;
+	}
+
+	public void setObjectDefinitionSystem2(Boolean objectDefinitionSystem2) {
+		this.objectDefinitionSystem2 = objectDefinitionSystem2;
+	}
+
+	@JsonIgnore
+	public void setObjectDefinitionSystem2(
+		UnsafeSupplier<Boolean, Exception>
+			objectDefinitionSystem2UnsafeSupplier) {
+
+		try {
+			objectDefinitionSystem2 =
+				objectDefinitionSystem2UnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean objectDefinitionSystem2;
+
+	@Schema
+	@Valid
+	public ObjectField getObjectField() {
+		return objectField;
+	}
+
+	public void setObjectField(ObjectField objectField) {
+		this.objectField = objectField;
+	}
+
+	@JsonIgnore
+	public void setObjectField(
+		UnsafeSupplier<ObjectField, Exception> objectFieldUnsafeSupplier) {
+
+		try {
+			objectField = objectFieldUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected ObjectField objectField;
+
+	@Schema
+	public Long getParameterObjectFieldId() {
+		return parameterObjectFieldId;
+	}
+
+	public void setParameterObjectFieldId(Long parameterObjectFieldId) {
+		this.parameterObjectFieldId = parameterObjectFieldId;
+	}
+
+	@JsonIgnore
+	public void setParameterObjectFieldId(
+		UnsafeSupplier<Long, Exception> parameterObjectFieldIdUnsafeSupplier) {
+
+		try {
+			parameterObjectFieldId = parameterObjectFieldIdUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Long parameterObjectFieldId;
+
+	@Schema
+	public String getParameterObjectFieldName() {
+		return parameterObjectFieldName;
+	}
+
+	public void setParameterObjectFieldName(String parameterObjectFieldName) {
+		this.parameterObjectFieldName = parameterObjectFieldName;
+	}
+
+	@JsonIgnore
+	public void setParameterObjectFieldName(
+		UnsafeSupplier<String, Exception>
+			parameterObjectFieldNameUnsafeSupplier) {
+
+		try {
+			parameterObjectFieldName =
+				parameterObjectFieldNameUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String parameterObjectFieldName;
+
+	@Schema
+	public Boolean getReverse() {
+		return reverse;
+	}
+
+	public void setReverse(Boolean reverse) {
+		this.reverse = reverse;
+	}
+
+	@JsonIgnore
+	public void setReverse(
+		UnsafeSupplier<Boolean, Exception> reverseUnsafeSupplier) {
+
+		try {
+			reverse = reverseUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Boolean reverse;
+
+	@Schema
+	public Boolean getSystem() {
+		return system;
+	}
+
+	public void setSystem(Boolean system) {
+		this.system = system;
+	}
+
+	@JsonIgnore
+	public void setSystem(
+		UnsafeSupplier<Boolean, Exception> systemUnsafeSupplier) {
+
+		try {
+			system = systemUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean system;
 
 	@Schema
 	@Valid
@@ -380,6 +696,30 @@ public class ObjectRelationship implements Serializable {
 			sb.append("\"");
 		}
 
+		if (edge != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"edge\": ");
+
+			sb.append(edge);
+		}
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -414,6 +754,34 @@ public class ObjectRelationship implements Serializable {
 			sb.append("\"");
 		}
 
+		if (objectDefinitionExternalReferenceCode1 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectDefinitionExternalReferenceCode1\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(objectDefinitionExternalReferenceCode1));
+
+			sb.append("\"");
+		}
+
+		if (objectDefinitionExternalReferenceCode2 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectDefinitionExternalReferenceCode2\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(objectDefinitionExternalReferenceCode2));
+
+			sb.append("\"");
+		}
+
 		if (objectDefinitionId1 != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -434,6 +802,16 @@ public class ObjectRelationship implements Serializable {
 			sb.append(objectDefinitionId2);
 		}
 
+		if (objectDefinitionModifiable2 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectDefinitionModifiable2\": ");
+
+			sb.append(objectDefinitionModifiable2);
+		}
+
 		if (objectDefinitionName2 != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -446,6 +824,70 @@ public class ObjectRelationship implements Serializable {
 			sb.append(_escape(objectDefinitionName2));
 
 			sb.append("\"");
+		}
+
+		if (objectDefinitionSystem2 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectDefinitionSystem2\": ");
+
+			sb.append(objectDefinitionSystem2);
+		}
+
+		if (objectField != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectField\": ");
+
+			sb.append(String.valueOf(objectField));
+		}
+
+		if (parameterObjectFieldId != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"parameterObjectFieldId\": ");
+
+			sb.append(parameterObjectFieldId);
+		}
+
+		if (parameterObjectFieldName != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"parameterObjectFieldName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(parameterObjectFieldName));
+
+			sb.append("\"");
+		}
+
+		if (reverse != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"reverse\": ");
+
+			sb.append(reverse);
+		}
+
+		if (system != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"system\": ");
+
+			sb.append(system);
 		}
 
 		if (type != null) {
@@ -633,5 +1075,7 @@ public class ObjectRelationship implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.openid.connect.persistence.model;
@@ -50,9 +41,11 @@ public class OpenIdConnectSessionWrapper
 		attributes.put("userId", getUserId());
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("accessToken", getAccessToken());
-		attributes.put("configurationPid", getConfigurationPid());
+		attributes.put(
+			"accessTokenExpirationDate", getAccessTokenExpirationDate());
+		attributes.put("authServerWellKnownURI", getAuthServerWellKnownURI());
+		attributes.put("clientId", getClientId());
 		attributes.put("idToken", getIdToken());
-		attributes.put("providerName", getProviderName());
 		attributes.put("refreshToken", getRefreshToken());
 
 		return attributes;
@@ -97,22 +90,30 @@ public class OpenIdConnectSessionWrapper
 			setAccessToken(accessToken);
 		}
 
-		String configurationPid = (String)attributes.get("configurationPid");
+		Date accessTokenExpirationDate = (Date)attributes.get(
+			"accessTokenExpirationDate");
 
-		if (configurationPid != null) {
-			setConfigurationPid(configurationPid);
+		if (accessTokenExpirationDate != null) {
+			setAccessTokenExpirationDate(accessTokenExpirationDate);
+		}
+
+		String authServerWellKnownURI = (String)attributes.get(
+			"authServerWellKnownURI");
+
+		if (authServerWellKnownURI != null) {
+			setAuthServerWellKnownURI(authServerWellKnownURI);
+		}
+
+		String clientId = (String)attributes.get("clientId");
+
+		if (clientId != null) {
+			setClientId(clientId);
 		}
 
 		String idToken = (String)attributes.get("idToken");
 
 		if (idToken != null) {
 			setIdToken(idToken);
-		}
-
-		String providerName = (String)attributes.get("providerName");
-
-		if (providerName != null) {
-			setProviderName(providerName);
 		}
 
 		String refreshToken = (String)attributes.get("refreshToken");
@@ -138,6 +139,36 @@ public class OpenIdConnectSessionWrapper
 	}
 
 	/**
+	 * Returns the access token expiration date of this open ID connect session.
+	 *
+	 * @return the access token expiration date of this open ID connect session
+	 */
+	@Override
+	public Date getAccessTokenExpirationDate() {
+		return model.getAccessTokenExpirationDate();
+	}
+
+	/**
+	 * Returns the auth server well known uri of this open ID connect session.
+	 *
+	 * @return the auth server well known uri of this open ID connect session
+	 */
+	@Override
+	public String getAuthServerWellKnownURI() {
+		return model.getAuthServerWellKnownURI();
+	}
+
+	/**
+	 * Returns the client ID of this open ID connect session.
+	 *
+	 * @return the client ID of this open ID connect session
+	 */
+	@Override
+	public String getClientId() {
+		return model.getClientId();
+	}
+
+	/**
 	 * Returns the company ID of this open ID connect session.
 	 *
 	 * @return the company ID of this open ID connect session
@@ -145,16 +176,6 @@ public class OpenIdConnectSessionWrapper
 	@Override
 	public long getCompanyId() {
 		return model.getCompanyId();
-	}
-
-	/**
-	 * Returns the configuration pid of this open ID connect session.
-	 *
-	 * @return the configuration pid of this open ID connect session
-	 */
-	@Override
-	public String getConfigurationPid() {
-		return model.getConfigurationPid();
 	}
 
 	/**
@@ -208,16 +229,6 @@ public class OpenIdConnectSessionWrapper
 	}
 
 	/**
-	 * Returns the provider name of this open ID connect session.
-	 *
-	 * @return the provider name of this open ID connect session
-	 */
-	@Override
-	public String getProviderName() {
-		return model.getProviderName();
-	}
-
-	/**
 	 * Returns the refresh token of this open ID connect session.
 	 *
 	 * @return the refresh token of this open ID connect session
@@ -263,6 +274,36 @@ public class OpenIdConnectSessionWrapper
 	}
 
 	/**
+	 * Sets the access token expiration date of this open ID connect session.
+	 *
+	 * @param accessTokenExpirationDate the access token expiration date of this open ID connect session
+	 */
+	@Override
+	public void setAccessTokenExpirationDate(Date accessTokenExpirationDate) {
+		model.setAccessTokenExpirationDate(accessTokenExpirationDate);
+	}
+
+	/**
+	 * Sets the auth server well known uri of this open ID connect session.
+	 *
+	 * @param authServerWellKnownURI the auth server well known uri of this open ID connect session
+	 */
+	@Override
+	public void setAuthServerWellKnownURI(String authServerWellKnownURI) {
+		model.setAuthServerWellKnownURI(authServerWellKnownURI);
+	}
+
+	/**
+	 * Sets the client ID of this open ID connect session.
+	 *
+	 * @param clientId the client ID of this open ID connect session
+	 */
+	@Override
+	public void setClientId(String clientId) {
+		model.setClientId(clientId);
+	}
+
+	/**
 	 * Sets the company ID of this open ID connect session.
 	 *
 	 * @param companyId the company ID of this open ID connect session
@@ -270,16 +311,6 @@ public class OpenIdConnectSessionWrapper
 	@Override
 	public void setCompanyId(long companyId) {
 		model.setCompanyId(companyId);
-	}
-
-	/**
-	 * Sets the configuration pid of this open ID connect session.
-	 *
-	 * @param configurationPid the configuration pid of this open ID connect session
-	 */
-	@Override
-	public void setConfigurationPid(String configurationPid) {
-		model.setConfigurationPid(configurationPid);
 	}
 
 	/**
@@ -333,16 +364,6 @@ public class OpenIdConnectSessionWrapper
 	}
 
 	/**
-	 * Sets the provider name of this open ID connect session.
-	 *
-	 * @param providerName the provider name of this open ID connect session
-	 */
-	@Override
-	public void setProviderName(String providerName) {
-		model.setProviderName(providerName);
-	}
-
-	/**
 	 * Sets the refresh token of this open ID connect session.
 	 *
 	 * @param refreshToken the refresh token of this open ID connect session
@@ -370,6 +391,11 @@ public class OpenIdConnectSessionWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

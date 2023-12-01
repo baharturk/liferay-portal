@@ -1,26 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.portlet;
 
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.content.constants.CPContentWebKeys;
+import com.liferay.commerce.product.content.helper.CPCompareContentHelper;
 import com.liferay.commerce.product.content.render.list.CPContentListRendererRegistry;
 import com.liferay.commerce.product.content.render.list.entry.CPContentListEntryRendererRegistry;
-import com.liferay.commerce.product.content.util.CPCompareContentHelper;
 import com.liferay.commerce.product.content.web.internal.display.context.CPCompareContentMiniDisplayContext;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
+import com.liferay.commerce.product.type.CPTypeRegistry;
 import com.liferay.commerce.product.util.CPCompareHelper;
 import com.liferay.commerce.product.util.CPDefinitionHelper;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -44,7 +35,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-commerce-product-compare-content-mini",
@@ -60,9 +50,10 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.view-template=/compare_products_mini/view.jsp",
 		"javax.portlet.name=" + CPPortletKeys.CP_COMPARE_CONTENT_MINI_WEB,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"javax.portlet.security-role-ref=power-user,user",
+		"javax.portlet.version=3.0"
 	},
-	service = {CPCompareContentMiniPortlet.class, Portlet.class}
+	service = Portlet.class
 )
 public class CPCompareContentMiniPortlet extends MVCPortlet {
 
@@ -81,7 +72,7 @@ public class CPCompareContentMiniPortlet extends MVCPortlet {
 					new CPCompareContentMiniDisplayContext(
 						_cpCompareHelper, _cpContentListEntryRendererRegistry,
 						_cpContentListRendererRegistry, _cpDefinitionHelper,
-						_cpTypeServicesTracker,
+						_cpTypeRegistry,
 						_portal.getHttpServletRequest(renderRequest));
 
 			renderRequest.setAttribute(
@@ -89,7 +80,7 @@ public class CPCompareContentMiniPortlet extends MVCPortlet {
 				cpCompareContentMiniDisplayContext);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 
 		super.render(renderRequest, renderResponse);
@@ -115,7 +106,7 @@ public class CPCompareContentMiniPortlet extends MVCPortlet {
 	private CPDefinitionHelper _cpDefinitionHelper;
 
 	@Reference
-	private CPTypeServicesTracker _cpTypeServicesTracker;
+	private CPTypeRegistry _cpTypeRegistry;
 
 	@Reference
 	private Portal _portal;

@@ -56,11 +56,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>DROPDOWN_MENU_ITEM_ACTIVE</td>
+	<td>xpath=(//div | //li)[(contains(@class,'open') or contains(@class,'show')) and (contains(@class,'dropdown') or contains(.//*/@class,'dropdown'))]//*[self::a or self::span or self::button][contains(@class,'active')][normalize-space(text())='${key_menuItem}']</td>
+	<td></td>
+</tr>
+<tr>
 	<td></td>
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ENTRY_CARDS-->
+
 <tr>
 	<td>ENTRY_CARDS_THUMBNAIL</td>
 	<td>//*[contains(@data-title,'${key_webContentTitle}')]//div[contains(@class,'card')]//a[contains(.,'${key_webContentTitle}')]</td>
@@ -71,7 +78,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ENTRY_LIST-->
+
 <tr>
 	<td>ENTRY_LIST_THUMBNAIL</td>
 	<td>//*[contains(@data-title,'${key_webContentTitle}')]//*[@data-qa-id='rowItemContent']/div</td>
@@ -99,12 +108,12 @@
 </tr>
 <tr>
 	<td>ENTRY_LIST_TITLE_NAME</td>
-	<td>//*[contains(@data-title,'${key_webContentTitle}')]//*[@data-qa-id='rowItemContent']//a[contains(text(),'${key_webContentTitle}')]</td>
+	<td>//*[contains(@data-title,'${key_webContentTitle}')]//*[@data-qa-id='rowItemContent']//a[contains(text(),'${key_webContentTitle}')] | //*[contains(@data-title,'${key_webContentTitle}')]//*[@data-qa-id='rowItemContent']//span[contains(text(),'${key_webContentTitle}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ENTRY_LIST_TITLE_ON_LIVE</td>
-	<td>//*[contains(@data-title,'${key_webContentTitle}')]//*[@data-qa-id='rowItemContent']//p</td>
+	<td>//*[contains(@data-title,'${key_webContentTitle}')]//*[@data-qa-id='rowItemContent']//span[contains(@class,'text-truncate')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -127,7 +136,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ENTRY_TABLE-->
+
 <tr>
 	<td>ENTRY_TABLE_ID</td>
 	<td>//tr[contains(@data-title,'${key_webContentTitle}')]/td[2]</td>
@@ -153,15 +164,12 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SIDEBAR -->
-<tr>
-	<td>PREVIEW_BUTTON</td>
-	<td>//fieldset[contains(@id,'${key_fieldsetName}')]//button[.//*[name()='svg'][contains(@class,'lexicon-icon-view')]]</td>
-	<td></td>
-</tr>
+
 <tr>
 	<td>SIDEBAR_BODY</td>
-	<td>//div[@class='sidebar-body']//div[contains(@id,'TabsSection')]</td>
+	<td>//div[contains(@class,'sidebar-body')]//div[contains(@id,'tabpanel')]</td>
 	<td></td>
 </tr>
 <tr>

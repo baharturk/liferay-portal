@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -20,7 +11,7 @@ import {useIsMounted} from '@liferay/frontend-js-react-web';
 import {fetch, openToast} from 'frontend-js-web';
 import React, {useState} from 'react';
 
-import {HEADERS, TEMPLATE_CREATED} from './constants';
+import {HEADERS, TEMPLATE_CREATED_EVENT} from './constants';
 
 async function saveTemplate(formDataQuerySelector, updateData, url) {
 	const mainFormData = document.querySelector(formDataQuerySelector);
@@ -46,7 +37,7 @@ const SaveTemplateModal = ({
 	namespace,
 	observer,
 }) => {
-	const inputNameId = namespace + 'name';
+	const inputNameId = namespace + 'templateName';
 	const isMounted = useIsMounted();
 	const [errorMessage, setErrorMessage] = useState();
 	const [loadingResponse, setLoadingResponse] = useState(false);
@@ -57,6 +48,7 @@ const SaveTemplateModal = ({
 
 		try {
 			const updateData = {[inputNameId]: inputValue};
+
 			const saveTemplateResponse = await saveTemplate(
 				formDataQuerySelector,
 				updateData,
@@ -69,7 +61,10 @@ const SaveTemplateModal = ({
 					setErrorMessage(saveTemplateResponse.error);
 				}
 				else {
-					Liferay.fire(TEMPLATE_CREATED, saveTemplateResponse);
+					Liferay.fire(TEMPLATE_CREATED_EVENT, {
+						template: saveTemplateResponse,
+					});
+
 					openToast({
 						message: Liferay.Language.get('template-was-created'),
 						type: 'success',
@@ -141,9 +136,7 @@ const SaveTemplateModal = ({
 							</ClayButton>
 
 							<ClayButton
-								disabled={
-									loadingResponse || inputValue.length === 0
-								}
+								disabled={loadingResponse || !inputValue.length}
 								displayType="primary"
 								type="submit"
 							>

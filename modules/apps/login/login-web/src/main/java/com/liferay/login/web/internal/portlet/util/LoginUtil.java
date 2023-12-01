@@ -1,33 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.login.web.internal.portlet.util;
 
 import com.liferay.login.web.constants.LoginPortletKeys;
-import com.liferay.petra.content.ContentUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
+import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.LocalizationUtil;
@@ -38,6 +32,8 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
+
+import java.io.IOException;
 
 import java.util.Map;
 
@@ -112,17 +108,18 @@ public class LoginUtil {
 	}
 
 	public static String getEmailFromAddress(
-		PortletPreferences preferences, long companyId) {
+		PortletPreferences portletPreferences, long companyId) {
 
 		return PortalUtil.getEmailFromAddress(
-			preferences, companyId, PropsValues.LOGIN_EMAIL_FROM_ADDRESS);
+			portletPreferences, companyId,
+			PropsValues.LOGIN_EMAIL_FROM_ADDRESS);
 	}
 
 	public static String getEmailFromName(
-		PortletPreferences preferences, long companyId) {
+		PortletPreferences portletPreferences, long companyId) {
 
 		return PortalUtil.getEmailFromName(
-			preferences, companyId, PropsValues.LOGIN_EMAIL_FROM_NAME);
+			portletPreferences, companyId, PropsValues.LOGIN_EMAIL_FROM_NAME);
 	}
 
 	public static String getEmailTemplateXML(
@@ -137,10 +134,21 @@ public class LoginUtil {
 
 		if (xml == null) {
 			PortletPreferences companyPortletPreferences =
-				PrefsPropsUtil.getPreferences(companyId, true);
-			String defaultContent = ContentUtil.get(
-				PortalClassLoaderUtil.getClassLoader(),
-				PropsUtil.get(portalPropertiesTemplateKey));
+				PrefsPropsUtil.getPreferences(companyId);
+
+			String defaultContent = null;
+
+			try {
+				defaultContent = StringUtil.read(
+					PortalClassLoaderUtil.getClassLoader(),
+					PropsUtil.get(portalPropertiesTemplateKey));
+			}
+			catch (IOException ioException) {
+				_log.error(
+					"Unable to read the content for " +
+						PropsUtil.get(portalPropertiesTemplateKey),
+					ioException);
+			}
 
 			xml = LocalizationUtil.getLocalizationXmlFromPreferences(
 				companyPortletPreferences, portletRequest,
@@ -158,8 +166,8 @@ public class LoginUtil {
 		String login = httpServletRequest.getParameter(paramName);
 
 		if ((login == null) || login.equals(StringPool.NULL)) {
-			login = CookieKeys.getCookie(
-				httpServletRequest, CookieKeys.LOGIN, false);
+			login = CookiesManagerUtil.getCookieValue(
+				CookiesConstants.NAME_LOGIN, httpServletRequest, false);
 
 			String authType = company.getAuthType();
 
@@ -218,5 +226,7 @@ public class LoginUtil {
 			company.getCompanyId(), toAddress, fromName, fromAddress, subject,
 			body, serviceContext);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(LoginUtil.class);
 
 }

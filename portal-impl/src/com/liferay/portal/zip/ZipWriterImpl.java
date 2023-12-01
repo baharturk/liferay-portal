@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.zip;
@@ -20,6 +11,8 @@ import com.liferay.petra.memory.DeleteFileFinalizeAction;
 import com.liferay.petra.memory.FinalizeManager;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
@@ -30,6 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+
+import java.lang.reflect.Field;
 
 import java.net.URI;
 
@@ -69,7 +64,7 @@ public class ZipWriterImpl implements ZipWriter {
 
 		URI fileURI = _file.toURI();
 
-		_uri = URI.create("jar:file:" + fileURI.getPath());
+		_uri = URI.create("jar:file:" + fileURI.getRawPath());
 
 		try (FileSystem fileSystem = FileSystems.newFileSystem(
 				_uri, Collections.singletonMap("create", "true"))) {
@@ -109,11 +104,7 @@ public class ZipWriterImpl implements ZipWriter {
 
 			Path path = fileSystem.getPath(name);
 
-			Path parentPath = path.getParent();
-
-			if (parentPath != null) {
-				Files.createDirectories(parentPath);
-			}
+			_createDirectories(fileSystem, path.getParent());
 
 			Files.write(
 				path, bytes, StandardOpenOption.CREATE,
@@ -140,11 +131,7 @@ public class ZipWriterImpl implements ZipWriter {
 
 			Path path = fileSystem.getPath(name);
 
-			Path parentPath = path.getParent();
-
-			if (parentPath != null) {
-				Files.createDirectories(parentPath);
-			}
+			_createDirectories(fileSystem, path.getParent());
 
 			Files.copy(inputStream, path, StandardCopyOption.REPLACE_EXISTING);
 		}
@@ -203,6 +190,71 @@ public class ZipWriterImpl implements ZipWriter {
 	public void umount() {
 	}
 
+	private void _createDirectories(FileSystem fileSystem, Path parentPath)
+		throws IOException {
+
+		if ((parentPath == null) || Files.exists(parentPath)) {
+			return;
+		}
+
+		Files.createDirectories(parentPath);
+
+		boolean needUTF8 = false;
+
+		String pathString = parentPath.toString();
+
+		for (int i = 0; i < pathString.length(); i++) {
+			if (pathString.charAt(i) > 128) {
+				needUTF8 = true;
+
+				break;
+			}
+		}
+
+		if (!needUTF8) {
+			return;
+		}
+
+		try {
+			Class<?> fileSystemClass = fileSystem.getClass();
+
+			Field inodesField = fileSystemClass.getDeclaredField("inodes");
+
+			inodesField.setAccessible(true);
+
+			Map<?, ?> inodes = (Map<?, ?>)inodesField.get(fileSystem);
+
+			for (Object inode : inodes.keySet()) {
+				try {
+					Class<?> inodeClass = inode.getClass();
+
+					Field flagField = inodeClass.getDeclaredField("flag");
+
+					flagField.setAccessible(true);
+
+					int flag = flagField.getInt(inode);
+
+					if ((flag & 2048) == 0) {
+						flagField.setInt(inode, flag | 2048);
+					}
+				}
+				catch (NoSuchFieldException noSuchFieldException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(noSuchFieldException);
+					}
+				}
+			}
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to force UTF-8 encoding for directory " +
+						parentPath,
+					reflectiveOperationException);
+			}
+		}
+	}
+
 	private void _writeExportEntries() {
 		try (FileSystem fileSystem = FileSystems.newFileSystem(
 				_uri, Collections.emptyMap())) {
@@ -217,11 +269,7 @@ public class ZipWriterImpl implements ZipWriter {
 
 				Path path = fileSystem.getPath(entry.getKey());
 
-				Path parentPath = path.getParent();
-
-				if (parentPath != null) {
-					Files.createDirectories(parentPath);
-				}
+				_createDirectories(fileSystem, path.getParent());
 
 				Files.write(
 					path, entry.getValue(), StandardOpenOption.CREATE,
@@ -236,6 +284,8 @@ public class ZipWriterImpl implements ZipWriter {
 			throw new UncheckedIOException(ioException);
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(ZipWriterImpl.class);
 
 	private List<Map.Entry<String, byte[]>> _exportEntries;
 	private long _exportEntriesBytes;

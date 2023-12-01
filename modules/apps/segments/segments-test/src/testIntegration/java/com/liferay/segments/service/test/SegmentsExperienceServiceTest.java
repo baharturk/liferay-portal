@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.test;
@@ -27,7 +18,6 @@ import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
@@ -42,6 +32,7 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -87,14 +78,9 @@ public class SegmentsExperienceServiceTest {
 
 		_user = UserTestUtil.addGroupUser(_group, _role.getName());
 
-		Layout layout = LayoutTestUtil.addLayout(_group);
-
-		_classNameId = _classNameLocalService.getClassNameId(Layout.class);
+		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
 		_classPK = layout.getPlid();
-
-		_segmentsExperienceLocalService.deleteSegmentsExperiences(
-			_group.getGroupId(), _classNameId, layout.getPlid());
 	}
 
 	@Test
@@ -102,16 +88,15 @@ public class SegmentsExperienceServiceTest {
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
 			_group.getGroupId());
 
-		UnicodeProperties initialTypeSettingsUnicodeProperties =
-			new UnicodeProperties(true);
-
-		initialTypeSettingsUnicodeProperties.setProperty("property", "value");
-
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceService.addSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), _classNameId, _classPK,
-				RandomTestUtil.randomLocaleStringMap(), true,
-				initialTypeSettingsUnicodeProperties,
+				_group.getGroupId(), segmentsEntry.getSegmentsEntryId(),
+				_classPK, RandomTestUtil.randomLocaleStringMap(), true,
+				UnicodePropertiesBuilder.create(
+					true
+				).put(
+					"property", "value"
+				).build(),
 				ServiceContextTestUtil.getServiceContext(
 					_group, TestPropsValues.getUserId()));
 
@@ -181,8 +166,9 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceService.addSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), _classNameId, _classPK,
-				RandomTestUtil.randomLocaleStringMap(), true,
+				_group.getGroupId(), segmentsEntry.getSegmentsEntryId(),
+				_classPK, RandomTestUtil.randomLocaleStringMap(), true,
+				new UnicodeProperties(true),
 				ServiceContextTestUtil.getServiceContext(
 					_group, TestPropsValues.getUserId()));
 
@@ -195,16 +181,15 @@ public class SegmentsExperienceServiceTest {
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
 			_group.getGroupId());
 
-		UnicodeProperties initialTypeSettingsUnicodeProperties =
-			new UnicodeProperties(true);
-
-		initialTypeSettingsUnicodeProperties.setProperty("property", "value");
-
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceService.appendSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), _classNameId, _classPK,
-				RandomTestUtil.randomLocaleStringMap(), true,
-				initialTypeSettingsUnicodeProperties,
+				_group.getGroupId(), segmentsEntry.getSegmentsEntryId(),
+				_classPK, RandomTestUtil.randomLocaleStringMap(), true,
+				UnicodePropertiesBuilder.create(
+					true
+				).put(
+					"property", "value"
+				).build(),
 				ServiceContextTestUtil.getServiceContext(
 					_group, TestPropsValues.getUserId()));
 
@@ -225,8 +210,8 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceService.appendSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), _classNameId, _classPK,
-				RandomTestUtil.randomLocaleStringMap(), true,
+				_group.getGroupId(), segmentsEntry.getSegmentsEntryId(),
+				_classPK, RandomTestUtil.randomLocaleStringMap(), true,
 				ServiceContextTestUtil.getServiceContext(
 					_group, TestPropsValues.getUserId()));
 
@@ -240,7 +225,7 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK,
+				_classPK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		ResourcePermissionLocalServiceUtil.addResourcePermission(
@@ -263,7 +248,7 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK,
+				_classPK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
@@ -280,7 +265,7 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK,
+				_classPK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		ResourcePermissionLocalServiceUtil.addResourcePermission(
@@ -303,14 +288,13 @@ public class SegmentsExperienceServiceTest {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
 
-		SegmentsExperience segmentsExperience =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+		_getDefaultSegmentsExperience();
 
-		SegmentsTestUtil.addSegmentsExperience(
-			_classNameId, _classPK, serviceContext);
-		SegmentsTestUtil.addSegmentsExperience(
-			_classNameId, _classPK, serviceContext);
+		SegmentsExperience segmentsExperience =
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
+
+		SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
+		SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 
 		List<Role> roles = RoleLocalServiceUtil.getRoles(_group.getCompanyId());
 
@@ -331,9 +315,9 @@ public class SegmentsExperienceServiceTest {
 				_user, PermissionCheckerFactoryUtil.create(_user))) {
 
 			Assert.assertEquals(
-				2,
+				3,
 				_segmentsExperienceService.getSegmentsExperiencesCount(
-					_group.getGroupId(), _classNameId, _classPK, true));
+					_group.getGroupId(), _classPK, true));
 		}
 	}
 
@@ -344,14 +328,13 @@ public class SegmentsExperienceServiceTest {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
 
-		SegmentsExperience segmentsExperience =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+		_getDefaultSegmentsExperience();
 
-		SegmentsTestUtil.addSegmentsExperience(
-			_classNameId, _classPK, serviceContext);
-		SegmentsTestUtil.addSegmentsExperience(
-			_classNameId, _classPK, serviceContext);
+		SegmentsExperience segmentsExperience =
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
+
+		SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
+		SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 
 		List<Role> roles = RoleLocalServiceUtil.getRoles(_group.getCompanyId());
 
@@ -370,17 +353,17 @@ public class SegmentsExperienceServiceTest {
 			ResourcePermissionLocalServiceUtil.setResourcePermissions(
 				_group.getCompanyId(), Layout.class.getName(),
 				ResourceConstants.SCOPE_INDIVIDUAL,
-				String.valueOf(segmentsExperience.getClassPK()),
-				_role.getRoleId(), new String[] {ActionKeys.UPDATE});
+				String.valueOf(segmentsExperience.getPlid()), _role.getRoleId(),
+				new String[] {ActionKeys.UPDATE});
 		}
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
 				_user, PermissionCheckerFactoryUtil.create(_user))) {
 
 			Assert.assertEquals(
-				3,
+				4,
 				_segmentsExperienceService.getSegmentsExperiencesCount(
-					_group.getGroupId(), _classNameId, _classPK, true));
+					_group.getGroupId(), _classPK, true));
 		}
 	}
 
@@ -391,20 +374,19 @@ public class SegmentsExperienceServiceTest {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
 
-		SegmentsTestUtil.addSegmentsExperience(
-			_classNameId, _classPK, serviceContext);
-		SegmentsTestUtil.addSegmentsExperience(
-			_classNameId, _classPK, serviceContext);
-		SegmentsTestUtil.addSegmentsExperience(
-			_classNameId, _classPK, serviceContext);
+		_getDefaultSegmentsExperience();
+
+		SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
+		SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
+		SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
 				_user, PermissionCheckerFactoryUtil.create(_user))) {
 
 			Assert.assertEquals(
-				3,
+				4,
 				_segmentsExperienceService.getSegmentsExperiencesCount(
-					_group.getGroupId(), _classNameId, _classPK, true));
+					_group.getGroupId(), _classPK, true));
 		}
 	}
 
@@ -415,15 +397,15 @@ public class SegmentsExperienceServiceTest {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
 
+		SegmentsExperience defaultSegmentsExperience =
+			_getDefaultSegmentsExperience();
+
 		SegmentsExperience segmentsExperience1 =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 		SegmentsExperience segmentsExperience2 =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 		SegmentsExperience segmentsExperience3 =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 
 		for (Role role : RoleLocalServiceUtil.getRoles(_group.getCompanyId())) {
 			if (RoleConstants.OWNER.equals(role.getName())) {
@@ -443,12 +425,14 @@ public class SegmentsExperienceServiceTest {
 
 			List<SegmentsExperience> segmentsEntries =
 				_segmentsExperienceService.getSegmentsExperiences(
-					_group.getGroupId(), _classNameId, _classPK, true,
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+					_group.getGroupId(), _classPK, true, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, null);
 
 			Assert.assertEquals(
-				segmentsEntries.toString(), 2, segmentsEntries.size());
+				segmentsEntries.toString(), 3, segmentsEntries.size());
 
+			Assert.assertTrue(
+				segmentsEntries.contains(defaultSegmentsExperience));
 			Assert.assertTrue(segmentsEntries.contains(segmentsExperience1));
 			Assert.assertTrue(segmentsEntries.contains(segmentsExperience3));
 		}
@@ -461,15 +445,15 @@ public class SegmentsExperienceServiceTest {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
 
+		SegmentsExperience defaultSegmentsExperience =
+			_getDefaultSegmentsExperience();
+
 		SegmentsExperience segmentsExperience1 =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 		SegmentsExperience segmentsExperience2 =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 		SegmentsExperience segmentsExperience3 =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 
 		for (Role role : RoleLocalServiceUtil.getRoles(_group.getCompanyId())) {
 			if (RoleConstants.OWNER.equals(role.getName())) {
@@ -486,7 +470,7 @@ public class SegmentsExperienceServiceTest {
 			ResourcePermissionLocalServiceUtil.setResourcePermissions(
 				_group.getCompanyId(), Layout.class.getName(),
 				ResourceConstants.SCOPE_INDIVIDUAL,
-				String.valueOf(segmentsExperience2.getClassPK()),
+				String.valueOf(segmentsExperience2.getPlid()),
 				_role.getRoleId(), new String[] {ActionKeys.UPDATE});
 		}
 
@@ -495,12 +479,14 @@ public class SegmentsExperienceServiceTest {
 
 			List<SegmentsExperience> segmentsEntries =
 				_segmentsExperienceService.getSegmentsExperiences(
-					_group.getGroupId(), _classNameId, _classPK, true,
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+					_group.getGroupId(), _classPK, true, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, null);
 
 			Assert.assertEquals(
-				segmentsEntries.toString(), 3, segmentsEntries.size());
+				segmentsEntries.toString(), 4, segmentsEntries.size());
 
+			Assert.assertTrue(
+				segmentsEntries.contains(defaultSegmentsExperience));
 			Assert.assertTrue(segmentsEntries.contains(segmentsExperience1));
 			Assert.assertTrue(segmentsEntries.contains(segmentsExperience2));
 			Assert.assertTrue(segmentsEntries.contains(segmentsExperience3));
@@ -514,27 +500,28 @@ public class SegmentsExperienceServiceTest {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
 
+		SegmentsExperience defaultSegmentsExperience =
+			_getDefaultSegmentsExperience();
 		SegmentsExperience segmentsExperience1 =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 		SegmentsExperience segmentsExperience2 =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 		SegmentsExperience segmentsExperience3 =
-			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK, serviceContext);
+			SegmentsTestUtil.addSegmentsExperience(_classPK, serviceContext);
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
 				_user, PermissionCheckerFactoryUtil.create(_user))) {
 
 			List<SegmentsExperience> segmentsExperiences =
 				_segmentsExperienceService.getSegmentsExperiences(
-					_group.getGroupId(), _classNameId, _classPK, true,
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+					_group.getGroupId(), _classPK, true, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, null);
 
 			Assert.assertEquals(
-				segmentsExperiences.toString(), 3, segmentsExperiences.size());
+				segmentsExperiences.toString(), 4, segmentsExperiences.size());
 
+			Assert.assertTrue(
+				segmentsExperiences.contains(defaultSegmentsExperience));
 			Assert.assertTrue(
 				segmentsExperiences.contains(segmentsExperience1));
 			Assert.assertTrue(
@@ -550,7 +537,7 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK,
+				_classPK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		List<Role> roles = RoleLocalServiceUtil.getRoles(_group.getCompanyId());
@@ -582,7 +569,7 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK,
+				_classPK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		List<Role> roles = RoleLocalServiceUtil.getRoles(_group.getCompanyId());
@@ -602,8 +589,8 @@ public class SegmentsExperienceServiceTest {
 			ResourcePermissionLocalServiceUtil.setResourcePermissions(
 				_group.getCompanyId(), Layout.class.getName(),
 				ResourceConstants.SCOPE_INDIVIDUAL,
-				String.valueOf(segmentsExperience.getClassPK()),
-				_role.getRoleId(), new String[] {ActionKeys.UPDATE});
+				String.valueOf(segmentsExperience.getPlid()), _role.getRoleId(),
+				new String[] {ActionKeys.UPDATE});
 		}
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
@@ -618,7 +605,7 @@ public class SegmentsExperienceServiceTest {
 	public void testGetSegmentsExperienceWithViewPermission() throws Exception {
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK,
+				_classPK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
@@ -626,6 +613,11 @@ public class SegmentsExperienceServiceTest {
 
 			_segmentsExperienceService.getSegmentsExperience(
 				segmentsExperience.getSegmentsExperienceId());
+
+			_segmentsExperienceService.getSegmentsExperience(
+				segmentsExperience.getGroupId(),
+				segmentsExperience.getSegmentsExperienceKey(),
+				segmentsExperience.getPlid());
 		}
 	}
 
@@ -636,15 +628,11 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceService.addSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), _classNameId, _classPK,
-				RandomTestUtil.randomLocaleStringMap(), true,
+				_group.getGroupId(), segmentsEntry.getSegmentsEntryId(),
+				_classPK, RandomTestUtil.randomLocaleStringMap(), true,
+				new UnicodeProperties(true),
 				ServiceContextTestUtil.getServiceContext(
 					_group, TestPropsValues.getUserId()));
-
-		UnicodeProperties initialTypeSettingsUnicodeProperties =
-			new UnicodeProperties(true);
-
-		initialTypeSettingsUnicodeProperties.setProperty("property", "value");
 
 		SegmentsExperience updatedSegmentsExperience =
 			_segmentsExperienceService.updateSegmentsExperience(
@@ -652,7 +640,11 @@ public class SegmentsExperienceServiceTest {
 				RandomTestUtil.randomLong(),
 				RandomTestUtil.randomLocaleStringMap(),
 				RandomTestUtil.randomBoolean(),
-				initialTypeSettingsUnicodeProperties);
+				UnicodePropertiesBuilder.create(
+					true
+				).put(
+					"property", "value"
+				).build());
 
 		UnicodeProperties actualTypeSettingsUnicodeProperties =
 			updatedSegmentsExperience.getTypeSettingsUnicodeProperties();
@@ -669,16 +661,15 @@ public class SegmentsExperienceServiceTest {
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
 			_group.getGroupId());
 
-		UnicodeProperties initialTypeSettingsUnicodeProperties =
-			new UnicodeProperties(true);
-
-		initialTypeSettingsUnicodeProperties.setProperty("property", "value");
-
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceService.addSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), _classNameId, _classPK,
-				RandomTestUtil.randomLocaleStringMap(), true,
-				initialTypeSettingsUnicodeProperties,
+				_group.getGroupId(), segmentsEntry.getSegmentsEntryId(),
+				_classPK, RandomTestUtil.randomLocaleStringMap(), true,
+				UnicodePropertiesBuilder.create(
+					true
+				).put(
+					"property", "value"
+				).build(),
 				ServiceContextTestUtil.getServiceContext(
 					_group, TestPropsValues.getUserId()));
 
@@ -703,7 +694,7 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK,
+				_classPK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
@@ -723,13 +714,13 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK,
+				_classPK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		ResourcePermissionLocalServiceUtil.setResourcePermissions(
 			_group.getCompanyId(), Layout.class.getName(),
 			ResourceConstants.SCOPE_INDIVIDUAL,
-			String.valueOf(segmentsExperience.getClassPK()), _role.getRoleId(),
+			String.valueOf(segmentsExperience.getPlid()), _role.getRoleId(),
 			new String[] {ActionKeys.UPDATE});
 
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
@@ -749,7 +740,7 @@ public class SegmentsExperienceServiceTest {
 
 		SegmentsExperience segmentsExperience =
 			SegmentsTestUtil.addSegmentsExperience(
-				_classNameId, _classPK,
+				_classPK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		ResourcePermissionLocalServiceUtil.addResourcePermission(
@@ -777,14 +768,23 @@ public class SegmentsExperienceServiceTest {
 			_group.getGroupId());
 
 		return _segmentsExperienceService.addSegmentsExperience(
-			segmentsEntry.getSegmentsEntryId(), _classNameId, _classPK,
-			RandomTestUtil.randomLocaleStringMap(), true, serviceContext);
+			_group.getGroupId(), segmentsEntry.getSegmentsEntryId(), _classPK,
+			RandomTestUtil.randomLocaleStringMap(), true,
+			new UnicodeProperties(true), serviceContext);
 	}
 
-	private long _classNameId;
+	private SegmentsExperience _getDefaultSegmentsExperience()
+		throws Exception {
 
-	@Inject
-	private ClassNameLocalService _classNameLocalService;
+		List<SegmentsExperience> segmentsExperiences =
+			_segmentsExperienceService.getSegmentsExperiences(
+				_group.getGroupId(), _classPK, true);
+
+		Assert.assertEquals(
+			segmentsExperiences.toString(), 1, segmentsExperiences.size());
+
+		return segmentsExperiences.get(0);
+	}
 
 	private long _classPK;
 

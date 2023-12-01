@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.service;
@@ -17,6 +8,7 @@ package com.liferay.asset.kernel.service;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -55,25 +47,26 @@ public class AssetEntryLocalServiceWrapper
 	}
 
 	@Override
-	public void addAssetTagAssetEntries(
+	public boolean addAssetTagAssetEntries(
 		long tagId, java.util.List<AssetEntry> assetEntries) {
 
-		_assetEntryLocalService.addAssetTagAssetEntries(tagId, assetEntries);
+		return _assetEntryLocalService.addAssetTagAssetEntries(
+			tagId, assetEntries);
 	}
 
 	@Override
-	public void addAssetTagAssetEntries(long tagId, long[] entryIds) {
-		_assetEntryLocalService.addAssetTagAssetEntries(tagId, entryIds);
+	public boolean addAssetTagAssetEntries(long tagId, long[] entryIds) {
+		return _assetEntryLocalService.addAssetTagAssetEntries(tagId, entryIds);
 	}
 
 	@Override
-	public void addAssetTagAssetEntry(long tagId, AssetEntry assetEntry) {
-		_assetEntryLocalService.addAssetTagAssetEntry(tagId, assetEntry);
+	public boolean addAssetTagAssetEntry(long tagId, AssetEntry assetEntry) {
+		return _assetEntryLocalService.addAssetTagAssetEntry(tagId, assetEntry);
 	}
 
 	@Override
-	public void addAssetTagAssetEntry(long tagId, long entryId) {
-		_assetEntryLocalService.addAssetTagAssetEntry(tagId, entryId);
+	public boolean addAssetTagAssetEntry(long tagId, long entryId) {
+		return _assetEntryLocalService.addAssetTagAssetEntry(tagId, entryId);
 	}
 
 	@Override
@@ -331,13 +324,6 @@ public class AssetEntryLocalServiceWrapper
 		return _assetEntryLocalService.getActionableDynamicQuery();
 	}
 
-	@Override
-	public java.util.List<AssetEntry> getAncestorEntries(long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _assetEntryLocalService.getAncestorEntries(entryId);
-	}
-
 	/**
 	 * Returns a range of all the asset entries.
 	 *
@@ -415,13 +401,6 @@ public class AssetEntryLocalServiceWrapper
 	@Override
 	public long[] getAssetTagPrimaryKeys(long entryId) {
 		return _assetEntryLocalService.getAssetTagPrimaryKeys(entryId);
-	}
-
-	@Override
-	public java.util.List<AssetEntry> getChildEntries(long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _assetEntryLocalService.getChildEntries(entryId);
 	}
 
 	@Override
@@ -545,13 +524,6 @@ public class AssetEntryLocalServiceWrapper
 		return _assetEntryLocalService.getIndexableActionableDynamicQuery();
 	}
 
-	@Override
-	public AssetEntry getNextEntry(long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _assetEntryLocalService.getNextEntry(entryId);
-	}
-
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -560,13 +532,6 @@ public class AssetEntryLocalServiceWrapper
 	@Override
 	public String getOSGiServiceIdentifier() {
 		return _assetEntryLocalService.getOSGiServiceIdentifier();
-	}
-
-	@Override
-	public AssetEntry getParentEntry(long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _assetEntryLocalService.getParentEntry(entryId);
 	}
 
 	/**
@@ -578,13 +543,6 @@ public class AssetEntryLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetEntryLocalService.getPersistedModel(primaryKeyObj);
-	}
-
-	@Override
-	public AssetEntry getPreviousEntry(long entryId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _assetEntryLocalService.getPreviousEntry(entryId);
 	}
 
 	@Override
@@ -866,6 +824,28 @@ public class AssetEntryLocalServiceWrapper
 
 	@Override
 	public AssetEntry updateEntry(
+			long userId, long groupId, java.util.Date createDate,
+			java.util.Date modifiedDate, String className, long classPK,
+			String classUuid, long classTypeId, long[] categoryIds,
+			String[] tagNames, boolean listable, boolean visible,
+			java.util.Date startDate, java.util.Date endDate,
+			java.util.Date publishDate, java.util.Date expirationDate,
+			String mimeType, String title, String description, String summary,
+			String url, String layoutUuid, int height, int width,
+			Double priority,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetEntryLocalService.updateEntry(
+			userId, groupId, createDate, modifiedDate, className, classPK,
+			classUuid, classTypeId, categoryIds, tagNames, listable, visible,
+			startDate, endDate, publishDate, expirationDate, mimeType, title,
+			description, summary, url, layoutUuid, height, width, priority,
+			serviceContext);
+	}
+
+	@Override
+	public AssetEntry updateEntry(
 			long userId, long groupId, String className, long classPK,
 			long[] categoryIds, String[] tagNames)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -918,6 +898,11 @@ public class AssetEntryLocalServiceWrapper
 
 		_assetEntryLocalService.validate(
 			groupId, className, classTypePK, categoryIds, tagNames);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _assetEntryLocalService.getBasePersistence();
 	}
 
 	@Override

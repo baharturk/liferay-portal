@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.internal.search.spi.model.query.contributor;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Field;
@@ -25,7 +17,7 @@ import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
@@ -40,8 +32,6 @@ import com.liferay.portal.workflow.kaleo.service.persistence.KaleoInstanceQuery;
 import java.text.Format;
 
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,7 +40,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Inácio Nery
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.portal.workflow.kaleo.model.KaleoInstance",
 	service = ModelPreFilterContributor.class
 )
@@ -110,7 +99,7 @@ public class KaleoInstanceModelPreFilterContributor
 
 		try {
 			booleanQuery.addTerm(
-				LocalizationUtil.getLocalizedName(
+				_localization.getLocalizedName(
 					"assetDescription", searchContext.getLanguageId()),
 				assetDescription);
 		}
@@ -135,7 +124,7 @@ public class KaleoInstanceModelPreFilterContributor
 
 		try {
 			booleanQuery.addTerm(
-				LocalizationUtil.getLocalizedName(
+				_localization.getLocalizedName(
 					"assetTitle", searchContext.getLanguageId()),
 				assetTitle);
 		}
@@ -157,18 +146,11 @@ public class KaleoInstanceModelPreFilterContributor
 			Field.CLASS_NAME_ID);
 
 		classNameIdsTermsFilter.addValues(
-			Stream.of(
-				WorkflowHandlerRegistryUtil.getWorkflowHandlers()
-			).flatMap(
-				List::stream
-			).map(
-				workflowHandler -> portal.getClassNameId(
-					workflowHandler.getClassName())
-			).map(
-				String::valueOf
-			).toArray(
-				String[]::new
-			));
+			TransformUtil.transformToArray(
+				WorkflowHandlerRegistryUtil.getWorkflowHandlers(),
+				workflowHandler -> String.valueOf(
+					portal.getClassNameId(workflowHandler.getClassName())),
+				String.class));
 
 		booleanFilter.add(classNameIdsTermsFilter, BooleanClauseOccur.MUST);
 	}
@@ -382,5 +364,8 @@ public class KaleoInstanceModelPreFilterContributor
 		booleanFilter.addRequiredTerm(
 			"rootKaleoInstanceTokenId", rootKaleoInstanceTokenId);
 	}
+
+	@Reference
+	private Localization _localization;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.batch.engine.internal.resource.v1_0;
@@ -59,40 +50,41 @@ public class ExportTaskResourceImpl extends BaseExportTaskResourceImpl {
 	}
 
 	@Override
-	public Response getExportTaskContent(Long exportTaskId) throws Exception {
+	public ExportTask getExportTaskByExternalReferenceCode(
+			String externalReferenceCode)
+		throws Exception {
+
+		return _toExportTask(
+			_batchEngineExportTaskLocalService.
+				getBatchEngineExportTaskByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId()));
+	}
+
+	@Override
+	public Response getExportTaskByExternalReferenceCodeContent(
+			String externalReferenceCode)
+		throws Exception {
+
 		BatchEngineExportTask batchEngineExportTask =
+			_batchEngineExportTaskLocalService.
+				getBatchEngineExportTaskByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		return _getExportTaskContent(batchEngineExportTask);
+	}
+
+	@Override
+	public Response getExportTaskContent(Long exportTaskId) throws Exception {
+		return _getExportTaskContent(
 			_batchEngineExportTaskLocalService.getBatchEngineExportTask(
-				exportTaskId);
-
-		BatchEngineTaskExecuteStatus batchEngineTaskExecuteStatus =
-			BatchEngineTaskExecuteStatus.valueOf(
-				batchEngineExportTask.getExecuteStatus());
-
-		if (batchEngineTaskExecuteStatus ==
-				BatchEngineTaskExecuteStatus.COMPLETED) {
-
-			StreamingOutput streamingOutput =
-				outputStream -> StreamUtil.transfer(
-					_batchEngineExportTaskLocalService.openContentInputStream(
-						exportTaskId),
-					outputStream);
-
-			return Response.ok(
-				streamingOutput
-			).header(
-				"content-disposition", "attachment; filename=export.zip"
-			).build();
-		}
-
-		return Response.status(
-			Response.Status.NOT_FOUND
-		).build();
+				exportTaskId));
 	}
 
 	@Override
 	public ExportTask postExportTask(
 			String className, String contentType, String callbackURL,
-			String fieldNames, String taskItemDelegateName)
+			String externalReferenceCode, String fieldNames,
+			String taskItemDelegateName)
 		throws Exception {
 
 		Class<?> clazz = _itemClassRegistry.getItemClass(className);
@@ -108,8 +100,9 @@ public class ExportTaskResourceImpl extends BaseExportTaskResourceImpl {
 
 		BatchEngineExportTask batchEngineExportTask =
 			_batchEngineExportTaskLocalService.addBatchEngineExportTask(
-				contextCompany.getCompanyId(), contextUser.getUserId(),
-				callbackURL, className, StringUtil.upperCase(contentType),
+				externalReferenceCode, contextCompany.getCompanyId(),
+				contextUser.getUserId(), callbackURL, className,
+				StringUtil.upperCase(contentType),
 				BatchEngineTaskExecuteStatus.INITIAL.name(),
 				_toList(fieldNames),
 				ParametersUtil.toParameters(contextUriInfo, _ignoredParameters),
@@ -120,6 +113,35 @@ public class ExportTaskResourceImpl extends BaseExportTaskResourceImpl {
 				batchEngineExportTask));
 
 		return _toExportTask(batchEngineExportTask);
+	}
+
+	private Response _getExportTaskContent(
+		BatchEngineExportTask batchEngineExportTask) {
+
+		BatchEngineTaskExecuteStatus batchEngineTaskExecuteStatus =
+			BatchEngineTaskExecuteStatus.valueOf(
+				batchEngineExportTask.getExecuteStatus());
+
+		if (batchEngineTaskExecuteStatus ==
+				BatchEngineTaskExecuteStatus.COMPLETED) {
+
+			StreamingOutput streamingOutput =
+				outputStream -> StreamUtil.transfer(
+					_batchEngineExportTaskLocalService.openContentInputStream(
+						batchEngineExportTask.getBatchEngineExportTaskId()),
+					outputStream);
+
+			return Response.ok(
+				streamingOutput
+			).header(
+				"content-disposition",
+				"attachment; filename=" + StringUtil.randomString() + ".zip"
+			).build();
+		}
+
+		return Response.status(
+			Response.Status.NOT_FOUND
+		).build();
 	}
 
 	private ExportTask _toExportTask(
@@ -133,6 +155,8 @@ public class ExportTaskResourceImpl extends BaseExportTaskResourceImpl {
 				errorMessage = batchEngineExportTask.getErrorMessage();
 				executeStatus = ExportTask.ExecuteStatus.create(
 					batchEngineExportTask.getExecuteStatus());
+				externalReferenceCode =
+					batchEngineExportTask.getExternalReferenceCode();
 				id = batchEngineExportTask.getBatchEngineExportTaskId();
 				processedItemsCount =
 					batchEngineExportTask.getProcessedItemsCount();

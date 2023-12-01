@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.facebook.connect.internal.verify;
 
 import com.liferay.portal.kernel.service.CompanyLocalService;
-import com.liferay.portal.kernel.settings.SettingsFactory;
+import com.liferay.portal.kernel.settings.SettingsLocatorHelper;
 import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -34,11 +25,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Stian Sigvartsen
  */
-@Component(
-	immediate = true,
-	property = "verify.process.name=com.liferay.portal.security.sso.facebook.connect",
-	service = VerifyProcess.class
-)
+@Component(service = VerifyProcess.class)
 public class FacebookConnectCompanySettingsVerifyProcess
 	extends BaseCompanySettingsVerifyProcess {
 
@@ -105,30 +92,13 @@ public class FacebookConnectCompanySettingsVerifyProcess
 	}
 
 	@Override
-	protected SettingsFactory getSettingsFactory() {
-		return _settingsFactory;
-	}
-
-	@Override
 	protected String getSettingsId() {
 		return FacebookConnectConstants.SERVICE_NAME;
 	}
 
-	@Reference(unbind = "-")
-	protected void setCompanyLocalService(
-		CompanyLocalService companyLocalService) {
-
-		_companyLocalService = companyLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPrefsProps(PrefsProps prefsProps) {
-		_prefsProps = prefsProps;
-	}
-
-	@Reference(unbind = "-")
-	protected void setSettingsFactory(SettingsFactory settingsFactory) {
-		_settingsFactory = settingsFactory;
+	@Override
+	protected SettingsLocatorHelper getSettingsLocatorHelper() {
+		return _settingsLocatorHelper;
 	}
 
 	private String _upgradeLegacyRedirectURI(String legacyRedirectURI) {
@@ -141,8 +111,13 @@ public class FacebookConnectCompanySettingsVerifyProcess
 			"/c/portal/facebook_connect_oauth");
 	}
 
+	@Reference
 	private CompanyLocalService _companyLocalService;
+
+	@Reference
 	private PrefsProps _prefsProps;
-	private SettingsFactory _settingsFactory;
+
+	@Reference
+	private SettingsLocatorHelper _settingsLocatorHelper;
 
 }

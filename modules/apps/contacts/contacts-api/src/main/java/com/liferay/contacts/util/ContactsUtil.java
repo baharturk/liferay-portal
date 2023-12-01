@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.contacts.util;
@@ -93,7 +84,7 @@ public class ContactsUtil {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -212,11 +203,9 @@ public class ContactsUtil {
 
 		for (Address address : addresses) {
 			sb.append("ADR;TYPE=");
-
-			ListType listType = address.getType();
-
-			sb.append(StringUtil.toUpperCase(_getVCardListTypeName(listType)));
-
+			sb.append(
+				StringUtil.toUpperCase(
+					_getVCardListTypeName(address.getListType())));
 			sb.append(StringPool.COLON);
 			sb.append(StringPool.SEMICOLON);
 			sb.append(StringPool.SEMICOLON);
@@ -288,7 +277,7 @@ public class ContactsUtil {
 		for (EmailAddress emailAddress : emailAddresses) {
 			sb.append("EMAIL;TYPE=INTERNET;TYPE=");
 
-			ListType listType = emailAddress.getType();
+			ListType listType = emailAddress.getListType();
 
 			sb.append(StringUtil.toUpperCase(listType.getName()));
 
@@ -350,20 +339,22 @@ public class ContactsUtil {
 		sb.append(user.getMiddleName());
 		sb.append(StringPool.SEMICOLON);
 
-		long prefixId = contact.getPrefixId();
+		long prefixListTypeId = contact.getPrefixListTypeId();
 
-		if (prefixId > 0) {
-			ListType listType = ListTypeServiceUtil.getListType(prefixId);
+		if (prefixListTypeId > 0) {
+			ListType listType = ListTypeServiceUtil.getListType(
+				prefixListTypeId);
 
 			sb.append(listType.getName());
 		}
 
 		sb.append(StringPool.SEMICOLON);
 
-		long suffixId = contact.getSuffixId();
+		long suffixListTypeId = contact.getSuffixListTypeId();
 
-		if (suffixId > 0) {
-			ListType listType = ListTypeServiceUtil.getListType(suffixId);
+		if (suffixListTypeId > 0) {
+			ListType listType = ListTypeServiceUtil.getListType(
+				suffixListTypeId);
 
 			sb.append(listType.getName());
 		}
@@ -384,11 +375,9 @@ public class ContactsUtil {
 
 		for (Phone phone : phones) {
 			sb.append("TEL;TYPE=");
-
-			ListType listType = phone.getType();
-
-			sb.append(StringUtil.toUpperCase(_getVCardListTypeName(listType)));
-
+			sb.append(
+				StringUtil.toUpperCase(
+					_getVCardListTypeName(phone.getListType())));
 			sb.append(StringPool.COLON);
 			sb.append(phone.getNumber());
 			sb.append(StringPool.SPACE);
@@ -421,9 +410,9 @@ public class ContactsUtil {
 		for (Website website : websites) {
 			sb.append("URL;TYPE=");
 
-			ListType listType = website.getType();
-
-			sb.append(StringUtil.toUpperCase(_getVCardListTypeName(listType)));
+			sb.append(
+				StringUtil.toUpperCase(
+					_getVCardListTypeName(website.getListType())));
 
 			sb.append(StringPool.COLON);
 

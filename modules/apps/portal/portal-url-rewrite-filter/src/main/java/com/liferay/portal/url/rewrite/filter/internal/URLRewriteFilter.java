@@ -1,23 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.url.rewrite.filter.internal;
 
-import com.liferay.portal.asm.ASMWrapperUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.AggregateClassLoader;
+import com.liferay.portal.kernel.util.DelegateProxyFactory;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
 
 import javax.servlet.Filter;
@@ -29,6 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 import org.tuckey.web.filters.urlrewrite.UrlRewriteFilter;
 
@@ -36,7 +27,6 @@ import org.tuckey.web.filters.urlrewrite.UrlRewriteFilter;
  * @author László Csontos
  */
 @Component(
-	immediate = true,
 	property = {
 		"before-filter=Session Id Filter", "dispatcher=ERROR",
 		"dispatcher=FORWARD", "dispatcher=INCLUDE", "dispatcher=REQUEST",
@@ -66,16 +56,14 @@ public class URLRewriteFilter extends BasePortalFilter {
 
 		ServletContext servletContext = filterConfig.getServletContext();
 
-		ClassLoader classLoader = AggregateClassLoader.getAggregateClassLoader(
-			URLRewriteFilter.class.getClassLoader(),
-			servletContext.getClassLoader());
+		ClassLoader classLoader = URLRewriteFilter.class.getClassLoader();
 
 		try {
 			_urlRewriteFilter.init(
-				ASMWrapperUtil.createASMWrapper(
+				_delegateProxyFactory.newDelegateProxyInstance(
 					classLoader, FilterConfig.class,
 					new FilterConfigDelegate(
-						ASMWrapperUtil.createASMWrapper(
+						_delegateProxyFactory.newDelegateProxyInstance(
 							classLoader, ServletContext.class,
 							new ServletContextDelegate(servletContext),
 							servletContext)),
@@ -84,7 +72,7 @@ public class URLRewriteFilter extends BasePortalFilter {
 		catch (ServletException servletException) {
 			_urlRewriteFilter = null;
 
-			_log.error(servletException, servletException);
+			_log.error(servletException);
 		}
 	}
 
@@ -102,6 +90,9 @@ public class URLRewriteFilter extends BasePortalFilter {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		URLRewriteFilter.class);
+
+	@Reference
+	private DelegateProxyFactory _delegateProxyFactory;
 
 	private UrlRewriteFilter _urlRewriteFilter;
 

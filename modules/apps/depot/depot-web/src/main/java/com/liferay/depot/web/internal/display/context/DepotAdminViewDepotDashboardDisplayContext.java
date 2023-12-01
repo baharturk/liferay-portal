@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.display.context;
@@ -20,12 +11,13 @@ import com.liferay.application.list.PanelCategory;
 import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.asset.categories.admin.web.constants.AssetCategoriesAdminPortletKeys;
+import com.liferay.asset.list.constants.AssetListPortletKeys;
 import com.liferay.asset.tags.constants.AssetTagsAdminPortletKeys;
 import com.liferay.depot.web.internal.constants.DepotPortletKeys;
-import com.liferay.depot.web.internal.servlet.taglib.clay.DepotDashboardApplicationNavigationCard;
+import com.liferay.depot.web.internal.frontend.taglib.clay.servlet.taglib.DepotDashboardApplicationNavigationCard;
 import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.exportimport.constants.ExportImportPortletKeys;
-import com.liferay.frontend.taglib.clay.servlet.taglib.soy.NavigationCard;
+import com.liferay.frontend.taglib.clay.servlet.taglib.NavigationCard;
 import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
@@ -34,6 +26,7 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.workflow.constants.WorkflowPortletKeys;
 import com.liferay.site.memberships.constants.SiteMembershipsPortletKeys;
+import com.liferay.staging.constants.StagingProcessesPortletKeys;
 import com.liferay.trash.constants.TrashPortletKeys;
 
 import java.util.ArrayList;
@@ -77,17 +70,8 @@ public class DepotAdminViewDepotDashboardDisplayContext {
 	public Collection<PanelApp> getPanelApps(PanelCategory panelCategory)
 		throws PortalException {
 
-		Collection<PanelApp> panelApps = new ArrayList<>();
-
-		for (PanelApp panelApp :
-				_panelAppRegistry.getPanelApps(panelCategory.getKey())) {
-
-			if (panelApp.isShow(_permissionChecker, _group)) {
-				panelApps.add(panelApp);
-			}
-		}
-
-		return panelApps;
+		return _panelAppRegistry.getPanelApps(
+			panelCategory.getKey(), _permissionChecker, _group);
 	}
 
 	public Iterable<PanelCategory> getPanelCategories() throws PortalException {
@@ -143,19 +127,23 @@ public class DepotAdminViewDepotDashboardDisplayContext {
 		HashMapBuilder.put(
 			AssetCategoriesAdminPortletKeys.ASSET_CATEGORIES_ADMIN, "categories"
 		).put(
+			AssetListPortletKeys.ASSET_LIST, "closed-book"
+		).put(
 			AssetTagsAdminPortletKeys.ASSET_TAGS_ADMIN, "tag"
 		).put(
 			DepotPortletKeys.DEPOT_SETTINGS, "cog"
 		).put(
 			DLPortletKeys.DOCUMENT_LIBRARY_ADMIN, "documents-and-media"
 		).put(
-			ExportImportPortletKeys.EXPORT, "download"
+			ExportImportPortletKeys.EXPORT, "upload"
 		).put(
-			ExportImportPortletKeys.IMPORT, "upload"
+			ExportImportPortletKeys.IMPORT, "download"
 		).put(
 			JournalPortletKeys.JOURNAL, "web-content"
 		).put(
 			SiteMembershipsPortletKeys.SITE_MEMBERSHIPS_ADMIN, "users"
+		).put(
+			StagingProcessesPortletKeys.STAGING_PROCESSES, "staging"
 		).put(
 			TrashPortletKeys.TRASH, "trash"
 		).put(

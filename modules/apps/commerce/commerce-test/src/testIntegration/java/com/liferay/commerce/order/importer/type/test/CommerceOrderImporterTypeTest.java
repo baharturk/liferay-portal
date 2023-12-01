@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.importer.type.test;
 
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.model.AccountEntry;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.commerce.account.model.CommerceAccount;
 import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
@@ -69,7 +61,6 @@ import java.io.File;
 import java.math.BigDecimal;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -113,24 +104,25 @@ public class CommerceOrderImporterTypeTest {
 			_user.getCompanyId(), _group.getGroupId(), _user.getUserId());
 
 		_commerceChannel = CommerceChannelLocalServiceUtil.addCommerceChannel(
-			null, _group.getGroupId(), "Test Channel",
+			null, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
+			_group.getGroupId(), "Test Channel",
 			CommerceChannelConstants.CHANNEL_TYPE_SITE, null,
 			_commerceCurrency.getCode(), _serviceContext);
 
-		_commerceAccount = CommerceAccountTestUtil.addBusinessCommerceAccount(
+		_accountEntry = CommerceAccountTestUtil.addBusinessAccountEntry(
 			_user.getUserId(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString() + "@liferay.com",
 			RandomTestUtil.randomString(), new long[] {_user.getUserId()}, null,
 			_serviceContext);
 
 		_commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
-			_group.getGroupId(), _user.getUserId(),
-			_commerceAccount.getCommerceAccountId(),
+			_group.getGroupId(), _commerceChannel.getUserId(),
+			_accountEntry.getAccountEntryId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
 		_commerceContext = new TestCommerceContext(
-			_commerceCurrency, _commerceChannel, _user, _group,
-			_commerceOrder.getCommerceAccount(), _commerceOrder);
+			_commerceOrder.getAccountEntry(), _commerceCurrency,
+			_commerceChannel, _user, _group, _commerceOrder);
 	}
 
 	@After
@@ -166,28 +158,26 @@ public class CommerceOrderImporterTypeTest {
 			commerceOrderImporterType.getCommerceOrderImporterItems(
 				_commerceOrderLocalService.addCommerceOrder(
 					_user.getUserId(), _commerceChannel.getGroupId(),
-					_commerceAccount.getCommerceAccountId(),
+					_accountEntry.getAccountEntryId(),
 					_commerceCurrency.getCommerceCurrencyId(), 0),
+				null,
 				DLAppLocalServiceUtil.addFileEntry(
 					null, _serviceContext.getUserId(),
 					_serviceContext.getScopeGroupId(),
 					DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
 					MimeTypesUtil.getContentType(file, fileName), fileName,
-					StringPool.BLANK, StringPool.BLANK, file, null, null,
-					_serviceContext));
+					StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, file,
+					null, null, _serviceContext));
 
 		Assert.assertEquals(
 			commerceOrderImporterItems.toString(), 2,
 			commerceOrderImporterItems.size());
 
-		Stream<CommerceOrderImporterItem> stream =
-			commerceOrderImporterItems.stream();
+		for (CommerceOrderImporterItem commerceOrderImporterItem :
+				commerceOrderImporterItems) {
 
-		stream.map(
-			CommerceOrderImporterItem::getErrorMessages
-		).forEach(
-			errorMessages -> Assert.assertNotNull(errorMessages)
-		);
+			Assert.assertNotNull(commerceOrderImporterItem.getErrorMessages());
+		}
 	}
 
 	@Test
@@ -199,7 +189,7 @@ public class CommerceOrderImporterTypeTest {
 				_serviceContext);
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalogWithERC(
-			commerceCatalog.getGroupId(), "erc-test", new BigDecimal(100),
+			commerceCatalog.getGroupId(), "erc-test2", new BigDecimal(100),
 			CPInstanceConstants.DEFAULT_SKU);
 
 		CommerceInventoryWarehouse commerceInventoryWarehouse =
@@ -211,8 +201,8 @@ public class CommerceOrderImporterTypeTest {
 			_commerceChannel.getCommerceChannelId());
 
 		CommerceInventoryTestUtil.addCommerceInventoryWarehouseItem(
-			_user.getUserId(), commerceInventoryWarehouse, cpInstance.getSku(),
-			100);
+			_user.getUserId(), commerceInventoryWarehouse,
+			BigDecimal.valueOf(100), cpInstance.getSku(), StringPool.BLANK);
 
 		CPTestUtil.addBaseCommerceCatalogCommercePriceList(
 			commerceCatalog.getGroupId(), _commerceCurrency.getCode(),
@@ -229,7 +219,7 @@ public class CommerceOrderImporterTypeTest {
 		String fileName = "test_successful_csv_import.csv";
 
 		String fileContent = StringBundler.concat(
-			"sku,quantity", StringPool.NEW_LINE, "erc-test,1");
+			"sku,quantity", StringPool.NEW_LINE, "erc-test2,1");
 
 		File file = FileUtil.createTempFile(fileContent.getBytes());
 
@@ -237,15 +227,16 @@ public class CommerceOrderImporterTypeTest {
 			commerceOrderImporterType.getCommerceOrderImporterItems(
 				_commerceOrderLocalService.addCommerceOrder(
 					_user.getUserId(), _commerceChannel.getGroupId(),
-					_commerceAccount.getCommerceAccountId(),
+					_accountEntry.getAccountEntryId(),
 					_commerceCurrency.getCommerceCurrencyId(), 0),
+				null,
 				DLAppLocalServiceUtil.addFileEntry(
 					null, _serviceContext.getUserId(),
 					_serviceContext.getScopeGroupId(),
 					DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
 					MimeTypesUtil.getContentType(file, fileName), fileName,
-					StringPool.BLANK, StringPool.BLANK, file, null, null,
-					_serviceContext));
+					StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, file,
+					null, null, _serviceContext));
 
 		Assert.assertEquals(
 			commerceOrderImporterItems.toString(), 1,
@@ -263,7 +254,7 @@ public class CommerceOrderImporterTypeTest {
 
 	private static User _user;
 
-	private CommerceAccount _commerceAccount;
+	private AccountEntry _accountEntry;
 
 	@Inject
 	private CommerceCatalogLocalService _commerceCatalogLocalService;

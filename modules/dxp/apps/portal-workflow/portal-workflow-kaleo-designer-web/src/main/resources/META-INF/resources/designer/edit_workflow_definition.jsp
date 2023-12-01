@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -27,18 +18,40 @@ portletDisplay.setURLBack(
 		"/view.jsp"
 	).buildString());
 
-renderResponse.setTitle((kaleoDefinitionVersion == null) ? LanguageUtil.get(request, "new-workflow-definition") : LanguageUtil.get(request, "edit-workflow-definition"));
+boolean view = Objects.equals(request.getParameter(WorkflowWebKeys.WORKFLOW_JSP_STATE), "view");
+
+String titleKey = "new-workflow-definition";
+
+if (kaleoDefinitionVersion != null) {
+	titleKey = "edit-workflow-definition";
+
+	if (view) {
+		titleKey = "view-workflow-definition";
+	}
+}
+
+renderResponse.setTitle(LanguageUtil.get(request, titleKey));
 %>
 
 <react:component
 	module="designer/js/definition-builder/DefinitionBuilder"
 	props='<%=
 		HashMapBuilder.<String, Object>put(
+			"accountEntryId", ParamUtil.getLong(liferayPortletRequest, "accountEntryId")
+		).put(
 			"definitionName", (kaleoDefinitionVersion == null) ? null : kaleoDefinitionVersion.getName()
 		).put(
 			"displayNames", LocaleUtil.toDisplayNames(LanguageUtil.getAvailableLocales(), locale)
 		).put(
+			"functionActionExecutors", kaleoDesignerDisplayContext.getFunctionActionExecutorsJSONArray()
+		).put(
+			"isView", view || !kaleoDesignerDisplayContext.canPublishWorkflowDefinition()
+		).put(
 			"languageIds", LocaleUtil.toLanguageIds(LanguageUtil.getAvailableLocales())
+		).put(
+			"portletNamespace", PortalUtil.getPortletNamespace(KaleoDesignerPortletKeys.KALEO_DESIGNER)
+		).put(
+			"statuses", kaleoDesignerDisplayContext.getStatusesJSONArray()
 		).put(
 			"title", (kaleoDefinitionVersion == null) ? LanguageUtil.get(request, "new-workflow") : kaleoDefinitionVersion.getTitle(locale)
 		).put(

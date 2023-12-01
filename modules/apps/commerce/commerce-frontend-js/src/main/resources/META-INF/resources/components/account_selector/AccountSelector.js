@@ -1,18 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayDropDown from '@clayui/drop-down';
+import {fetch} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
 
@@ -27,6 +19,13 @@ import {selectAccount} from './util/index';
 import AccountsListView from './views/AccountsListView';
 import OrdersListView from './views/OrdersListView';
 
+const USER_RESOURCE_ENDPOINT = '/o/headless-admin-user/v1.0/accounts';
+
+const accountsApi = new URL(
+	`${themeDisplay.getPathContext()}${USER_RESOURCE_ENDPOINT}`,
+	themeDisplay.getPortalURL()
+);
+
 function AccountSelector({
 	accountEntryAllowedTypes,
 	alignmentPosition,
@@ -34,6 +33,7 @@ function AccountSelector({
 	createNewOrderURL,
 	currentCommerceAccount: account,
 	currentCommerceOrder: order,
+	namespace,
 	refreshPageOnAccountSelected: forceRefresh,
 	selectOrderURL,
 	setCurrentAccountURL,
@@ -48,6 +48,14 @@ function AccountSelector({
 	const [currentView, setCurrentView] = useState(
 		account ? VIEWS.ORDERS_LIST : VIEWS.ACCOUNTS_LIST
 	);
+	const [currentUser, setCurrentUser] = useState({});
+
+	useEffect(() => {
+		fetch(accountsApi.toString())
+			.then((response) => response.json())
+			.then((response) => setCurrentUser(response))
+			.catch((error) => showErrorNotification(error.message));
+	}, []);
 
 	const changeAccount = (account) => {
 		selectAccount(account.id, setCurrentAccountURL)
@@ -107,6 +115,7 @@ function AccountSelector({
 					}
 					changeAccount={changeAccount}
 					currentAccount={currentAccount}
+					currentUser={currentUser}
 					disabled={!active}
 					setCurrentView={setCurrentView}
 				/>
@@ -118,6 +127,7 @@ function AccountSelector({
 					createOrderURL={createNewOrderURL}
 					currentAccount={currentAccount}
 					disabled={!active}
+					namespace={namespace}
 					selectOrderURL={selectOrderURL}
 					setCurrentView={setCurrentView}
 					showOrderTypeModal={showOrderTypeModal}
@@ -146,6 +156,7 @@ AccountSelector.propTypes = {
 			label_i18n: PropTypes.string,
 		}),
 	}),
+	namespace: PropTypes.string,
 	refreshPageOnAccountSelected: PropTypes.bool,
 	selectOrderURL: PropTypes.string.isRequired,
 	setCurrentAccountURL: PropTypes.string.isRequired,

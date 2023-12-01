@@ -1,24 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
 
 import com.liferay.jenkins.results.parser.failure.message.generator.FailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.FormatFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.GenericFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.GradleTaskFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.RebaseFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.SourceFormatFailureMessageGenerator;
+
+import java.io.IOException;
 
 import java.net.URL;
 
@@ -40,13 +34,43 @@ import org.json.JSONObject;
 public class ValidationBuild extends BaseBuild {
 
 	@Override
-	public void addTimelineData(BaseBuild.TimelineData timelineData) {
+	public void addTimelineData(TimelineData timelineData) {
 		timelineData.addTimelineData(this);
 	}
 
 	@Override
 	public URL getArtifactsBaseURL() {
 		return null;
+	}
+
+	@Override
+	public String getBaseGitRepositoryName() {
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(gitRepositoryName)) {
+			return gitRepositoryName;
+		}
+
+		TopLevelBuild topLevelBuild = getTopLevelBuild();
+
+		gitRepositoryName = topLevelBuild.getParameterValue("REPOSITORY_NAME");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(gitRepositoryName)) {
+			return gitRepositoryName;
+		}
+
+		String branchName = getBranchName();
+
+		gitRepositoryName = "liferay-portal-ee";
+
+		if (branchName.equals("master")) {
+			gitRepositoryName = "liferay-portal";
+		}
+
+		return gitRepositoryName;
+	}
+
+	@Override
+	public String getBuildName() {
+		return "default";
 	}
 
 	@Override
@@ -123,6 +147,27 @@ public class ValidationBuild extends BaseBuild {
 		}
 
 		return rootElement;
+	}
+
+	@Override
+	public JSONObject getTestReportJSONObject(boolean checkCache) {
+		String urlSuffix = "testReport/api/json";
+
+		String archiveFileContent = getArchiveFileContent(urlSuffix);
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(archiveFileContent)) {
+			return new JSONObject(archiveFileContent);
+		}
+
+		try {
+			return JenkinsResultsParserUtil.toJSONObject(
+				JenkinsResultsParserUtil.getLocalURL(getBuildURL() + urlSuffix),
+				checkCache);
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(
+				"Unable to get test report JSON object", ioException);
+		}
 	}
 
 	@Override
@@ -364,6 +409,7 @@ public class ValidationBuild extends BaseBuild {
 
 	private static final FailureMessageGenerator[] _FAILURE_MESSAGE_GENERATORS =
 		{
+			new FormatFailureMessageGenerator(),
 			new RebaseFailureMessageGenerator(),
 			new SourceFormatFailureMessageGenerator(),
 			//

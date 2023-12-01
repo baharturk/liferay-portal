@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.client.serdes.v1_0;
@@ -57,7 +48,7 @@ public class SXPElementSerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (sxpElement.getActions() != null) {
 			if (sb.length() > 1) {
@@ -116,6 +107,48 @@ public class SXPElementSerDes {
 			sb.append("\"elementDefinition\": ");
 
 			sb.append(String.valueOf(sxpElement.getElementDefinition()));
+		}
+
+		if (sxpElement.getExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(sxpElement.getExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
+		if (sxpElement.getFallbackDescription() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"fallbackDescription\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(sxpElement.getFallbackDescription()));
+
+			sb.append("\"");
+		}
+
+		if (sxpElement.getFallbackTitle() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"fallbackTitle\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(sxpElement.getFallbackTitle()));
+
+			sb.append("\"");
 		}
 
 		if (sxpElement.getHidden() != null) {
@@ -225,6 +258,20 @@ public class SXPElementSerDes {
 			sb.append("\"");
 		}
 
+		if (sxpElement.getVersion() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"version\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(sxpElement.getVersion()));
+
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
@@ -244,7 +291,7 @@ public class SXPElementSerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (sxpElement.getActions() == null) {
 			map.put("actions", null);
@@ -285,6 +332,32 @@ public class SXPElementSerDes {
 			map.put(
 				"elementDefinition",
 				String.valueOf(sxpElement.getElementDefinition()));
+		}
+
+		if (sxpElement.getExternalReferenceCode() == null) {
+			map.put("externalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"externalReferenceCode",
+				String.valueOf(sxpElement.getExternalReferenceCode()));
+		}
+
+		if (sxpElement.getFallbackDescription() == null) {
+			map.put("fallbackDescription", null);
+		}
+		else {
+			map.put(
+				"fallbackDescription",
+				String.valueOf(sxpElement.getFallbackDescription()));
+		}
+
+		if (sxpElement.getFallbackTitle() == null) {
+			map.put("fallbackTitle", null);
+		}
+		else {
+			map.put(
+				"fallbackTitle", String.valueOf(sxpElement.getFallbackTitle()));
 		}
 
 		if (sxpElement.getHidden() == null) {
@@ -353,6 +426,13 @@ public class SXPElementSerDes {
 			map.put("userName", String.valueOf(sxpElement.getUserName()));
 		}
 
+		if (sxpElement.getVersion() == null) {
+			map.put("version", null);
+		}
+		else {
+			map.put("version", String.valueOf(sxpElement.getVersion()));
+		}
+
 		return map;
 	}
 
@@ -406,6 +486,27 @@ public class SXPElementSerDes {
 							(String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					sxpElement.setExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "fallbackDescription")) {
+
+				if (jsonParserFieldValue != null) {
+					sxpElement.setFallbackDescription(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "fallbackTitle")) {
+				if (jsonParserFieldValue != null) {
+					sxpElement.setFallbackTitle((String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "hidden")) {
 				if (jsonParserFieldValue != null) {
 					sxpElement.setHidden((Boolean)jsonParserFieldValue);
@@ -454,6 +555,11 @@ public class SXPElementSerDes {
 			else if (Objects.equals(jsonParserFieldName, "userName")) {
 				if (jsonParserFieldValue != null) {
 					sxpElement.setUserName((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "version")) {
+				if (jsonParserFieldValue != null) {
+					sxpElement.setVersion((String)jsonParserFieldValue);
 				}
 			}
 		}

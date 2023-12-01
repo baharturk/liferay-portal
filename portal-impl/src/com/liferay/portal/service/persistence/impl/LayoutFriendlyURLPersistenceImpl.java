@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -52,7 +43,6 @@ import com.liferay.portal.model.impl.LayoutFriendlyURLModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -196,7 +186,7 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<LayoutFriendlyURL>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutFriendlyURL layoutFriendlyURL : list) {
@@ -591,7 +581,8 @@ public class LayoutFriendlyURLPersistenceImpl
 
 			finderArgs = new Object[] {uuid};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -714,21 +705,21 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		uuid = Objects.toString(uuid, "");
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			LayoutFriendlyURL.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {uuid, groupId};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			LayoutFriendlyURL.class);
 
 		if (result instanceof LayoutFriendlyURL) {
 			LayoutFriendlyURL layoutFriendlyURL = (LayoutFriendlyURL)result;
@@ -738,6 +729,15 @@ public class LayoutFriendlyURLPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						LayoutFriendlyURL.class,
+						layoutFriendlyURL.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -847,7 +847,8 @@ public class LayoutFriendlyURLPersistenceImpl
 
 			finderArgs = new Object[] {uuid, groupId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1019,7 +1020,7 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<LayoutFriendlyURL>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutFriendlyURL layoutFriendlyURL : list) {
@@ -1445,7 +1446,8 @@ public class LayoutFriendlyURLPersistenceImpl
 
 			finderArgs = new Object[] {uuid, companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1608,7 +1610,7 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<LayoutFriendlyURL>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutFriendlyURL layoutFriendlyURL : list) {
@@ -1980,7 +1982,8 @@ public class LayoutFriendlyURLPersistenceImpl
 
 			finderArgs = new Object[] {groupId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2124,7 +2127,7 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<LayoutFriendlyURL>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutFriendlyURL layoutFriendlyURL : list) {
@@ -2499,7 +2502,8 @@ public class LayoutFriendlyURLPersistenceImpl
 
 			finderArgs = new Object[] {companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2638,7 +2642,7 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<LayoutFriendlyURL>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutFriendlyURL layoutFriendlyURL : list) {
@@ -3007,7 +3011,8 @@ public class LayoutFriendlyURLPersistenceImpl
 
 			finderArgs = new Object[] {plid};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3158,7 +3163,7 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<LayoutFriendlyURL>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutFriendlyURL layoutFriendlyURL : list) {
@@ -3586,7 +3591,8 @@ public class LayoutFriendlyURLPersistenceImpl
 
 			finderArgs = new Object[] {plid, friendlyURL};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3723,7 +3729,7 @@ public class LayoutFriendlyURLPersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutFriendlyURLModelImpl</code>.
 	 * </p>
 	 *
-	 * @param plid the plid
+	 * @param plids the plids
 	 * @param languageId the language ID
 	 * @param start the lower bound of the range of layout friendly urls
 	 * @param end the upper bound of the range of layout friendly urls (not inclusive)
@@ -3781,7 +3787,7 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<LayoutFriendlyURL>)FinderCacheUtil.getResult(
-				_finderPathWithPaginationFindByP_L, finderArgs);
+				_finderPathWithPaginationFindByP_L, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutFriendlyURL layoutFriendlyURL : list) {
@@ -3977,21 +3983,21 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		languageId = Objects.toString(languageId, "");
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			LayoutFriendlyURL.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {plid, languageId};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByP_L, finderArgs);
+				_finderPathFetchByP_L, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			LayoutFriendlyURL.class);
 
 		if (result instanceof LayoutFriendlyURL) {
 			LayoutFriendlyURL layoutFriendlyURL = (LayoutFriendlyURL)result;
@@ -4002,6 +4008,15 @@ public class LayoutFriendlyURLPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						LayoutFriendlyURL.class,
+						layoutFriendlyURL.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -4111,7 +4126,8 @@ public class LayoutFriendlyURLPersistenceImpl
 
 			finderArgs = new Object[] {plid, languageId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -4195,7 +4211,7 @@ public class LayoutFriendlyURLPersistenceImpl
 			finderArgs = new Object[] {StringUtil.merge(plids), languageId};
 
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathWithPaginationCountByP_L, finderArgs);
+				_finderPathWithPaginationCountByP_L, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -4423,7 +4439,7 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<LayoutFriendlyURL>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutFriendlyURL layoutFriendlyURL : list) {
@@ -4880,7 +4896,8 @@ public class LayoutFriendlyURLPersistenceImpl
 
 			finderArgs = new Object[] {groupId, privateLayout, friendlyURL};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -5038,12 +5055,9 @@ public class LayoutFriendlyURLPersistenceImpl
 		friendlyURL = Objects.toString(friendlyURL, "");
 		languageId = Objects.toString(languageId, "");
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			LayoutFriendlyURL.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {
 				groupId, privateLayout, friendlyURL, languageId
 			};
@@ -5051,10 +5065,13 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByG_P_F_L, finderArgs);
+				_finderPathFetchByG_P_F_L, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			LayoutFriendlyURL.class);
 
 		if (result instanceof LayoutFriendlyURL) {
 			LayoutFriendlyURL layoutFriendlyURL = (LayoutFriendlyURL)result;
@@ -5068,6 +5085,15 @@ public class LayoutFriendlyURLPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						LayoutFriendlyURL.class,
+						layoutFriendlyURL.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -5209,7 +5235,8 @@ public class LayoutFriendlyURLPersistenceImpl
 				groupId, privateLayout, friendlyURL, languageId
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -5733,7 +5760,9 @@ public class LayoutFriendlyURLPersistenceImpl
 	 */
 	@Override
 	public LayoutFriendlyURL fetchByPrimaryKey(Serializable primaryKey) {
-		if (CTPersistenceHelperUtil.isProductionMode(LayoutFriendlyURL.class)) {
+		if (CTPersistenceHelperUtil.isProductionMode(
+				LayoutFriendlyURL.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -5954,7 +5983,7 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<LayoutFriendlyURL>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -6030,7 +6059,7 @@ public class LayoutFriendlyURLPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -6118,6 +6147,7 @@ public class LayoutFriendlyURLPersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
@@ -6131,7 +6161,7 @@ public class LayoutFriendlyURLPersistenceImpl
 		ctIgnoreColumnNames.add("modifiedDate");
 		ctStrictColumnNames.add("plid");
 		ctStrictColumnNames.add("privateLayout");
-		ctStrictColumnNames.add("friendlyURL");
+		ctMergeColumnNames.add("friendlyURL");
 		ctStrictColumnNames.add("languageId");
 		ctStrictColumnNames.add("lastPublishDate");
 
@@ -6139,6 +6169,7 @@ public class LayoutFriendlyURLPersistenceImpl
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("layoutFriendlyURLId"));
@@ -6368,29 +6399,13 @@ public class LayoutFriendlyURLPersistenceImpl
 			},
 			false);
 
-		_setLayoutFriendlyURLUtilPersistence(this);
+		LayoutFriendlyURLUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setLayoutFriendlyURLUtilPersistence(null);
+		LayoutFriendlyURLUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(LayoutFriendlyURLImpl.class.getName());
-	}
-
-	private void _setLayoutFriendlyURLUtilPersistence(
-		LayoutFriendlyURLPersistence layoutFriendlyURLPersistence) {
-
-		try {
-			Field field = LayoutFriendlyURLUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, layoutFriendlyURLPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_LAYOUTFRIENDLYURL =

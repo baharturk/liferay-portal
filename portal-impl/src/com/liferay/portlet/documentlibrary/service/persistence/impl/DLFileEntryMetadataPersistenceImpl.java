@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.persistence.impl;
@@ -48,7 +39,6 @@ import com.liferay.portlet.documentlibrary.model.impl.DLFileEntryMetadataModelIm
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -193,7 +183,7 @@ public class DLFileEntryMetadataPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DLFileEntryMetadata>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DLFileEntryMetadata dlFileEntryMetadata : list) {
@@ -590,7 +580,8 @@ public class DLFileEntryMetadataPersistenceImpl
 
 			finderArgs = new Object[] {uuid};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -755,7 +746,7 @@ public class DLFileEntryMetadataPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DLFileEntryMetadata>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DLFileEntryMetadata dlFileEntryMetadata : list) {
@@ -1182,7 +1173,8 @@ public class DLFileEntryMetadataPersistenceImpl
 
 			finderArgs = new Object[] {uuid, companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1348,7 +1340,7 @@ public class DLFileEntryMetadataPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DLFileEntryMetadata>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DLFileEntryMetadata dlFileEntryMetadata : list) {
@@ -1725,7 +1717,8 @@ public class DLFileEntryMetadataPersistenceImpl
 
 			finderArgs = new Object[] {fileEntryId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1870,7 +1863,7 @@ public class DLFileEntryMetadataPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DLFileEntryMetadata>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DLFileEntryMetadata dlFileEntryMetadata : list) {
@@ -2250,7 +2243,8 @@ public class DLFileEntryMetadataPersistenceImpl
 
 			finderArgs = new Object[] {fileVersionId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2361,21 +2355,21 @@ public class DLFileEntryMetadataPersistenceImpl
 	public DLFileEntryMetadata fetchByD_F(
 		long DDMStructureId, long fileVersionId, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFileEntryMetadata.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {DDMStructureId, fileVersionId};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByD_F, finderArgs);
+				_finderPathFetchByD_F, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			DLFileEntryMetadata.class);
 
 		if (result instanceof DLFileEntryMetadata) {
 			DLFileEntryMetadata dlFileEntryMetadata =
@@ -2386,6 +2380,15 @@ public class DLFileEntryMetadataPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						DLFileEntryMetadata.class,
+						dlFileEntryMetadata.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -2484,7 +2487,8 @@ public class DLFileEntryMetadataPersistenceImpl
 
 			finderArgs = new Object[] {DDMStructureId, fileVersionId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2906,7 +2910,7 @@ public class DLFileEntryMetadataPersistenceImpl
 	@Override
 	public DLFileEntryMetadata fetchByPrimaryKey(Serializable primaryKey) {
 		if (CTPersistenceHelperUtil.isProductionMode(
-				DLFileEntryMetadata.class)) {
+				DLFileEntryMetadata.class, primaryKey)) {
 
 			return super.fetchByPrimaryKey(primaryKey);
 		}
@@ -3132,7 +3136,7 @@ public class DLFileEntryMetadataPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DLFileEntryMetadata>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3208,7 +3212,7 @@ public class DLFileEntryMetadataPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -3421,29 +3425,13 @@ public class DLFileEntryMetadataPersistenceImpl
 			new String[] {Long.class.getName(), Long.class.getName()},
 			new String[] {"DDMStructureId", "fileVersionId"}, false);
 
-		_setDLFileEntryMetadataUtilPersistence(this);
+		DLFileEntryMetadataUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setDLFileEntryMetadataUtilPersistence(null);
+		DLFileEntryMetadataUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(DLFileEntryMetadataImpl.class.getName());
-	}
-
-	private void _setDLFileEntryMetadataUtilPersistence(
-		DLFileEntryMetadataPersistence dlFileEntryMetadataPersistence) {
-
-		try {
-			Field field = DLFileEntryMetadataUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, dlFileEntryMetadataPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_DLFILEENTRYMETADATA =

@@ -1,23 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.internal.resource.v1_0;
 
 import com.liferay.headless.admin.user.dto.v1_0.UserGroup;
 import com.liferay.headless.admin.user.resource.v1_0.UserGroupResource;
+import com.liferay.petra.function.UnsafeBiConsumer;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.search.Sort;
@@ -27,31 +22,43 @@ import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParser;
 import com.liferay.portal.odata.filter.FilterParserProvider;
+import com.liferay.portal.odata.sort.SortField;
+import com.liferay.portal.odata.sort.SortParser;
+import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.batch.engine.VulcanBatchEngineTaskItemDelegate;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTaskResource;
 import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResource;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.ActionUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.io.Serializable;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -66,6 +73,164 @@ import javax.ws.rs.core.UriInfo;
 public abstract class BaseUserGroupResourceImpl
 	implements EntityModelResource, UserGroupResource,
 			   VulcanBatchEngineTaskItemDelegate<UserGroup> {
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -X 'GET' 'http://localhost:8080/o/headless-admin-user/v1.0/user-accounts/{userAccountId}/user-groups'  -u 'test@liferay.com:test'
+	 */
+	@io.swagger.v3.oas.annotations.Operation(
+		description = "Retrieves the user's user groups."
+	)
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+				name = "userAccountId"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "UserGroup")}
+	)
+	@javax.ws.rs.GET
+	@javax.ws.rs.Path("/user-accounts/{userAccountId}/user-groups")
+	@javax.ws.rs.Produces({"application/json", "application/xml"})
+	@Override
+	public Page<UserGroup> getUserUserGroups(
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.validation.constraints.NotNull
+			@javax.ws.rs.PathParam("userAccountId")
+			Long userAccountId)
+		throws Exception {
+
+		return Page.of(Collections.emptyList());
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -X 'GET' 'http://localhost:8080/o/headless-admin-user/v1.0/user-groups'  -u 'test@liferay.com:test'
+	 */
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "filter"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "page"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "pageSize"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "search"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "sort"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "UserGroup")}
+	)
+	@javax.ws.rs.GET
+	@javax.ws.rs.Path("/user-groups")
+	@javax.ws.rs.Produces({"application/json", "application/xml"})
+	@Override
+	public Page<UserGroup> getUserGroupsPage(
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.QueryParam("search")
+			String search,
+			@javax.ws.rs.core.Context Filter filter,
+			@javax.ws.rs.core.Context Pagination pagination,
+			@javax.ws.rs.core.Context Sort[] sorts)
+		throws Exception {
+
+		return Page.of(Collections.emptyList());
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -X 'POST' 'http://localhost:8080/o/headless-admin-user/v1.0/user-groups/export-batch'  -u 'test@liferay.com:test'
+	 */
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "filter"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "search"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "sort"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "callbackURL"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "contentType"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "fieldNames"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "UserGroup")}
+	)
+	@javax.ws.rs.Consumes("application/json")
+	@javax.ws.rs.Path("/user-groups/export-batch")
+	@javax.ws.rs.POST
+	@javax.ws.rs.Produces("application/json")
+	@Override
+	public Response postUserGroupsPageExportBatch(
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.QueryParam("search")
+			String search,
+			@javax.ws.rs.core.Context Filter filter,
+			@javax.ws.rs.core.Context Sort[] sorts,
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.QueryParam("callbackURL")
+			String callbackURL,
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.DefaultValue("JSON")
+			@javax.ws.rs.QueryParam("contentType")
+			String contentType,
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.QueryParam("fieldNames")
+			String fieldNames)
+		throws Exception {
+
+		vulcanBatchEngineExportTaskResource.setContextAcceptLanguage(
+			contextAcceptLanguage);
+		vulcanBatchEngineExportTaskResource.setContextCompany(contextCompany);
+		vulcanBatchEngineExportTaskResource.setContextHttpServletRequest(
+			contextHttpServletRequest);
+		vulcanBatchEngineExportTaskResource.setContextUriInfo(contextUriInfo);
+		vulcanBatchEngineExportTaskResource.setContextUser(contextUser);
+		vulcanBatchEngineExportTaskResource.setGroupLocalService(
+			groupLocalService);
+
+		Response.ResponseBuilder responseBuilder = Response.accepted();
+
+		return responseBuilder.entity(
+			vulcanBatchEngineExportTaskResource.postExportTask(
+				UserGroup.class.getName(), callbackURL, contentType, fieldNames)
+		).build();
+	}
 
 	/**
 	 * Invoke this method with the command line:
@@ -126,6 +291,155 @@ public abstract class BaseUserGroupResourceImpl
 			vulcanBatchEngineImportTaskResource.postImportTask(
 				UserGroup.class.getName(), callbackURL, null, object)
 		).build();
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -X 'DELETE' 'http://localhost:8080/o/headless-admin-user/v1.0/user-groups/by-external-reference-code/{externalReferenceCode}'  -u 'test@liferay.com:test'
+	 */
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+				name = "externalReferenceCode"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "UserGroup")}
+	)
+	@javax.ws.rs.DELETE
+	@javax.ws.rs.Path(
+		"/user-groups/by-external-reference-code/{externalReferenceCode}"
+	)
+	@javax.ws.rs.Produces({"application/json", "application/xml"})
+	@Override
+	public void deleteUserGroupByExternalReferenceCode(
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.validation.constraints.NotNull
+			@javax.ws.rs.PathParam("externalReferenceCode")
+			String externalReferenceCode)
+		throws Exception {
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -X 'GET' 'http://localhost:8080/o/headless-admin-user/v1.0/user-groups/by-external-reference-code/{externalReferenceCode}'  -u 'test@liferay.com:test'
+	 */
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+				name = "externalReferenceCode"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "UserGroup")}
+	)
+	@javax.ws.rs.GET
+	@javax.ws.rs.Path(
+		"/user-groups/by-external-reference-code/{externalReferenceCode}"
+	)
+	@javax.ws.rs.Produces({"application/json", "application/xml"})
+	@Override
+	public UserGroup getUserGroupByExternalReferenceCode(
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.validation.constraints.NotNull
+			@javax.ws.rs.PathParam("externalReferenceCode")
+			String externalReferenceCode)
+		throws Exception {
+
+		return new UserGroup();
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -X 'PATCH' 'http://localhost:8080/o/headless-admin-user/v1.0/user-groups/by-external-reference-code/{externalReferenceCode}' -d $'{"description": ___, "externalReferenceCode": ___, "name": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
+	 */
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+				name = "externalReferenceCode"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "UserGroup")}
+	)
+	@javax.ws.rs.Consumes({"application/json", "application/xml"})
+	@javax.ws.rs.PATCH
+	@javax.ws.rs.Path(
+		"/user-groups/by-external-reference-code/{externalReferenceCode}"
+	)
+	@javax.ws.rs.Produces({"application/json", "application/xml"})
+	@Override
+	public UserGroup patchUserGroupByExternalReferenceCode(
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.validation.constraints.NotNull
+			@javax.ws.rs.PathParam("externalReferenceCode")
+			String externalReferenceCode,
+			UserGroup userGroup)
+		throws Exception {
+
+		UserGroup existingUserGroup = getUserGroupByExternalReferenceCode(
+			externalReferenceCode);
+
+		if (userGroup.getDescription() != null) {
+			existingUserGroup.setDescription(userGroup.getDescription());
+		}
+
+		if (userGroup.getExternalReferenceCode() != null) {
+			existingUserGroup.setExternalReferenceCode(
+				userGroup.getExternalReferenceCode());
+		}
+
+		if (userGroup.getName() != null) {
+			existingUserGroup.setName(userGroup.getName());
+		}
+
+		preparePatch(userGroup, existingUserGroup);
+
+		return putUserGroupByExternalReferenceCode(
+			externalReferenceCode, existingUserGroup);
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -X 'PUT' 'http://localhost:8080/o/headless-admin-user/v1.0/user-groups/by-external-reference-code/{externalReferenceCode}' -d $'{"description": ___, "externalReferenceCode": ___, "name": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
+	 */
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+				name = "externalReferenceCode"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "UserGroup")}
+	)
+	@javax.ws.rs.Consumes({"application/json", "application/xml"})
+	@javax.ws.rs.Path(
+		"/user-groups/by-external-reference-code/{externalReferenceCode}"
+	)
+	@javax.ws.rs.Produces({"application/json", "application/xml"})
+	@javax.ws.rs.PUT
+	@Override
+	public UserGroup putUserGroupByExternalReferenceCode(
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.validation.constraints.NotNull
+			@javax.ws.rs.PathParam("externalReferenceCode")
+			String externalReferenceCode,
+			UserGroup userGroup)
+		throws Exception {
+
+		return new UserGroup();
 	}
 
 	/**
@@ -261,10 +575,6 @@ public abstract class BaseUserGroupResourceImpl
 
 		UserGroup existingUserGroup = getUserGroup(userGroupId);
 
-		if (userGroup.getActions() != null) {
-			existingUserGroup.setActions(userGroup.getActions());
-		}
-
 		if (userGroup.getDescription() != null) {
 			existingUserGroup.setDescription(userGroup.getDescription());
 		}
@@ -276,10 +586,6 @@ public abstract class BaseUserGroupResourceImpl
 
 		if (userGroup.getName() != null) {
 			existingUserGroup.setName(userGroup.getName());
-		}
-
-		if (userGroup.getUsersCount() != null) {
-			existingUserGroup.setUsersCount(userGroup.getUsersCount());
 		}
 
 		preparePatch(userGroup, existingUserGroup);
@@ -426,27 +732,93 @@ public abstract class BaseUserGroupResourceImpl
 	@Override
 	@SuppressWarnings("PMD.UnusedLocalVariable")
 	public void create(
-			java.util.Collection<UserGroup> userGroups,
+			Collection<UserGroup> userGroups,
 			Map<String, Serializable> parameters)
 		throws Exception {
 
-		UnsafeConsumer<UserGroup, Exception> userGroupUnsafeConsumer =
-			userGroup -> postUserGroup(userGroup);
+		UnsafeFunction<UserGroup, UserGroup, Exception>
+			userGroupUnsafeFunction = null;
 
-		for (UserGroup userGroup : userGroups) {
-			userGroupUnsafeConsumer.accept(userGroup);
+		String createStrategy = (String)parameters.getOrDefault(
+			"createStrategy", "INSERT");
+
+		if (StringUtil.equalsIgnoreCase(createStrategy, "INSERT")) {
+			userGroupUnsafeFunction = userGroup -> postUserGroup(userGroup);
+		}
+
+		if (StringUtil.equalsIgnoreCase(createStrategy, "UPSERT")) {
+			String updateStrategy = (String)parameters.getOrDefault(
+				"updateStrategy", "UPDATE");
+
+			if (StringUtil.equalsIgnoreCase(updateStrategy, "UPDATE")) {
+				userGroupUnsafeFunction =
+					userGroup -> putUserGroupByExternalReferenceCode(
+						userGroup.getExternalReferenceCode(), userGroup);
+			}
+
+			if (StringUtil.equalsIgnoreCase(updateStrategy, "PARTIAL_UPDATE")) {
+				userGroupUnsafeFunction = userGroup -> {
+					UserGroup persistedUserGroup = null;
+
+					try {
+						UserGroup getUserGroup =
+							getUserGroupByExternalReferenceCode(
+								userGroup.getExternalReferenceCode());
+
+						persistedUserGroup = patchUserGroup(
+							getUserGroup.getId() != null ?
+								getUserGroup.getId() :
+									_parseLong(
+										(String)parameters.get("userGroupId")),
+							userGroup);
+					}
+					catch (NoSuchModelException noSuchModelException) {
+						persistedUserGroup = postUserGroup(userGroup);
+					}
+
+					return persistedUserGroup;
+				};
+			}
+		}
+
+		if (userGroupUnsafeFunction == null) {
+			throw new NotSupportedException(
+				"Create strategy \"" + createStrategy +
+					"\" is not supported for UserGroup");
+		}
+
+		if (contextBatchUnsafeBiConsumer != null) {
+			contextBatchUnsafeBiConsumer.accept(
+				userGroups, userGroupUnsafeFunction);
+		}
+		else if (contextBatchUnsafeConsumer != null) {
+			contextBatchUnsafeConsumer.accept(
+				userGroups, userGroupUnsafeFunction::apply);
+		}
+		else {
+			for (UserGroup userGroup : userGroups) {
+				userGroupUnsafeFunction.apply(userGroup);
+			}
 		}
 	}
 
 	@Override
 	public void delete(
-			java.util.Collection<UserGroup> userGroups,
+			Collection<UserGroup> userGroups,
 			Map<String, Serializable> parameters)
 		throws Exception {
 
 		for (UserGroup userGroup : userGroups) {
 			deleteUserGroup(userGroup.getId());
 		}
+	}
+
+	public Set<String> getAvailableCreateStrategies() {
+		return SetUtil.fromArray("UPSERT", "INSERT");
+	}
+
+	public Set<String> getAvailableUpdateStrategies() {
+		return SetUtil.fromArray("PARTIAL_UPDATE", "UPDATE");
 	}
 
 	@Override
@@ -464,13 +836,17 @@ public abstract class BaseUserGroupResourceImpl
 		return null;
 	}
 
+	public String getVersion() {
+		return "v1.0";
+	}
+
 	@Override
 	public Page<UserGroup> read(
 			Filter filter, Pagination pagination, Sort[] sorts,
 			Map<String, Serializable> parameters, String search)
 		throws Exception {
 
-		return null;
+		return getUserGroupsPage(search, filter, pagination, sorts);
 	}
 
 	@Override
@@ -497,20 +873,78 @@ public abstract class BaseUserGroupResourceImpl
 
 	@Override
 	public void update(
-			java.util.Collection<UserGroup> userGroups,
+			Collection<UserGroup> userGroups,
 			Map<String, Serializable> parameters)
 		throws Exception {
 
-		for (UserGroup userGroup : userGroups) {
-			putUserGroup(
+		UnsafeFunction<UserGroup, UserGroup, Exception>
+			userGroupUnsafeFunction = null;
+
+		String updateStrategy = (String)parameters.getOrDefault(
+			"updateStrategy", "UPDATE");
+
+		if (StringUtil.equalsIgnoreCase(updateStrategy, "PARTIAL_UPDATE")) {
+			userGroupUnsafeFunction = userGroup -> patchUserGroup(
 				userGroup.getId() != null ? userGroup.getId() :
-					Long.parseLong((String)parameters.get("userGroupId")),
+					_parseLong((String)parameters.get("userGroupId")),
 				userGroup);
 		}
+
+		if (StringUtil.equalsIgnoreCase(updateStrategy, "UPDATE")) {
+			userGroupUnsafeFunction = userGroup -> putUserGroup(
+				userGroup.getId() != null ? userGroup.getId() :
+					_parseLong((String)parameters.get("userGroupId")),
+				userGroup);
+		}
+
+		if (userGroupUnsafeFunction == null) {
+			throw new NotSupportedException(
+				"Update strategy \"" + updateStrategy +
+					"\" is not supported for UserGroup");
+		}
+
+		if (contextBatchUnsafeBiConsumer != null) {
+			contextBatchUnsafeBiConsumer.accept(
+				userGroups, userGroupUnsafeFunction);
+		}
+		else if (contextBatchUnsafeConsumer != null) {
+			contextBatchUnsafeConsumer.accept(
+				userGroups, userGroupUnsafeFunction::apply);
+		}
+		else {
+			for (UserGroup userGroup : userGroups) {
+				userGroupUnsafeFunction.apply(userGroup);
+			}
+		}
+	}
+
+	private Long _parseLong(String value) {
+		if (value != null) {
+			return Long.parseLong(value);
+		}
+
+		return null;
 	}
 
 	public void setContextAcceptLanguage(AcceptLanguage contextAcceptLanguage) {
 		this.contextAcceptLanguage = contextAcceptLanguage;
+	}
+
+	public void setContextBatchUnsafeBiConsumer(
+		UnsafeBiConsumer
+			<Collection<UserGroup>,
+			 UnsafeFunction<UserGroup, UserGroup, Exception>, Exception>
+				contextBatchUnsafeBiConsumer) {
+
+		this.contextBatchUnsafeBiConsumer = contextBatchUnsafeBiConsumer;
+	}
+
+	public void setContextBatchUnsafeConsumer(
+		UnsafeBiConsumer
+			<Collection<UserGroup>, UnsafeConsumer<UserGroup, Exception>,
+			 Exception> contextBatchUnsafeConsumer) {
+
+		this.contextBatchUnsafeConsumer = contextBatchUnsafeConsumer;
 	}
 
 	public void setContextCompany(
@@ -521,6 +955,13 @@ public abstract class BaseUserGroupResourceImpl
 
 	public void setContextHttpServletRequest(
 		HttpServletRequest contextHttpServletRequest) {
+
+		if ((contextHttpServletRequest != null) &&
+			(contextHttpServletRequest.getAttribute(WebKeys.CTX) == null)) {
+
+			contextHttpServletRequest.setAttribute(
+				WebKeys.CTX, ServletContextPool.get(StringPool.BLANK));
+		}
 
 		this.contextHttpServletRequest = contextHttpServletRequest;
 	}
@@ -573,6 +1014,26 @@ public abstract class BaseUserGroupResourceImpl
 		this.roleLocalService = roleLocalService;
 	}
 
+	public void setSortParserProvider(SortParserProvider sortParserProvider) {
+		this.sortParserProvider = sortParserProvider;
+	}
+
+	public void setVulcanBatchEngineExportTaskResource(
+		VulcanBatchEngineExportTaskResource
+			vulcanBatchEngineExportTaskResource) {
+
+		this.vulcanBatchEngineExportTaskResource =
+			vulcanBatchEngineExportTaskResource;
+	}
+
+	public void setVulcanBatchEngineImportTaskResource(
+		VulcanBatchEngineImportTaskResource
+			vulcanBatchEngineImportTaskResource) {
+
+		this.vulcanBatchEngineImportTaskResource =
+			vulcanBatchEngineImportTaskResource;
+	}
+
 	@Override
 	public Filter toFilter(
 		String filterString, Map<String, List<String>> multivaluedMap) {
@@ -593,9 +1054,49 @@ public abstract class BaseUserGroupResourceImpl
 		}
 		catch (Exception exception) {
 			_log.error("Invalid filter " + filterString, exception);
+
+			return null;
+		}
+	}
+
+	@Override
+	public Sort[] toSorts(String sortString) {
+		if (Validator.isNull(sortString)) {
+			return null;
 		}
 
-		return null;
+		try {
+			SortParser sortParser = sortParserProvider.provide(
+				getEntityModel(Collections.emptyMap()));
+
+			if (sortParser == null) {
+				return null;
+			}
+
+			com.liferay.portal.odata.sort.Sort oDataSort =
+				new com.liferay.portal.odata.sort.Sort(
+					sortParser.parse(sortString));
+
+			List<SortField> sortFields = oDataSort.getSortFields();
+
+			Sort[] sorts = new Sort[sortFields.size()];
+
+			for (int i = 0; i < sortFields.size(); i++) {
+				SortField sortField = sortFields.get(i);
+
+				sorts[i] = new Sort(
+					sortField.getSortableFieldName(
+						contextAcceptLanguage.getPreferredLocale()),
+					!sortField.isAscending());
+			}
+
+			return sorts;
+		}
+		catch (Exception exception) {
+			_log.error("Invalid sort " + sortString, exception);
+
+			return new Sort[0];
+		}
 	}
 
 	protected Map<String, String> addAction(
@@ -636,35 +1137,83 @@ public abstract class BaseUserGroupResourceImpl
 		UserGroup userGroup, UserGroup existingUserGroup) {
 	}
 
-	protected <T, R> List<R> transform(
-		java.util.Collection<T> collection,
-		UnsafeFunction<T, R, Exception> unsafeFunction) {
+	protected <T, R, E extends Throwable> List<R> transform(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
 
 		return TransformUtil.transform(collection, unsafeFunction);
 	}
 
-	protected <T, R> R[] transform(
-		T[] array, UnsafeFunction<T, R, Exception> unsafeFunction,
-		Class<?> clazz) {
+	protected <T, R, E extends Throwable> R[] transform(
+		T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<?> clazz) {
 
 		return TransformUtil.transform(array, unsafeFunction, clazz);
 	}
 
-	protected <T, R> R[] transformToArray(
-		java.util.Collection<T> collection,
-		UnsafeFunction<T, R, Exception> unsafeFunction, Class<?> clazz) {
+	protected <T, R, E extends Throwable> R[] transformToArray(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction,
+		Class<?> clazz) {
 
 		return TransformUtil.transformToArray(
 			collection, unsafeFunction, clazz);
 	}
 
-	protected <T, R> List<R> transformToList(
-		T[] array, UnsafeFunction<T, R, Exception> unsafeFunction) {
+	protected <T, R, E extends Throwable> List<R> transformToList(
+		T[] array, UnsafeFunction<T, R, E> unsafeFunction) {
 
 		return TransformUtil.transformToList(array, unsafeFunction);
 	}
 
+	protected <T, R, E extends Throwable> long[] transformToLongArray(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
+
+		return TransformUtil.transformToLongArray(collection, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> List<R> unsafeTransform(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransform(collection, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> R[] unsafeTransform(
+			T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<?> clazz)
+		throws E {
+
+		return TransformUtil.unsafeTransform(array, unsafeFunction, clazz);
+	}
+
+	protected <T, R, E extends Throwable> R[] unsafeTransformToArray(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction,
+			Class<?> clazz)
+		throws E {
+
+		return TransformUtil.unsafeTransformToArray(
+			collection, unsafeFunction, clazz);
+	}
+
+	protected <T, R, E extends Throwable> List<R> unsafeTransformToList(
+			T[] array, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransformToList(array, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> long[] unsafeTransformToLongArray(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransformToLongArray(
+			collection, unsafeFunction);
+	}
+
 	protected AcceptLanguage contextAcceptLanguage;
+	protected UnsafeBiConsumer
+		<Collection<UserGroup>, UnsafeFunction<UserGroup, UserGroup, Exception>,
+		 Exception> contextBatchUnsafeBiConsumer;
+	protected UnsafeBiConsumer
+		<Collection<UserGroup>, UnsafeConsumer<UserGroup, Exception>, Exception>
+			contextBatchUnsafeConsumer;
 	protected com.liferay.portal.kernel.model.Company contextCompany;
 	protected HttpServletRequest contextHttpServletRequest;
 	protected HttpServletResponse contextHttpServletResponse;
@@ -677,6 +1226,9 @@ public abstract class BaseUserGroupResourceImpl
 	protected ResourceActionLocalService resourceActionLocalService;
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 	protected RoleLocalService roleLocalService;
+	protected SortParserProvider sortParserProvider;
+	protected VulcanBatchEngineExportTaskResource
+		vulcanBatchEngineExportTaskResource;
 	protected VulcanBatchEngineImportTaskResource
 		vulcanBatchEngineImportTaskResource;
 

@@ -1,25 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.util;
 
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.redirect.RedirectURLSettings;
-import com.liferay.portal.kernel.redirect.RedirectURLSettingsUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -32,6 +25,12 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Tomas Polesovsky
@@ -56,16 +55,25 @@ public class PortalImplEscapeRedirectTest {
 
 	@Before
 	public void setUp() {
-		_originalRedirectURLSettings = ReflectionTestUtil.getAndSetFieldValue(
-			RedirectURLSettingsUtil.class, "_redirectURLSettings",
-			_redirectURLSettingsImpl);
+		_serviceRegistration = _bundleContext.registerService(
+			RedirectURLSettings.class, _redirectURLSettingsImpl, null);
+
+		_prefsPropsUtilMockedStatic.when(
+			() -> PrefsPropsUtil.getString(
+				CompanyThreadLocal.getCompanyId(), PropsKeys.CDN_HOST_HTTPS,
+				PropsValues.CDN_HOST_HTTPS)
+		).thenReturn(
+			PropsValues.CDN_HOST_HTTPS
+		);
 	}
 
 	@After
 	public void tearDown() {
-		ReflectionTestUtil.setFieldValue(
-			RedirectURLSettingsUtil.class, "_redirectURLSettings",
-			_originalRedirectURLSettings);
+		_prefsPropsUtilMockedStatic.close();
+
+		if (_serviceRegistration != null) {
+			_serviceRegistration.unregister();
+		}
 	}
 
 	@Test
@@ -74,27 +82,6 @@ public class PortalImplEscapeRedirectTest {
 			"google.com", "localhost"
 		};
 		_redirectURLSettingsImpl.securityMode = "domain";
-
-		// Relative path
-
-		Assert.assertEquals("/", _portalImpl.escapeRedirect("/"));
-		Assert.assertEquals(
-			"/web/guest", _portalImpl.escapeRedirect("/web/guest"));
-		Assert.assertEquals(
-			"/a/b;c=d?e=f&g=h#x=y",
-			_portalImpl.escapeRedirect("/a/b;c=d?e=f&g=h#x=y"));
-		Assert.assertEquals(
-			"/web/http:", _portalImpl.escapeRedirect("/web/http:"));
-		Assert.assertEquals(
-			"web/http:", _portalImpl.escapeRedirect("web/http:"));
-		Assert.assertEquals(
-			"test@google.com", _portalImpl.escapeRedirect("test@google.com"));
-		Assert.assertNull(_portalImpl.escapeRedirect("///liferay.com"));
-
-		// Relative path with protocol
-
-		Assert.assertNull(_portalImpl.escapeRedirect("https:/path"));
-		Assert.assertNull(_portalImpl.escapeRedirect("test:/google.com"));
 
 		// Allowed domains
 
@@ -130,10 +117,20 @@ public class PortalImplEscapeRedirectTest {
 		// Invalid URLs
 
 		Assert.assertNull(_portalImpl.escapeRedirect("//www.google.com"));
+		Assert.assertNull(_portalImpl.escapeRedirect("//www.google.com/"));
+		Assert.assertNull(
+			_portalImpl.escapeRedirect("//www.google.com//www.google.com"));
 		Assert.assertNull(_portalImpl.escapeRedirect("https:google.com"));
 		Assert.assertNull(_portalImpl.escapeRedirect(":@liferay.com"));
 		Assert.assertNull(_portalImpl.escapeRedirect("http:/web"));
 		Assert.assertNull(_portalImpl.escapeRedirect("http:web"));
+		Assert.assertNull(
+			_portalImpl.escapeRedirect("https://google.com\uFFFD@localhost"));
+	}
+
+	@Test
+	public void testEscapeRedirectWithEscapingSequenceCharacter() {
+		Assert.assertNull(_portalImpl.escapeRedirect("\t//example.com"));
 	}
 
 	@Test
@@ -149,17 +146,6 @@ public class PortalImplEscapeRedirectTest {
 		_redirectURLSettingsImpl.securityMode = "ip";
 
 		try {
-
-			// Relative path
-
-			Assert.assertEquals("/", _portalImpl.escapeRedirect("/"));
-			Assert.assertEquals(
-				"/web/guest", _portalImpl.escapeRedirect("/web/guest"));
-			Assert.assertEquals(
-				"/a/b;c=d?e=f&g=h#x=y",
-				_portalImpl.escapeRedirect("/a/b;c=d?e=f&g=h#x=y"));
-			Assert.assertEquals(
-				"liferay.com", _portalImpl.escapeRedirect("liferay.com"));
 
 			// Absolute URL
 
@@ -206,6 +192,30 @@ public class PortalImplEscapeRedirectTest {
 
 	@Test
 	public void testEscapeRedirectWithRelativeURL() throws Exception {
+
+		// Relative path
+
+		Assert.assertEquals("/", _portalImpl.escapeRedirect("/"));
+		Assert.assertEquals(
+			"/web/guest", _portalImpl.escapeRedirect("/web/guest"));
+		Assert.assertEquals(
+			"/a/b;c=d?e=f&g=h#x=y",
+			_portalImpl.escapeRedirect("/a/b;c=d?e=f&g=h#x=y"));
+		Assert.assertEquals(
+			"liferay.com", _portalImpl.escapeRedirect("liferay.com"));
+		Assert.assertEquals("/", _portalImpl.escapeRedirect("/"));
+		Assert.assertEquals(
+			"/web/guest", _portalImpl.escapeRedirect("/web/guest"));
+		Assert.assertEquals(
+			"/a/b;c=d?e=f&g=h#x=y",
+			_portalImpl.escapeRedirect("/a/b;c=d?e=f&g=h#x=y"));
+		Assert.assertEquals(
+			"/web/http:", _portalImpl.escapeRedirect("/web/http:"));
+		Assert.assertEquals(
+			"web/http:", _portalImpl.escapeRedirect("web/http:"));
+		Assert.assertEquals(
+			"test@google.com", _portalImpl.escapeRedirect("test@google.com"));
+		Assert.assertNull(_portalImpl.escapeRedirect("///liferay.com"));
 		Assert.assertEquals(
 			"user/test/~/control_panel/manage/-/select/image%2Clurl/",
 			_portalImpl.escapeRedirect(
@@ -214,6 +224,15 @@ public class PortalImplEscapeRedirectTest {
 			"user/test/~/control_panel/manage/-/select/image,url/",
 			_portalImpl.escapeRedirect(
 				"user/test/~/control_panel/manage/-/select/image,url/"));
+		Assert.assertEquals(
+			"?param1=abc", _portalImpl.escapeRedirect("?param1=abc"));
+		Assert.assertEquals("#abc", _portalImpl.escapeRedirect("#abc"));
+		Assert.assertEquals("", _portalImpl.escapeRedirect(""));
+
+		// Relative path with protocol
+
+		Assert.assertNull(_portalImpl.escapeRedirect("https:/path"));
+		Assert.assertNull(_portalImpl.escapeRedirect("test:/google.com"));
 	}
 
 	@Test
@@ -272,8 +291,14 @@ public class PortalImplEscapeRedirectTest {
 			_portalImpl.escapeRedirect("http://prefixtest.liferay.com"));
 	}
 
-	private RedirectURLSettings _originalRedirectURLSettings;
+	private static final BundleContext _bundleContext =
+		SystemBundleUtil.getBundleContext();
+	private static ServiceRegistration<RedirectURLSettings>
+		_serviceRegistration;
+
 	private final PortalImpl _portalImpl = new PortalImpl();
+	private final MockedStatic<PrefsPropsUtil> _prefsPropsUtilMockedStatic =
+		Mockito.mockStatic(PrefsPropsUtil.class);
 	private final RedirectURLSettingsImpl _redirectURLSettingsImpl =
 		new RedirectURLSettingsImpl();
 

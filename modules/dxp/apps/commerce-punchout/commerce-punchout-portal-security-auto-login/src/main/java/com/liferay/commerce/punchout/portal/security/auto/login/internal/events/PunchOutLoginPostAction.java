@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.punchout.portal.security.auto.login.internal.events;
@@ -26,14 +17,14 @@ import com.liferay.commerce.punchout.oauth2.provider.model.PunchOutAccessToken;
 import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
+import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
 import com.liferay.portal.kernel.events.Action;
 import com.liferay.portal.kernel.events.LifecycleAction;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -54,10 +45,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jaclyn Ong
  */
-@Component(
-	enabled = false, immediate = true, property = "key=login.events.post",
-	service = LifecycleAction.class
-)
+@Component(property = "key=login.events.post", service = LifecycleAction.class)
 public class PunchOutLoginPostAction extends Action {
 
 	@Override
@@ -97,7 +85,7 @@ public class PunchOutLoginPostAction extends Action {
 			httpServletRequest.removeAttribute("punchOutUserId");
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -146,8 +134,7 @@ public class PunchOutLoginPostAction extends Action {
 
 			commerceOrder = _commerceOrderLocalService.updateStatus(
 				punchOutUserId, commerceOrder.getCommerceOrderId(),
-				WorkflowConstants.STATUS_APPROVED, new ServiceContext(),
-				Collections.emptyMap());
+				WorkflowConstants.STATUS_APPROVED, Collections.emptyMap());
 		}
 
 		CommerceContext commerceContext = _commerceContextFactory.create(
@@ -168,7 +155,9 @@ public class PunchOutLoginPostAction extends Action {
 		cookie.setMaxAge(-1);
 		cookie.setPath(StringPool.SLASH);
 
-		CookieKeys.addCookie(httpServletRequest, httpServletResponse, cookie);
+		CookiesManagerUtil.addCookie(
+			CookiesConstants.CONSENT_TYPE_NECESSARY, cookie, httpServletRequest,
+			httpServletResponse);
 
 		HttpSession httpSession = httpServletRequest.getSession();
 

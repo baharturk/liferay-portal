@@ -1,19 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.internal.helper;
 
+import com.liferay.diff.DiffHtml;
+import com.liferay.diff.DiffVersion;
+import com.liferay.diff.DiffVersionsInfo;
 import com.liferay.knowledge.base.internal.util.KBArticleDiffUtil;
 import com.liferay.knowledge.base.internal.util.KBSectionEscapeUtil;
 import com.liferay.knowledge.base.model.KBArticle;
@@ -21,8 +15,6 @@ import com.liferay.knowledge.base.service.KBArticleService;
 import com.liferay.knowledge.base.util.AdminHelper;
 import com.liferay.knowledge.base.util.comparator.KBArticleVersionComparator;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.diff.DiffVersion;
-import com.liferay.portal.kernel.diff.DiffVersionsInfo;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.ArrayList;
@@ -34,7 +26,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Lance Ji
  */
-@Component(immediate = true, service = AdminHelper.class)
+@Component(service = AdminHelper.class)
 public class AdminHelperImpl implements AdminHelper {
 
 	@Override
@@ -91,13 +83,16 @@ public class AdminHelperImpl implements AdminHelper {
 
 		return KBArticleDiffUtil.getKBArticleDiff(
 			version -> _kbArticleService.getKBArticle(resourcePrimKey, version),
-			sourceVersion, targetVersion, param);
+			sourceVersion, targetVersion, param, _diffHtml);
 	}
 
 	@Override
 	public String[] unescapeSections(String sections) {
 		return KBSectionEscapeUtil.unescapeSections(sections);
 	}
+
+	@Reference
+	private DiffHtml _diffHtml;
 
 	@Reference
 	private KBArticleService _kbArticleService;

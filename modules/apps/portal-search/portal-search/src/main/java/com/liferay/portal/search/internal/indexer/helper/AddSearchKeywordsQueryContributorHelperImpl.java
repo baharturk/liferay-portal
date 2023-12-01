@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.indexer.helper;
@@ -23,15 +14,14 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.constants.SearchContextAttributes;
 import com.liferay.portal.search.internal.indexer.IndexerProvidedClausesUtil;
-import com.liferay.portal.search.internal.indexer.KeywordQueryContributorsHolder;
+import com.liferay.portal.search.internal.indexer.KeywordQueryContributorsRegistry;
 import com.liferay.portal.search.internal.util.SearchStringUtil;
 import com.liferay.portal.search.spi.model.query.contributor.KeywordQueryContributor;
 import com.liferay.portal.search.spi.model.query.contributor.helper.KeywordQueryContributorHelper;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,9 +29,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author André de Oliveira
  */
-@Component(
-	immediate = true, service = AddSearchKeywordsQueryContributorHelper.class
-)
+@Component(service = AddSearchKeywordsQueryContributorHelper.class)
 public class AddSearchKeywordsQueryContributorHelperImpl
 	implements AddSearchKeywordsQueryContributorHelper {
 
@@ -61,12 +49,11 @@ public class AddSearchKeywordsQueryContributorHelperImpl
 
 		return Arrays.asList(
 			SearchStringUtil.splitAndUnquote(
-				Optional.ofNullable(
-					(String)searchContext.getAttribute(string))));
+				(String)searchContext.getAttribute(string)));
 	}
 
 	@Reference
-	protected KeywordQueryContributorsHolder keywordQueryContributorsHolder;
+	protected KeywordQueryContributorsRegistry keywordQueryContributorsRegistry;
 
 	private void _addKeywordQueryContributorClauses(
 		BooleanQuery booleanQuery, SearchContext searchContext) {
@@ -83,17 +70,19 @@ public class AddSearchKeywordsQueryContributorHelperImpl
 			return;
 		}
 
-		Stream<KeywordQueryContributor> stream =
-			keywordQueryContributorsHolder.stream(
-				getStrings(
-					"search.full.query.clause.contributors.includes",
-					searchContext),
+		List<KeywordQueryContributor> filteredKeywordQueryContributors =
+			keywordQueryContributorsRegistry.filterKeywordQueryContributors(
 				getStrings(
 					"search.full.query.clause.contributors.excludes",
+					searchContext),
+				getStrings(
+					"search.full.query.clause.contributors.includes",
 					searchContext));
 
-		stream.forEach(
-			keywordQueryContributor -> keywordQueryContributor.contribute(
+		for (KeywordQueryContributor keywordQueryContributor :
+				filteredKeywordQueryContributors) {
+
+			keywordQueryContributor.contribute(
 				keywords, booleanQuery,
 				new KeywordQueryContributorHelper() {
 
@@ -103,7 +92,7 @@ public class AddSearchKeywordsQueryContributorHelperImpl
 					}
 
 					@Override
-					public Stream<String> getSearchClassNamesStream() {
+					public String[] getSearchClassNames() {
 						throw new UnsupportedOperationException();
 					}
 
@@ -112,7 +101,8 @@ public class AddSearchKeywordsQueryContributorHelperImpl
 						return searchContext;
 					}
 
-				}));
+				});
+		}
 	}
 
 	private void _addStringQuery(BooleanQuery booleanQuery, String keywords) {

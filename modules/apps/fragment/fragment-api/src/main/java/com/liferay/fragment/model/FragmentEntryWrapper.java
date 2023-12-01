@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model;
@@ -68,6 +59,7 @@ public class FragmentEntryWrapper
 		attributes.put("previewFileEntryId", getPreviewFileEntryId());
 		attributes.put("readOnly", isReadOnly());
 		attributes.put("type", getType());
+		attributes.put("typeOptions", getTypeOptions());
 		attributes.put("lastPublishDate", getLastPublishDate());
 		attributes.put("status", getStatus());
 		attributes.put("statusByUserId", getStatusByUserId());
@@ -216,6 +208,12 @@ public class FragmentEntryWrapper
 
 		if (type != null) {
 			setType(type);
+		}
+
+		String typeOptions = (String)attributes.get("typeOptions");
+
+		if (typeOptions != null) {
+			setTypeOptions(typeOptions);
 		}
 
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
@@ -551,6 +549,16 @@ public class FragmentEntryWrapper
 		return model.getTypeLabel();
 	}
 
+	/**
+	 * Returns the type options of this fragment entry.
+	 *
+	 * @return the type options of this fragment entry
+	 */
+	@Override
+	public String getTypeOptions() {
+		return model.getTypeOptions();
+	}
+
 	@Override
 	public int getUsageCount() {
 		return model.getUsageCount();
@@ -697,8 +705,35 @@ public class FragmentEntryWrapper
 	}
 
 	@Override
+	public boolean isTypeComponent() {
+		return model.isTypeComponent();
+	}
+
+	@Override
+	public boolean isTypeInput() {
+		return model.isTypeInput();
+	}
+
+	@Override
+	public boolean isTypeReact() {
+		return model.isTypeReact();
+	}
+
+	@Override
+	public boolean isTypeSection() {
+		return model.isTypeSection();
+	}
+
+	@Override
 	public void persist() {
 		model.persist();
+	}
+
+	@Override
+	public void populateVersionModel(
+		FragmentEntryVersion fragmentEntryVersion) {
+
+		model.populateVersionModel(fragmentEntryVersion);
 	}
 
 	@Override
@@ -985,6 +1020,16 @@ public class FragmentEntryWrapper
 	}
 
 	/**
+	 * Sets the type options of this fragment entry.
+	 *
+	 * @param typeOptions the type options of this fragment entry
+	 */
+	@Override
+	public void setTypeOptions(String typeOptions) {
+		model.setTypeOptions(typeOptions);
+	}
+
+	/**
 	 * Sets the user ID of this fragment entry.
 	 *
 	 * @param userId the user ID of this fragment entry
@@ -1025,6 +1070,11 @@ public class FragmentEntryWrapper
 	}
 
 	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
 	public Map<String, Function<FragmentEntry, Object>>
 		getAttributeGetterFunctions() {
 
@@ -1046,13 +1096,6 @@ public class FragmentEntryWrapper
 	@Override
 	public boolean isHead() {
 		return model.isHead();
-	}
-
-	@Override
-	public void populateVersionModel(
-		FragmentEntryVersion fragmentEntryVersion) {
-
-		model.populateVersionModel(fragmentEntryVersion);
 	}
 
 	@Override

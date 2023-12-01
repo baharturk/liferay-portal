@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.client.serdes.v1_0;
@@ -77,7 +68,14 @@ public class RescoreSerDes {
 
 			sb.append("\"queryWeight\": ");
 
-			sb.append(rescore.getQueryWeight());
+			if (rescore.getQueryWeight() instanceof String) {
+				sb.append("\"");
+				sb.append((String)rescore.getQueryWeight());
+				sb.append("\"");
+			}
+			else {
+				sb.append(rescore.getQueryWeight());
+			}
 		}
 
 		if (rescore.getRescoreQueryWeight() != null) {
@@ -87,7 +85,14 @@ public class RescoreSerDes {
 
 			sb.append("\"rescoreQueryWeight\": ");
 
-			sb.append(rescore.getRescoreQueryWeight());
+			if (rescore.getRescoreQueryWeight() instanceof String) {
+				sb.append("\"");
+				sb.append((String)rescore.getRescoreQueryWeight());
+				sb.append("\"");
+			}
+			else {
+				sb.append(rescore.getRescoreQueryWeight());
+			}
 		}
 
 		if (rescore.getScoreMode() != null) {
@@ -111,7 +116,14 @@ public class RescoreSerDes {
 
 			sb.append("\"windowSize\": ");
 
-			sb.append(rescore.getWindowSize());
+			if (rescore.getWindowSize() instanceof String) {
+				sb.append("\"");
+				sb.append((String)rescore.getWindowSize());
+				sb.append("\"");
+			}
+			else {
+				sb.append(rescore.getWindowSize());
+			}
 		}
 
 		sb.append("}");
@@ -196,16 +208,14 @@ public class RescoreSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "queryWeight")) {
 				if (jsonParserFieldValue != null) {
-					rescore.setQueryWeight(
-						Float.valueOf((String)jsonParserFieldValue));
+					rescore.setQueryWeight((Object)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(
 						jsonParserFieldName, "rescoreQueryWeight")) {
 
 				if (jsonParserFieldValue != null) {
-					rescore.setRescoreQueryWeight(
-						Float.valueOf((String)jsonParserFieldValue));
+					rescore.setRescoreQueryWeight((Object)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "scoreMode")) {
@@ -215,8 +225,7 @@ public class RescoreSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "windowSize")) {
 				if (jsonParserFieldValue != null) {
-					rescore.setWindowSize(
-						Integer.valueOf((String)jsonParserFieldValue));
+					rescore.setWindowSize((Object)jsonParserFieldValue);
 				}
 			}
 		}

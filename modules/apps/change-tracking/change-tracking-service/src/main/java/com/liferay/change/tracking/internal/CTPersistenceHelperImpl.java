@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.internal;
 
 import com.liferay.change.tracking.constants.CTConstants;
 import com.liferay.change.tracking.model.CTEntry;
-import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTEntryLocalService;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -26,13 +16,15 @@ import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 
+import java.io.Serializable;
+
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Preston Crary
  */
-@Component(immediate = true, service = CTPersistenceHelper.class)
+@Component(service = CTPersistenceHelper.class)
 public class CTPersistenceHelperImpl implements CTPersistenceHelper {
 
 	@Override
@@ -64,7 +56,7 @@ public class CTPersistenceHelperImpl implements CTPersistenceHelper {
 				}
 
 				_ctEntryLocalService.addCTEntry(
-					ctCollectionId, modelClassNameId, ctModel, userId,
+					null, ctCollectionId, modelClassNameId, ctModel, userId,
 					changeType);
 
 				return true;
@@ -72,9 +64,9 @@ public class CTPersistenceHelperImpl implements CTPersistenceHelper {
 
 			if (userId != ctEntry.getUserId()) {
 				ctEntry.setUserId(userId);
-
-				_ctEntryLocalService.updateCTEntry(ctEntry);
 			}
+
+			_ctEntryLocalService.updateCTEntry(ctEntry);
 		}
 		catch (PortalException portalException) {
 			throw new SystemException(portalException);
@@ -87,6 +79,12 @@ public class CTPersistenceHelperImpl implements CTPersistenceHelper {
 	public <T extends CTModel<T>> boolean isProductionMode(
 		Class<T> ctModelClass) {
 
+		return isProductionMode(ctModelClass, null);
+	}
+
+	public <T extends CTModel<T>> boolean isProductionMode(
+		Class<T> ctModelClass, Serializable primaryKey) {
+
 		long ctCollectionId = CTCollectionThreadLocal.getCTCollectionId();
 
 		if (ctCollectionId == CTConstants.CT_COLLECTION_ID_PRODUCTION) {
@@ -95,6 +93,16 @@ public class CTPersistenceHelperImpl implements CTPersistenceHelper {
 
 		long modelClassNameId = _classNameLocalService.getClassNameId(
 			ctModelClass);
+
+		if (primaryKey instanceof Long) {
+			if (_ctEntryLocalService.hasCTEntry(
+					ctCollectionId, modelClassNameId, (Long)primaryKey)) {
+
+				return false;
+			}
+
+			return true;
+		}
 
 		if (_ctEntryLocalService.hasCTEntries(
 				ctCollectionId, modelClassNameId)) {
@@ -128,7 +136,7 @@ public class CTPersistenceHelperImpl implements CTPersistenceHelper {
 		try {
 			if (ctEntry == null) {
 				_ctEntryLocalService.addCTEntry(
-					ctCollectionId, modelClassNameId, ctModel,
+					null, ctCollectionId, modelClassNameId, ctModel,
 					PrincipalThreadLocal.getUserId(),
 					CTConstants.CT_CHANGE_TYPE_DELETION);
 			}
@@ -162,9 +170,6 @@ public class CTPersistenceHelperImpl implements CTPersistenceHelper {
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;
-
-	@Reference
-	private CTCollectionLocalService _ctCollectionLocalService;
 
 	@Reference
 	private CTEntryLocalService _ctEntryLocalService;

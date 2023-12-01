@@ -132,8 +132,7 @@ components:
                     readOnly: true
                     type: array
                 creator:
-                    allOf:
-                        - $ref: "#/components/schemas/Creator"
+                    $ref: "#/components/schemas/Creator"
                     description:
                         The role's creator.
                     readOnly: true
@@ -200,10 +199,18 @@ components:
             type: object
         WorkflowDefinition:
             properties:
+                actions:
+                    additionalProperties:
+                        additionalProperties:
+                            type: string
+                        type: object
+                    readOnly: true
+                    type: object
                 active:
                     type: boolean
                 content:
                     type: string
+                    x-json-string: true
                 dateCreated:
                     format: date-time
                     readOnly: true
@@ -215,6 +222,10 @@ components:
                 description:
                     readOnly: true
                     type: string
+                id:
+                    format: int64
+                    readOnly: true
+                    type: integer
                 name:
                     type: string
                 nodes:
@@ -241,6 +252,13 @@ components:
             description:
                 Represents an instance to be executed in a workflow.
             properties:
+                actions:
+                    additionalProperties:
+                        additionalProperties:
+                            type: string
+                        type: object
+                    readOnly: true
+                    type: object
                 completed:
                     description:
                         A flag that indicates whether the instance is complete.
@@ -273,8 +291,7 @@ components:
                     readOnly: true
                     type: integer
                 objectReviewed:
-                    allOf:
-                        - $ref: "#/components/schemas/ObjectReviewed"
+                    $ref: "#/components/schemas/ObjectReviewed"
                     description:
                         The object/asset that the instance's workflow is managing.
                     readOnly: true
@@ -312,8 +329,7 @@ components:
                 Represents the log containing the workflow's activity history (e.g., transitions, assignees, etc.).
             properties:
                 auditPerson:
-                    allOf:
-                        - $ref: "#/components/schemas/Creator"
+                    $ref: "#/components/schemas/Creator"
                     description:
                         The user account of the person auditing the workflow.
                     readOnly: true
@@ -341,33 +357,39 @@ components:
                     readOnly: true
                     type: integer
                 person:
-                    allOf:
-                        - $ref: "#/components/schemas/Creator"
+                    $ref: "#/components/schemas/Creator"
                     description:
                         The person assigned to the workflow.
                     readOnly: true
                 previousPerson:
-                    allOf:
-                        - $ref: "#/components/schemas/Creator"
+                    $ref: "#/components/schemas/Creator"
                     description:
                         The previous person assigned to the workflow.
                     readOnly: true
                 previousRole:
-                    allOf:
-                        - $ref: "#/components/schemas/Role"
+                    $ref: "#/components/schemas/Role"
                     readOnly: true
                 previousState:
                     description:
                         The workflow's previous state.
                     readOnly: true
                     type: string
+                previousStateLabel:
+                    description:
+                        The workflow's previous state Label.
+                    readOnly: true
+                    type: string
                 role:
-                    allOf:
-                        - $ref: "#/components/schemas/Role"
+                    $ref: "#/components/schemas/Role"
                     readOnly: true
                 state:
                     description:
                         The workflow's current state.
+                    readOnly: true
+                    type: string
+                stateLabel:
+                    description:
+                        The workflow's current state Label.
                     readOnly: true
                     type: string
                 type:
@@ -387,9 +409,15 @@ components:
             description:
                 Represents a task to be executed in a workflow.
             properties:
+                actions:
+                    additionalProperties:
+                        additionalProperties:
+                            type: string
+                        type: object
+                    readOnly: true
+                    type: object
                 assigneePerson:
-                    allOf:
-                        - $ref: "#/components/schemas/Creator"
+                    $ref: "#/components/schemas/Creator"
                 assigneeRoles:
                     items:
                         $ref: "#/components/schemas/Role"
@@ -437,8 +465,7 @@ components:
                     readOnly: true
                     type: string
                 objectReviewed:
-                    allOf:
-                        - $ref: "#/components/schemas/ObjectReviewed"
+                    $ref: "#/components/schemas/ObjectReviewed"
                     description:
                         The object/asset that the task's workflow is managing.
                     readOnly: true
@@ -615,7 +642,7 @@ components:
 info:
     description:
         "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID
-        'com.liferay.headless.admin.workflow.client', and version '4.0.9'."
+        'com.liferay.headless.admin.workflow.client', and version '4.0.23'."
     license:
         name: "Apache 2.0"
         url: "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -658,6 +685,26 @@ paths:
                                     $ref: "#/components/schemas/WorkflowDefinition"
                                 type: array
             tags: ["WorkflowDefinition"]
+        post:
+            operationId: postWorkflowDefinition
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowDefinition"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowDefinition"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinition"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinition"
+            tags: ["WorkflowDefinition"]
     "/workflow-definitions/by-name/{name}":
         get:
             operationId: getWorkflowDefinitionByName
@@ -666,6 +713,11 @@ paths:
                   name: name
                   required: true
                   schema:
+                      type: string
+                - in: query
+                  name: contentFormat
+                  schema:
+                      enum: [JSON, XML]
                       type: string
                 - in: query
                   name: version
@@ -762,6 +814,68 @@ paths:
                   required: true
                   schema:
                       type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinition"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinition"
+            tags: ["WorkflowDefinition"]
+    "/workflow-definitions/{workflowDefinitionId}":
+        delete:
+            operationId: deleteWorkflowDefinition
+            parameters:
+                - in: path
+                  name: workflowDefinitionId
+                  required: true
+                  schema:
+                      format: int64
+                      type: integer
+            responses:
+                204:
+                    content:
+                        application/json: {}
+                        application/xml: {}
+            tags: ["WorkflowDefinition"]
+        get:
+            operationId: getWorkflowDefinition
+            parameters:
+                - in: path
+                  name: workflowDefinitionId
+                  required: true
+                  schema:
+                      format: int64
+                      type: integer
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinition"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinition"
+            tags: ["WorkflowDefinition"]
+        put:
+            operationId: putWorkflowDefinition
+            parameters:
+                - in: path
+                  name: workflowDefinitionId
+                  required: true
+                  schema:
+                      format: int64
+                      type: integer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowDefinition"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowDefinition"
             responses:
                 200:
                     content:

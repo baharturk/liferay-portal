@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.service;
@@ -17,6 +8,7 @@ package com.liferay.blogs.service;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -457,31 +449,12 @@ public class BlogsEntryLocalServiceWrapper
 		return _blogsEntryLocalService.fetchBlogsEntry(entryId);
 	}
 
-	/**
-	 * Returns the blogs entry with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the blogs entry's external reference code
-	 * @return the matching blogs entry, or <code>null</code> if a matching blogs entry could not be found
-	 */
 	@Override
 	public BlogsEntry fetchBlogsEntryByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
 		return _blogsEntryLocalService.fetchBlogsEntryByExternalReferenceCode(
-			groupId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchBlogsEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public BlogsEntry fetchBlogsEntryByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return _blogsEntryLocalService.fetchBlogsEntryByReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -586,21 +559,13 @@ public class BlogsEntryLocalServiceWrapper
 		return _blogsEntryLocalService.getBlogsEntry(entryId);
 	}
 
-	/**
-	 * Returns the blogs entry with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the blogs entry's external reference code
-	 * @return the matching blogs entry
-	 * @throws PortalException if a matching blogs entry could not be found
-	 */
 	@Override
 	public BlogsEntry getBlogsEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _blogsEntryLocalService.getBlogsEntryByExternalReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -1009,6 +974,11 @@ public class BlogsEntryLocalServiceWrapper
 
 		return _blogsEntryLocalService.updateStatus(
 			userId, entryId, status, serviceContext, workflowContext);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _blogsEntryLocalService.getBasePersistence();
 	}
 
 	@Override

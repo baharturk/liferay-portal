@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.display.context;
@@ -19,8 +10,6 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
-import com.liferay.layout.admin.web.internal.configuration.FFBulkTranslationConfiguration;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -32,7 +21,9 @@ import com.liferay.portal.kernel.model.LayoutSetPrototype;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -63,9 +54,6 @@ public class LayoutsAdminManagementToolbarDisplayContext
 
 		_layoutsAdminDisplayContext = layoutsAdminDisplayContext;
 
-		_ffBulkTranslationConfiguration =
-			(FFBulkTranslationConfiguration)httpServletRequest.getAttribute(
-				FFBulkTranslationConfiguration.class.getName());
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 		_translationURLProvider =
@@ -78,7 +66,6 @@ public class LayoutsAdminManagementToolbarDisplayContext
 		return DropdownItemListBuilder.add(
 			dropdownItem -> {
 				dropdownItem.putData("action", "convertSelectedPages");
-
 				dropdownItem.putData(
 					"convertLayoutURL",
 					PortletURLBuilder.createActionURL(
@@ -88,15 +75,13 @@ public class LayoutsAdminManagementToolbarDisplayContext
 					).setRedirect(
 						_themeDisplay.getURLCurrent()
 					).buildString());
-
-				dropdownItem.setIcon("change");
+				dropdownItem.setIcon("page");
 				dropdownItem.setLabel(
 					LanguageUtil.get(
 						httpServletRequest, "convert-to-content-page"));
 				dropdownItem.setQuickAction(true);
 			}
 		).add(
-			_ffBulkTranslationConfiguration::bulkTranslationEnabled,
 			dropdownItem -> {
 				dropdownItem.putData("action", "exportTranslation");
 				dropdownItem.putData(
@@ -109,18 +94,25 @@ public class LayoutsAdminManagementToolbarDisplayContext
 								httpServletRequest))
 					).setRedirect(
 						_themeDisplay.getURLCurrent()
+					).setParameter(
+						"backURLTitle",
+						() -> {
+							PortletDisplay portletDisplay =
+								_themeDisplay.getPortletDisplay();
+
+							return portletDisplay.getPortletDisplayName();
+						}
 					).buildString());
 				dropdownItem.setDisabled(false);
-				dropdownItem.setIcon("import-export");
+				dropdownItem.setIcon("upload");
 				dropdownItem.setLabel(
 					LanguageUtil.get(
-						httpServletRequest, "export-for-translation"));
+						httpServletRequest, "export-for-translations"));
 				dropdownItem.setQuickAction(true);
 			}
 		).add(
 			dropdownItem -> {
 				dropdownItem.putData("action", "deleteSelectedPages");
-
 				dropdownItem.putData(
 					"deleteLayoutURL",
 					PortletURLBuilder.createActionURL(
@@ -130,8 +122,7 @@ public class LayoutsAdminManagementToolbarDisplayContext
 					).setRedirect(
 						_themeDisplay.getURLCurrent()
 					).buildString());
-
-				dropdownItem.setIcon("times-circle");
+				dropdownItem.setIcon("trash");
 				dropdownItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "delete"));
 				dropdownItem.setQuickAction(true);
@@ -155,9 +146,6 @@ public class LayoutsAdminManagementToolbarDisplayContext
 
 	@Override
 	public CreationMenu getCreationMenu() {
-		long firstLayoutPageTemplateCollectionId =
-			_layoutsAdminDisplayContext.
-				getFirstLayoutPageTemplateCollectionId();
 		Layout selLayout = _layoutsAdminDisplayContext.getSelLayout();
 		long selPlid = _layoutsAdminDisplayContext.getSelPlid();
 
@@ -172,9 +160,7 @@ public class LayoutsAdminManagementToolbarDisplayContext
 			dropdownItem -> {
 				dropdownItem.setHref(
 					_layoutsAdminDisplayContext.
-						getSelectLayoutPageTemplateEntryURL(
-							firstLayoutPageTemplateCollectionId, selPlid,
-							false));
+						getSelectLayoutPageTemplateEntryURL(0, selPlid, false));
 				dropdownItem.setLabel(_getLabel(false));
 			}
 		).addPrimaryDropdownItem(
@@ -202,9 +188,7 @@ public class LayoutsAdminManagementToolbarDisplayContext
 			dropdownItem -> {
 				dropdownItem.setHref(
 					_layoutsAdminDisplayContext.
-						getSelectLayoutPageTemplateEntryURL(
-							firstLayoutPageTemplateCollectionId, selPlid,
-							true));
+						getSelectLayoutPageTemplateEntryURL(0, selPlid, true));
 				dropdownItem.setLabel(_getLabel(true));
 			}
 		).addPrimaryDropdownItem(
@@ -290,7 +274,7 @@ public class LayoutsAdminManagementToolbarDisplayContext
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -382,8 +366,6 @@ public class LayoutsAdminManagementToolbarDisplayContext
 	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutsAdminManagementToolbarDisplayContext.class);
 
-	private final FFBulkTranslationConfiguration
-		_ffBulkTranslationConfiguration;
 	private final LayoutsAdminDisplayContext _layoutsAdminDisplayContext;
 	private final ThemeDisplay _themeDisplay;
 	private final TranslationURLProvider _translationURLProvider;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.web.internal.portlet.action;
@@ -63,7 +54,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Daniel Kocsis
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + ExportImportPortletKeys.EXPORT,
 		"mvc.command.name=/export_import/edit_export_configuration"
@@ -130,14 +120,14 @@ public class EditExportConfigurationMVCActionCommand
 
 			if (moveToTrash) {
 				ExportImportConfiguration exportImportConfiguration =
-					_exportImportConfigurationService.
+					exportImportConfigurationService.
 						moveExportImportConfigurationToTrash(
 							deleteExportImportConfigurationId);
 
 				trashedModels.add(exportImportConfiguration);
 			}
 			else {
-				_exportImportConfigurationService.
+				exportImportConfigurationService.
 					deleteExportImportConfiguration(
 						deleteExportImportConfigurationId);
 			}
@@ -188,33 +178,10 @@ public class EditExportConfigurationMVCActionCommand
 			sendRedirect(actionRequest, actionResponse, redirect);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			SessionErrors.add(actionRequest, exception.getClass());
 		}
-	}
-
-	@Reference(unbind = "-")
-	protected void setExportImportConfigurationLocalService(
-		ExportImportConfigurationLocalService
-			exportImportConfigurationLocalService) {
-
-		this.exportImportConfigurationLocalService =
-			exportImportConfigurationLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setExportImportConfigurationService(
-		ExportImportConfigurationService exportImportConfigurationService) {
-
-		_exportImportConfigurationService = exportImportConfigurationService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setExportImportService(
-		ExportImportService exportImportService) {
-
-		_exportImportService = exportImportService;
 	}
 
 	protected void setLayoutIdMap(ActionRequest actionRequest) {
@@ -227,25 +194,23 @@ public class EditExportConfigurationMVCActionCommand
 
 		String treeId = ParamUtil.getString(actionRequest, "treeId");
 
-		String openNodes = SessionTreeJSClicks.getOpenNodes(
-			httpServletRequest, treeId + "SelectedNode");
-
-		String selectedLayoutsJSON = exportImportHelper.getSelectedLayoutsJSON(
-			groupId, privateLayout, openNodes);
-
-		actionRequest.setAttribute("layoutIdMap", selectedLayoutsJSON);
-	}
-
-	@Reference(unbind = "-")
-	protected void setTrashEntryService(TrashEntryService trashEntryService) {
-		_trashEntryService = trashEntryService;
+		actionRequest.setAttribute(
+			"layoutIdMap",
+			exportImportHelper.getSelectedLayoutsJSON(
+				groupId, privateLayout,
+				SessionTreeJSClicks.getOpenNodes(
+					httpServletRequest, treeId + "SelectedNode")));
 	}
 
 	@Reference
 	protected BackgroundTaskManager backgroundTaskManager;
 
+	@Reference
 	protected ExportImportConfigurationLocalService
 		exportImportConfigurationLocalService;
+
+	@Reference
+	protected ExportImportConfigurationService exportImportConfigurationService;
 
 	@Reference
 	protected ExportImportConfigurationSettingsMapFactory
@@ -255,7 +220,13 @@ public class EditExportConfigurationMVCActionCommand
 	protected ExportImportHelper exportImportHelper;
 
 	@Reference
+	protected ExportImportService exportImportService;
+
+	@Reference
 	protected Portal portal;
+
+	@Reference
+	protected TrashEntryService trashEntryService;
 
 	private void _relaunchExportLayoutConfiguration(ActionRequest actionRequest)
 		throws Exception {
@@ -276,7 +247,7 @@ public class EditExportConfigurationMVCActionCommand
 			ExportImportConfigurationFactory.cloneExportImportConfiguration(
 				exportImportConfiguration);
 
-		_exportImportService.exportLayoutsAsFileInBackground(
+		exportImportService.exportLayoutsAsFileInBackground(
 			exportImportConfiguration);
 	}
 
@@ -287,7 +258,7 @@ public class EditExportConfigurationMVCActionCommand
 			ParamUtil.getString(actionRequest, "restoreTrashEntryIds"), 0L);
 
 		for (long restoreTrashEntryId : restoreTrashEntryIds) {
-			_trashEntryService.restoreEntry(restoreTrashEntryId);
+			trashEntryService.restoreEntry(restoreTrashEntryId);
 		}
 	}
 
@@ -309,9 +280,5 @@ public class EditExportConfigurationMVCActionCommand
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditExportConfigurationMVCActionCommand.class);
-
-	private ExportImportConfigurationService _exportImportConfigurationService;
-	private ExportImportService _exportImportService;
-	private TrashEntryService _trashEntryService;
 
 }

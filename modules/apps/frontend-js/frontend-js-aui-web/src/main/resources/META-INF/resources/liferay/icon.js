@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 /**
@@ -22,9 +13,9 @@
 AUI.add(
 	'liferay-icon',
 	(A) => {
-		var _ICON_REGISTRY = {};
+		const _ICON_REGISTRY = {};
 
-		var Icon = {
+		const Icon = {
 			_forcePost(event) {
 				if (!Liferay.SPA || !Liferay.SPA.app) {
 					Liferay.Util.forcePost(event.currentTarget);
@@ -38,9 +29,9 @@ AUI.add(
 			},
 
 			_handleDocClick(event) {
-				var instance = this;
+				const instance = this;
 
-				var config = instance._getConfig(event);
+				const config = instance._getConfig(event);
 
 				if (config) {
 					event.preventDefault();
@@ -55,9 +46,9 @@ AUI.add(
 			},
 
 			_handleDocMouseOut(event) {
-				var instance = this;
+				const instance = this;
 
-				var config = instance._getConfig(event);
+				const config = instance._getConfig(event);
 
 				if (config && config.srcHover) {
 					instance._onMouseHover(event, config.src);
@@ -65,9 +56,9 @@ AUI.add(
 			},
 
 			_handleDocMouseOver(event) {
-				var instance = this;
+				const instance = this;
 
-				var config = instance._getConfig(event);
+				const config = instance._getConfig(event);
 
 				if (config && config.srcHover) {
 					instance._onMouseHover(event, config.srcHover);
@@ -75,7 +66,7 @@ AUI.add(
 			},
 
 			_onMouseHover(event, src) {
-				var image = event.currentTarget.one('img');
+				const image = event.currentTarget.one('img');
 
 				if (image) {
 					image.attr('src', src);
@@ -94,9 +85,9 @@ AUI.add(
 			},
 
 			register(config) {
-				var instance = this;
+				const instance = this;
 
-				var doc = A.one(A.config.doc);
+				const doc = A.one(A.config.doc);
 
 				_ICON_REGISTRY[config.id] = config;
 

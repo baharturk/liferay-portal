@@ -1,29 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.validator;
 
+import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.exception.FragmentEntryConfigurationException;
+import com.liferay.fragment.exception.FragmentEntryFieldTypesException;
+import com.liferay.fragment.exception.FragmentEntryTypeOptionsException;
 import com.liferay.fragment.validator.FragmentEntryValidator;
-import com.liferay.petra.json.validator.JSONValidator;
-import com.liferay.petra.json.validator.JSONValidatorException;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.json.validator.JSONValidator;
+import com.liferay.portal.json.validator.JSONValidatorException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -33,11 +28,12 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Rubén Pulido
  */
-@Component(immediate = true, service = FragmentEntryValidator.class)
+@Component(service = FragmentEntryValidator.class)
 public class FragmentEntryValidatorImpl implements FragmentEntryValidator {
 
 	@Override
@@ -57,10 +53,10 @@ public class FragmentEntryValidatorImpl implements FragmentEntryValidator {
 		}
 
 		try {
-			_jsonValidator.validate(configuration);
+			_configurationJSONValidator.validate(configuration);
 
-			JSONObject configurationJSONObject =
-				JSONFactoryUtil.createJSONObject(configuration);
+			JSONObject configurationJSONObject = _jsonFactory.createJSONObject(
+				configuration);
 
 			JSONArray fieldSetsJSONArray = configurationJSONObject.getJSONArray(
 				"fieldSets");
@@ -137,6 +133,56 @@ public class FragmentEntryValidatorImpl implements FragmentEntryValidator {
 		}
 	}
 
+	@Override
+	public void validateTypeOptions(int fragmentEntryType, String typeOptions)
+		throws FragmentEntryTypeOptionsException {
+
+		if (Validator.isNull(typeOptions)) {
+			return;
+		}
+
+		try {
+			_typeOptionsJSONValidator.validate(typeOptions);
+
+			JSONObject configurationJSONObject = _jsonFactory.createJSONObject(
+				typeOptions);
+
+			JSONArray fieldTypesJSONArray =
+				configurationJSONObject.getJSONArray("fieldTypes");
+
+			if (!Objects.equals(
+					FragmentConstants.TYPE_INPUT, fragmentEntryType)) {
+
+				if (!JSONUtil.isEmpty(fieldTypesJSONArray)) {
+					throw new FragmentEntryFieldTypesException(
+						"Only fragment type input can have field types");
+				}
+
+				return;
+			}
+
+			if (JSONUtil.isEmpty(fieldTypesJSONArray)) {
+				throw new FragmentEntryFieldTypesException(
+					"Fragment type input must have at least one field type");
+			}
+
+			if ((fieldTypesJSONArray.length() > 1) &&
+				JSONUtil.hasValue(fieldTypesJSONArray, "captcha")) {
+
+				throw new FragmentEntryFieldTypesException(
+					"Captcha field type cannot be mixed with other field " +
+						"types");
+			}
+		}
+		catch (JSONException jsonException) {
+			throw new FragmentEntryTypeOptionsException(
+				_getMessage(jsonException.getMessage()), jsonException);
+		}
+		catch (JSONValidatorException jsonValidatorException) {
+			throw new FragmentEntryTypeOptionsException(jsonValidatorException);
+		}
+	}
+
 	private boolean _checkValidationRules(
 		String value, JSONObject validationJSONObject) {
 
@@ -187,13 +233,24 @@ public class FragmentEntryValidatorImpl implements FragmentEntryValidator {
 
 	private String _getMessage(String message) {
 		return StringBundler.concat(
-			LanguageUtil.get(
+			_language.get(
 				LocaleUtil.getDefault(), "fragment-configuration-is-invalid"),
 			System.lineSeparator(), message);
 	}
 
-	private static final JSONValidator _jsonValidator = new JSONValidator(
-		FragmentEntryValidatorImpl.class.getResourceAsStream(
-			"dependencies/configuration-json-schema.json"));
+	private static final JSONValidator _configurationJSONValidator =
+		new JSONValidator(
+			FragmentEntryValidatorImpl.class.getResource(
+				"dependencies/configuration-json-schema.json"));
+	private static final JSONValidator _typeOptionsJSONValidator =
+		new JSONValidator(
+			FragmentEntryValidatorImpl.class.getResource(
+				"dependencies/type-options-json-schema.json"));
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
 
 }

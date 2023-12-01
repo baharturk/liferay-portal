@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.service.persistence.impl;
@@ -36,7 +27,6 @@ import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -47,7 +37,6 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -77,9 +66,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(
-	service = {FriendlyURLEntryMappingPersistence.class, BasePersistence.class}
-)
+@Component(service = FriendlyURLEntryMappingPersistence.class)
 public class FriendlyURLEntryMappingPersistenceImpl
 	extends BasePersistenceImpl<FriendlyURLEntryMapping>
 	implements FriendlyURLEntryMappingPersistence {
@@ -166,20 +153,21 @@ public class FriendlyURLEntryMappingPersistenceImpl
 	public FriendlyURLEntryMapping fetchByC_C(
 		long classNameId, long classPK, boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FriendlyURLEntryMapping.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {classNameId, classPK};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(_finderPathFetchByC_C, finderArgs);
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByC_C, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			FriendlyURLEntryMapping.class);
 
 		if (result instanceof FriendlyURLEntryMapping) {
 			FriendlyURLEntryMapping friendlyURLEntryMapping =
@@ -190,6 +178,15 @@ public class FriendlyURLEntryMappingPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						FriendlyURLEntryMapping.class,
+						friendlyURLEntryMapping.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -288,7 +285,7 @@ public class FriendlyURLEntryMappingPersistenceImpl
 
 			finderArgs = new Object[] {classNameId, classPK};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -708,7 +705,7 @@ public class FriendlyURLEntryMappingPersistenceImpl
 	@Override
 	public FriendlyURLEntryMapping fetchByPrimaryKey(Serializable primaryKey) {
 		if (ctPersistenceHelper.isProductionMode(
-				FriendlyURLEntryMapping.class)) {
+				FriendlyURLEntryMapping.class, primaryKey)) {
 
 			return super.fetchByPrimaryKey(primaryKey);
 		}
@@ -936,7 +933,7 @@ public class FriendlyURLEntryMappingPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<FriendlyURLEntryMapping>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1013,7 +1010,7 @@ public class FriendlyURLEntryMappingPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -1096,6 +1093,7 @@ public class FriendlyURLEntryMappingPersistenceImpl
 
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
@@ -1103,10 +1101,11 @@ public class FriendlyURLEntryMappingPersistenceImpl
 		ctStrictColumnNames.add("companyId");
 		ctStrictColumnNames.add("classNameId");
 		ctStrictColumnNames.add("classPK");
-		ctStrictColumnNames.add("friendlyURLEntryId");
+		ctMergeColumnNames.add("friendlyURLEntryId");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("friendlyURLEntryMappingId"));
@@ -1146,30 +1145,14 @@ public class FriendlyURLEntryMappingPersistenceImpl
 			new String[] {Long.class.getName(), Long.class.getName()},
 			new String[] {"classNameId", "classPK"}, false);
 
-		_setFriendlyURLEntryMappingUtilPersistence(this);
+		FriendlyURLEntryMappingUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setFriendlyURLEntryMappingUtilPersistence(null);
+		FriendlyURLEntryMappingUtil.setPersistence(null);
 
 		entityCache.removeCache(FriendlyURLEntryMappingImpl.class.getName());
-	}
-
-	private void _setFriendlyURLEntryMappingUtilPersistence(
-		FriendlyURLEntryMappingPersistence friendlyURLEntryMappingPersistence) {
-
-		try {
-			Field field = FriendlyURLEntryMappingUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, friendlyURLEntryMappingPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -1235,9 +1218,5 @@ public class FriendlyURLEntryMappingPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private FriendlyURLEntryMappingModelArgumentsResolver
-		_friendlyURLEntryMappingModelArgumentsResolver;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.service.persistence.impl;
@@ -21,7 +12,9 @@ import com.liferay.commerce.notification.model.impl.CommerceNotificationAttachme
 import com.liferay.commerce.notification.model.impl.CommerceNotificationAttachmentModelImpl;
 import com.liferay.commerce.notification.service.persistence.CommerceNotificationAttachmentPersistence;
 import com.liferay.commerce.notification.service.persistence.CommerceNotificationAttachmentUtil;
+import com.liferay.commerce.notification.service.persistence.impl.constants.CommercePersistenceConstants;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
@@ -29,6 +22,7 @@ import com.liferay.portal.kernel.dao.orm.Query;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -43,11 +37,9 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -56,6 +48,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The persistence implementation for the commerce notification attachment service.
@@ -67,6 +66,7 @@ import java.util.Set;
  * @author Alessio Antonio Rendina
  * @generated
  */
+@Component(service = CommerceNotificationAttachmentPersistence.class)
 public class CommerceNotificationAttachmentPersistenceImpl
 	extends BasePersistenceImpl<CommerceNotificationAttachment>
 	implements CommerceNotificationAttachmentPersistence {
@@ -185,7 +185,7 @@ public class CommerceNotificationAttachmentPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceNotificationAttachment>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceNotificationAttachment
@@ -585,7 +585,7 @@ public class CommerceNotificationAttachmentPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -719,7 +719,7 @@ public class CommerceNotificationAttachmentPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
 
 		if (result instanceof CommerceNotificationAttachment) {
@@ -835,7 +835,7 @@ public class CommerceNotificationAttachmentPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, groupId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1003,7 +1003,7 @@ public class CommerceNotificationAttachmentPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceNotificationAttachment>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceNotificationAttachment
@@ -1428,7 +1428,7 @@ public class CommerceNotificationAttachmentPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1602,7 +1602,7 @@ public class CommerceNotificationAttachmentPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceNotificationAttachment>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceNotificationAttachment
@@ -2004,7 +2004,7 @@ public class CommerceNotificationAttachmentPersistenceImpl
 
 		Object[] finderArgs = new Object[] {commerceNotificationQueueEntryId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2545,7 +2545,7 @@ public class CommerceNotificationAttachmentPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceNotificationAttachment>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2618,7 +2618,7 @@ public class CommerceNotificationAttachmentPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -2673,7 +2673,8 @@ public class CommerceNotificationAttachmentPersistenceImpl
 	/**
 	 * Initializes the commerce notification attachment persistence.
 	 */
-	public void afterPropertiesSet() {
+	@Activate
+	public void activate() {
 		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
 			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
 
@@ -2759,38 +2760,47 @@ public class CommerceNotificationAttachmentPersistenceImpl
 			new String[] {Long.class.getName()},
 			new String[] {"CNotificationQueueEntryId"}, false);
 
-		_setCommerceNotificationAttachmentUtilPersistence(this);
+		CommerceNotificationAttachmentUtil.setPersistence(this);
 	}
 
-	public void destroy() {
-		_setCommerceNotificationAttachmentUtilPersistence(null);
+	@Deactivate
+	public void deactivate() {
+		CommerceNotificationAttachmentUtil.setPersistence(null);
 
 		entityCache.removeCache(
 			CommerceNotificationAttachmentImpl.class.getName());
 	}
 
-	private void _setCommerceNotificationAttachmentUtilPersistence(
-		CommerceNotificationAttachmentPersistence
-			commerceNotificationAttachmentPersistence) {
-
-		try {
-			Field field =
-				CommerceNotificationAttachmentUtil.class.getDeclaredField(
-					"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, commerceNotificationAttachmentPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	@ServiceReference(type = EntityCache.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
+	}
+
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
 	protected EntityCache entityCache;
 
-	@ServiceReference(type = FinderCache.class)
+	@Reference
 	protected FinderCache finderCache;
 
 	private static final String _SQL_SELECT_COMMERCENOTIFICATIONATTACHMENT =

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -51,7 +42,6 @@ import com.liferay.portal.model.impl.PasswordPolicyModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Collections;
@@ -188,7 +178,7 @@ public class PasswordPolicyPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<PasswordPolicy>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (PasswordPolicy passwordPolicy : list) {
@@ -928,7 +918,8 @@ public class PasswordPolicyPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1154,7 +1145,7 @@ public class PasswordPolicyPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<PasswordPolicy>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (PasswordPolicy passwordPolicy : list) {
@@ -1944,7 +1935,8 @@ public class PasswordPolicyPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -2175,7 +2167,7 @@ public class PasswordPolicyPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<PasswordPolicy>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (PasswordPolicy passwordPolicy : list) {
@@ -2865,7 +2857,8 @@ public class PasswordPolicyPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -3027,7 +3020,7 @@ public class PasswordPolicyPersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_DP, finderArgs);
+				_finderPathFetchByC_DP, finderArgs, this);
 		}
 
 		if (result instanceof PasswordPolicy) {
@@ -3142,7 +3135,8 @@ public class PasswordPolicyPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId, defaultPolicy};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -3265,7 +3259,7 @@ public class PasswordPolicyPersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_N, finderArgs);
+				_finderPathFetchByC_N, finderArgs, this);
 		}
 
 		if (result instanceof PasswordPolicy) {
@@ -3376,7 +3370,8 @@ public class PasswordPolicyPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId, name};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -3901,7 +3896,7 @@ public class PasswordPolicyPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<PasswordPolicy>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3971,7 +3966,7 @@ public class PasswordPolicyPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -4116,29 +4111,13 @@ public class PasswordPolicyPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"companyId", "name"}, false);
 
-		_setPasswordPolicyUtilPersistence(this);
+		PasswordPolicyUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setPasswordPolicyUtilPersistence(null);
+		PasswordPolicyUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(PasswordPolicyImpl.class.getName());
-	}
-
-	private void _setPasswordPolicyUtilPersistence(
-		PasswordPolicyPersistence passwordPolicyPersistence) {
-
-		try {
-			Field field = PasswordPolicyUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, passwordPolicyPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_PASSWORDPOLICY =

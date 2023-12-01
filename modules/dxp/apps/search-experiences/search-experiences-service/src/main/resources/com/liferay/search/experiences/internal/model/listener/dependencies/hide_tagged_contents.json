@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Hide contents with a given tag."
+		"en_US": "hide-tagged-contents-description"
 	},
 	"elementDefinition": {
 		"category": "hide",
@@ -37,8 +37,8 @@
 				{
 					"fields": [
 						{
-							"helpText": "Add asset tag value",
-							"label": "Asset Tag",
+							"helpText": "asset-tag-field-help",
+							"label": "asset-tag",
 							"name": "asset_tag",
 							"type": "text"
 						}
@@ -47,7 +47,8 @@
 			]
 		}
 	},
+	"externalReferenceCode": "HIDE_TAGGED_CONTENTS",
 	"title_i18n": {
-		"en_US": "Hide Tagged Contents"
+		"en_US": "hide-tagged-contents"
 	}
 }

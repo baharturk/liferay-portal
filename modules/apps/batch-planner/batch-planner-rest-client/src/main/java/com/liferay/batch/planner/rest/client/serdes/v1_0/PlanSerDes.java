@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.rest.client.serdes.v1_0;
@@ -24,7 +15,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 import javax.annotation.Generated;
 
@@ -128,6 +118,20 @@ public class PlanSerDes {
 			sb.append("\"");
 		}
 
+		if (plan.getInternalClassNameKey() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"internalClassNameKey\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(plan.getInternalClassNameKey()));
+
+			sb.append("\"");
+		}
+
 		if (plan.getMappings() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -182,6 +186,26 @@ public class PlanSerDes {
 			sb.append("]");
 		}
 
+		if (plan.getSize() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"size\": ");
+
+			sb.append(plan.getSize());
+		}
+
+		if (plan.getStatus() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"status\": ");
+
+			sb.append(plan.getStatus());
+		}
+
 		if (plan.getTaskItemDelegateName() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -194,6 +218,26 @@ public class PlanSerDes {
 			sb.append(_escape(plan.getTaskItemDelegateName()));
 
 			sb.append("\"");
+		}
+
+		if (plan.getTemplate() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"template\": ");
+
+			sb.append(plan.getTemplate());
+		}
+
+		if (plan.getTotal() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"total\": ");
+
+			sb.append(plan.getTotal());
 		}
 
 		sb.append("}");
@@ -258,6 +302,15 @@ public class PlanSerDes {
 				String.valueOf(plan.getInternalClassName()));
 		}
 
+		if (plan.getInternalClassNameKey() == null) {
+			map.put("internalClassNameKey", null);
+		}
+		else {
+			map.put(
+				"internalClassNameKey",
+				String.valueOf(plan.getInternalClassNameKey()));
+		}
+
 		if (plan.getMappings() == null) {
 			map.put("mappings", null);
 		}
@@ -279,6 +332,20 @@ public class PlanSerDes {
 			map.put("policies", String.valueOf(plan.getPolicies()));
 		}
 
+		if (plan.getSize() == null) {
+			map.put("size", null);
+		}
+		else {
+			map.put("size", String.valueOf(plan.getSize()));
+		}
+
+		if (plan.getStatus() == null) {
+			map.put("status", null);
+		}
+		else {
+			map.put("status", String.valueOf(plan.getStatus()));
+		}
+
 		if (plan.getTaskItemDelegateName() == null) {
 			map.put("taskItemDelegateName", null);
 		}
@@ -286,6 +353,20 @@ public class PlanSerDes {
 			map.put(
 				"taskItemDelegateName",
 				String.valueOf(plan.getTaskItemDelegateName()));
+		}
+
+		if (plan.getTemplate() == null) {
+			map.put("template", null);
+		}
+		else {
+			map.put("template", String.valueOf(plan.getTemplate()));
+		}
+
+		if (plan.getTotal() == null) {
+			map.put("total", null);
+		}
+		else {
+			map.put("total", String.valueOf(plan.getTotal()));
 		}
 
 		return map;
@@ -338,16 +419,27 @@ public class PlanSerDes {
 					plan.setInternalClassName((String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "internalClassNameKey")) {
+
+				if (jsonParserFieldValue != null) {
+					plan.setInternalClassNameKey((String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "mappings")) {
 				if (jsonParserFieldValue != null) {
-					plan.setMappings(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> MappingSerDes.toDTO((String)object)
-						).toArray(
-							size -> new Mapping[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					Mapping[] mappingsArray =
+						new Mapping[jsonParserFieldValues.length];
+
+					for (int i = 0; i < mappingsArray.length; i++) {
+						mappingsArray[i] = MappingSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					plan.setMappings(mappingsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "name")) {
@@ -357,14 +449,29 @@ public class PlanSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "policies")) {
 				if (jsonParserFieldValue != null) {
-					plan.setPolicies(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> PolicySerDes.toDTO((String)object)
-						).toArray(
-							size -> new Policy[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					Policy[] policiesArray =
+						new Policy[jsonParserFieldValues.length];
+
+					for (int i = 0; i < policiesArray.length; i++) {
+						policiesArray[i] = PolicySerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					plan.setPolicies(policiesArray);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "size")) {
+				if (jsonParserFieldValue != null) {
+					plan.setSize(Integer.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "status")) {
+				if (jsonParserFieldValue != null) {
+					plan.setStatus(
+						Integer.valueOf((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(
@@ -372,6 +479,17 @@ public class PlanSerDes {
 
 				if (jsonParserFieldValue != null) {
 					plan.setTaskItemDelegateName((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "template")) {
+				if (jsonParserFieldValue != null) {
+					plan.setTemplate((Boolean)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "total")) {
+				if (jsonParserFieldValue != null) {
+					plan.setTotal(
+						Integer.valueOf((String)jsonParserFieldValue));
 				}
 			}
 		}

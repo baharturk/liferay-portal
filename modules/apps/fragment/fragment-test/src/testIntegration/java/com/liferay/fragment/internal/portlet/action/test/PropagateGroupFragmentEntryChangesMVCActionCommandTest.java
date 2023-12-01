@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.portlet.action.test;
@@ -54,6 +45,7 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
@@ -91,7 +83,7 @@ public class PropagateGroupFragmentEntryChangesMVCActionCommandTest {
 		_fragmentEntry = FragmentEntryTestUtil.addFragmentEntry(
 			_fragmentCollection.getFragmentCollectionId());
 
-		_layout = LayoutTestUtil.addLayout(_group);
+		_layout = LayoutTestUtil.addTypeContentLayout(_group);
 	}
 
 	@Test
@@ -103,9 +95,12 @@ public class PropagateGroupFragmentEntryChangesMVCActionCommandTest {
 		FragmentEntryLink fragmentEntryLink =
 			_fragmentEntryLinkLocalService.addFragmentEntryLink(
 				TestPropsValues.getUserId(), _group.getGroupId(), 0,
-				_fragmentEntry.getFragmentEntryId(), 0, _layout.getPlid(),
-				"css value", "<div>HTML value</div>", "js value",
-				"{fieldSets: []}", StringPool.BLANK, StringPool.BLANK, 0, null,
+				_fragmentEntry.getFragmentEntryId(),
+				_segmentsExperienceLocalService.
+					fetchDefaultSegmentsExperienceId(_layout.getPlid()),
+				_layout.getPlid(), "css value", "<div>HTML value</div>",
+				"js value", "{fieldSets: []}", StringPool.BLANK,
+				StringPool.BLANK, 0, null, _fragmentEntry.getType(),
 				serviceContext);
 
 		_fragmentEntry.setCss("new css value");
@@ -157,6 +152,11 @@ public class PropagateGroupFragmentEntryChangesMVCActionCommandTest {
 		mockLiferayPortletActionRequest.setAttribute(
 			WebKeys.THEME_DISPLAY, _getThemeDisplay());
 		mockLiferayPortletActionRequest.setParameter(
+			"segmentsExperienceId",
+			String.valueOf(
+				_segmentsExperienceLocalService.
+					fetchDefaultSegmentsExperienceId(_layout.getPlid())));
+		mockLiferayPortletActionRequest.setParameter(
 			"fragmentEntryId",
 			String.valueOf(_fragmentEntry.getFragmentEntryId()));
 		mockLiferayPortletActionRequest.setParameter(
@@ -170,11 +170,8 @@ public class PropagateGroupFragmentEntryChangesMVCActionCommandTest {
 
 		themeDisplay.setCompany(_company);
 
-		long controlPanelPlid = _portal.getControlPanelPlid(
-			_company.getCompanyId());
-
 		Layout controlPanelLayout = _layoutLocalService.getLayout(
-			controlPanelPlid);
+			_portal.getControlPanelPlid(_company.getCompanyId()));
 
 		themeDisplay.setLayout(controlPanelLayout);
 
@@ -224,5 +221,8 @@ public class PropagateGroupFragmentEntryChangesMVCActionCommandTest {
 
 	@Inject
 	private PortletLocalService _portletLocalService;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 }

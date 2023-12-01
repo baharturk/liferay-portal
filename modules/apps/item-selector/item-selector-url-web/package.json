@@ -1,11 +1,14 @@
 {
 	"dependencies": {
-		"@clayui/button": "3.40.0",
-		"@clayui/form": "3.42.0",
-		"@clayui/loading-indicator": "3.40.0",
+		"@clayui/button": "3.107.0",
+		"@clayui/form": "3.107.0",
+		"@clayui/loading-indicator": "3.106.1",
+		"@liferay/frontend-js-react-web": "*",
+		"classnames": "2.3.1",
 		"frontend-js-web": "*",
 		"prop-types": "15.7.2",
-		"react": "16.12.0"
+		"react": "16.12.0",
+		"react-dom": "16.12.0"
 	},
 	"name": "item-selector-url-web",
 	"scripts": {
@@ -14,5 +17,5 @@
 		"format": "liferay-npm-scripts fix",
 		"test": "liferay-npm-scripts test"
 	},
-	"version": "6.0.15"
+	"version": "6.0.23"
 }

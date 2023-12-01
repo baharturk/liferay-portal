@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.service.test;
@@ -17,7 +8,6 @@ package com.liferay.blogs.service.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.blogs.attachments.test.BlogsEntryAttachmentFileEntryHelperTest;
 import com.liferay.blogs.constants.BlogsConstants;
-import com.liferay.blogs.exception.DuplicateEntryExternalReferenceCodeException;
 import com.liferay.blogs.exception.EntryContentException;
 import com.liferay.blogs.exception.EntrySmallImageNameException;
 import com.liferay.blogs.exception.EntryTitleException;
@@ -46,6 +36,7 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.module.util.BundleUtil;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
@@ -96,7 +87,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 
 /**
@@ -117,17 +107,8 @@ public class BlogsEntryLocalServiceTest {
 		Bundle bundle = FrameworkUtil.getBundle(
 			BlogsEntryAttachmentFileEntryHelperTest.class);
 
-		BundleContext bundleContext = bundle.getBundleContext();
-
-		for (Bundle installedBundle : bundleContext.getBundles()) {
-			String symbolicName = installedBundle.getSymbolicName();
-
-			if (symbolicName.equals("com.liferay.blogs.web")) {
-				bundle = installedBundle;
-
-				break;
-			}
-		}
+		bundle = BundleUtil.getBundle(
+			bundle.getBundleContext(), "com.liferay.blogs.web");
 
 		Class<?> clazz = bundle.loadClass(
 			"com.liferay.blogs.web.internal.util.BlogsUtil");
@@ -142,59 +123,6 @@ public class BlogsEntryLocalServiceTest {
 		_user = TestPropsValues.getUser();
 
 		UserTestUtil.setUser(TestPropsValues.getUser());
-	}
-
-	@Test(expected = DuplicateEntryExternalReferenceCodeException.class)
-	public void testAddBlogsEntryWithExistingExternalReferenceCode()
-		throws Exception {
-
-		BlogsEntry blogsEntry = BlogsEntryLocalServiceUtil.addEntry(
-			TestPropsValues.getUserId(), StringUtil.randomString(),
-			StringUtil.randomString(), new Date(),
-			ServiceContextTestUtil.getServiceContext());
-
-		BlogsEntryLocalServiceUtil.addEntry(
-			blogsEntry.getExternalReferenceCode(), blogsEntry.getUserId(),
-			blogsEntry.getTitle(), blogsEntry.getSubtitle(),
-			blogsEntry.getUrlTitle(), blogsEntry.getDescription(),
-			blogsEntry.getContent(), blogsEntry.getDisplayDate(),
-			blogsEntry.isAllowPingbacks(), blogsEntry.isAllowTrackbacks(),
-			new String[] {blogsEntry.getTrackbacks()},
-			blogsEntry.getCoverImageCaption(), null, null,
-			ServiceContextTestUtil.getServiceContext());
-	}
-
-	@Test
-	public void testAddBlogsEntryWithExternalReferenceCode() throws Exception {
-		String externalReferenceCode = RandomTestUtil.randomString();
-
-		BlogsEntry blogsEntry = BlogsEntryLocalServiceUtil.addEntry(
-			externalReferenceCode, TestPropsValues.getUserId(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.nextDate(), false,
-			false, new String[0], RandomTestUtil.randomString(), null, null,
-			ServiceContextTestUtil.getServiceContext());
-
-		Assert.assertEquals(
-			externalReferenceCode, blogsEntry.getExternalReferenceCode());
-	}
-
-	@Test
-	public void testAddBlogsEntryWithoutExternalReferenceCode()
-		throws Exception {
-
-		BlogsEntry blogsEntry = BlogsEntryLocalServiceUtil.addEntry(
-			null, TestPropsValues.getUserId(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.nextDate(), false, false, new String[0],
-			RandomTestUtil.randomString(), null, null,
-			ServiceContextTestUtil.getServiceContext());
-
-		Assert.assertEquals(
-			blogsEntry.getExternalReferenceCode(),
-			String.valueOf(blogsEntry.getEntryId()));
 	}
 
 	@Test
@@ -543,13 +471,11 @@ public class BlogsEntryLocalServiceTest {
 
 	@Test
 	public void testAddOriginalImageInVisibleImageFolder() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), _user.getUserId());
-
 		BlogsEntry blogsEntry = BlogsEntryLocalServiceUtil.addEntry(
 			_user.getUserId(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), serviceContext);
+			RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), _user.getUserId()));
 
 		FileEntry tempFileEntry = getTempFileEntry(
 			_user.getUserId(), _group.getGroupId(), "image.jpg");
@@ -1588,7 +1514,7 @@ public class BlogsEntryLocalServiceTest {
 			serviceContext, Constants.ADD);
 
 		return MBMessageLocalServiceUtil.addDiscussionMessage(
-			userId, RandomTestUtil.randomString(), _group.getGroupId(),
+			null, userId, RandomTestUtil.randomString(), _group.getGroupId(),
 			BlogsEntry.class.getName(), entry.getEntryId(),
 			mbThread.getThreadId(),
 			MBMessageConstants.DEFAULT_PARENT_MESSAGE_ID,

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -776,6 +767,91 @@ public class StringUtil {
 		}
 
 		return sb.toString();
+	}
+
+	public static String getTitleCase(
+		String s, boolean allowDash, String... exceptions) {
+
+		if (!allowDash) {
+			s = replace(s, CharPool.DASH, CharPool.SPACE);
+		}
+
+		String[] words = s.split("\\s+");
+
+		if (ArrayUtil.isEmpty(words)) {
+			return s;
+		}
+
+		StringBundler sb = new StringBundler(words.length * 2);
+
+		outerLoop:
+		for (int i = 0; i < words.length; i++) {
+			String word = words[i];
+
+			if (Validator.isNull(word)) {
+				continue;
+			}
+
+			for (String exception : exceptions) {
+				if (equalsIgnoreCase(exception, word)) {
+					sb.append(exception);
+					sb.append(CharPool.SPACE);
+
+					continue outerLoop;
+				}
+			}
+
+			if ((i != 0) && (i != words.length)) {
+				String lowerCaseWord = toLowerCase(word);
+
+				if (ArrayUtil.contains(_ARTICLES, lowerCaseWord) ||
+					ArrayUtil.contains(_CONJUNCTIONS, lowerCaseWord) ||
+					ArrayUtil.contains(_PREPOSITIONS, lowerCaseWord)) {
+
+					sb.append(lowerCaseWord);
+					sb.append(CharPool.SPACE);
+
+					continue;
+				}
+			}
+
+			if (Character.isUpperCase(word.charAt(0))) {
+				sb.append(word);
+			}
+			else {
+				sb.append(upperCaseFirstLetter(word));
+			}
+
+			sb.append(CharPool.SPACE);
+		}
+
+		sb.setIndex(sb.index() - 1);
+
+		return sb.toString();
+	}
+
+	public static byte[] hexStringToBytes(String hexString) {
+		if ((hexString.length() % 2) != 0) {
+			throw new IllegalArgumentException("Odd number of characters");
+		}
+
+		byte[] bytes = new byte[hexString.length() / 2];
+
+		for (int i = 0; i < hexString.length(); i = i + 2) {
+			String s = hexString.substring(i, i + 2);
+
+			try {
+				bytes[i / 2] = (byte)Integer.parseInt(s, 16);
+			}
+			catch (NumberFormatException numberFormatException) {
+				throw new IllegalArgumentException(
+					StringBundler.concat(
+						"Illegal hexadecimal characters ", s, " at index ", i),
+					numberFormatException);
+			}
+		}
+
+		return bytes;
 	}
 
 	/**
@@ -4671,6 +4747,10 @@ public class StringUtil {
 	 * @return the string, with its first character converted to upper-case
 	 */
 	public static String upperCaseFirstLetter(String s) {
+		if ((s == null) || s.isEmpty()) {
+			return s;
+		}
+
 		char[] chars = s.toCharArray();
 
 		if ((chars[0] >= 97) && (chars[0] <= 122)) {
@@ -4957,7 +5037,30 @@ public class StringUtil {
 		}
 	}
 
+	private static final String[] _ARTICLES = {"a", "an", "the"};
+
+	private static final String[] _CONJUNCTIONS = {
+		"and", "but", "for", "nor", "or", "yet"
+	};
+
 	private static final String[] _EMPTY_STRING_ARRAY = new String[0];
+
+	private static final String[] _PREPOSITIONS = {
+		"a", "abaft", "aboard", "about", "above", "absent", "across", "afore",
+		"after", "against", "along", "alongside", "amid", "amidst", "among",
+		"amongst", "an", "apropos", "apud", "around", "as", "aside", "astride",
+		"at", "athwart", "atop", "barring", "before", "behind", "below",
+		"beneath", "beside", "besides", "between", "beyond", "but", "by",
+		"circa", "concerning", "despite", "down", "during", "except",
+		"excluding", "failing", "for", "from", "given", "in", "including",
+		"inside", "into", "lest", "mid", "midst", "modulo", "near", "next",
+		"notwithstanding", "of", "off", "on", "onto", "opposite", "out",
+		"outside", "over", "pace", "past", "per", "plus", "pro", "qua",
+		"regarding", "sans", "since", "through", "throughout", "thru",
+		"thruout", "till", "to", "toward", "towards", "under", "underneath",
+		"unlike", "until", "unto", "up", "upon", "v", "versus", "via", "vice",
+		"vs", "with", "within", "without", "worth"
+	};
 
 	private static final char[] _RANDOM_STRING_CHAR_TABLE = {
 		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D',

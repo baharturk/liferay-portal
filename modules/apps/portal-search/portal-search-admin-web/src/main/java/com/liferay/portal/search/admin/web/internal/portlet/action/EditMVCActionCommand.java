@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.admin.web.internal.portlet.action;
@@ -17,34 +8,35 @@ package com.liferay.portal.search.admin.web.internal.portlet.action;
 import com.liferay.portal.instances.service.PortalInstancesLocalService;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
+import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskContextMapConstants;
 import com.liferay.portal.kernel.messaging.DestinationNames;
-import com.liferay.portal.kernel.messaging.Message;
-import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.messaging.MessageListener;
-import com.liferay.portal.kernel.messaging.MessageListenerException;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.search.IndexWriterHelper;
+import com.liferay.portal.kernel.search.background.task.ReindexBackgroundTaskConstants;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.uuid.PortalUUID;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.search.admin.web.internal.constants.SearchAdminPortletKeys;
 import com.liferay.portal.search.admin.web.internal.util.DictionaryReindexer;
-import com.liferay.portal.search.spi.reindexer.IndexReindexer;
 
 import java.io.Serializable;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -52,11 +44,11 @@ import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
 import javax.portlet.PortletSession;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Wade Cao
@@ -96,7 +88,11 @@ public class EditMVCActionCommand extends BaseMVCActionCommand {
 		if (cmd.equals("reindex")) {
 			_reindex(actionRequest);
 
-			_reindexIndexReindexers(actionRequest);
+			if (Validator.isBlank(
+					ParamUtil.getString(actionRequest, "className"))) {
+
+				_reindexIndexReindexer(actionRequest);
+			}
 		}
 		else if (cmd.equals("reindexDictionaries")) {
 			_reindexDictionaries(actionRequest);
@@ -107,35 +103,26 @@ public class EditMVCActionCommand extends BaseMVCActionCommand {
 
 		String redirect = ParamUtil.getString(actionRequest, "redirect");
 
-		redirect = _http.setParameter(
+		redirect = HttpComponentsUtil.setParameter(
 			redirect, actionResponse.getNamespace() + "companyIds",
 			StringUtil.merge(
 				ParamUtil.getLongValues(actionRequest, "companyIds")));
-		redirect = _http.setParameter(
+		redirect = HttpComponentsUtil.setParameter(
+			redirect, actionResponse.getNamespace() + "executionMode",
+			ParamUtil.getString(actionRequest, "executionMode"));
+		redirect = HttpComponentsUtil.setParameter(
 			redirect, actionResponse.getNamespace() + "scope",
 			ParamUtil.getString(actionRequest, "scope"));
 
 		sendRedirect(actionRequest, actionResponse, redirect);
 	}
 
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected void addIndexReindexer(IndexReindexer indexReindexer) {
-		Class<?> clazz = indexReindexer.getClass();
-
-		_indexReindexers.put(clazz.getName(), indexReindexer);
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_bundleContext = bundleContext;
 	}
 
-	protected void removeIndexReindexer(IndexReindexer indexReindexer) {
-		Class<?> clazz = indexReindexer.getClass();
-
-		_indexReindexers.remove(clazz.getName());
-	}
-
-	private void _reindex(final ActionRequest actionRequest) throws Exception {
+	private void _reindex(ActionRequest actionRequest) throws Exception {
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
@@ -143,7 +130,12 @@ public class EditMVCActionCommand extends BaseMVCActionCommand {
 			actionRequest, "companyIds");
 
 		String className = ParamUtil.getString(actionRequest, "className");
-		Map<String, Serializable> taskContextMap = new HashMap<>();
+
+		Map<String, Serializable> taskContextMap =
+			new HashMapBuilder<>().<String, Serializable>put(
+				ReindexBackgroundTaskConstants.EXECUTION_MODE,
+				ParamUtil.getString(actionRequest, "executionMode")
+			).build();
 
 		if (!ParamUtil.getBoolean(actionRequest, "blocking")) {
 			_indexWriterHelper.reindex(
@@ -153,50 +145,45 @@ public class EditMVCActionCommand extends BaseMVCActionCommand {
 			return;
 		}
 
-		final String jobName = "reindex-".concat(_portalUUID.generate());
+		String jobName = "reindex-".concat(PortalUUIDUtil.generate());
 
-		final CountDownLatch countDownLatch = new CountDownLatch(1);
+		CountDownLatch countDownLatch = new CountDownLatch(1);
 
-		MessageListener messageListener = new MessageListener() {
+		MessageListener messageListener = message -> {
+			int status = message.getInteger("status");
 
-			@Override
-			public void receive(Message message)
-				throws MessageListenerException {
+			if ((status != BackgroundTaskConstants.STATUS_CANCELLED) &&
+				(status != BackgroundTaskConstants.STATUS_FAILED) &&
+				(status != BackgroundTaskConstants.STATUS_SUCCESSFUL)) {
 
-				int status = message.getInteger("status");
-
-				if ((status != BackgroundTaskConstants.STATUS_CANCELLED) &&
-					(status != BackgroundTaskConstants.STATUS_FAILED) &&
-					(status != BackgroundTaskConstants.STATUS_SUCCESSFUL)) {
-
-					return;
-				}
-
-				if (!jobName.equals(message.getString("name"))) {
-					return;
-				}
-
-				PortletSession portletSession =
-					actionRequest.getPortletSession();
-
-				long lastAccessedTime = portletSession.getLastAccessedTime();
-				int maxInactiveInterval =
-					portletSession.getMaxInactiveInterval();
-
-				int extendedMaxInactiveIntervalTime =
-					(int)(System.currentTimeMillis() - lastAccessedTime +
-						maxInactiveInterval);
-
-				portletSession.setMaxInactiveInterval(
-					extendedMaxInactiveIntervalTime);
-
-				countDownLatch.countDown();
+				return;
 			}
 
+			if (!jobName.equals(message.getString("name"))) {
+				return;
+			}
+
+			PortletSession portletSession = actionRequest.getPortletSession();
+
+			long lastAccessedTime = portletSession.getLastAccessedTime();
+			int maxInactiveInterval = portletSession.getMaxInactiveInterval();
+
+			int extendedMaxInactiveIntervalTime =
+				(int)(System.currentTimeMillis() - lastAccessedTime +
+					maxInactiveInterval);
+
+			portletSession.setMaxInactiveInterval(
+				extendedMaxInactiveIntervalTime);
+
+			countDownLatch.countDown();
 		};
 
-		_messageBus.registerMessageListener(
-			DestinationNames.BACKGROUND_TASK_STATUS, messageListener);
+		ServiceRegistration<MessageListener> serviceRegistration =
+			_bundleContext.registerService(
+				MessageListener.class, messageListener,
+				MapUtil.singletonDictionary(
+					"destination.name",
+					DestinationNames.BACKGROUND_TASK_STATUS));
 
 		try {
 			_indexWriterHelper.reindex(
@@ -208,8 +195,7 @@ public class EditMVCActionCommand extends BaseMVCActionCommand {
 				TimeUnit.MILLISECONDS);
 		}
 		finally {
-			_messageBus.unregisterMessageListener(
-				DestinationNames.BACKGROUND_TASK_STATUS, messageListener);
+			serviceRegistration.unregister();
 		}
 	}
 
@@ -226,42 +212,42 @@ public class EditMVCActionCommand extends BaseMVCActionCommand {
 	private void _reindexIndexReindexer(ActionRequest actionRequest)
 		throws Exception {
 
-		String className = ParamUtil.getString(actionRequest, "className");
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
-		IndexReindexer indexReindexer = _indexReindexers.get(className);
-
-		indexReindexer.reindex(
-			ParamUtil.getLongValues(actionRequest, "companyIds"));
+		_backgroundTaskManager.addBackgroundTask(
+			themeDisplay.getUserId(), CompanyConstants.SYSTEM,
+			"reindexIndexReindexer",
+			_CLASS_NAME_REINDEX_INDEX_REINDEXER_BACKGROUND_TASK_EXECUTOR,
+			HashMapBuilder.<String, Serializable>put(
+				BackgroundTaskContextMapConstants.DELETE_ON_SUCCESS, true
+			).put(
+				ReindexBackgroundTaskConstants.CLASS_NAME,
+				ParamUtil.getString(actionRequest, "className")
+			).put(
+				ReindexBackgroundTaskConstants.COMPANY_IDS,
+				ParamUtil.getLongValues(actionRequest, "companyIds")
+			).put(
+				ReindexBackgroundTaskConstants.EXECUTION_MODE,
+				ParamUtil.getString(actionRequest, "executionMode")
+			).build(),
+			new ServiceContext());
 	}
 
-	private void _reindexIndexReindexers(ActionRequest actionRequest)
-		throws Exception {
-
-		for (IndexReindexer indexReindexer : _indexReindexers.values()) {
-			indexReindexer.reindex(
-				ParamUtil.getLongValues(actionRequest, "companyIds"));
-		}
-	}
+	private static final String
+		_CLASS_NAME_REINDEX_INDEX_REINDEXER_BACKGROUND_TASK_EXECUTOR =
+			"com.liferay.portal.search.internal.background.task." +
+				"ReindexIndexReindexerBackgroundTaskExecutor";
 
 	@Reference
 	private BackgroundTaskManager _backgroundTaskManager;
 
-	@Reference
-	private Http _http;
-
-	private final Map<String, IndexReindexer> _indexReindexers =
-		new ConcurrentHashMap<>();
+	private BundleContext _bundleContext;
 
 	@Reference
 	private IndexWriterHelper _indexWriterHelper;
 
 	@Reference
-	private MessageBus _messageBus;
-
-	@Reference
 	private PortalInstancesLocalService _portalInstancesLocalService;
-
-	@Reference
-	private PortalUUID _portalUUID;
 
 }

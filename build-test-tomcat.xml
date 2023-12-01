@@ -7,6 +7,7 @@
 		<lstopwatch action="start" name="run.selenium.tomcat" />
 
 		<app-server-properties-update>
+			app.server.parent.dir=${app.server.parent.dir}
 			app.server.type=tomcat
 		</app-server-properties-update>
 
@@ -18,19 +19,6 @@
 			</not>
 			<then>
 				<ant antfile="build-dist.xml" target="build-dist-tomcat" />
-			</then>
-		</if>
-
-		<antcall target="record-test-generated-properties" />
-
-		<if>
-			<isset property="vm.host" />
-			<then>
-				<replace
-					file="portal-web/test/test-portal-web.properties"
-					token="#vm.host="
-					value="vm.host=${vm.host}"
-				/>
 			</then>
 		</if>
 

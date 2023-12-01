@@ -13,9 +13,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -28,7 +28,7 @@ definition {
 	}
 
 	@description = "This test ensures that a Japanese file can be downloaded."
-	@priority = "5"
+	@priority = 4
 	test CanDownloadJapaneseFile {
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM文書記述",
@@ -39,19 +39,24 @@ definition {
 
 		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
-		DMDocument.downloadCP(dmDocumentTitle = "これは文書です");
+		DMDocument.downloadCP(
+			dmDocumentSize = "68 B",
+			dmDocumentTitle = "これは文書です");
 
 		AssertTextNotPresent(value1 = "The requested resource could not be found.");
 
-		DMDocument.assertFileNameFromTempFolder(downloadedFileName = "これは文書です.txt");
+		DMDocument.assertFileNameFromTempFolder(fileName = "これは文書です.txt");
+
+		DMDocument.assertFileExtensionFromTempFolder(
+			downloadedFile = "これは文書です.txt",
+			fileExtension = ".txt");
 	}
 
 	@description = "This test ensures that a Japanese file can be downloaded by file name."
-	@priority = "5"
+	@priority = 4
 	test CanDownloadJapaneseFileByFileName {
 		var portalURL = PropsUtil.get("portal.url");
-
-		var siteID = JSONGroupAPI._getGroupIdByName(
+		var siteId = JSONGroupAPI._getGroupIdByName(
 			groupName = "Guest",
 			site = "true");
 
@@ -62,21 +67,20 @@ definition {
 			mimeType = "image/jpeg",
 			sourceFileName = "これは文書です.txt");
 
-		Navigator.openSpecificURL(url = "${portalURL}/documents/${siteID}/0/これは文書です.txt");
+		Navigator.openSpecificURL(url = "${portalURL}/documents/${siteId}/0/これは文書です.txt");
 
 		DownloadTempFile();
 
 		AssertTextNotPresent(value1 = "The requested resource could not be found.");
 
-		DMDocument.assertFileNameFromTempFolder(downloadedFileName = "これは文書です.txt");
+		DMDocument.assertFileNameFromTempFolder(fileName = "これは文書です.txt");
 	}
 
 	@description = "This test ensures that a Japanese file can be downloaded by title."
-	@priority = "5"
+	@priority = 4
 	test CanDownloadJapaneseFileByTitle {
 		var portalURL = PropsUtil.get("portal.url");
-
-		var siteID = JSONGroupAPI._getGroupIdByName(
+		var siteId = JSONGroupAPI._getGroupIdByName(
 			groupName = "Guest",
 			site = "true");
 
@@ -87,17 +91,17 @@ definition {
 			mimeType = "image/jpeg",
 			sourceFileName = "これは文書です.txt");
 
-		Navigator.openSpecificURL(url = "${portalURL}/documents/${siteID}/0/これは文書です");
+		Navigator.openSpecificURL(url = "${portalURL}/documents/${siteId}/0/これは文書です");
 
 		DownloadTempFile();
 
 		AssertTextNotPresent(value1 = "The requested resource could not be found.");
 
-		DMDocument.assertFileNameFromTempFolder(downloadedFileName = "これは文書です.txt");
+		DMDocument.assertFileNameFromTempFolder(fileName = "これは文書です.txt");
 	}
 
 	@description = "This test ensures that a document title and file name can be edited with Japanese."
-	@priority = "5"
+	@priority = 4
 	test CanEditTitleAndNameOfJapaneseFile {
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM文書記述",
@@ -141,7 +145,7 @@ definition {
 	}
 
 	@description = "This test ensures that Japanese file name with invalid characters can not be published."
-	@priority = "5"
+	@priority = 4
 	test CannotPublishJapaneseFileNameWithInvalidCharacters {
 		for (var invalidCharacter : list "<,|,?") {
 			DMDocument.addCP(
@@ -156,9 +160,9 @@ definition {
 	}
 
 	@description = "This test ensures that multiple Japanese files can be downloaded simultaneously."
-	@priority = "5"
+	@priority = 3
 	test CanSimultaneouslyDownloadMultipleJapaneseFiles {
-		JSONGroup.addGroup(groupName = "Site_1");
+		HeadlessSite.addSite(siteName = "Site_1");
 
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM文書記述",
@@ -180,11 +184,11 @@ definition {
 
 		AssertTextNotPresent(value1 = "The requested resource could not be found.");
 
-		DMDocument.assertFileNameFromTempFolder(downloadedFileName = "Site_1.zip");
+		DMDocument.assertFileNameFromTempFolder(fileName = "Site_1.zip");
 	}
 
 	@description = "This test ensures that the title is the file name minus extension by default when uploading some Japanese files by multiple upload."
-	@priority = "5"
+	@priority = 4
 	test CanViewJapaneseFileAfterMultipleUpload {
 		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
@@ -210,7 +214,7 @@ definition {
 	}
 
 	@description = "This test ensures that the title is the file name minus extension by default when uploading a Japanese file by single upload."
-	@priority = "5"
+	@priority = 4
 	test CanViewJapaneseFileAfterSingleUpload {
 		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
@@ -230,7 +234,7 @@ definition {
 	}
 
 	@description = "This test ensures that a document added with Japanese title can be viewed in different views."
-	@priority = "5"
+	@priority = 4
 	test CanViewJapaneseTitleInDifferentViews {
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM文書記述",

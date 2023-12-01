@@ -1,19 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {act, cleanup, fireEvent, render, within} from '@testing-library/react';
+import {act, cleanup, render} from '@testing-library/react';
 import React from 'react';
 
 import {
@@ -30,30 +21,46 @@ const BASE_PROPS = {
 	portletNamespace: 'test',
 };
 
-const SCHEMA = {
-	'currencyCode': {
+const SCHEMA = [
+	{
+		name: 'currencyCode',
 		type: 'string',
 	},
-	'id': {
-		format: 'int64',
+	{
+		name: 'id',
 		type: 'integer',
 	},
-	'name': {
+	{
+		name: 'name',
 		type: 'string',
 	},
-	'type': {
+	{
+		name: 'type',
 		type: 'string',
 	},
-	'x-class-name': {
-		default: 'com.liferay.headless.commerce.admin.channel.dto.v1_0.Channel',
+	{
+		name: 'x-class-name',
 		readOnly: true,
 		type: 'string',
 	},
-};
+];
 
-const fileSchema = ['currencyCode', 'type', 'name'];
+const FILE_SCHEMA = ['currencyCode', 'type', 'name'];
+const fileContent = [
+	['USD', 'bike', 'default'],
+	['EUR', 'truck', 'default'],
+];
 
 describe('ImportForm', () => {
+	beforeEach(() => {
+		const mockDiv = document.createElement('div');
+		mockDiv.setAttribute(
+			'id',
+			`${BASE_PROPS.portletNamespace}downloadTemplateAlert`
+		);
+		document.body.appendChild(mockDiv);
+	});
+
 	afterEach(cleanup);
 
 	it('must render', () => {
@@ -67,84 +74,41 @@ describe('ImportForm', () => {
 			Liferay.fire(SCHEMA_SELECTED_EVENT, {
 				schema: SCHEMA,
 			});
+
 			Liferay.fire(FILE_SCHEMA_EVENT, {
-				schema: fileSchema,
+				fileContent,
+				schema: FILE_SCHEMA,
 			});
 		});
 
-		fileSchema.forEach((field) => getByLabelText(field));
+		FILE_SCHEMA.forEach((field) => getByLabelText(field));
 	});
 
-	it('must have button disabled with no selection', () => {
-		const {getByText} = render(<ImportForm {...BASE_PROPS} />);
-
-		act(() => {
-			Liferay.fire(SCHEMA_SELECTED_EVENT, {
-				schema: SCHEMA,
-			});
-			Liferay.fire(FILE_SCHEMA_EVENT, {
-				schema: fileSchema,
-			});
-		});
-
-		expect(getByText(Liferay.Language.get('import'))).toBeDisabled();
-	});
-
-	it('must select the item on user click dropdown item', () => {
-		const selectedField = 'type';
+	it('must automatically map matching field names', () => {
 		const {getAllByRole} = render(<ImportForm {...BASE_PROPS} />);
 
 		act(() => {
 			Liferay.fire(SCHEMA_SELECTED_EVENT, {
 				schema: SCHEMA,
 			});
+
 			Liferay.fire(FILE_SCHEMA_EVENT, {
-				schema: fileSchema,
+				fileContent,
+				schema: FILE_SCHEMA,
 			});
 		});
 
-		act(() => {
-			fireEvent.click(getAllByRole('button')[0]);
+		getAllByRole('combobox').forEach((dbFieldSelect) => {
+			if (!dbFieldSelect.id.startsWith('input-')) {
+				return;
+			}
+
+			if (dbFieldSelect.value) {
+				expect(FILE_SCHEMA).toContain(dbFieldSelect.value);
+			}
+			else {
+				expect(FILE_SCHEMA).not.toContain(dbFieldSelect.value);
+			}
 		});
-
-		act(() => {
-			fireEvent.click(
-				within(getAllByRole('list')[0]).getByText(selectedField)
-			);
-		});
-
-		expect(getAllByRole('button')[0].textContent).toBe(selectedField);
-	});
-
-	it('must not show previously selected items on other dropdowns', () => {
-		const selectedField = 'type';
-		const {getAllByRole} = render(<ImportForm {...BASE_PROPS} />);
-
-		act(() => {
-			Liferay.fire(SCHEMA_SELECTED_EVENT, {
-				schema: SCHEMA,
-			});
-			Liferay.fire(FILE_SCHEMA_EVENT, {
-				schema: fileSchema,
-			});
-		});
-
-		act(() => {
-			fireEvent.click(getAllByRole('button')[0]);
-		});
-
-		act(() => {
-			fireEvent.click(
-				within(getAllByRole('list')[0]).getByText(selectedField)
-			);
-		});
-
-		act(() => {
-			fireEvent.click(getAllByRole('button')[1]);
-		});
-
-		expect(
-			within(getAllByRole('list')[1]).queryByText(selectedField)
-		).toBeNull();
 	});
 });

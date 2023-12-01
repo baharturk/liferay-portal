@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.retriever.test;
@@ -18,7 +9,6 @@ import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.retriever.AccountUserRetriever;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
@@ -60,10 +50,8 @@ public class AccountUserRetrieverWhenSearchingAccountRoleUsersTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_accountEntry1 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-		_accountEntry2 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+		_accountEntry1 = AccountEntryTestUtil.addAccountEntry();
+		_accountEntry2 = AccountEntryTestUtil.addAccountEntry();
 
 		_accountRole = _accountRoleLocalService.addAccountRole(
 			TestPropsValues.getUserId(), _accountEntry1.getAccountEntryId(),
@@ -228,9 +216,6 @@ public class AccountUserRetrieverWhenSearchingAccountRoleUsersTest {
 
 	@DeleteAfterTestRun
 	private AccountEntry _accountEntry2;
-
-	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Inject
 	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;

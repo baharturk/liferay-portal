@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -34,45 +25,47 @@ long[] commerceChannelIds = commerceCountriesDisplayContext.getCommerceChannelRe
 	<aui:input name="commerceChannelIds" type="hidden" />
 
 	<div class="lfr-form-content">
-		<aui:fieldset-group markupView="lexicon">
-			<aui:fieldset>
-				<aui:input checked="<%= country.isGroupFilterEnabled() %>" inlineLabel="right" label="enable-filter-channels" labelCssClass="simple-toggle-switch" name="channelFilterEnabled" type="toggle-switch" value="<%= country.isGroupFilterEnabled() %>" />
+		<div class="sheet">
+			<div class="panel-group panel-group-flush">
+				<aui:fieldset>
+					<aui:input checked="<%= country.isGroupFilterEnabled() %>" inlineLabel="right" label="enable-filter-channels" labelCssClass="simple-toggle-switch" name="channelFilterEnabled" type="toggle-switch" value="<%= country.isGroupFilterEnabled() %>" />
 
-				<c:choose>
-					<c:when test="<%= commerceChannels.isEmpty() %>">
-						<div class="alert alert-info">
-							<liferay-ui:message key="there-are-no-channels" />
-						</div>
-					</c:when>
-					<c:otherwise>
+					<c:choose>
+						<c:when test="<%= commerceChannels.isEmpty() %>">
+							<div class="alert alert-info">
+								<liferay-ui:message key="there-are-no-channels" />
+							</div>
+						</c:when>
+						<c:otherwise>
 
-						<%
-						for (CommerceChannel commerceChannel : commerceChannels) {
-						%>
+							<%
+							for (CommerceChannel commerceChannel : commerceChannels) {
+							%>
 
-							<aui:input checked="<%= ArrayUtil.contains(commerceChannelIds, commerceChannel.getCommerceChannelId()) %>" label="<%= commerceChannel.getName() %>" name='<%= "commerceChannelId_" + commerceChannel.getCommerceChannelId() %>' onChange='<%= liferayPortletResponse.getNamespace() + "fulfillCommerceChannelIds();" %>' type="checkbox" value="<%= commerceChannel.getCommerceChannelId() %>" />
+								<aui:input checked="<%= ArrayUtil.contains(commerceChannelIds, commerceChannel.getCommerceChannelId()) %>" label="<%= commerceChannel.getName() %>" name='<%= "commerceChannelId_" + commerceChannel.getCommerceChannelId() %>' onChange='<%= liferayPortletResponse.getNamespace() + "fulfillCommerceChannelIds();" %>' type="checkbox" value="<%= commerceChannel.getCommerceChannelId() %>" />
 
-						<%
-						}
-						%>
+							<%
+							}
+							%>
 
-					</c:otherwise>
-				</c:choose>
+						</c:otherwise>
+					</c:choose>
 
-				<aui:button-row>
-					<aui:button cssClass="btn-lg" type="submit" />
+					<aui:button-row>
+						<aui:button cssClass="btn-lg" type="submit" />
 
-					<aui:button cssClass="btn-lg" href="<%= backURL %>" type="cancel" />
-				</aui:button-row>
-			</aui:fieldset>
-		</aui:fieldset-group>
+						<aui:button cssClass="btn-lg" href="<%= portletDisplay.getURLBack() %>" type="cancel" />
+					</aui:button-row>
+				</aui:fieldset>
+			</div>
+		</div>
 	</div>
 </aui:form>
 
 <aui:script>
 	function <portlet:namespace />fulfillCommerceChannelIds(e) {
 		var form = window.document['<portlet:namespace />fm'];
-		var values = Liferay.Util.listCheckedExcept(
+		var values = Liferay.Util.getCheckedCheckboxes(
 			form,
 			'<portlet:namespace />allRowIds'
 		);

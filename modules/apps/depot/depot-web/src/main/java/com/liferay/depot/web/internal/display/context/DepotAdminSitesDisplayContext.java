@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.display.context;
@@ -24,6 +15,7 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.item.selector.criteria.URLItemSelectorReturnType;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -42,7 +34,6 @@ import com.liferay.staging.StagingGroupHelperUtil;
 import java.util.List;
 import java.util.Locale;
 
-import javax.portlet.ActionURL;
 import javax.portlet.PortletURL;
 
 /**
@@ -58,7 +49,7 @@ public class DepotAdminSitesDisplayContext {
 		_liferayPortletResponse = liferayPortletResponse;
 
 		_currentURL = PortletURLUtil.getCurrent(
-			_liferayPortletRequest, _liferayPortletResponse);
+			liferayPortletRequest, liferayPortletResponse);
 	}
 
 	public DropdownItemList getConnectedSiteDropdownItems(
@@ -66,14 +57,12 @@ public class DepotAdminSitesDisplayContext {
 
 		return DropdownItemListBuilder.add(
 			dropdownItem -> {
-				ActionURL updateSearchableActionURL =
-					DepotEntryURLUtil.getUpdateSearchableActionURL(
-						depotEntryGroupRel.getDepotEntryGroupRelId(),
-						!depotEntryGroupRel.isSearchable(),
-						_currentURL.toString(), _liferayPortletResponse);
-
-				dropdownItem.setHref(updateSearchableActionURL.toString());
-
+				dropdownItem.setHref(
+					String.valueOf(
+						DepotEntryURLUtil.getUpdateSearchableActionURL(
+							depotEntryGroupRel.getDepotEntryGroupRelId(),
+							!depotEntryGroupRel.isSearchable(),
+							_currentURL.toString(), _liferayPortletResponse)));
 				dropdownItem.setLabel(
 					LanguageUtil.get(
 						PortalUtil.getHttpServletRequest(
@@ -82,21 +71,23 @@ public class DepotAdminSitesDisplayContext {
 			}
 		).add(
 			dropdownItem -> {
-				ActionURL updateDDMStructuresAvailableActionURL =
-					DepotEntryURLUtil.getUpdateDDMStructuresAvailableActionURL(
-						depotEntryGroupRel.getDepotEntryGroupRelId(),
-						!depotEntryGroupRel.isDdmStructuresAvailable(),
-						_currentURL.toString(), _liferayPortletResponse);
-
 				dropdownItem.setData(
 					HashMapBuilder.<String, Object>put(
 						"action", "shareWebContentStructures"
 					).put(
 						"shared", depotEntryGroupRel.isDdmStructuresAvailable()
 					).put(
-						"url", updateDDMStructuresAvailableActionURL.toString()
+						"url",
+						String.valueOf(
+							DepotEntryURLUtil.
+								getUpdateDDMStructuresAvailableActionURL(
+									depotEntryGroupRel.
+										getDepotEntryGroupRelId(),
+									!depotEntryGroupRel.
+										isDdmStructuresAvailable(),
+									_currentURL.toString(),
+									_liferayPortletResponse))
 					).build());
-
 				dropdownItem.setLabel(
 					LanguageUtil.get(
 						PortalUtil.getHttpServletRequest(
@@ -111,18 +102,12 @@ public class DepotAdminSitesDisplayContext {
 						"action", "disconnect"
 					).put(
 						"url",
-						() -> {
-							ActionURL disconnectSiteActionURL =
-								DepotEntryURLUtil.getDisconnectSiteActionURL(
-									depotEntryGroupRel.
-										getDepotEntryGroupRelId(),
-									_currentURL.toString(),
-									_liferayPortletResponse);
-
-							return disconnectSiteActionURL.toString();
-						}
+						() -> String.valueOf(
+							DepotEntryURLUtil.getDisconnectSiteActionURL(
+								depotEntryGroupRel.getDepotEntryGroupRelId(),
+								_currentURL.toString(),
+								_liferayPortletResponse))
 					).build());
-
 				dropdownItem.setDisabled(
 					depotEntryGroupRel.isDdmStructuresAvailable());
 				dropdownItem.setLabel(
@@ -165,7 +150,23 @@ public class DepotAdminSitesDisplayContext {
 		Group group = GroupServiceUtil.getGroup(
 			depotEntryGroupRel.getToGroupId());
 
-		return group.getDescriptiveName(locale);
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(group.getDescriptiveName(locale));
+
+		if (group.isStaged() && !group.isStagedRemotely() &&
+			group.isStagingGroup()) {
+
+			sb.append(StringPool.SPACE);
+			sb.append(StringPool.OPEN_PARENTHESIS);
+			sb.append(
+				LanguageUtil.get(
+					PortalUtil.getHttpServletRequest(_liferayPortletRequest),
+					"staging"));
+			sb.append(StringPool.CLOSE_PARENTHESIS);
+		}
+
+		return sb.toString();
 	}
 
 	public boolean isLiveDepotEntry() throws PortalException {

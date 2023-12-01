@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.search.test;
@@ -23,6 +14,7 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -89,7 +81,8 @@ public class AssetVocabularyIndexerIndexedFieldsTest {
 		_groups = groupSearchFixture.getGroups();
 
 		_indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService, uidFactory, documentBuilderFactory);
+			resourcePermissionLocalService, searchEngineHelper, uidFactory,
+			documentBuilderFactory);
 		_defaultLocale = LocaleThreadLocal.getDefaultLocale();
 	}
 
@@ -120,17 +113,19 @@ public class AssetVocabularyIndexerIndexedFieldsTest {
 		Map<String, String> map, Locale locale, String searchTerm) {
 
 		FieldValuesAssert.assertFieldValues(
-			map, name -> !name.equals("score"),
+			map, name -> !name.equals("score") && !name.equals("timestamp"),
 			searcher.search(
 				searchRequestBuilderFactory.builder(
 				).companyId(
 					_group.getCompanyId()
+				).fetchSourceIncludes(
+					new String[] {"*_sortable"}
+				).fields(
+					StringPool.STAR
 				).groupIds(
 					_group.getGroupId()
 				).locale(
 					locale
-				).fields(
-					StringPool.STAR
 				).modelIndexerClasses(
 					AssetVocabulary.class
 				).queryString(
@@ -157,6 +152,9 @@ public class AssetVocabularyIndexerIndexedFieldsTest {
 
 	@Inject
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
+
+	@Inject
+	protected SearchEngineHelper searchEngineHelper;
 
 	@Inject
 	protected Searcher searcher;
@@ -198,11 +196,17 @@ public class AssetVocabularyIndexerIndexedFieldsTest {
 		).put(
 			Field.USER_NAME, StringUtil.lowerCase(assetVocabulary.getUserName())
 		).put(
+			Field.VISIBILITY_TYPE,
+			String.valueOf(assetVocabulary.getVisibilityType())
+		).put(
 			"name_sortable", StringUtil.lowerCase(assetVocabulary.getName())
 		).put(
 			"title_ja_JP", assetVocabulary.getName()
 		).put(
 			"title_sortable", StringUtil.lowerCase(assetVocabulary.getName())
+		).put(
+			"visibilityType_sortable",
+			String.valueOf(assetVocabulary.getVisibilityType())
 		).build();
 
 		_indexedFieldsFixture.populateUID(assetVocabulary, map);

@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io;
 
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldRenderer;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldType;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeSettings;
 import com.liferay.dynamic.data.mapping.io.DDMFormDeserializerDeserializeRequest;
 import com.liferay.dynamic.data.mapping.io.DDMFormDeserializerDeserializeResponse;
@@ -49,9 +40,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
+import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
 /**
@@ -129,34 +118,34 @@ public class DDMFormJSONDeserializerTest
 		return "json";
 	}
 
-	protected DDMFormFieldTypeServicesTracker
-		getMockedDDMFormFieldTypeServicesTracker() {
+	protected DDMFormFieldTypeServicesRegistry
+		getMockedDDMFormFieldTypeServicesRegistry() {
 
 		setUpDefaultDDMFormFieldType();
 
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker = mock(
-			DDMFormFieldTypeServicesTracker.class);
+		DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry =
+			Mockito.mock(DDMFormFieldTypeServicesRegistry.class);
 
-		DDMFormFieldRenderer ddmFormFieldRenderer = mock(
+		DDMFormFieldRenderer ddmFormFieldRenderer = Mockito.mock(
 			DDMFormFieldRenderer.class);
 
-		when(
-			ddmFormFieldTypeServicesTracker.getDDMFormFieldRenderer(
-				Matchers.anyString())
+		Mockito.when(
+			ddmFormFieldTypeServicesRegistry.getDDMFormFieldRenderer(
+				Mockito.anyString())
 		).thenReturn(
 			ddmFormFieldRenderer
 		);
 
-		when(
-			ddmFormFieldTypeServicesTracker.getDDMFormFieldType(
-				Matchers.anyString())
+		Mockito.when(
+			ddmFormFieldTypeServicesRegistry.getDDMFormFieldType(
+				Mockito.anyString())
 		).thenReturn(
 			_defaultDDMFormFieldType
 		);
 
-		when(
-			ddmFormFieldTypeServicesTracker.getDDMFormFieldTypeProperties(
-				Matchers.anyString())
+		Mockito.when(
+			ddmFormFieldTypeServicesRegistry.getDDMFormFieldTypeProperties(
+				Mockito.anyString())
 		).thenReturn(
 			HashMapBuilder.<String, Object>put(
 				"ddm.form.field.type.icon", "my-icon"
@@ -167,7 +156,7 @@ public class DDMFormJSONDeserializerTest
 			).build()
 		);
 
-		return ddmFormFieldTypeServicesTracker;
+		return ddmFormFieldTypeServicesRegistry;
 	}
 
 	@Override
@@ -176,32 +165,24 @@ public class DDMFormJSONDeserializerTest
 	}
 
 	protected void setUpDefaultDDMFormFieldType() {
-		when(
+		Mockito.when(
 			_defaultDDMFormFieldType.getDDMFormFieldTypeSettings()
 		).then(
-			new Answer<Class<? extends DDMFormFieldTypeSettings>>() {
-
-				@Override
-				public Class<? extends DDMFormFieldTypeSettings> answer(
-						InvocationOnMock invocationOnMock)
-					throws Throwable {
-
-					return DDMFormFieldTypeSettingsTestUtil.getSettings();
-				}
-
-			}
+			(Answer<Class<? extends DDMFormFieldTypeSettings>>)
+				invocationOnMock ->
+					DDMFormFieldTypeSettingsTestUtil.getSettings()
 		);
 	}
 
 	protected void setUpPortalUtil() {
 		PortalUtil portalUtil = new PortalUtil();
 
-		Portal portal = mock(Portal.class);
+		Portal portal = Mockito.mock(Portal.class);
 
-		ResourceBundle resourceBundle = mock(ResourceBundle.class);
+		ResourceBundle resourceBundle = Mockito.mock(ResourceBundle.class);
 
-		when(
-			portal.getResourceBundle(Matchers.any(Locale.class))
+		Mockito.when(
+			portal.getResourceBundle(Mockito.any(Locale.class))
 		).thenReturn(
 			resourceBundle
 		);
@@ -284,11 +265,11 @@ public class DDMFormJSONDeserializerTest
 		// DDM form field type services tracker
 
 		Field field = ReflectionUtil.getDeclaredField(
-			DDMFormJSONDeserializer.class, "_ddmFormFieldTypeServicesTracker");
+			DDMFormJSONDeserializer.class, "_ddmFormFieldTypeServicesRegistry");
 
 		field.set(
 			_ddmFormJSONDeserializer,
-			getMockedDDMFormFieldTypeServicesTracker());
+			getMockedDDMFormFieldTypeServicesRegistry());
 
 		// JSON factory
 
@@ -300,8 +281,7 @@ public class DDMFormJSONDeserializerTest
 
 	private final DDMFormJSONDeserializer _ddmFormJSONDeserializer =
 		new DDMFormJSONDeserializer();
-
-	@Mock
-	private DDMFormFieldType _defaultDDMFormFieldType;
+	private final DDMFormFieldType _defaultDDMFormFieldType = Mockito.mock(
+		DDMFormFieldType.class);
 
 }

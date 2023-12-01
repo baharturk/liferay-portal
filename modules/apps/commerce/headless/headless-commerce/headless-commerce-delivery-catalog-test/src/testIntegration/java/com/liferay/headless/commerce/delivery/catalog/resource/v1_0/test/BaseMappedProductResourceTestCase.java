@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.resource.v1_0.test;
@@ -29,6 +20,7 @@ import com.liferay.headless.commerce.delivery.catalog.client.pagination.Paginati
 import com.liferay.headless.commerce.delivery.catalog.client.resource.v1_0.MappedProductResource;
 import com.liferay.headless.commerce.delivery.catalog.client.serdes.v1_0.MappedProductSerDes;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -42,6 +34,7 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
@@ -50,7 +43,7 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
@@ -59,18 +52,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
@@ -218,7 +209,7 @@ public abstract class BaseMappedProductResourceTestCase {
 			mappedProductResource.getChannelProductMappedProductsPage(
 				channelId, productId, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if ((irrelevantChannelId != null) && (irrelevantProductId != null)) {
 			MappedProduct irrelevantMappedProduct =
@@ -228,14 +219,16 @@ public abstract class BaseMappedProductResourceTestCase {
 
 			page = mappedProductResource.getChannelProductMappedProductsPage(
 				irrelevantChannelId, irrelevantProductId, null, null,
-				Pagination.of(1, 2), null);
+				Pagination.of(1, (int)totalCount + 1), null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantMappedProduct),
-				(List<MappedProduct>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantMappedProduct, (List<MappedProduct>)page.getItems());
+			assertValid(
+				page,
+				testGetChannelProductMappedProductsPage_getExpectedActions(
+					irrelevantChannelId, irrelevantProductId));
 		}
 
 		MappedProduct mappedProduct1 =
@@ -249,12 +242,24 @@ public abstract class BaseMappedProductResourceTestCase {
 		page = mappedProductResource.getChannelProductMappedProductsPage(
 			channelId, productId, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(mappedProduct1, mappedProduct2),
-			(List<MappedProduct>)page.getItems());
-		assertValid(page);
+		assertContains(mappedProduct1, (List<MappedProduct>)page.getItems());
+		assertContains(mappedProduct2, (List<MappedProduct>)page.getItems());
+		assertValid(
+			page,
+			testGetChannelProductMappedProductsPage_getExpectedActions(
+				channelId, productId));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetChannelProductMappedProductsPage_getExpectedActions(
+				Long channelId, Long productId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -263,6 +268,13 @@ public abstract class BaseMappedProductResourceTestCase {
 
 		Long channelId = testGetChannelProductMappedProductsPage_getChannelId();
 		Long productId = testGetChannelProductMappedProductsPage_getProductId();
+
+		Page<MappedProduct> mappedProductPage =
+			mappedProductResource.getChannelProductMappedProductsPage(
+				channelId, productId, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(
+			mappedProductPage.getTotalCount());
 
 		MappedProduct mappedProduct1 =
 			testGetChannelProductMappedProductsPage_addMappedProduct(
@@ -278,19 +290,21 @@ public abstract class BaseMappedProductResourceTestCase {
 
 		Page<MappedProduct> page1 =
 			mappedProductResource.getChannelProductMappedProductsPage(
-				channelId, productId, null, null, Pagination.of(1, 2), null);
+				channelId, productId, null, null,
+				Pagination.of(1, totalCount + 2), null);
 
 		List<MappedProduct> mappedProducts1 =
 			(List<MappedProduct>)page1.getItems();
 
 		Assert.assertEquals(
-			mappedProducts1.toString(), 2, mappedProducts1.size());
+			mappedProducts1.toString(), totalCount + 2, mappedProducts1.size());
 
 		Page<MappedProduct> page2 =
 			mappedProductResource.getChannelProductMappedProductsPage(
-				channelId, productId, null, null, Pagination.of(2, 2), null);
+				channelId, productId, null, null,
+				Pagination.of(2, totalCount + 2), null);
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<MappedProduct> mappedProducts2 =
 			(List<MappedProduct>)page2.getItems();
@@ -300,11 +314,12 @@ public abstract class BaseMappedProductResourceTestCase {
 
 		Page<MappedProduct> page3 =
 			mappedProductResource.getChannelProductMappedProductsPage(
-				channelId, productId, null, null, Pagination.of(1, 3), null);
+				channelId, productId, null, null,
+				Pagination.of(1, (int)totalCount + 3), null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(mappedProduct1, mappedProduct2, mappedProduct3),
-			(List<MappedProduct>)page3.getItems());
+		assertContains(mappedProduct1, (List<MappedProduct>)page3.getItems());
+		assertContains(mappedProduct2, (List<MappedProduct>)page3.getItems());
+		assertContains(mappedProduct3, (List<MappedProduct>)page3.getItems());
 	}
 
 	@Test
@@ -314,9 +329,23 @@ public abstract class BaseMappedProductResourceTestCase {
 		testGetChannelProductMappedProductsPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, mappedProduct1, mappedProduct2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					mappedProduct1, entityField.getName(),
 					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetChannelProductMappedProductsPageWithSortDouble()
+		throws Exception {
+
+		testGetChannelProductMappedProductsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, mappedProduct1, mappedProduct2) -> {
+				BeanTestUtil.setProperty(
+					mappedProduct1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					mappedProduct2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -327,8 +356,10 @@ public abstract class BaseMappedProductResourceTestCase {
 		testGetChannelProductMappedProductsPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, mappedProduct1, mappedProduct2) -> {
-				BeanUtils.setProperty(mappedProduct1, entityField.getName(), 0);
-				BeanUtils.setProperty(mappedProduct2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(
+					mappedProduct1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(
+					mappedProduct2, entityField.getName(), 1);
 			});
 	}
 
@@ -343,27 +374,27 @@ public abstract class BaseMappedProductResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						mappedProduct1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						mappedProduct2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						mappedProduct1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						mappedProduct2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -371,12 +402,12 @@ public abstract class BaseMappedProductResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						mappedProduct1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						mappedProduct2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -417,24 +448,32 @@ public abstract class BaseMappedProductResourceTestCase {
 			testGetChannelProductMappedProductsPage_addMappedProduct(
 				channelId, productId, mappedProduct2);
 
+		Page<MappedProduct> page =
+			mappedProductResource.getChannelProductMappedProductsPage(
+				channelId, productId, null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<MappedProduct> ascPage =
 				mappedProductResource.getChannelProductMappedProductsPage(
-					channelId, productId, null, null, Pagination.of(1, 2),
+					channelId, productId, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(mappedProduct1, mappedProduct2),
-				(List<MappedProduct>)ascPage.getItems());
+			assertContains(
+				mappedProduct1, (List<MappedProduct>)ascPage.getItems());
+			assertContains(
+				mappedProduct2, (List<MappedProduct>)ascPage.getItems());
 
 			Page<MappedProduct> descPage =
 				mappedProductResource.getChannelProductMappedProductsPage(
-					channelId, productId, null, null, Pagination.of(1, 2),
+					channelId, productId, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(mappedProduct2, mappedProduct1),
-				(List<MappedProduct>)descPage.getItems());
+			assertContains(
+				mappedProduct2, (List<MappedProduct>)descPage.getItems());
+			assertContains(
+				mappedProduct1, (List<MappedProduct>)descPage.getItems());
 		}
 	}
 
@@ -591,14 +630,6 @@ public abstract class BaseMappedProductResourceTestCase {
 				continue;
 			}
 
-			if (Objects.equals("options", additionalAssertFieldName)) {
-				if (mappedProduct.getOptions() == null) {
-					valid = false;
-				}
-
-				continue;
-			}
-
 			if (Objects.equals("price", additionalAssertFieldName)) {
 				if (mappedProduct.getPrice() == null) {
 					valid = false;
@@ -722,6 +753,14 @@ public abstract class BaseMappedProductResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("skuOptions", additionalAssertFieldName)) {
+				if (mappedProduct.getSkuOptions() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("thumbnail", additionalAssertFieldName)) {
 				if (mappedProduct.getThumbnail() == null) {
 					valid = false;
@@ -755,6 +794,13 @@ public abstract class BaseMappedProductResourceTestCase {
 	}
 
 	protected void assertValid(Page<MappedProduct> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<MappedProduct> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<MappedProduct> mappedProducts = page.getItems();
@@ -769,6 +815,25 @@ public abstract class BaseMappedProductResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -880,17 +945,6 @@ public abstract class BaseMappedProductResourceTestCase {
 			if (Objects.equals("id", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						mappedProduct1.getId(), mappedProduct2.getId())) {
-
-					return false;
-				}
-
-				continue;
-			}
-
-			if (Objects.equals("options", additionalAssertFieldName)) {
-				if (!equals(
-						(Map)mappedProduct1.getOptions(),
-						(Map)mappedProduct2.getOptions())) {
 
 					return false;
 				}
@@ -1060,6 +1114,17 @@ public abstract class BaseMappedProductResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("skuOptions", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						mappedProduct1.getSkuOptions(),
+						mappedProduct2.getSkuOptions())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("thumbnail", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						mappedProduct1.getThumbnail(),
@@ -1129,14 +1194,16 @@ public abstract class BaseMappedProductResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1153,6 +1220,10 @@ public abstract class BaseMappedProductResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1162,18 +1233,18 @@ public abstract class BaseMappedProductResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1209,11 +1280,6 @@ public abstract class BaseMappedProductResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
-		if (entityFieldName.equals("options")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
-		}
-
 		if (entityFieldName.equals("price")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
@@ -1225,11 +1291,47 @@ public abstract class BaseMappedProductResourceTestCase {
 		}
 
 		if (entityFieldName.equals("productExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(
-					mappedProduct.getProductExternalReferenceCode()));
-			sb.append("'");
+			Object object = mappedProduct.getProductExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1255,8 +1357,9 @@ public abstract class BaseMappedProductResourceTestCase {
 		}
 
 		if (entityFieldName.equals("quantity")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(mappedProduct.getQuantity()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("replacementMappedProduct")) {
@@ -1265,34 +1368,185 @@ public abstract class BaseMappedProductResourceTestCase {
 		}
 
 		if (entityFieldName.equals("replacementMessage")) {
-			sb.append("'");
-			sb.append(String.valueOf(mappedProduct.getReplacementMessage()));
-			sb.append("'");
+			Object object = mappedProduct.getReplacementMessage();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("sequence")) {
-			sb.append("'");
-			sb.append(String.valueOf(mappedProduct.getSequence()));
-			sb.append("'");
+			Object object = mappedProduct.getSequence();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("sku")) {
-			sb.append("'");
-			sb.append(String.valueOf(mappedProduct.getSku()));
-			sb.append("'");
+			Object object = mappedProduct.getSku();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("skuExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(mappedProduct.getSkuExternalReferenceCode()));
-			sb.append("'");
+			Object object = mappedProduct.getSkuExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1302,10 +1556,53 @@ public abstract class BaseMappedProductResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("skuOptions")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("thumbnail")) {
-			sb.append("'");
-			sb.append(String.valueOf(mappedProduct.getThumbnail()));
-			sb.append("'");
+			Object object = mappedProduct.getThumbnail();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1399,6 +1696,115 @@ public abstract class BaseMappedProductResourceTestCase {
 	protected Company testCompany;
 	protected Group testGroup;
 
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
+
 	protected class GraphQLField {
 
 		public GraphQLField(String key, GraphQLField... graphQLFields) {
@@ -1473,18 +1879,6 @@ public abstract class BaseMappedProductResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseMappedProductResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

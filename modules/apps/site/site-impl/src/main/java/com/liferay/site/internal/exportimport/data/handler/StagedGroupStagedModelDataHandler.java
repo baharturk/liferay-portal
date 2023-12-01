@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.internal.exportimport.data.handler;
@@ -44,11 +35,7 @@ import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.StagedModel;
-import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.LayoutRevisionLocalService;
-import com.liferay.portal.kernel.service.LayoutSetLocalService;
-import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
@@ -58,9 +45,9 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
-import com.liferay.site.internal.exportimport.staged.model.repository.StagedGroupStagedModelRepository;
+import com.liferay.site.internal.exportimport.staged.model.repository.StagedGroupStagedModelRepositoryUtil;
 import com.liferay.site.model.adapter.StagedGroup;
-import com.liferay.sites.kernel.util.SitesUtil;
+import com.liferay.sites.kernel.util.Sites;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,7 +62,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Daniel Kocsis
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class StagedGroupStagedModelDataHandler
 	extends BaseStagedModelDataHandler<StagedGroup> {
 
@@ -128,7 +115,7 @@ public class StagedGroupStagedModelDataHandler
 		}
 
 		Group existingGroup =
-			_stagedGroupStagedModelRepository.fetchExistingGroup(
+			StagedGroupStagedModelRepositoryUtil.fetchExistingGroup(
 				portletDataContext, referenceElement);
 
 		if (existingGroup == null) {
@@ -186,7 +173,7 @@ public class StagedGroupStagedModelDataHandler
 		// Layout set with layouts
 
 		List<? extends StagedModel> childStagedModels =
-			_stagedGroupStagedModelRepository.fetchChildrenStagedModels(
+			StagedGroupStagedModelRepositoryUtil.fetchChildrenStagedModels(
 				portletDataContext, stagedGroup);
 
 		for (StagedModel stagedModel : childStagedModels) {
@@ -221,7 +208,7 @@ public class StagedGroupStagedModelDataHandler
 		}
 
 		Group existingGroup =
-			_stagedGroupStagedModelRepository.fetchExistingGroup(
+			StagedGroupStagedModelRepositoryUtil.fetchExistingGroup(
 				portletDataContext, referenceElement);
 
 		if (existingGroup == null) {
@@ -523,7 +510,7 @@ public class StagedGroupStagedModelDataHandler
 			long plid = LayoutConstants.DEFAULT_PLID;
 
 			if (layout != null) {
-				if (SitesUtil.isLayoutModifiedSinceLastMerge(layout)) {
+				if (_sites.isLayoutModifiedSinceLastMerge(layout)) {
 					continue;
 				}
 
@@ -677,19 +664,7 @@ public class StagedGroupStagedModelDataHandler
 	private ExportImportLifecycleManager _exportImportLifecycleManager;
 
 	@Reference
-	private GroupLocalService _groupLocalService;
-
-	@Reference
 	private LayoutLocalService _layoutLocalService;
-
-	@Reference
-	private LayoutRevisionLocalService _layoutRevisionLocalService;
-
-	@Reference
-	private LayoutSetLocalService _layoutSetLocalService;
-
-	@Reference
-	private LayoutSetPrototypeLocalService _layoutSetPrototypeLocalService;
 
 	@Reference
 	private PermissionImporter _permissionImporter;
@@ -711,6 +686,12 @@ public class StagedGroupStagedModelDataHandler
 	private PortletLocalService _portletLocalService;
 
 	@Reference
-	private StagedGroupStagedModelRepository _stagedGroupStagedModelRepository;
+	private Sites _sites;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.site.model.adapter.StagedGroup)"
+	)
+	private StagedModelRepository<StagedGroup>
+		_stagedGroupStagedModelRepository;
 
 }

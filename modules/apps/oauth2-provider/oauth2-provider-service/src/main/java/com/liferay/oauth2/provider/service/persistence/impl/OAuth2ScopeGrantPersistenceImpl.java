@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.service.persistence.impl;
@@ -36,7 +27,6 @@ import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.service.persistence.impl.TableMapper;
 import com.liferay.portal.kernel.service.persistence.impl.TableMapperFactory;
@@ -52,7 +42,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Collections;
@@ -80,7 +69,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {OAuth2ScopeGrantPersistence.class, BasePersistence.class})
+@Component(service = OAuth2ScopeGrantPersistence.class)
 public class OAuth2ScopeGrantPersistenceImpl
 	extends BasePersistenceImpl<OAuth2ScopeGrant>
 	implements OAuth2ScopeGrantPersistence {
@@ -210,7 +199,7 @@ public class OAuth2ScopeGrantPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<OAuth2ScopeGrant>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (OAuth2ScopeGrant oAuth2ScopeGrant : list) {
@@ -593,7 +582,7 @@ public class OAuth2ScopeGrantPersistenceImpl
 
 		Object[] finderArgs = new Object[] {oAuth2ApplicationScopeAliasesId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -745,7 +734,7 @@ public class OAuth2ScopeGrantPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByC_O_A_B_S, finderArgs);
+				_finderPathFetchByC_O_A_B_S, finderArgs, this);
 		}
 
 		if (result instanceof OAuth2ScopeGrant) {
@@ -934,7 +923,7 @@ public class OAuth2ScopeGrantPersistenceImpl
 			bundleSymbolicName, scope
 		};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(6);
@@ -1472,7 +1461,7 @@ public class OAuth2ScopeGrantPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<OAuth2ScopeGrant>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1542,7 +1531,7 @@ public class OAuth2ScopeGrantPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1689,18 +1678,22 @@ public class OAuth2ScopeGrantPersistenceImpl
 	 *
 	 * @param pk the primary key of the o auth2 scope grant
 	 * @param oAuth2AuthorizationPK the primary key of the o auth2 authorization
+	 * @return <code>true</code> if an association between the o auth2 scope grant and the o auth2 authorization was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addOAuth2Authorization(long pk, long oAuth2AuthorizationPK) {
+	public boolean addOAuth2Authorization(long pk, long oAuth2AuthorizationPK) {
 		OAuth2ScopeGrant oAuth2ScopeGrant = fetchByPrimaryKey(pk);
 
 		if (oAuth2ScopeGrant == null) {
-			oAuth2ScopeGrantToOAuth2AuthorizationTableMapper.addTableMapping(
-				CompanyThreadLocal.getCompanyId(), pk, oAuth2AuthorizationPK);
+			return oAuth2ScopeGrantToOAuth2AuthorizationTableMapper.
+				addTableMapping(
+					CompanyThreadLocal.getCompanyId(), pk,
+					oAuth2AuthorizationPK);
 		}
 		else {
-			oAuth2ScopeGrantToOAuth2AuthorizationTableMapper.addTableMapping(
-				oAuth2ScopeGrant.getCompanyId(), pk, oAuth2AuthorizationPK);
+			return oAuth2ScopeGrantToOAuth2AuthorizationTableMapper.
+				addTableMapping(
+					oAuth2ScopeGrant.getCompanyId(), pk, oAuth2AuthorizationPK);
 		}
 	}
 
@@ -1709,22 +1702,25 @@ public class OAuth2ScopeGrantPersistenceImpl
 	 *
 	 * @param pk the primary key of the o auth2 scope grant
 	 * @param oAuth2Authorization the o auth2 authorization
+	 * @return <code>true</code> if an association between the o auth2 scope grant and the o auth2 authorization was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addOAuth2Authorization(
+	public boolean addOAuth2Authorization(
 		long pk, OAuth2Authorization oAuth2Authorization) {
 
 		OAuth2ScopeGrant oAuth2ScopeGrant = fetchByPrimaryKey(pk);
 
 		if (oAuth2ScopeGrant == null) {
-			oAuth2ScopeGrantToOAuth2AuthorizationTableMapper.addTableMapping(
-				CompanyThreadLocal.getCompanyId(), pk,
-				oAuth2Authorization.getPrimaryKey());
+			return oAuth2ScopeGrantToOAuth2AuthorizationTableMapper.
+				addTableMapping(
+					CompanyThreadLocal.getCompanyId(), pk,
+					oAuth2Authorization.getPrimaryKey());
 		}
 		else {
-			oAuth2ScopeGrantToOAuth2AuthorizationTableMapper.addTableMapping(
-				oAuth2ScopeGrant.getCompanyId(), pk,
-				oAuth2Authorization.getPrimaryKey());
+			return oAuth2ScopeGrantToOAuth2AuthorizationTableMapper.
+				addTableMapping(
+					oAuth2ScopeGrant.getCompanyId(), pk,
+					oAuth2Authorization.getPrimaryKey());
 		}
 	}
 
@@ -1733,9 +1729,10 @@ public class OAuth2ScopeGrantPersistenceImpl
 	 *
 	 * @param pk the primary key of the o auth2 scope grant
 	 * @param oAuth2AuthorizationPKs the primary keys of the o auth2 authorizations
+	 * @return <code>true</code> if at least one association between the o auth2 scope grant and the o auth2 authorizations was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addOAuth2Authorizations(
+	public boolean addOAuth2Authorizations(
 		long pk, long[] oAuth2AuthorizationPKs) {
 
 		long companyId = 0;
@@ -1749,8 +1746,15 @@ public class OAuth2ScopeGrantPersistenceImpl
 			companyId = oAuth2ScopeGrant.getCompanyId();
 		}
 
-		oAuth2ScopeGrantToOAuth2AuthorizationTableMapper.addTableMappings(
-			companyId, pk, oAuth2AuthorizationPKs);
+		long[] addedKeys =
+			oAuth2ScopeGrantToOAuth2AuthorizationTableMapper.addTableMappings(
+				companyId, pk, oAuth2AuthorizationPKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -1758,12 +1762,13 @@ public class OAuth2ScopeGrantPersistenceImpl
 	 *
 	 * @param pk the primary key of the o auth2 scope grant
 	 * @param oAuth2Authorizations the o auth2 authorizations
+	 * @return <code>true</code> if at least one association between the o auth2 scope grant and the o auth2 authorizations was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addOAuth2Authorizations(
+	public boolean addOAuth2Authorizations(
 		long pk, List<OAuth2Authorization> oAuth2Authorizations) {
 
-		addOAuth2Authorizations(
+		return addOAuth2Authorizations(
 			pk,
 			ListUtil.toLongArray(
 				oAuth2Authorizations,
@@ -2007,33 +2012,17 @@ public class OAuth2ScopeGrantPersistenceImpl
 			},
 			false);
 
-		_setOAuth2ScopeGrantUtilPersistence(this);
+		OAuth2ScopeGrantUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setOAuth2ScopeGrantUtilPersistence(null);
+		OAuth2ScopeGrantUtil.setPersistence(null);
 
 		entityCache.removeCache(OAuth2ScopeGrantImpl.class.getName());
 
 		TableMapperFactory.removeTableMapper(
 			"OA2Auths_OA2ScopeGrants#oAuth2ScopeGrantId");
-	}
-
-	private void _setOAuth2ScopeGrantUtilPersistence(
-		OAuth2ScopeGrantPersistence oAuth2ScopeGrantPersistence) {
-
-		try {
-			Field field = OAuth2ScopeGrantUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, oAuth2ScopeGrantPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -2101,9 +2090,5 @@ public class OAuth2ScopeGrantPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private OAuth2ScopeGrantModelArgumentsResolver
-		_oAuth2ScopeGrantModelArgumentsResolver;
 
 }

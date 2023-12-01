@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.site.setting.dto.v1_0;
@@ -37,7 +28,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.validation.Valid;
-import javax.validation.constraints.DecimalMax;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -51,7 +41,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Generated("")
 @GraphQLName("MeasurementUnit")
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"key", "name"})
+@Schema(requiredProperties = {"key", "name", "type"})
 @XmlRootElement(name = "MeasurementUnit")
 public class MeasurementUnit implements Serializable {
 
@@ -64,21 +54,21 @@ public class MeasurementUnit implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema
-	public Long getGroupId() {
-		return groupId;
+	@Schema(example = "30130")
+	public Long getCompanyId() {
+		return companyId;
 	}
 
-	public void setGroupId(Long groupId) {
-		this.groupId = groupId;
+	public void setCompanyId(Long companyId) {
+		this.companyId = companyId;
 	}
 
 	@JsonIgnore
-	public void setGroupId(
-		UnsafeSupplier<Long, Exception> groupIdUnsafeSupplier) {
+	public void setCompanyId(
+		UnsafeSupplier<Long, Exception> companyIdUnsafeSupplier) {
 
 		try {
-			groupId = groupIdUnsafeSupplier.get();
+			companyId = companyIdUnsafeSupplier.get();
 		}
 		catch (RuntimeException re) {
 			throw re;
@@ -90,10 +80,38 @@ public class MeasurementUnit implements Serializable {
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
-	protected Long groupId;
+	protected Long companyId;
+
+	@Schema(example = "AB-34098-789-N")
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String externalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getId() {
 		return id;
 	}
@@ -119,7 +137,7 @@ public class MeasurementUnit implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@Schema(example = "kg")
 	public String getKey() {
 		return key;
 	}
@@ -146,7 +164,7 @@ public class MeasurementUnit implements Serializable {
 	@NotEmpty
 	protected String key;
 
-	@Schema
+	@Schema(example = "{en_US=Croatia, hr_HR=Hrvatska, hu_HU=Horvatorszag}")
 	@Valid
 	public Map<String, String> getName() {
 		return name;
@@ -176,7 +194,7 @@ public class MeasurementUnit implements Serializable {
 	@NotNull
 	protected Map<String, String> name;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getPrimary() {
 		return primary;
 	}
@@ -205,7 +223,7 @@ public class MeasurementUnit implements Serializable {
 	protected Boolean primary;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "1.1")
 	public Double getPriority() {
 		return priority;
 	}
@@ -234,7 +252,7 @@ public class MeasurementUnit implements Serializable {
 	protected Double priority;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "1")
 	public Double getRate() {
 		return rate;
 	}
@@ -260,19 +278,17 @@ public class MeasurementUnit implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double rate;
 
-	@DecimalMax("1")
-	@DecimalMin("0")
-	@Schema
-	public Integer getType() {
+	@Schema(example = "Dimensions")
+	public String getType() {
 		return type;
 	}
 
-	public void setType(Integer type) {
+	public void setType(String type) {
 		this.type = type;
 	}
 
 	@JsonIgnore
-	public void setType(UnsafeSupplier<Integer, Exception> typeUnsafeSupplier) {
+	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
 		try {
 			type = typeUnsafeSupplier.get();
 		}
@@ -286,7 +302,8 @@ public class MeasurementUnit implements Serializable {
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected Integer type;
+	@NotEmpty
+	protected String type;
 
 	@Override
 	public boolean equals(Object object) {
@@ -315,14 +332,28 @@ public class MeasurementUnit implements Serializable {
 
 		sb.append("{");
 
-		if (groupId != null) {
+		if (companyId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"groupId\": ");
+			sb.append("\"companyId\": ");
 
-			sb.append(groupId);
+			sb.append(companyId);
+		}
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
 		}
 
 		if (id != null) {
@@ -396,7 +427,11 @@ public class MeasurementUnit implements Serializable {
 
 			sb.append("\"type\": ");
 
-			sb.append(type);
+			sb.append("\"");
+
+			sb.append(_escape(type));
+
+			sb.append("\"");
 		}
 
 		sb.append("}");
@@ -493,5 +528,7 @@ public class MeasurementUnit implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

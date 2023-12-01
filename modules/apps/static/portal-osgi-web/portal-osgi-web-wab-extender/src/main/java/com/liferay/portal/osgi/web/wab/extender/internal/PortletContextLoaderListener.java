@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.wab.extender.internal;
@@ -26,8 +17,8 @@ import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.MethodKey;
+import com.liferay.portal.kernel.util.ModuleFrameworkPropsValues;
 import com.liferay.portal.spring.configurator.ConfigurableApplicationContextConfigurator;
-import com.liferay.portal.util.PropsValues;
 
 import java.lang.reflect.Method;
 
@@ -42,7 +33,6 @@ import javax.servlet.ServletContextEvent;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
-import org.springframework.beans.factory.BeanIsAbstractException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -90,7 +80,7 @@ public class PortletContextLoaderListener extends ContextLoaderListener {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -152,7 +142,7 @@ public class PortletContextLoaderListener extends ContextLoaderListener {
 				servletContext.getServletContextName(), beanLocatorImpl);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		if (previousApplicationContext == null) {
@@ -182,10 +172,8 @@ public class PortletContextLoaderListener extends ContextLoaderListener {
 		ServletContext servletContext,
 		ConfigurableWebApplicationContext configurableWebApplicationContext) {
 
-		String configLocation = servletContext.getInitParameter(
-			_PORTAL_CONFIG_LOCATION_PARAM);
-
-		configurableWebApplicationContext.setConfigLocation(configLocation);
+		configurableWebApplicationContext.setConfigLocation(
+			servletContext.getInitParameter(_PORTAL_CONFIG_LOCATION_PARAM));
 
 		configurableWebApplicationContext.addBeanFactoryPostProcessor(
 			configurableListableBeanFactory -> {
@@ -231,14 +219,8 @@ public class PortletContextLoaderListener extends ContextLoaderListener {
 						_serviceRegistrations.add(serviceRegistration);
 					}
 				}
-				catch (BeanIsAbstractException beanIsAbstractException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							beanIsAbstractException, beanIsAbstractException);
-					}
-				}
 				catch (Exception exception) {
-					_log.error(exception, exception);
+					_log.error(exception);
 				}
 			});
 	}
@@ -253,7 +235,8 @@ public class PortletContextLoaderListener extends ContextLoaderListener {
 
 		Set<String> names = OSGiBeanProperties.Service.interfaceNames(
 			bean, osgiBeanProperties,
-			PropsValues.MODULE_FRAMEWORK_SERVICES_IGNORED_INTERFACES);
+			ModuleFrameworkPropsValues.
+				MODULE_FRAMEWORK_SERVICES_IGNORED_INTERFACES);
 
 		if (names.isEmpty()) {
 			return null;

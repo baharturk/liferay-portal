@@ -1,23 +1,24 @@
 @component-name = "portal-document-management-ee"
 definition {
 
+	// Stop running on release until ISIT-32385 fixed
+
 	property cmis.repository.type = "sharepoint2013";
-	property custom.properties = "session.store.password=true${line.separator}company.security.auth.type=screenName";
-	property osgi.app.includes = "sharepoint-soap";
+	property custom.properties = "company.security.auth.type=screenName${line.separator}session.store.password=true";
+	property osgi.modules.includes = "sharepoint-soap";
 	property portal.release = "false";
+	property portal.upstream = "true";
 	property test.run.environment = "EE";
 	property testray.main.component.name = "Sharepoint";
 
 	setUp {
-		TestCase.setUpPortalInstance();
+		TestCase.setUpPortalInstance(authenticationMethod = "By Screen Name");
 
-		var sharepointVMHostName = PropsUtil.get("cmis.repository.vm.host.name");
+		var sharepointVmHostName = PropsUtil.get("cmis.repository.vm.host.name");
 
-		AntCommand(
-			locator1 = "build-test-sharepoint.xml",
-			value1 = "clean-sharepoint-repository -Dssh.host=${sharepointVMHostName}");
+		AntCommands.runCommand("build-test-sharepoint.xml", "clean-sharepoint-repository -Dssh.host=${sharepointVmHostName}");
 
-		User.loginPG(
+		User.firstLoginByScreenNamePG(
 			authenticationMethod = "By Screen Name",
 			userScreenName = "test");
 
@@ -37,7 +38,7 @@ definition {
 
 		User.logoutPG();
 
-		User.loginPG(
+		User.firstLoginUI(
 			authenticationMethod = "By Screen Name",
 			password = "password",
 			userScreenName = "administrator");
@@ -55,16 +56,16 @@ definition {
 		DMRepository.addSharepoint(
 			dmRepositoryLibraryName = "Documents",
 			dmRepositoryName = "Sharepoint",
-			dmRepositorySiteURL = "http://${sharepointVMHostName}",
-			dmServerVersion = "2013");
+			dmRepositorySiteURL = "http://${sharepointVmHostName}",
+			dmServerVersion = 2013);
 
 		PortletEntry.save();
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -88,25 +89,24 @@ definition {
 
 			User.logoutPG();
 
-			User.loginPG(
+			User.firstLoginUI(
 				authenticationMethod = "By Screen Name",
 				password = "test",
 				userScreenName = "test");
 		}
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test CheckinDocument {
-		property test.name.skip.portal.instance = "CPSharepoint#CheckinDocument";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DMRepository.gotoCP(dmRepositoryName = "Sharepoint Repository Name");
 
 		DMDocument.addCP(
 			dmDocumentFile = "Document_3.txt",
 			dmDocumentTitle = "Document_3.txt");
-
-		Pause(locator1 = "5000");
 
 		DMDocument.checkoutCP(
 			dmDocumentTitle = "Document_3.txt",
@@ -124,8 +124,6 @@ definition {
 
 		DMNavigator.gotoDocumentCP(dmDocumentTitle = "Document_3.txt");
 
-		Pause(locator1 = "5000");
-
 		DMDocument.viewCheckedoutCP(dmRepositoryName = "true");
 
 		DMDocument.checkinCP(dmRepositoryName = "true");
@@ -138,8 +136,6 @@ definition {
 
 		DMRepository.gotoCP(dmRepositoryName = "Sharepoint Repository Name");
 
-		Pause(locator1 = "5000");
-
 		var key_dmDocumentTitle = "Document_3.txt";
 
 		AssertElementNotPresent(locator1 = "DocumentsAndMedia#ICON_DOCUMENT_ICON_NOT_LOCKED");
@@ -151,9 +147,12 @@ definition {
 			dmRepositoryName = "true");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test DeleteDocumentInSubfolder {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
 		DMRepository.gotoCP(dmRepositoryName = "Sharepoint Repository Name");
 
 		DMFolder.addCP(dmFolderName = "DM Folder3 Name");
@@ -207,10 +206,11 @@ definition {
 		DMDocument.viewDefault();
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test DeleteSubfolder {
-		property test.name.skip.portal.instance = "CPSharepoint#DeleteSubfolder";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DMRepository.gotoCP(dmRepositoryName = "Sharepoint Repository Name");
 
@@ -233,10 +233,11 @@ definition {
 		DMFolder.viewDefaultCP();
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test EditDocumentFile {
-		property test.name.skip.portal.instance = "CPSharepoint#EditDocumentFile";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DMRepository.gotoCP(dmRepositoryName = "Sharepoint Repository Name");
 
@@ -285,10 +286,11 @@ definition {
 			metadataLabel = "Content Encoding");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test EditRepository {
-		property test.name.skip.portal.instance = "CPSharepoint#EditRepository";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		Navigator.openURL();
 
@@ -352,10 +354,11 @@ definition {
 			value1 = "Sharepoint Repository Name Edit");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test MoveCheckedoutDocumentToFolder {
-		property test.name.skip.portal.instance = "CPSharepoint#MoveCheckedoutDocumentToFolder";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		Navigator.openURL();
 
@@ -423,10 +426,11 @@ definition {
 		DMDocument.viewCheckedoutCP(dmRepositoryName = "true");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test MoveDocumentToHome {
-		property test.name.skip.portal.instance = "CPSharepoint#MoveDocumentToHome";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DMRepository.gotoCP(dmRepositoryName = "Sharepoint Repository Name");
 
@@ -459,10 +463,11 @@ definition {
 		DMDocument.cannotViewCP(dmDocumentTitle = "Document_1.odt");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test SearchDocumentViaHome {
-		property test.name.skip.portal.instance = "CPSharepoint#SearchDocumentViaHome";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DMRepository.gotoCP(dmRepositoryName = "Sharepoint Repository Name");
 
@@ -483,10 +488,11 @@ definition {
 			dmRepositoryName = "Sharepoint Repository Name");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test ViewEditedCheckedoutDocument {
-		property test.name.skip.portal.instance = "CPSharepoint#ViewEditedCheckedoutDocument";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DMRepository.gotoCP(dmRepositoryName = "Sharepoint Repository Name");
 
@@ -533,10 +539,11 @@ definition {
 		DMDocument.viewCheckedoutCP(dmRepositoryName = "true");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test ViewOriginalFileExtensionAfterUnsuccessfulExtensionChange {
-		property test.name.skip.portal.instance = "CPSharepoint#ViewOriginalFileExtensionAfterUnsuccessfulExtensionChange";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DMRepository.gotoCP(dmRepositoryName = "Sharepoint Repository Name");
 
@@ -571,10 +578,11 @@ definition {
 		DMDocument.viewCP(dmDocumentTitle = "Document_1.docx");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactorneeded
 	test ViewOriginalFileExtensionAfterUnsuccessfulExtensionRemoval {
-		property test.name.skip.portal.instance = "CPSharepoint#ViewOriginalFileExtensionAfterUnsuccessfulExtensionRemoval";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DMRepository.gotoCP(dmRepositoryName = "Sharepoint Repository Name");
 

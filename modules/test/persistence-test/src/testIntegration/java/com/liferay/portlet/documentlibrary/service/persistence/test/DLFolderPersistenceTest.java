@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.document.library.kernel.exception.DuplicateDLFolderExternalReferenceCodeException;
 import com.liferay.document.library.kernel.exception.NoSuchFolderException;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
@@ -129,6 +121,8 @@ public class DLFolderPersistenceTest {
 
 		newDLFolder.setUuid(RandomTestUtil.randomString());
 
+		newDLFolder.setExternalReferenceCode(RandomTestUtil.randomString());
+
 		newDLFolder.setGroupId(RandomTestUtil.nextLong());
 
 		newDLFolder.setCompanyId(RandomTestUtil.nextLong());
@@ -183,6 +177,9 @@ public class DLFolderPersistenceTest {
 			newDLFolder.getCtCollectionId());
 		Assert.assertEquals(existingDLFolder.getUuid(), newDLFolder.getUuid());
 		Assert.assertEquals(
+			existingDLFolder.getExternalReferenceCode(),
+			newDLFolder.getExternalReferenceCode());
+		Assert.assertEquals(
 			existingDLFolder.getFolderId(), newDLFolder.getFolderId());
 		Assert.assertEquals(
 			existingDLFolder.getGroupId(), newDLFolder.getGroupId());
@@ -235,6 +232,26 @@ public class DLFolderPersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingDLFolder.getStatusDate()),
 			Time.getShortTimestamp(newDLFolder.getStatusDate()));
+	}
+
+	@Test(expected = DuplicateDLFolderExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		DLFolder dlFolder = addDLFolder();
+
+		DLFolder newDLFolder = addDLFolder();
+
+		newDLFolder.setGroupId(dlFolder.getGroupId());
+
+		newDLFolder = _persistence.update(newDLFolder);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newDLFolder);
+
+		newDLFolder.setExternalReferenceCode(
+			dlFolder.getExternalReferenceCode());
+
+		_persistence.update(newDLFolder);
 	}
 
 	@Test
@@ -426,6 +443,15 @@ public class DLFolderPersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G("null", 0L);
+
+		_persistence.countByERC_G((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		DLFolder newDLFolder = addDLFolder();
 
@@ -457,14 +483,14 @@ public class DLFolderPersistenceTest {
 	protected OrderByComparator<DLFolder> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"DLFolder", "mvccVersion", true, "ctCollectionId", true, "uuid",
-			true, "folderId", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "repositoryId", true, "mountPoint", true,
-			"parentFolderId", true, "treePath", true, "name", true,
-			"description", true, "lastPostDate", true, "defaultFileEntryTypeId",
-			true, "hidden", true, "restrictionType", true, "lastPublishDate",
-			true, "status", true, "statusByUserId", true, "statusByUserName",
-			true, "statusDate", true);
+			true, "externalReferenceCode", true, "folderId", true, "groupId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"createDate", true, "modifiedDate", true, "repositoryId", true,
+			"mountPoint", true, "parentFolderId", true, "treePath", true,
+			"name", true, "description", true, "lastPostDate", true,
+			"defaultFileEntryTypeId", true, "hidden", true, "restrictionType",
+			true, "lastPublishDate", true, "status", true, "statusByUserId",
+			true, "statusByUserName", true, "statusDate", true);
 	}
 
 	@Test
@@ -755,6 +781,17 @@ public class DLFolderPersistenceTest {
 			ReflectionTestUtil.invoke(
 				dlFolder, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "name"));
+
+		Assert.assertEquals(
+			dlFolder.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				dlFolder, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(dlFolder.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				dlFolder, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected DLFolder addDLFolder() throws Exception {
@@ -767,6 +804,8 @@ public class DLFolderPersistenceTest {
 		dlFolder.setCtCollectionId(RandomTestUtil.nextLong());
 
 		dlFolder.setUuid(RandomTestUtil.randomString());
+
+		dlFolder.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		dlFolder.setGroupId(RandomTestUtil.nextLong());
 

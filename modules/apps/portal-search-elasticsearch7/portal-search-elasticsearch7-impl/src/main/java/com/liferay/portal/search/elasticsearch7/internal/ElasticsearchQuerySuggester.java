@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal;
@@ -26,7 +17,6 @@ import com.liferay.portal.kernel.search.suggest.SuggesterResult;
 import com.liferay.portal.kernel.search.suggest.SuggesterResults;
 import com.liferay.portal.kernel.search.suggest.TermSuggester;
 import com.liferay.portal.kernel.util.Localization;
-import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.search.SuggestSearchRequest;
@@ -50,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  */
 @Component(
-	immediate = true, property = "search.engine.impl=Elasticsearch",
+	property = "search.engine.impl=Elasticsearch",
 	service = QuerySuggester.class
 )
 public class ElasticsearchQuerySuggester implements QuerySuggester {
@@ -167,31 +157,8 @@ public class ElasticsearchQuerySuggester implements QuerySuggester {
 		return keywordQueries.toArray(new String[0]);
 	}
 
-	protected Localization getLocalization() {
-
-		// See LPS-72507 and LPS-76500
-
-		if (_localization != null) {
-			return _localization;
-		}
-
-		return LocalizationUtil.getLocalization();
-	}
-
-	@Reference(unbind = "-")
-	protected void setIndexNameBuilder(IndexNameBuilder indexNameBuilder) {
-		_indexNameBuilder = indexNameBuilder;
-	}
-
 	protected void setLocalization(Localization localization) {
 		_localization = localization;
-	}
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)", unbind = "-")
-	protected void setSearchEngineAdapter(
-		SearchEngineAdapter searchEngineAdapter) {
-
-		_searchEngineAdapter = searchEngineAdapter;
 	}
 
 	protected SuggesterResults translate(
@@ -253,9 +220,7 @@ public class ElasticsearchQuerySuggester implements QuerySuggester {
 	private PhraseSuggester _createQuerySuggester(
 		SearchContext searchContext, int max) {
 
-		Localization localization = getLocalization();
-
-		String field = localization.getLocalizedName(
+		String field = _localization.getLocalizedName(
 			Field.KEYWORD_SEARCH, searchContext.getLanguageId());
 
 		PhraseSuggester phraseSuggester = new PhraseSuggester(
@@ -269,9 +234,7 @@ public class ElasticsearchQuerySuggester implements QuerySuggester {
 	private Suggester _createSpellCheckSuggester(
 		SearchContext searchContext, int max) {
 
-		Localization localization = getLocalization();
-
-		String field = localization.getLocalizedName(
+		String field = _localization.getLocalizedName(
 			Field.SPELL_CHECK_WORD, searchContext.getLanguageId());
 
 		TermSuggester termSuggester = new TermSuggester(
@@ -373,8 +336,13 @@ public class ElasticsearchQuerySuggester implements QuerySuggester {
 	private static final Log _log = LogFactoryUtil.getLog(
 		ElasticsearchQuerySuggester.class);
 
+	@Reference
 	private IndexNameBuilder _indexNameBuilder;
+
+	@Reference
 	private Localization _localization;
+
+	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private SearchEngineAdapter _searchEngineAdapter;
 
 }

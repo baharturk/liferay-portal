@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.converter;
@@ -17,8 +8,8 @@ package com.liferay.headless.delivery.internal.dto.v1_0.converter;
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
-import com.liferay.asset.kernel.service.AssetLinkLocalService;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
+import com.liferay.asset.link.service.AssetLinkLocalService;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryService;
 import com.liferay.document.library.kernel.service.DLAppService;
@@ -34,9 +25,10 @@ import com.liferay.headless.delivery.internal.dto.v1_0.util.DisplayPageRendererU
 import com.liferay.headless.delivery.internal.dto.v1_0.util.RelatedContentUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.TaxonomyCategoryBriefUtil;
 import com.liferay.headless.delivery.internal.resource.v1_0.BaseBlogPostingResourceImpl;
-import com.liferay.info.item.InfoItemServiceTracker;
-import com.liferay.layout.display.page.LayoutDisplayPageProviderTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.comment.CommentManager;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -49,8 +41,10 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
-import com.liferay.portal.vulcan.util.TransformUtil;
+import com.liferay.portal.vulcan.util.JaxRsLinkUtil;
 import com.liferay.ratings.kernel.service.RatingsStatsLocalService;
+
+import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -60,7 +54,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = "dto.class.name=com.liferay.blogs.model.BlogsEntry",
-	service = {BlogPostingDTOConverter.class, DTOConverter.class}
+	service = DTOConverter.class
 )
 public class BlogPostingDTOConverter
 	implements DTOConverter<BlogsEntry, BlogPosting> {
@@ -68,6 +62,13 @@ public class BlogPostingDTOConverter
 	@Override
 	public String getContentType() {
 		return BlogPosting.class.getSimpleName();
+	}
+
+	@Override
+	public String getJaxRsLink(long classPK, UriInfo uriInfo) {
+		return JaxRsLinkUtil.getJaxRsLink(
+			"headless-delivery", BaseBlogPostingResourceImpl.class,
+			"getBlogPosting", uriInfo, classPK);
 	}
 
 	@Override
@@ -86,7 +87,7 @@ public class BlogPostingDTOConverter
 				alternativeHeadline = blogsEntry.getSubtitle();
 				articleBody = blogsEntry.getContent();
 				creator = CreatorUtil.toCreator(
-					_portal, dtoConverterContext.getUriInfoOptional(),
+					dtoConverterContext, _portal,
 					_userLocalService.fetchUser(blogsEntry.getUserId()));
 				customFields = CustomFieldsUtil.toCustomFields(
 					dtoConverterContext.isAcceptAllLanguages(),
@@ -120,6 +121,7 @@ public class BlogPostingDTOConverter
 						TaxonomyCategoryBriefUtil.toTaxonomyCategoryBrief(
 							assetCategory, dtoConverterContext),
 					TaxonomyCategoryBrief.class);
+				viewableBy = ViewableBy.ANYONE;
 
 				setDescription(
 					() -> {
@@ -139,12 +141,11 @@ public class BlogPostingDTOConverter
 						BaseBlogPostingResourceImpl.class,
 						BlogsEntry.class.getName(), blogsEntry.getEntryId(), 0,
 						dtoConverterContext, blogsEntry.getGroupId(),
-						blogsEntry, _infoItemServiceTracker,
-						_layoutDisplayPageProviderTracker, _layoutLocalService,
+						blogsEntry, _infoItemServiceRegistry,
+						_layoutDisplayPageProviderRegistry, _layoutLocalService,
 						_layoutPageTemplateEntryService,
 						"getBlogPostingRenderedContentByDisplayPageDisplay" +
 							"PageKey"));
-				viewableBy = ViewableBy.ANYONE;
 			}
 		};
 	}
@@ -169,7 +170,7 @@ public class BlogPostingDTOConverter
 					false);
 				contentValue = ContentValueUtil.toContentValue(
 					"image.contentValue", fileEntry::getContentStream,
-					dtoConverterContext.getUriInfoOptional());
+					dtoConverterContext.getUriInfo());
 				imageId = coverImageFileEntryId;
 			}
 		};
@@ -200,10 +201,11 @@ public class BlogPostingDTOConverter
 	private DLURLHelper _dlURLHelper;
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Reference
-	private LayoutDisplayPageProviderTracker _layoutDisplayPageProviderTracker;
+	private LayoutDisplayPageProviderRegistry
+		_layoutDisplayPageProviderRegistry;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

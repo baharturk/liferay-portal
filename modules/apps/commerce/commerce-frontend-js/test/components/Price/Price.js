@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -84,7 +75,7 @@ describe('Price', () => {
 			);
 		});
 
-		it('displays the formatted sale price of an item', () => {
+		it('displays the formatted promo price of an item', () => {
 			const price = {
 				discount: 0.0,
 				discountFormatted: '$ 0.00',
@@ -119,10 +110,10 @@ describe('Price', () => {
 				'list-price'
 			);
 			expect(window.Liferay.Language.get).toHaveBeenCalledWith(
-				'sale-price'
+				'promotion-price'
 			);
 
-			const [listPrice, salePrice] = Array.from(values);
+			const [listPrice, promoPrice] = Array.from(values);
 
 			expect(listPrice.classList.length).toEqual(2);
 			expect(listPrice.classList.contains('price-value')).toBe(true);
@@ -130,19 +121,19 @@ describe('Price', () => {
 				true
 			);
 
-			expect(salePrice.classList.length).toEqual(2);
-			expect(salePrice.classList.contains('price-value')).toBe(true);
-			expect(salePrice.classList.contains('price-value-promo')).toBe(
+			expect(promoPrice.classList.length).toEqual(2);
+			expect(promoPrice.classList.contains('price-value')).toBe(true);
+			expect(promoPrice.classList.contains('price-value-promo')).toBe(
 				true
 			);
-			expect(salePrice.classList.contains('price-value-inactive')).toBe(
+			expect(promoPrice.classList.contains('price-value-inactive')).toBe(
 				false
 			);
 
 			expect(listPrice.innerHTML).toEqual(
 				BASE_PROPS.price.priceFormatted
 			);
-			expect(salePrice.innerHTML).toEqual(price.promoPriceFormatted);
+			expect(promoPrice.innerHTML).toEqual(price.promoPriceFormatted);
 		});
 
 		it('displays the formatted discounted price of an item', () => {
@@ -215,7 +206,7 @@ describe('Price', () => {
 			expect(finalPrice.innerHTML).toEqual(price.finalPriceFormatted);
 		});
 
-		it('displays the formatted discounted price of an item, also with a sale price applied', () => {
+		it('displays the formatted discounted price of an item, also with a promo price applied', () => {
 			const price = {
 				discount: 2.0,
 				discountFormatted: '$ 2.00',
@@ -250,7 +241,7 @@ describe('Price', () => {
 				'list-price'
 			);
 			expect(window.Liferay.Language.get).toHaveBeenCalledWith(
-				'sale-price'
+				'promotion-price'
 			);
 			expect(window.Liferay.Language.get).toHaveBeenCalledWith(
 				'discount'
@@ -259,7 +250,7 @@ describe('Price', () => {
 				'net-price'
 			);
 
-			const [listPrice, salePrice, discount, finalPrice] = Array.from(
+			const [listPrice, promoPrice, discount, finalPrice] = Array.from(
 				values
 			);
 
@@ -269,12 +260,12 @@ describe('Price', () => {
 				true
 			);
 
-			expect(salePrice.classList.length).toEqual(3);
-			expect(salePrice.classList.contains('price-value')).toBe(true);
-			expect(salePrice.classList.contains('price-value-promo')).toBe(
+			expect(promoPrice.classList.length).toEqual(3);
+			expect(promoPrice.classList.contains('price-value')).toBe(true);
+			expect(promoPrice.classList.contains('price-value-promo')).toBe(
 				true
 			);
-			expect(salePrice.classList.contains('price-value-inactive')).toBe(
+			expect(promoPrice.classList.contains('price-value-inactive')).toBe(
 				true
 			);
 
@@ -293,7 +284,7 @@ describe('Price', () => {
 			expect(listPrice.innerHTML).toEqual(
 				BASE_PROPS.price.priceFormatted
 			);
-			expect(salePrice.innerHTML).toEqual(price.promoPriceFormatted);
+			expect(promoPrice.innerHTML).toEqual(price.promoPriceFormatted);
 			expect(
 				discount.querySelector('.price-value-percentage').innerHTML
 			).toEqual(`–${price.discountPercentage}%`);
@@ -595,7 +586,7 @@ describe('Price', () => {
 
 			const incomingCPInstancePrice = {
 				cpInstance: {
-					prices: {
+					price: {
 						discountPercentage: '0',
 						discountPercentages: null,
 						finalPrice: 0,
@@ -646,7 +637,7 @@ describe('Price', () => {
 					listPrice.classList.contains('price-value-inactive')
 				).toBe(false);
 				expect(listPrice.innerHTML).toEqual(
-					incomingCPInstancePrice.cpInstance.prices.price
+					incomingCPInstancePrice.cpInstance.price.price
 				);
 			});
 		});

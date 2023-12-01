@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.content.web.internal.importer.type.util;
@@ -25,18 +16,21 @@ import com.liferay.commerce.order.importer.item.CommerceOrderImporterItemImpl;
 import com.liferay.commerce.price.CommerceOrderPriceCalculation;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceOrderService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
+
+import java.math.BigDecimal;
 
 import java.util.List;
 
@@ -62,6 +56,11 @@ public class CommerceOrderImporterTypeUtil {
 			commerceOrder.getGroupId(), commerceOrder.getCommerceAccountId(),
 			commerceOrder.getCommerceCurrencyId(),
 			commerceOrder.getCommerceOrderTypeId());
+
+		tempCommerceOrder.setManuallyAdjusted(true);
+
+		tempCommerceOrder = commerceOrderService.updateCommerceOrder(
+			tempCommerceOrder);
 
 		CommerceContext commerceContext = commerceContextFactory.create(
 			tempCommerceOrder.getCompanyId(), tempCommerceOrder.getGroupId(),
@@ -89,6 +88,8 @@ public class CommerceOrderImporterTypeUtil {
 						commerceOrderImporterItemImpl.getCPInstanceId(),
 						commerceOrderImporterItemImpl.getJSON(),
 						commerceOrderImporterItemImpl.getQuantity(), 0,
+						BigDecimal.ZERO,
+						commerceOrderImporterItemImpl.getUnitOfMeasureKey(),
 						commerceContext, serviceContext);
 
 				commerceOrderImporterItemImpl.setCommerceOrderItemPrice(
@@ -110,6 +111,15 @@ public class CommerceOrderImporterTypeUtil {
 								commerceOrderValidatorResult.
 									getLocalizedMessage(),
 							String.class));
+				}
+
+				if (exception instanceof PrincipalException) {
+					commerceOrderImporterItemImpl.setErrorMessages(
+						new String[] {
+							LanguageUtil.get(
+								serviceContext.getLocale(),
+								"the-product-is-no-longer-available")
+						});
 				}
 				else {
 					String[] errorMessages =
@@ -171,13 +181,13 @@ public class CommerceOrderImporterTypeUtil {
 				commerceOrderItemService.addCommerceOrderItem(
 					tempCommerceOrderId, commerceOrderItem.getCPInstanceId(),
 					commerceOrderItem.getJson(),
-					commerceOrderItem.getQuantity(), 0, commerceContext,
-					serviceContext);
+					commerceOrderItem.getQuantity(), 0, BigDecimal.ZERO,
+					StringPool.BLANK, commerceContext, serviceContext);
 			}
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 	}

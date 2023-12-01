@@ -13,9 +13,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -23,20 +23,20 @@ definition {
 		}
 	}
 
-	@priority = "4"
+	@priority = 4
+	@refactorneeded
 	test WebProxyDemo {
 		ProductMenu.gotoPortlet(
 			category = "Site Builder",
 			portlet = "Pages");
 
-		PagesAdmin.addPublicPage(
+		PagesAdmin.addPage(
 			columnName = "1 Column",
 			pageName = "Web Proxy Page");
 
 		PagesAdmin.configurePage(
 			columnName = "1 Column",
-			pageName = "Web Proxy Page",
-			privacy = "Public Pages");
+			pageName = "Web Proxy Page");
 
 		Navigator.gotoPage(pageName = "Web Proxy Page");
 
@@ -54,7 +54,7 @@ definition {
 
 		takeScreenshot();
 
-		SikuliAssertElementPresent(locator1 = "WebProxy#SCREENSHOTS_GOOGLE_IMAGES_PNG");
+		AssertElementPresent(locator1 = "WebProxy#SCREENSHOTS_GOOGLE_IMAGES_PNG");
 	}
 
 }

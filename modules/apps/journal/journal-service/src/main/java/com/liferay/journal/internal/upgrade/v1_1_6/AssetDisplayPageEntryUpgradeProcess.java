@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.upgrade.v1_1_6;
@@ -127,32 +118,29 @@ public class AssetDisplayPageEntryUpgradeProcess extends UpgradeProcess {
 
 		long journalArticleClassNameId = PortalUtil.getClassNameId(
 			JournalArticle.class);
-		User user = company.getDefaultUser();
+
+		String sql = StringBundler.concat(
+			"select JournalArticle.groupId, JournalArticle.resourcePrimKey, ",
+			"AssetEntry.classUuid from JournalArticle inner join AssetEntry ",
+			"on ( AssetEntry.classNameId = ", journalArticleClassNameId,
+			" and AssetEntry.classPK = JournalArticle.resourcePrimKey) inner ",
+			"join Group_ on (Group_.groupId = JournalArticle.groupId and ",
+			"Group_.liveGroupId ", stagingGroups ? "" : "!",
+			"= 0) where JournalArticle.companyId = ", company.getCompanyId(),
+			" and JournalArticle.layoutUuid is not null and CAST_TEXT(",
+			"JournalArticle.layoutUuid) != '' and Group_.",
+			"remoteStagingGroupCount = 0 and not exists (select 1 from ",
+			"AssetDisplayPageEntry where AssetDisplayPageEntry.groupId = ",
+			"JournalArticle.groupId and AssetDisplayPageEntry.classNameId = ",
+			journalArticleClassNameId, " and AssetDisplayPageEntry.classPK = ",
+			"JournalArticle.resourcePrimKey) group by JournalArticle.groupId, ",
+			"JournalArticle.resourcePrimKey, AssetEntry.classUuid");
+
+		User user = company.getGuestUser();
 
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			processConcurrently(
-				StringBundler.concat(
-					"select JournalArticle.groupId, ",
-					"JournalArticle.resourcePrimKey, AssetEntry.classUuid ",
-					"from JournalArticle inner join AssetEntry on ( ",
-					"AssetEntry.classNameId = ", journalArticleClassNameId,
-					" and AssetEntry.classPK = JournalArticle.resourcePrimKey ",
-					") inner join Group_ on (Group_.groupId = ",
-					"JournalArticle.groupId and Group_.liveGroupId ",
-					stagingGroups ? "" : "!",
-					"= 0) where JournalArticle.companyId = ",
-					company.getCompanyId(),
-					" and JournalArticle.layoutUuid is not null and ",
-					"JournalArticle.layoutUuid != '' and ",
-					"Group_.remoteStagingGroupCount = 0 and not exists ( ",
-					"select 1 from AssetDisplayPageEntry where ",
-					"AssetDisplayPageEntry.groupId = JournalArticle.groupId ",
-					"and AssetDisplayPageEntry.classNameId = ",
-					journalArticleClassNameId,
-					" and AssetDisplayPageEntry.classPK = ",
-					"JournalArticle.resourcePrimKey) group by ",
-					"JournalArticle.groupId, JournalArticle.resourcePrimKey, ",
-					"AssetEntry.classUuid"),
+				SQLTransformer.transform(sql),
 				resultSet -> new Object[] {
 					resultSet.getLong("groupId"),
 					resultSet.getLong("resourcePrimKey"),

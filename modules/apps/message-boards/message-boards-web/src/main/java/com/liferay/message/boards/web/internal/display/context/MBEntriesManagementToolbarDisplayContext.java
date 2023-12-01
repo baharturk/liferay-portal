@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.display.context;
@@ -32,9 +23,9 @@ import com.liferay.message.boards.util.comparator.ThreadTitleComparator;
 import com.liferay.message.boards.web.internal.security.permission.MBCategoryPermission;
 import com.liferay.message.boards.web.internal.security.permission.MBMessagePermission;
 import com.liferay.message.boards.web.internal.util.MBUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -42,6 +33,7 @@ import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -82,7 +74,7 @@ public class MBEntriesManagementToolbarDisplayContext {
 
 		_portalPreferences = PortletPreferencesFactoryUtil.getPortalPreferences(
 			liferayPortletRequest);
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
@@ -90,25 +82,9 @@ public class MBEntriesManagementToolbarDisplayContext {
 		return DropdownItemListBuilder.add(
 			dropdownItem -> {
 				dropdownItem.putData("action", "deleteEntries");
-
-				ThemeDisplay themeDisplay =
-					(ThemeDisplay)_httpServletRequest.getAttribute(
-						WebKeys.THEME_DISPLAY);
-
-				boolean trashEnabled = _trashHelper.isTrashEnabled(
-					themeDisplay.getScopeGroupId());
-
-				dropdownItem.setIcon(trashEnabled ? "trash" : "times-circle");
-
-				String label = "delete";
-
-				if (trashEnabled) {
-					label = "move-to-recycle-bin";
-				}
-
+				dropdownItem.setIcon("trash");
 				dropdownItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, label));
-
+					LanguageUtil.get(_httpServletRequest, "delete"));
 				dropdownItem.setQuickAction(true);
 			}
 		).add(
@@ -117,7 +93,6 @@ public class MBEntriesManagementToolbarDisplayContext {
 				dropdownItem.setIcon("lock");
 				dropdownItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "lock"));
-
 				dropdownItem.setQuickAction(true);
 			}
 		).add(
@@ -234,7 +209,6 @@ public class MBEntriesManagementToolbarDisplayContext {
 						"mvcRenderCommandName", "/message_boards/edit_category",
 						"redirect", _currentURLObj.toString(),
 						"parentCategoryId", String.valueOf(categoryId));
-
 					dropdownItem.setLabel(
 						LanguageUtil.get(
 							_httpServletRequest, "category[message-board]"));
@@ -275,9 +249,11 @@ public class MBEntriesManagementToolbarDisplayContext {
 						_httpServletRequest, "filter-by-navigation"));
 			}
 		).addGroup(
-			() -> Objects.equals(_getEntriesNavigation(), "all"),
+			() ->
+				Objects.equals(_getEntriesNavigation(), "all") &&
+				!FeatureFlagManagerUtil.isEnabled("LPS-144527"),
 			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(_getOrderByDropdownItems());
+				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
 				dropdownGroupItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "order-by"));
 			}
@@ -318,6 +294,28 @@ public class MBEntriesManagementToolbarDisplayContext {
 			"modified-date");
 
 		return _orderByCol;
+	}
+
+	public List<DropdownItem> getOrderByDropdownItems() {
+		return DropdownItemListBuilder.add(
+			dropdownItem -> {
+				dropdownItem.setActive(
+					Objects.equals(getOrderByCol(), "title"));
+				dropdownItem.setHref(
+					_getCurrentSortingURL(), "orderByCol", "title");
+				dropdownItem.setLabel(
+					LanguageUtil.get(_httpServletRequest, "title"));
+			}
+		).add(
+			dropdownItem -> {
+				dropdownItem.setActive(
+					Objects.equals(getOrderByCol(), "modified-date"));
+				dropdownItem.setHref(
+					_getCurrentSortingURL(), "orderByCol", "modified-date");
+				dropdownItem.setLabel(
+					LanguageUtil.get(_httpServletRequest, "modified-date"));
+			}
+		).build();
 	}
 
 	public String getOrderByType() {
@@ -515,28 +513,6 @@ public class MBEntriesManagementToolbarDisplayContext {
 
 				dropdownItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "categories"));
-			}
-		).build();
-	}
-
-	private List<DropdownItem> _getOrderByDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(
-					Objects.equals(getOrderByCol(), "title"));
-				dropdownItem.setHref(
-					_getCurrentSortingURL(), "orderByCol", "title");
-				dropdownItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "title"));
-			}
-		).add(
-			dropdownItem -> {
-				dropdownItem.setActive(
-					Objects.equals(getOrderByCol(), "modified-date"));
-				dropdownItem.setHref(
-					_getCurrentSortingURL(), "orderByCol", "modified-date");
-				dropdownItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "modified-date"));
 			}
 		).build();
 	}

@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -15,6 +9,7 @@ import ClayLink from '@clayui/link';
 import ClayModal, {useModal} from '@clayui/modal';
 import React, {useState} from 'react';
 
+import {COPY_BUTTON_CSS_CLASS} from '../utils/constants';
 import {openSuccessToast} from '../utils/toasts';
 import CodeMirrorEditor from './CodeMirrorEditor';
 
@@ -28,7 +23,7 @@ const PreviewModal = ({body, children, size = 'md', title}) => {
 		<>
 			{visible && (
 				<ClayModal
-					className="preview-modal"
+					className="sxp-preview-modal-root"
 					observer={observer}
 					size={size}
 				>
@@ -46,6 +41,7 @@ const PreviewModal = ({body, children, size = 'md', title}) => {
 export function PreviewModalWithCopyDownload({
 	children,
 	fileName,
+	foldInitializationDelay,
 	folded = false,
 	lineWrapping,
 	readOnly = true,
@@ -54,22 +50,15 @@ export function PreviewModalWithCopyDownload({
 	title,
 	type = 'application/json',
 }) {
-	const _handleCopyToClipboard = () => {
-		navigator.clipboard.writeText(text);
-
-		openSuccessToast({
-			message: Liferay.Language.get('copied-to-clipboard'),
-		});
-	};
-
 	return (
 		<PreviewModal
 			body={
 				<>
 					<ClayButton.Group spaced>
 						<ClayButton
+							className={COPY_BUTTON_CSS_CLASS}
+							data-clipboard-text={text}
 							displayType="secondary"
-							onClick={_handleCopyToClipboard}
 							small
 						>
 							<span className="inline-item inline-item-before">
@@ -103,6 +92,7 @@ export function PreviewModalWithCopyDownload({
 					</ClayButton.Group>
 
 					<CodeMirrorEditor
+						foldInitializationDelay={foldInitializationDelay}
 						folded={folded}
 						lineWrapping={lineWrapping}
 						readOnly={readOnly}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model;
@@ -20,6 +11,7 @@ import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedGroupedModel;
 import com.liferay.portal.kernel.model.WorkflowedModel;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
 
 import java.util.Date;
 import java.util.Map;
@@ -39,8 +31,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface CPDefinitionModel
-	extends BaseModel<CPDefinition>, MVCCModel, ShardedModel,
-			StagedGroupedModel, WorkflowedModel {
+	extends BaseModel<CPDefinition>, CTModel<CPDefinition>, MVCCModel,
+			ShardedModel, StagedGroupedModel, WorkflowedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -53,6 +45,7 @@ public interface CPDefinitionModel
 	 *
 	 * @return the primary key of this cp definition
 	 */
+	@Override
 	public long getPrimaryKey();
 
 	/**
@@ -60,6 +53,7 @@ public interface CPDefinitionModel
 	 *
 	 * @param primaryKey the primary key of this cp definition
 	 */
+	@Override
 	public void setPrimaryKey(long primaryKey);
 
 	/**
@@ -77,6 +71,22 @@ public interface CPDefinitionModel
 	 */
 	@Override
 	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the ct collection ID of this cp definition.
+	 *
+	 * @return the ct collection ID of this cp definition
+	 */
+	@Override
+	public long getCtCollectionId();
+
+	/**
+	 * Sets the ct collection ID of this cp definition.
+	 *
+	 * @param ctCollectionId the ct collection ID of this cp definition
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId);
 
 	/**
 	 * Returns the uuid of this cp definition.
@@ -1003,5 +1013,9 @@ public interface CPDefinitionModel
 
 	@Override
 	public CPDefinition cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

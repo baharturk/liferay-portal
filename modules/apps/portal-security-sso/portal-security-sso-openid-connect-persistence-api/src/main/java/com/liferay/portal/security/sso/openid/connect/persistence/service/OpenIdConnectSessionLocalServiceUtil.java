@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.openid.connect.persistence.service;
@@ -121,8 +112,11 @@ public class OpenIdConnectSessionLocalServiceUtil {
 		getService().deleteOpenIdConnectSessions(userId);
 	}
 
-	public static void deleteOpenIdConnectSessions(String configurationPid) {
-		getService().deleteOpenIdConnectSessions(configurationPid);
+	public static void deleteOpenIdConnectSessions(
+		long companyId, String authServerWellKnownURI, String clientId) {
+
+		getService().deleteOpenIdConnectSessions(
+			companyId, authServerWellKnownURI, clientId);
 	}
 
 	/**
@@ -227,9 +221,18 @@ public class OpenIdConnectSessionLocalServiceUtil {
 	}
 
 	public static OpenIdConnectSession fetchOpenIdConnectSession(
-		long userId, String configurationPid) {
+		long userId, String authServerWellKnownURI, String clientId) {
 
-		return getService().fetchOpenIdConnectSession(userId, configurationPid);
+		return getService().fetchOpenIdConnectSession(
+			userId, authServerWellKnownURI, clientId);
+	}
+
+	public static List<OpenIdConnectSession>
+		getAccessTokenExpirationDateOpenIdConnectSessions(
+			java.util.Date ltAccessTokenExpirationDate, int start, int end) {
+
+		return getService().getAccessTokenExpirationDateOpenIdConnectSessions(
+			ltAccessTokenExpirationDate, start, end);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
@@ -321,6 +324,10 @@ public class OpenIdConnectSessionLocalServiceUtil {
 
 	public static OpenIdConnectSessionLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(OpenIdConnectSessionLocalService service) {
+		_service = service;
 	}
 
 	private static volatile OpenIdConnectSessionLocalService _service;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.dashboard.web.internal.portlet;
@@ -26,7 +17,6 @@ import org.osgi.service.component.annotations.Component;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-commerce-dashboard-status-chart",
@@ -43,9 +33,10 @@ import org.osgi.service.component.annotations.Component;
 		"javax.portlet.init-param.view-template=/status.jsp",
 		"javax.portlet.name=" + CommerceDashboardPortletKeys.COMMERCE_DASHBOARD_STATUS_CHART,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"javax.portlet.security-role-ref=power-user,user",
+		"javax.portlet.version=3.0"
 	},
-	service = {CommerceDashboardStatusChartPortlet.class, Portlet.class}
+	service = Portlet.class
 )
 public class CommerceDashboardStatusChartPortlet extends MVCPortlet {
 }

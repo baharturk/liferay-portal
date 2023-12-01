@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
@@ -19,6 +10,7 @@ import ClayLayout from '@clayui/layout';
 import ClayLink from '@clayui/link';
 import ClayList from '@clayui/list';
 import classNames from 'classnames';
+import {navigate, openConfirmModal, setSessionValue} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React from 'react';
 
@@ -67,11 +59,14 @@ const ExperienceItem = ({
 			  )
 			: Liferay.Language.get('do-you-want-to-delete-this-experience');
 
-		const confirmed = confirm(confirmationMessage);
-
-		if (confirmed) {
-			onDeleteExperience(experience.segmentsExperienceId);
-		}
+		openConfirmModal({
+			message: confirmationMessage,
+			onConfirm: (isConfirmed) => {
+				if (isConfirmed) {
+					onDeleteExperience(experience.segmentsExperienceId);
+				}
+			},
+		});
 	};
 	const handleExperienceDuplicate = () => {
 		onDuplicateExperience(experience.segmentsExperienceId);
@@ -79,11 +74,11 @@ const ExperienceItem = ({
 	const handleExperimentNavigation = (event) => {
 		event.preventDefault();
 
-		Liferay.Util.Session.set(
+		setSessionValue(
 			'com.liferay.segments.experiment.web_panelState',
 			'open'
 		).then(() => {
-			Liferay.Util.navigate(experience.segmentsExperimentURL);
+			navigate(experience.segmentsExperimentURL);
 		});
 	};
 
@@ -92,11 +87,7 @@ const ExperienceItem = ({
 	});
 
 	return (
-		<ClayList.Item
-			aria-checked={active}
-			className={itemClassName}
-			role="listitem"
-		>
+		<ClayList.Item aria-current={active} className={itemClassName}>
 			<ClayList.ItemField expand>
 				<ClayButton displayType="unstyled" onClick={handleSelect}>
 					<div className="c-inner" tabIndex="-1">
@@ -118,12 +109,21 @@ const ExperienceItem = ({
 											<ExperienceLockIcon />
 										)}
 
-										{experience.active && (
+										{experience.active ? (
 											<ClayLabel
-												className="inline-item-after"
+												className="flex-shrink-0 inline-item-after"
 												displayType="success"
 											>
 												{Liferay.Language.get('active')}
+											</ClayLabel>
+										) : (
+											<ClayLabel
+												className="flex-shrink-0 inline-item-after"
+												displayType="secondary"
+											>
+												{Liferay.Language.get(
+													'inactive'
+												)}
 											</ClayLabel>
 										)}
 									</span>
@@ -267,7 +267,7 @@ const ExperienceActions = ({
 						monospaced
 						onClick={handleExperienceDelete}
 						outline
-						symbol="times-circle"
+						symbol="trash"
 						title={Liferay.Language.get('delete-experience')}
 						type="button"
 					/>

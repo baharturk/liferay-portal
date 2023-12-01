@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.internal.resource.v1_0;
@@ -19,7 +10,7 @@ import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -37,6 +28,8 @@ import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.Searcher;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.search.experiences.blueprint.exception.InvalidElementInstanceException;
+import com.liferay.search.experiences.blueprint.exception.InvalidWebCacheItemException;
+import com.liferay.search.experiences.blueprint.exception.PrivateIPAddressException;
 import com.liferay.search.experiences.blueprint.search.request.enhancer.SXPBlueprintSearchRequestEnhancer;
 import com.liferay.search.experiences.exception.SXPExceptionUtil;
 import com.liferay.search.experiences.rest.dto.v1_0.DocumentField;
@@ -107,10 +100,10 @@ public class SearchResponseResourceImpl extends BaseSearchResponseResourceImpl {
 			).withSearchContext(
 				searchContext -> {
 					searchContext.setAttribute(
-						"search.experiences.current.group.id", _getGroupId());
-					searchContext.setAttribute(
 						"search.experiences.ip.address",
 						contextHttpServletRequest.getRemoteAddr());
+					searchContext.setAttribute(
+						"search.experiences.scope.group.id", _getGroupId());
 					searchContext.setTimeZone(contextUser.getTimeZone());
 					searchContext.setUserId(contextUser.getUserId());
 				}
@@ -197,6 +190,7 @@ public class SearchResponseResourceImpl extends BaseSearchResponseResourceImpl {
 
 			errorMap.put("exceptionTrace", _getTraceString(throwable1));
 			errorMap.put("msg", throwable1.getMessage());
+			errorMap.put("severity", "WARN");
 
 			if (throwable1 instanceof InvalidElementInstanceException) {
 				InvalidElementInstanceException
@@ -208,12 +202,13 @@ public class SearchResponseResourceImpl extends BaseSearchResponseResourceImpl {
 						invalidElementInstanceException.getIndex();
 
 				errorMap.put("localizedMessage", "Element skipped");
-				errorMap.put("severity", "WARN");
 				errorMap.put("sxpElementId", sxpElementId);
 
 				inheritMap.put("sxpElementId", sxpElementId);
 			}
-			else {
+			else if (!(throwable1 instanceof PrivateIPAddressException) &&
+					 !(throwable1 instanceof InvalidWebCacheItemException)) {
+
 				errorMap.put("localizedMessage", "Error");
 				errorMap.put("severity", "ERROR");
 			}
@@ -228,9 +223,13 @@ public class SearchResponseResourceImpl extends BaseSearchResponseResourceImpl {
 
 	private JSONObject _createJSONObject(String string) {
 		try {
-			return JSONFactoryUtil.createJSONObject(string);
+			return _jsonFactory.createJSONObject(string);
 		}
 		catch (JSONException jsonException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(jsonException);
+			}
+
 			return null;
 		}
 	}
@@ -245,6 +244,10 @@ public class SearchResponseResourceImpl extends BaseSearchResponseResourceImpl {
 					getAssetRendererFactoryByClassName(
 						GetterUtil.getString(entryClassNameField.getValue()));
 
+			if (assetRendererFactory == null) {
+				return null;
+			}
+
 			Field entryClassPKField = fields.get(
 				com.liferay.portal.kernel.search.Field.ENTRY_CLASS_PK);
 
@@ -252,7 +255,7 @@ public class SearchResponseResourceImpl extends BaseSearchResponseResourceImpl {
 				GetterUtil.getLong(entryClassPKField.getValue()));
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return null;
@@ -400,6 +403,9 @@ public class SearchResponseResourceImpl extends BaseSearchResponseResourceImpl {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SearchResponseResourceImpl.class);
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Searcher _searcher;

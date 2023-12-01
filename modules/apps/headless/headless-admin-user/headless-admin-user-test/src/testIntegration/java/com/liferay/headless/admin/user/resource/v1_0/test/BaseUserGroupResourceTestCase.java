@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.resource.v1_0.test;
@@ -25,8 +16,11 @@ import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 import com.liferay.headless.admin.user.client.dto.v1_0.UserGroup;
 import com.liferay.headless.admin.user.client.http.HttpInvoker;
 import com.liferay.headless.admin.user.client.pagination.Page;
+import com.liferay.headless.admin.user.client.pagination.Pagination;
 import com.liferay.headless.admin.user.client.resource.v1_0.UserGroupResource;
 import com.liferay.headless.admin.user.client.serdes.v1_0.UserGroupSerDes;
+import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -41,32 +35,36 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 
-import org.apache.commons.beanutils.BeanUtilsBean;
+import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -194,6 +192,417 @@ public abstract class BaseUserGroupResourceTestCase {
 	}
 
 	@Test
+	public void testGetUserUserGroups() throws Exception {
+		Long userAccountId = testGetUserUserGroups_getUserAccountId();
+		Long irrelevantUserAccountId =
+			testGetUserUserGroups_getIrrelevantUserAccountId();
+
+		Page<UserGroup> page = userGroupResource.getUserUserGroups(
+			userAccountId);
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantUserAccountId != null) {
+			UserGroup irrelevantUserGroup = testGetUserUserGroups_addUserGroup(
+				irrelevantUserAccountId, randomIrrelevantUserGroup());
+
+			page = userGroupResource.getUserUserGroups(irrelevantUserAccountId);
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantUserGroup, (List<UserGroup>)page.getItems());
+			assertValid(
+				page,
+				testGetUserUserGroups_getExpectedActions(
+					irrelevantUserAccountId));
+		}
+
+		UserGroup userGroup1 = testGetUserUserGroups_addUserGroup(
+			userAccountId, randomUserGroup());
+
+		UserGroup userGroup2 = testGetUserUserGroups_addUserGroup(
+			userAccountId, randomUserGroup());
+
+		page = userGroupResource.getUserUserGroups(userAccountId);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(userGroup1, (List<UserGroup>)page.getItems());
+		assertContains(userGroup2, (List<UserGroup>)page.getItems());
+		assertValid(
+			page, testGetUserUserGroups_getExpectedActions(userAccountId));
+
+		userGroupResource.deleteUserGroup(userGroup1.getId());
+
+		userGroupResource.deleteUserGroup(userGroup2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetUserUserGroups_getExpectedActions(Long userAccountId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	protected UserGroup testGetUserUserGroups_addUserGroup(
+			Long userAccountId, UserGroup userGroup)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long testGetUserUserGroups_getUserAccountId() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long testGetUserUserGroups_getIrrelevantUserAccountId()
+		throws Exception {
+
+		return null;
+	}
+
+	@Test
+	public void testGetUserGroupsPage() throws Exception {
+		Page<UserGroup> page = userGroupResource.getUserGroupsPage(
+			null, null, Pagination.of(1, 10), null);
+
+		long totalCount = page.getTotalCount();
+
+		UserGroup userGroup1 = testGetUserGroupsPage_addUserGroup(
+			randomUserGroup());
+
+		UserGroup userGroup2 = testGetUserGroupsPage_addUserGroup(
+			randomUserGroup());
+
+		page = userGroupResource.getUserGroupsPage(
+			null, null, Pagination.of(1, 10), null);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(userGroup1, (List<UserGroup>)page.getItems());
+		assertContains(userGroup2, (List<UserGroup>)page.getItems());
+		assertValid(page, testGetUserGroupsPage_getExpectedActions());
+
+		userGroupResource.deleteUserGroup(userGroup1.getId());
+
+		userGroupResource.deleteUserGroup(userGroup2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetUserGroupsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	@Test
+	public void testGetUserGroupsPageWithFilterDateTimeEquals()
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(
+			EntityField.Type.DATE_TIME);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		UserGroup userGroup1 = randomUserGroup();
+
+		userGroup1 = testGetUserGroupsPage_addUserGroup(userGroup1);
+
+		for (EntityField entityField : entityFields) {
+			Page<UserGroup> page = userGroupResource.getUserGroupsPage(
+				null, getFilterString(entityField, "between", userGroup1),
+				Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(userGroup1),
+				(List<UserGroup>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetUserGroupsPageWithFilterDoubleEquals() throws Exception {
+		testGetUserGroupsPageWithFilter("eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetUserGroupsPageWithFilterStringContains()
+		throws Exception {
+
+		testGetUserGroupsPageWithFilter("contains", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetUserGroupsPageWithFilterStringEquals() throws Exception {
+		testGetUserGroupsPageWithFilter("eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetUserGroupsPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetUserGroupsPageWithFilter("startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetUserGroupsPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		UserGroup userGroup1 = testGetUserGroupsPage_addUserGroup(
+			randomUserGroup());
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		UserGroup userGroup2 = testGetUserGroupsPage_addUserGroup(
+			randomUserGroup());
+
+		for (EntityField entityField : entityFields) {
+			Page<UserGroup> page = userGroupResource.getUserGroupsPage(
+				null, getFilterString(entityField, operator, userGroup1),
+				Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(userGroup1),
+				(List<UserGroup>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetUserGroupsPageWithPagination() throws Exception {
+		Page<UserGroup> userGroupPage = userGroupResource.getUserGroupsPage(
+			null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(userGroupPage.getTotalCount());
+
+		UserGroup userGroup1 = testGetUserGroupsPage_addUserGroup(
+			randomUserGroup());
+
+		UserGroup userGroup2 = testGetUserGroupsPage_addUserGroup(
+			randomUserGroup());
+
+		UserGroup userGroup3 = testGetUserGroupsPage_addUserGroup(
+			randomUserGroup());
+
+		Page<UserGroup> page1 = userGroupResource.getUserGroupsPage(
+			null, null, Pagination.of(1, totalCount + 2), null);
+
+		List<UserGroup> userGroups1 = (List<UserGroup>)page1.getItems();
+
+		Assert.assertEquals(
+			userGroups1.toString(), totalCount + 2, userGroups1.size());
+
+		Page<UserGroup> page2 = userGroupResource.getUserGroupsPage(
+			null, null, Pagination.of(2, totalCount + 2), null);
+
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+		List<UserGroup> userGroups2 = (List<UserGroup>)page2.getItems();
+
+		Assert.assertEquals(userGroups2.toString(), 1, userGroups2.size());
+
+		Page<UserGroup> page3 = userGroupResource.getUserGroupsPage(
+			null, null, Pagination.of(1, (int)totalCount + 3), null);
+
+		assertContains(userGroup1, (List<UserGroup>)page3.getItems());
+		assertContains(userGroup2, (List<UserGroup>)page3.getItems());
+		assertContains(userGroup3, (List<UserGroup>)page3.getItems());
+	}
+
+	@Test
+	public void testGetUserGroupsPageWithSortDateTime() throws Exception {
+		testGetUserGroupsPageWithSort(
+			EntityField.Type.DATE_TIME,
+			(entityField, userGroup1, userGroup2) -> {
+				BeanTestUtil.setProperty(
+					userGroup1, entityField.getName(),
+					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetUserGroupsPageWithSortDouble() throws Exception {
+		testGetUserGroupsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, userGroup1, userGroup2) -> {
+				BeanTestUtil.setProperty(
+					userGroup1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					userGroup2, entityField.getName(), 0.5);
+			});
+	}
+
+	@Test
+	public void testGetUserGroupsPageWithSortInteger() throws Exception {
+		testGetUserGroupsPageWithSort(
+			EntityField.Type.INTEGER,
+			(entityField, userGroup1, userGroup2) -> {
+				BeanTestUtil.setProperty(userGroup1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(userGroup2, entityField.getName(), 1);
+			});
+	}
+
+	@Test
+	public void testGetUserGroupsPageWithSortString() throws Exception {
+		testGetUserGroupsPageWithSort(
+			EntityField.Type.STRING,
+			(entityField, userGroup1, userGroup2) -> {
+				Class<?> clazz = userGroup1.getClass();
+
+				String entityFieldName = entityField.getName();
+
+				Method method = clazz.getMethod(
+					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
+
+				Class<?> returnType = method.getReturnType();
+
+				if (returnType.isAssignableFrom(Map.class)) {
+					BeanTestUtil.setProperty(
+						userGroup1, entityFieldName,
+						Collections.singletonMap("Aaa", "Aaa"));
+					BeanTestUtil.setProperty(
+						userGroup2, entityFieldName,
+						Collections.singletonMap("Bbb", "Bbb"));
+				}
+				else if (entityFieldName.contains("email")) {
+					BeanTestUtil.setProperty(
+						userGroup1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+					BeanTestUtil.setProperty(
+						userGroup2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+				}
+				else {
+					BeanTestUtil.setProperty(
+						userGroup1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+					BeanTestUtil.setProperty(
+						userGroup2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+				}
+			});
+	}
+
+	protected void testGetUserGroupsPageWithSort(
+			EntityField.Type type,
+			UnsafeTriConsumer<EntityField, UserGroup, UserGroup, Exception>
+				unsafeTriConsumer)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		UserGroup userGroup1 = randomUserGroup();
+		UserGroup userGroup2 = randomUserGroup();
+
+		for (EntityField entityField : entityFields) {
+			unsafeTriConsumer.accept(entityField, userGroup1, userGroup2);
+		}
+
+		userGroup1 = testGetUserGroupsPage_addUserGroup(userGroup1);
+
+		userGroup2 = testGetUserGroupsPage_addUserGroup(userGroup2);
+
+		Page<UserGroup> page = userGroupResource.getUserGroupsPage(
+			null, null, null, null);
+
+		for (EntityField entityField : entityFields) {
+			Page<UserGroup> ascPage = userGroupResource.getUserGroupsPage(
+				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
+				entityField.getName() + ":asc");
+
+			assertContains(userGroup1, (List<UserGroup>)ascPage.getItems());
+			assertContains(userGroup2, (List<UserGroup>)ascPage.getItems());
+
+			Page<UserGroup> descPage = userGroupResource.getUserGroupsPage(
+				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
+				entityField.getName() + ":desc");
+
+			assertContains(userGroup2, (List<UserGroup>)descPage.getItems());
+			assertContains(userGroup1, (List<UserGroup>)descPage.getItems());
+		}
+	}
+
+	protected UserGroup testGetUserGroupsPage_addUserGroup(UserGroup userGroup)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetUserGroupsPage() throws Exception {
+		GraphQLField graphQLField = new GraphQLField(
+			"userGroups",
+			new HashMap<String, Object>() {
+				{
+					put("page", 1);
+					put("pageSize", 10);
+				}
+			},
+			new GraphQLField("items", getGraphQLFields()),
+			new GraphQLField("page"), new GraphQLField("totalCount"));
+
+		JSONObject userGroupsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/userGroups");
+
+		long totalCount = userGroupsJSONObject.getLong("totalCount");
+
+		UserGroup userGroup1 = testGraphQLGetUserGroupsPage_addUserGroup();
+		UserGroup userGroup2 = testGraphQLGetUserGroupsPage_addUserGroup();
+
+		userGroupsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/userGroups");
+
+		Assert.assertEquals(
+			totalCount + 2, userGroupsJSONObject.getLong("totalCount"));
+
+		assertContains(
+			userGroup1,
+			Arrays.asList(
+				UserGroupSerDes.toDTOs(
+					userGroupsJSONObject.getString("items"))));
+		assertContains(
+			userGroup2,
+			Arrays.asList(
+				UserGroupSerDes.toDTOs(
+					userGroupsJSONObject.getString("items"))));
+	}
+
+	protected UserGroup testGraphQLGetUserGroupsPage_addUserGroup()
+		throws Exception {
+
+		return testGraphQLUserGroup_addUserGroup();
+	}
+
+	@Test
 	public void testPostUserGroup() throws Exception {
 		UserGroup randomUserGroup = randomUserGroup();
 
@@ -205,6 +614,205 @@ public abstract class BaseUserGroupResourceTestCase {
 	}
 
 	protected UserGroup testPostUserGroup_addUserGroup(UserGroup userGroup)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testDeleteUserGroupByExternalReferenceCode() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		UserGroup userGroup =
+			testDeleteUserGroupByExternalReferenceCode_addUserGroup();
+
+		assertHttpResponseStatusCode(
+			204,
+			userGroupResource.
+				deleteUserGroupByExternalReferenceCodeHttpResponse(
+					userGroup.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			userGroupResource.getUserGroupByExternalReferenceCodeHttpResponse(
+				userGroup.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			userGroupResource.getUserGroupByExternalReferenceCodeHttpResponse(
+				userGroup.getExternalReferenceCode()));
+	}
+
+	protected UserGroup
+			testDeleteUserGroupByExternalReferenceCode_addUserGroup()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGetUserGroupByExternalReferenceCode() throws Exception {
+		UserGroup postUserGroup =
+			testGetUserGroupByExternalReferenceCode_addUserGroup();
+
+		UserGroup getUserGroup =
+			userGroupResource.getUserGroupByExternalReferenceCode(
+				postUserGroup.getExternalReferenceCode());
+
+		assertEquals(postUserGroup, getUserGroup);
+		assertValid(getUserGroup);
+	}
+
+	protected UserGroup testGetUserGroupByExternalReferenceCode_addUserGroup()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetUserGroupByExternalReferenceCode()
+		throws Exception {
+
+		UserGroup userGroup =
+			testGraphQLGetUserGroupByExternalReferenceCode_addUserGroup();
+
+		Assert.assertTrue(
+			equals(
+				userGroup,
+				UserGroupSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"userGroupByExternalReferenceCode",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"externalReferenceCode",
+											"\"" +
+												userGroup.
+													getExternalReferenceCode() +
+														"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/userGroupByExternalReferenceCode"))));
+	}
+
+	@Test
+	public void testGraphQLGetUserGroupByExternalReferenceCodeNotFound()
+		throws Exception {
+
+		String irrelevantExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"userGroupByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"externalReferenceCode",
+									irrelevantExternalReferenceCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected UserGroup
+			testGraphQLGetUserGroupByExternalReferenceCode_addUserGroup()
+		throws Exception {
+
+		return testGraphQLUserGroup_addUserGroup();
+	}
+
+	@Test
+	public void testPatchUserGroupByExternalReferenceCode() throws Exception {
+		UserGroup postUserGroup =
+			testPatchUserGroupByExternalReferenceCode_addUserGroup();
+
+		UserGroup randomPatchUserGroup = randomPatchUserGroup();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		UserGroup patchUserGroup =
+			userGroupResource.patchUserGroupByExternalReferenceCode(
+				postUserGroup.getExternalReferenceCode(), randomPatchUserGroup);
+
+		UserGroup expectedPatchUserGroup = postUserGroup.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchUserGroup, expectedPatchUserGroup);
+
+		UserGroup getUserGroup =
+			userGroupResource.getUserGroupByExternalReferenceCode(
+				patchUserGroup.getExternalReferenceCode());
+
+		assertEquals(expectedPatchUserGroup, getUserGroup);
+		assertValid(getUserGroup);
+	}
+
+	protected UserGroup testPatchUserGroupByExternalReferenceCode_addUserGroup()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPutUserGroupByExternalReferenceCode() throws Exception {
+		UserGroup postUserGroup =
+			testPutUserGroupByExternalReferenceCode_addUserGroup();
+
+		UserGroup randomUserGroup = randomUserGroup();
+
+		UserGroup putUserGroup =
+			userGroupResource.putUserGroupByExternalReferenceCode(
+				postUserGroup.getExternalReferenceCode(), randomUserGroup);
+
+		assertEquals(randomUserGroup, putUserGroup);
+		assertValid(putUserGroup);
+
+		UserGroup getUserGroup =
+			userGroupResource.getUserGroupByExternalReferenceCode(
+				putUserGroup.getExternalReferenceCode());
+
+		assertEquals(randomUserGroup, getUserGroup);
+		assertValid(getUserGroup);
+
+		UserGroup newUserGroup =
+			testPutUserGroupByExternalReferenceCode_createUserGroup();
+
+		putUserGroup = userGroupResource.putUserGroupByExternalReferenceCode(
+			newUserGroup.getExternalReferenceCode(), newUserGroup);
+
+		assertEquals(newUserGroup, putUserGroup);
+		assertValid(putUserGroup);
+
+		getUserGroup = userGroupResource.getUserGroupByExternalReferenceCode(
+			putUserGroup.getExternalReferenceCode());
+
+		assertEquals(newUserGroup, getUserGroup);
+
+		Assert.assertEquals(
+			newUserGroup.getExternalReferenceCode(),
+			putUserGroup.getExternalReferenceCode());
+	}
+
+	protected UserGroup
+			testPutUserGroupByExternalReferenceCode_createUserGroup()
+		throws Exception {
+
+		return randomUserGroup();
+	}
+
+	protected UserGroup testPutUserGroupByExternalReferenceCode_addUserGroup()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -234,7 +842,7 @@ public abstract class BaseUserGroupResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteUserGroup() throws Exception {
-		UserGroup userGroup = testGraphQLUserGroup_addUserGroup();
+		UserGroup userGroup = testGraphQLDeleteUserGroup_addUserGroup();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -247,7 +855,6 @@ public abstract class BaseUserGroupResourceTestCase {
 							}
 						})),
 				"JSONObject/data", "Object/deleteUserGroup"));
-
 		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
@@ -261,6 +868,12 @@ public abstract class BaseUserGroupResourceTestCase {
 			"JSONArray/errors");
 
 		Assert.assertTrue(errorsJSONArray.length() > 0);
+	}
+
+	protected UserGroup testGraphQLDeleteUserGroup_addUserGroup()
+		throws Exception {
+
+		return testGraphQLUserGroup_addUserGroup();
 	}
 
 	@Test
@@ -281,7 +894,7 @@ public abstract class BaseUserGroupResourceTestCase {
 
 	@Test
 	public void testGraphQLGetUserGroup() throws Exception {
-		UserGroup userGroup = testGraphQLUserGroup_addUserGroup();
+		UserGroup userGroup = testGraphQLGetUserGroup_addUserGroup();
 
 		Assert.assertTrue(
 			equals(
@@ -320,6 +933,12 @@ public abstract class BaseUserGroupResourceTestCase {
 				"Object/code"));
 	}
 
+	protected UserGroup testGraphQLGetUserGroup_addUserGroup()
+		throws Exception {
+
+		return testGraphQLUserGroup_addUserGroup();
+	}
+
 	@Test
 	public void testPatchUserGroup() throws Exception {
 		UserGroup postUserGroup = testPatchUserGroup_addUserGroup();
@@ -332,8 +951,8 @@ public abstract class BaseUserGroupResourceTestCase {
 
 		UserGroup expectedPatchUserGroup = postUserGroup.clone();
 
-		_beanUtilsBean.copyProperties(
-			expectedPatchUserGroup, randomPatchUserGroup);
+		BeanTestUtil.copyProperties(
+			randomPatchUserGroup, expectedPatchUserGroup);
 
 		UserGroup getUserGroup = userGroupResource.getUserGroup(
 			patchUserGroup.getId());
@@ -407,6 +1026,9 @@ public abstract class BaseUserGroupResourceTestCase {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
+
+	@Rule
+	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	protected UserGroup testGraphQLUserGroup_addUserGroup() throws Exception {
 		throw new UnsupportedOperationException(
@@ -539,6 +1161,13 @@ public abstract class BaseUserGroupResourceTestCase {
 	}
 
 	protected void assertValid(Page<UserGroup> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<UserGroup> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<UserGroup> userGroups = page.getItems();
@@ -553,6 +1182,25 @@ public abstract class BaseUserGroupResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -723,14 +1371,16 @@ public abstract class BaseUserGroupResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -747,6 +1397,10 @@ public abstract class BaseUserGroupResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -756,18 +1410,18 @@ public abstract class BaseUserGroupResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -789,17 +1443,93 @@ public abstract class BaseUserGroupResourceTestCase {
 		}
 
 		if (entityFieldName.equals("description")) {
-			sb.append("'");
-			sb.append(String.valueOf(userGroup.getDescription()));
-			sb.append("'");
+			Object object = userGroup.getDescription();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("externalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(userGroup.getExternalReferenceCode()));
-			sb.append("'");
+			Object object = userGroup.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -810,16 +1540,55 @@ public abstract class BaseUserGroupResourceTestCase {
 		}
 
 		if (entityFieldName.equals("name")) {
-			sb.append("'");
-			sb.append(String.valueOf(userGroup.getName()));
-			sb.append("'");
+			Object object = userGroup.getName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("usersCount")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(userGroup.getUsersCount()));
+
+			return sb.toString();
 		}
 
 		throw new IllegalArgumentException(
@@ -891,6 +1660,115 @@ public abstract class BaseUserGroupResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -966,18 +1844,6 @@ public abstract class BaseUserGroupResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseUserGroupResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

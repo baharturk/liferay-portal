@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
@@ -258,29 +249,11 @@ public class CPOptionValueLocalServiceUtil {
 		return getService().fetchCPOptionValue(CPOptionValueId);
 	}
 
-	/**
-	 * Returns the cp option value with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cp option value's external reference code
-	 * @return the matching cp option value, or <code>null</code> if a matching cp option value could not be found
-	 */
 	public static CPOptionValue fetchCPOptionValueByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
 		return getService().fetchCPOptionValueByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCPOptionValueByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static CPOptionValue fetchCPOptionValueByReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return getService().fetchCPOptionValueByReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -322,20 +295,12 @@ public class CPOptionValueLocalServiceUtil {
 		return getService().getCPOptionValue(cpOptionId, key);
 	}
 
-	/**
-	 * Returns the cp option value with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cp option value's external reference code
-	 * @return the matching cp option value
-	 * @throws PortalException if a matching cp option value could not be found
-	 */
 	public static CPOptionValue getCPOptionValueByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getCPOptionValueByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -434,30 +399,6 @@ public class CPOptionValueLocalServiceUtil {
 		return getService().search(searchContext);
 	}
 
-	/**
-	 * @param companyId
-	 * @param groupId
-	 * @param cpOptionId
-	 * @param keywords
-	 * @param start
-	 * @param end
-	 * @param sort
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchCPOptionValues(long, long, String, int, int, Sort[])}
-	 */
-	@Deprecated
-	public static com.liferay.portal.kernel.search.BaseModelSearchResult
-		<CPOptionValue> searchCPOptionValues(
-				long companyId, long groupId, long cpOptionId, String keywords,
-				int start, int end, com.liferay.portal.kernel.search.Sort sort)
-			throws PortalException {
-
-		return getService().searchCPOptionValues(
-			companyId, groupId, cpOptionId, keywords, start, end, sort);
-	}
-
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
 		<CPOptionValue> searchCPOptionValues(
 				long companyId, long cpOptionId, String keywords, int start,
@@ -504,6 +445,10 @@ public class CPOptionValueLocalServiceUtil {
 
 	public static CPOptionValueLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(CPOptionValueLocalService service) {
+		_service = service;
 	}
 
 	private static volatile CPOptionValueLocalService _service;

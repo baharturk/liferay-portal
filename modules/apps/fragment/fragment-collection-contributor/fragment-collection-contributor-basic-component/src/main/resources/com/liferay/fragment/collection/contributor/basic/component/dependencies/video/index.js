@@ -44,7 +44,7 @@ function showVideo() {
 	errorMessage.parentElement.removeChild(errorMessage);
 	loadingIndicator.parentElement.removeChild(loadingIndicator);
 
-	if (!document.body.classList.contains('has-edit-mode-menu')) {
+	if (layoutMode !== 'edit') {
 		videoMask.parentElement.removeChild(videoMask);
 	}
 
@@ -54,7 +54,7 @@ function showVideo() {
 }
 
 function showError() {
-	if (document.body.classList.contains('has-edit-mode-menu')) {
+	if (layoutMode === 'edit') {
 		errorMessage.removeAttribute('hidden');
 		videoContainer.parentElement.removeChild(videoContainer);
 		loadingIndicator.parentElement.removeChild(loadingIndicator);
@@ -185,9 +185,15 @@ function main() {
 
 	window.removeEventListener('resize', resize);
 
+	Liferay.on('tabsFragment:activePanel', (event) => {
+		if (event.panel && event.panel.contains(fragmentElement)) {
+			resize();
+		}
+	});
+
 	try {
 		let matched = false;
-		const url = new URL(configuration.url);
+		const url = new URL(configuration.url, window.location.origin);
 		const providers = [youtubeProvider, rawProvider];
 
 		for (let i = 0; i < providers.length && !matched; i++) {

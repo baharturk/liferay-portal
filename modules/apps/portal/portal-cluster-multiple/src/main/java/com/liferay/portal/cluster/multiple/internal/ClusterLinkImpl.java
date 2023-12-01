@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.cluster.multiple.internal;
@@ -44,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Shuyang Zhou
  */
-@Component(enabled = false, immediate = true, service = ClusterLink.class)
+@Component(enabled = false, service = ClusterLink.class)
 public class ClusterLinkImpl implements ClusterLink {
 
 	@Override
@@ -176,25 +167,6 @@ public class ClusterLinkImpl implements ClusterLink {
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setClusterChannelFactory(
-		ClusterChannelFactory clusterChannelFactory) {
-
-		_clusterChannelFactory = clusterChannelFactory;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortalExecutorManager(
-		PortalExecutorManager portalExecutorManager) {
-
-		_portalExecutorManager = portalExecutorManager;
-	}
-
-	@Reference(unbind = "-")
-	protected void setProps(Props props) {
-		_props = props;
-	}
-
 	private Map<String, String> _getChannelSettings(String propertyPrefix) {
 		Map<String, String> channelSettings = new HashMap<>();
 
@@ -261,7 +233,10 @@ public class ClusterLinkImpl implements ClusterLink {
 		ClusterLinkImpl.class);
 
 	private int _channelCount;
+
+	@Reference
 	private ClusterChannelFactory _clusterChannelFactory;
+
 	private List<ClusterChannel> _clusterChannels;
 	private List<ClusterReceiver> _clusterReceivers;
 	private boolean _enabled;
@@ -271,7 +246,10 @@ public class ClusterLinkImpl implements ClusterLink {
 	@Reference
 	private MessageBus _messageBus;
 
+	@Reference
 	private PortalExecutorManager _portalExecutorManager;
+
+	@Reference
 	private Props _props;
 
 }

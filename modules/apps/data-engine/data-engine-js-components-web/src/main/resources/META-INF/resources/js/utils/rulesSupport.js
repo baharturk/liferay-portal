@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {Tokenizer} from 'dynamic-data-mapping-form-builder';
-
 import {getFieldProperty} from '../core/utils/fields';
+import {Tokenizer} from './Tokenizer';
 import {PagesVisitor} from './visitors.es';
 
 const DEFAULT_FIELD_NAMES_REGEX_FOR_EXPRESSION = /[a-zA-Z]+\d{8}/g;
@@ -137,7 +127,7 @@ export function syncActions(pages, actions) {
 		else if (action.action === 'calculate') {
 			const expressionFields = getExpressionFields(action);
 
-			if (expressionFields && expressionFields.length > 0) {
+			if (expressionFields && !!expressionFields.length) {
 				expressionFields.forEach((field) => {
 					if (!targetFieldExists(field, pages)) {
 						const inexistentField = new RegExp(field, 'g');
@@ -270,7 +260,7 @@ const expressionHasNonNumericFields = (action, fields) => {
 	const expressionFields = getExpressionFields(action);
 	let hasNonNumericFields = false;
 
-	if (expressionFields && expressionFields.length > 0) {
+	if (expressionFields && !!expressionFields.length) {
 		expressionFields.forEach((value) => {
 			const field = fields.find(({fieldName}) => fieldName === value);
 			if (field?.type !== 'numeric') {

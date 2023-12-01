@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
@@ -17,6 +8,7 @@ package com.liferay.document.library.web.internal.display.context;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetCategoryServiceUtil;
 import com.liferay.asset.kernel.service.AssetVocabularyServiceUtil;
+import com.liferay.depot.util.SiteConnectedGroupGroupProviderUtil;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.util.DLUtil;
@@ -29,12 +21,12 @@ import com.liferay.document.library.web.internal.search.EntriesChecker;
 import com.liferay.document.library.web.internal.search.EntriesMover;
 import com.liferay.document.library.web.internal.security.permission.resource.DLFileEntryPermission;
 import com.liferay.document.library.web.internal.security.permission.resource.DLFolderPermission;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.Folder;
@@ -42,19 +34,19 @@ import com.liferay.portal.kernel.repository.model.RepositoryEntry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
-import com.liferay.portal.kernel.servlet.BrowserSnifferUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.servlet.BrowserSnifferUtil;
 import com.liferay.portal.util.RepositoryUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -81,10 +73,17 @@ public class DLViewEntriesDisplayContext {
 			WebKeys.THEME_DISPLAY);
 
 		_dlRequestHelper = new DLRequestHelper(_httpServletRequest);
+
+		_dlPortletInstanceSettingsHelper = new DLPortletInstanceSettingsHelper(
+			_dlRequestHelper);
 	}
 
 	public List<String> getAvailableActions(FileEntry fileEntry)
 		throws PortalException {
+
+		if (!_dlPortletInstanceSettingsHelper.isShowActions()) {
+			return Collections.emptyList();
+		}
 
 		List<String> availableActions = new ArrayList<>();
 
@@ -127,9 +126,23 @@ public class DLViewEntriesDisplayContext {
 		}
 
 		if (DLFileEntryPermission.contains(
-				permissionChecker, fileEntry, ActionKeys.VIEW)) {
+				permissionChecker, fileEntry, ActionKeys.DOWNLOAD) &&
+			!RepositoryUtil.isExternalRepository(fileEntry.getRepositoryId())) {
+
+			availableActions.add("copy");
+		}
+
+		if ((fileEntry.getSize() > 0) &&
+			DLFileEntryPermission.contains(
+				permissionChecker, fileEntry, ActionKeys.DOWNLOAD)) {
 
 			availableActions.add("download");
+		}
+
+		if (DLFileEntryPermission.contains(
+				permissionChecker, fileEntry, ActionKeys.PERMISSIONS)) {
+
+			availableActions.add("permissions");
 		}
 
 		return availableActions;
@@ -137,6 +150,10 @@ public class DLViewEntriesDisplayContext {
 
 	public List<String> getAvailableActions(Folder folder)
 		throws PortalException {
+
+		if (!_dlPortletInstanceSettingsHelper.isShowActions()) {
+			return Collections.emptyList();
+		}
 
 		List<String> availableActions = new ArrayList<>();
 
@@ -160,13 +177,24 @@ public class DLViewEntriesDisplayContext {
 				permissionChecker, folder, ActionKeys.VIEW) &&
 			!RepositoryUtil.isExternalRepository(folder.getRepositoryId())) {
 
+			availableActions.add("copy");
 			availableActions.add("download");
+		}
+
+		if (DLFolderPermission.contains(
+				permissionChecker, folder, ActionKeys.PERMISSIONS)) {
+
+			availableActions.add("permissions");
 		}
 
 		return availableActions;
 	}
 
 	public String getDisplayStyle() {
+		if (_dlAdminDisplayContext.isSearch()) {
+			return _dlAdminDisplayContext.getSearchDisplayStyle();
+		}
+
 		return _dlAdminDisplayContext.getDisplayStyle();
 	}
 
@@ -218,10 +246,9 @@ public class DLViewEntriesDisplayContext {
 			_dlAdminDisplayContext.getSearchContainer();
 
 		EntriesChecker entriesChecker = new EntriesChecker(
-			_liferayPortletRequest, _liferayPortletResponse);
+			_liferayPortletResponse);
 
 		entriesChecker.setCssClass("entry-selector");
-
 		entriesChecker.setRememberCheckBoxStateURLRegex(
 			_dlAdminDisplayContext.getRememberCheckBoxStateURLRegex());
 
@@ -249,7 +276,7 @@ public class DLViewEntriesDisplayContext {
 		).setMVCRenderCommandName(
 			"/document_library/view_file_entry"
 		).setRedirect(
-			HttpUtil.removeParameter(
+			HttpComponentsUtil.removeParameter(
 				_dlRequestHelper.getCurrentURL(),
 				_liferayPortletResponse.getNamespace() + "ajax")
 		).setParameter(
@@ -327,32 +354,37 @@ public class DLViewEntriesDisplayContext {
 	private boolean _hasValidAssetVocabularies(long scopeGroupId)
 		throws PortalException {
 
+		if (_hasValidAssetVocabularies != null) {
+			return _hasValidAssetVocabularies;
+		}
+
 		List<AssetVocabulary> assetVocabularies =
 			AssetVocabularyServiceUtil.getGroupVocabularies(
-				PortalUtil.getCurrentAndAncestorSiteGroupIds(scopeGroupId));
+				SiteConnectedGroupGroupProviderUtil.
+					getCurrentAndAncestorSiteAndDepotGroupIds(scopeGroupId));
 
-		Stream<AssetVocabulary> stream = assetVocabularies.stream();
+		for (AssetVocabulary assetVocabulary : assetVocabularies) {
+			if (!assetVocabulary.isAssociatedToClassNameId(
+					ClassNameLocalServiceUtil.getClassNameId(
+						DLFileEntry.class.getName()))) {
 
-		return stream.anyMatch(
-			assetVocabulary -> {
-				if (!assetVocabulary.isAssociatedToClassNameId(
-						ClassNameLocalServiceUtil.getClassNameId(
-							DLFileEntry.class.getName()))) {
+				continue;
+			}
 
-					return false;
-				}
+			int count = AssetCategoryServiceUtil.getVocabularyCategoriesCount(
+				assetVocabulary.getGroupId(),
+				assetVocabulary.getVocabularyId());
 
-				int count =
-					AssetCategoryServiceUtil.getVocabularyCategoriesCount(
-						assetVocabulary.getGroupId(),
-						assetVocabulary.getVocabularyId());
+			if (count > 0) {
+				_hasValidAssetVocabularies = true;
 
-				if (count > 0) {
-					return true;
-				}
+				return _hasValidAssetVocabularies;
+			}
+		}
 
-				return false;
-			});
+		_hasValidAssetVocabularies = false;
+
+		return _hasValidAssetVocabularies;
 	}
 
 	private boolean _hasWorkflowDefinitionLink(FileEntry fileEntry) {
@@ -388,8 +420,11 @@ public class DLViewEntriesDisplayContext {
 	}
 
 	private final DLAdminDisplayContext _dlAdminDisplayContext;
+	private final DLPortletInstanceSettingsHelper
+		_dlPortletInstanceSettingsHelper;
 	private final DLRequestHelper _dlRequestHelper;
 	private final DLTrashHelper _dlTrashHelper;
+	private Boolean _hasValidAssetVocabularies;
 	private final HttpServletRequest _httpServletRequest;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;

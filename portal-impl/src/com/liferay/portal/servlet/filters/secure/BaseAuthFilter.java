@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet.filters.secure;
@@ -24,7 +15,6 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.access.control.AccessControlUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
-import com.liferay.portal.kernel.security.auth.http.HttpAuthManagerUtil;
 import com.liferay.portal.kernel.security.auth.http.HttpAuthorizationHeader;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
@@ -32,12 +22,13 @@ import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.ProtectedServletRequest;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.auth.http.HttpAuthManagerUtil;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
 import com.liferay.portal.util.PropsUtil;
 
@@ -112,7 +103,7 @@ public abstract class BaseAuthFilter extends BasePortalFilter {
 				userId = HttpAuthManagerUtil.getBasicUserId(httpServletRequest);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 
 			if (userId > 0) {
@@ -162,7 +153,7 @@ public abstract class BaseAuthFilter extends BasePortalFilter {
 					httpServletRequest);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 
 			if (userId > 0) {
@@ -257,7 +248,7 @@ public abstract class BaseAuthFilter extends BasePortalFilter {
 
 		if (_httpsRequired && !PortalUtil.isSecure(httpServletRequest)) {
 			if (_log.isDebugEnabled()) {
-				String completeURL = HttpUtil.getCompleteURL(
+				String completeURL = HttpComponentsUtil.getCompleteURL(
 					httpServletRequest);
 
 				_log.debug("Securing " + completeURL);
@@ -284,7 +275,7 @@ public abstract class BaseAuthFilter extends BasePortalFilter {
 			if (_log.isDebugEnabled()) {
 				_log.debug(
 					"Not securing " +
-						HttpUtil.getCompleteURL(httpServletRequest));
+						HttpComponentsUtil.getCompleteURL(httpServletRequest));
 			}
 
 			User user = null;
@@ -297,18 +288,18 @@ public abstract class BaseAuthFilter extends BasePortalFilter {
 				// LPS-52675
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchUserException, noSuchUserException);
+					_log.debug(noSuchUserException);
 				}
 
 				httpServletResponse.sendRedirect(
-					HttpUtil.getCompleteURL(httpServletRequest));
+					HttpComponentsUtil.getCompleteURL(httpServletRequest));
 
 				return;
 			}
 
 			initThreadLocals(user);
 
-			if (!user.isDefaultUser()) {
+			if (!user.isGuestUser()) {
 				String authType = ParamUtil.getString(
 					httpServletRequest, "authType");
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.dto.v2_0;
@@ -62,7 +53,7 @@ public class Error implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Error.class, json);
 	}
 
-	@Schema(description = "Internal error code mapping")
+	@Schema(description = "Internal error code mapping", example = "996")
 	public Integer getErrorCode() {
 		return errorCode;
 	}
@@ -91,7 +82,9 @@ public class Error implements Serializable {
 	@NotNull
 	protected Integer errorCode;
 
-	@Schema
+	@Schema(
+		example = "Unable to find currency. Currency code should be expressed with 3-letter ISO 4217 format."
+	)
 	public String getErrorDescription() {
 		return errorDescription;
 	}
@@ -120,7 +113,9 @@ public class Error implements Serializable {
 	@NotEmpty
 	protected String errorDescription;
 
-	@Schema
+	@Schema(
+		example = "No CommerceCurrency exists with the key {groupId=41811, code=US Dollar}"
+	)
 	public String getMessage() {
 		return message;
 	}
@@ -149,7 +144,7 @@ public class Error implements Serializable {
 	@NotEmpty
 	protected String message;
 
-	@Schema(description = "HTTP Status code")
+	@Schema(description = "HTTP Status code", example = "404")
 	public Integer getStatus() {
 		return status;
 	}
@@ -347,5 +342,7 @@ public class Error implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

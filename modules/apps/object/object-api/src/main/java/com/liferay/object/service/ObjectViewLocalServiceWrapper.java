@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link ObjectViewLocalService}.
@@ -41,12 +33,16 @@ public class ObjectViewLocalServiceWrapper
 			long userId, long objectDefinitionId, boolean defaultObjectView,
 			java.util.Map<java.util.Locale, String> nameMap,
 			java.util.List<com.liferay.object.model.ObjectViewColumn>
-				objectViewColumns)
+				objectViewColumns,
+			java.util.List<com.liferay.object.model.ObjectViewFilterColumn>
+				objectViewFilterColumns,
+			java.util.List<com.liferay.object.model.ObjectViewSortColumn>
+				objectViewSortColumns)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectViewLocalService.addObjectView(
 			userId, objectDefinitionId, defaultObjectView, nameMap,
-			objectViewColumns);
+			objectViewColumns, objectViewFilterColumns, objectViewSortColumns);
 	}
 
 	/**
@@ -124,6 +120,13 @@ public class ObjectViewLocalServiceWrapper
 		com.liferay.object.model.ObjectView objectView) {
 
 		return _objectViewLocalService.deleteObjectView(objectView);
+	}
+
+	@Override
+	public void deleteObjectViews(long objectDefinitionId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectViewLocalService.deleteObjectViews(objectDefinitionId);
 	}
 
 	/**
@@ -240,6 +243,14 @@ public class ObjectViewLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.object.model.ObjectView fetchDefaultObjectView(
+		long objectDefinitionId) {
+
+		return _objectViewLocalService.fetchDefaultObjectView(
+			objectDefinitionId);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectView fetchObjectView(
 		long objectViewId) {
 
@@ -334,6 +345,13 @@ public class ObjectViewLocalServiceWrapper
 		return _objectViewLocalService.getObjectViews(start, end);
 	}
 
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectView> getObjectViews(
+		long objectDefinitionId) {
+
+		return _objectViewLocalService.getObjectViews(objectDefinitionId);
+	}
+
 	/**
 	 * Returns the number of object views.
 	 *
@@ -366,15 +384,27 @@ public class ObjectViewLocalServiceWrapper
 	}
 
 	@Override
+	public void unassociateObjectField(
+		com.liferay.object.model.ObjectField objectField) {
+
+		_objectViewLocalService.unassociateObjectField(objectField);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectView updateObjectView(
 			long objectViewId, boolean defaultObjectView,
 			java.util.Map<java.util.Locale, String> nameMap,
 			java.util.List<com.liferay.object.model.ObjectViewColumn>
-				objectViewColumns)
+				objectViewColumns,
+			java.util.List<com.liferay.object.model.ObjectViewFilterColumn>
+				objectViewFilterColumns,
+			java.util.List<com.liferay.object.model.ObjectViewSortColumn>
+				objectViewSortColumns)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectViewLocalService.updateObjectView(
-			objectViewId, defaultObjectView, nameMap, objectViewColumns);
+			objectViewId, defaultObjectView, nameMap, objectViewColumns,
+			objectViewFilterColumns, objectViewSortColumns);
 	}
 
 	/**
@@ -392,6 +422,11 @@ public class ObjectViewLocalServiceWrapper
 		com.liferay.object.model.ObjectView objectView) {
 
 		return _objectViewLocalService.updateObjectView(objectView);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _objectViewLocalService.getBasePersistence();
 	}
 
 	@Override

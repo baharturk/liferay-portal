@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -19,11 +10,26 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
+import org.json.JSONObject;
+
 /**
  * @author Michael Hashimoto
  */
 public abstract class PluginsTestSuiteJob
 	extends PluginsGitRepositoryJob implements TestSuiteJob {
+
+	@Override
+	public JSONObject getJSONObject() {
+		if (jsonObject != null) {
+			return jsonObject;
+		}
+
+		jsonObject = super.getJSONObject();
+
+		jsonObject.put("plugin_name", _pluginName);
+
+		return jsonObject;
+	}
 
 	public String getPluginName() {
 		return _pluginName;
@@ -40,15 +46,22 @@ public abstract class PluginsTestSuiteJob
 	}
 
 	protected PluginsTestSuiteJob(
-		String jobName, String pluginName, BuildProfile buildProfile,
-		String branchName) {
+		BuildProfile buildProfile, String jobName, String pluginName,
+		String upstreamBranchName) {
 
-		super(jobName, buildProfile, branchName);
+		super(buildProfile, jobName, upstreamBranchName);
 
 		_pluginName = pluginName;
 
-		jobPropertiesFiles.add(
-			new File(_getPluginTestBaseDir(), "test.properties"));
+		_initialize();
+	}
+
+	protected PluginsTestSuiteJob(JSONObject jsonObject) {
+		super(jsonObject);
+
+		_pluginName = jsonObject.getString("plugin_name");
+
+		_initialize();
 	}
 
 	private File _getPluginTestBaseDir() {
@@ -59,6 +72,11 @@ public abstract class PluginsTestSuiteJob
 			pluginsGitWorkingDirectory.getWorkingDirectory(),
 			JenkinsResultsParserUtil.combine(
 				"portlets/", getPluginName(), "/test/functional"));
+	}
+
+	private void _initialize() {
+		jobPropertiesFiles.add(
+			new File(_getPluginTestBaseDir(), "test.properties"));
 	}
 
 	private final String _pluginName;

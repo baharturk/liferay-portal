@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.rest.internal.resource.v1_0;
 
+import com.liferay.petra.function.UnsafeBiConsumer;
+import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.search.Sort;
@@ -24,28 +19,38 @@ import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParser;
 import com.liferay.portal.odata.filter.FilterParserProvider;
+import com.liferay.portal.odata.sort.SortField;
+import com.liferay.portal.odata.sort.SortParser;
+import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.batch.engine.VulcanBatchEngineTaskItemDelegate;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTaskResource;
 import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResource;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.ActionUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
 import com.liferay.portal.workflow.metrics.rest.dto.v1_0.NodeMetric;
 import com.liferay.portal.workflow.metrics.rest.resource.v1_0.NodeMetricResource;
 
 import java.io.Serializable;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
@@ -128,10 +133,10 @@ public abstract class BaseNodeMetricResourceImpl
 			Boolean completed,
 			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
 			@javax.ws.rs.QueryParam("dateEnd")
-			java.util.Date dateEnd,
+			Date dateEnd,
 			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
 			@javax.ws.rs.QueryParam("dateStart")
-			java.util.Date dateStart,
+			Date dateStart,
 			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
 			@javax.ws.rs.QueryParam("key")
 			String key,
@@ -148,16 +153,30 @@ public abstract class BaseNodeMetricResourceImpl
 	@Override
 	@SuppressWarnings("PMD.UnusedLocalVariable")
 	public void create(
-			java.util.Collection<NodeMetric> nodeMetrics,
+			Collection<NodeMetric> nodeMetrics,
 			Map<String, Serializable> parameters)
 		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Override
 	public void delete(
-			java.util.Collection<NodeMetric> nodeMetrics,
+			Collection<NodeMetric> nodeMetrics,
 			Map<String, Serializable> parameters)
 		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	public Set<String> getAvailableCreateStrategies() {
+		return SetUtil.fromArray();
+	}
+
+	public Set<String> getAvailableUpdateStrategies() {
+		return SetUtil.fromArray();
 	}
 
 	@Override
@@ -175,13 +194,18 @@ public abstract class BaseNodeMetricResourceImpl
 		return null;
 	}
 
+	public String getVersion() {
+		return "v1.0";
+	}
+
 	@Override
 	public Page<NodeMetric> read(
 			Filter filter, Pagination pagination, Sort[] sorts,
 			Map<String, Serializable> parameters, String search)
 		throws Exception {
 
-		return null;
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Override
@@ -208,13 +232,33 @@ public abstract class BaseNodeMetricResourceImpl
 
 	@Override
 	public void update(
-			java.util.Collection<NodeMetric> nodeMetrics,
+			Collection<NodeMetric> nodeMetrics,
 			Map<String, Serializable> parameters)
 		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	public void setContextAcceptLanguage(AcceptLanguage contextAcceptLanguage) {
 		this.contextAcceptLanguage = contextAcceptLanguage;
+	}
+
+	public void setContextBatchUnsafeBiConsumer(
+		UnsafeBiConsumer
+			<Collection<NodeMetric>,
+			 UnsafeFunction<NodeMetric, NodeMetric, Exception>, Exception>
+				contextBatchUnsafeBiConsumer) {
+
+		this.contextBatchUnsafeBiConsumer = contextBatchUnsafeBiConsumer;
+	}
+
+	public void setContextBatchUnsafeConsumer(
+		UnsafeBiConsumer
+			<Collection<NodeMetric>, UnsafeConsumer<NodeMetric, Exception>,
+			 Exception> contextBatchUnsafeConsumer) {
+
+		this.contextBatchUnsafeConsumer = contextBatchUnsafeConsumer;
 	}
 
 	public void setContextCompany(
@@ -225,6 +269,13 @@ public abstract class BaseNodeMetricResourceImpl
 
 	public void setContextHttpServletRequest(
 		HttpServletRequest contextHttpServletRequest) {
+
+		if ((contextHttpServletRequest != null) &&
+			(contextHttpServletRequest.getAttribute(WebKeys.CTX) == null)) {
+
+			contextHttpServletRequest.setAttribute(
+				WebKeys.CTX, ServletContextPool.get(StringPool.BLANK));
+		}
 
 		this.contextHttpServletRequest = contextHttpServletRequest;
 	}
@@ -277,6 +328,26 @@ public abstract class BaseNodeMetricResourceImpl
 		this.roleLocalService = roleLocalService;
 	}
 
+	public void setSortParserProvider(SortParserProvider sortParserProvider) {
+		this.sortParserProvider = sortParserProvider;
+	}
+
+	public void setVulcanBatchEngineExportTaskResource(
+		VulcanBatchEngineExportTaskResource
+			vulcanBatchEngineExportTaskResource) {
+
+		this.vulcanBatchEngineExportTaskResource =
+			vulcanBatchEngineExportTaskResource;
+	}
+
+	public void setVulcanBatchEngineImportTaskResource(
+		VulcanBatchEngineImportTaskResource
+			vulcanBatchEngineImportTaskResource) {
+
+		this.vulcanBatchEngineImportTaskResource =
+			vulcanBatchEngineImportTaskResource;
+	}
+
 	@Override
 	public Filter toFilter(
 		String filterString, Map<String, List<String>> multivaluedMap) {
@@ -297,9 +368,49 @@ public abstract class BaseNodeMetricResourceImpl
 		}
 		catch (Exception exception) {
 			_log.error("Invalid filter " + filterString, exception);
+
+			return null;
+		}
+	}
+
+	@Override
+	public Sort[] toSorts(String sortString) {
+		if (Validator.isNull(sortString)) {
+			return null;
 		}
 
-		return null;
+		try {
+			SortParser sortParser = sortParserProvider.provide(
+				getEntityModel(Collections.emptyMap()));
+
+			if (sortParser == null) {
+				return null;
+			}
+
+			com.liferay.portal.odata.sort.Sort oDataSort =
+				new com.liferay.portal.odata.sort.Sort(
+					sortParser.parse(sortString));
+
+			List<SortField> sortFields = oDataSort.getSortFields();
+
+			Sort[] sorts = new Sort[sortFields.size()];
+
+			for (int i = 0; i < sortFields.size(); i++) {
+				SortField sortField = sortFields.get(i);
+
+				sorts[i] = new Sort(
+					sortField.getSortableFieldName(
+						contextAcceptLanguage.getPreferredLocale()),
+					!sortField.isAscending());
+			}
+
+			return sorts;
+		}
+		catch (Exception exception) {
+			_log.error("Invalid sort " + sortString, exception);
+
+			return new Sort[0];
+		}
 	}
 
 	protected Map<String, String> addAction(
@@ -336,35 +447,84 @@ public abstract class BaseNodeMetricResourceImpl
 			actionName, siteId, methodName, null, permissionName, siteId);
 	}
 
-	protected <T, R> List<R> transform(
-		java.util.Collection<T> collection,
-		UnsafeFunction<T, R, Exception> unsafeFunction) {
+	protected <T, R, E extends Throwable> List<R> transform(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
 
 		return TransformUtil.transform(collection, unsafeFunction);
 	}
 
-	protected <T, R> R[] transform(
-		T[] array, UnsafeFunction<T, R, Exception> unsafeFunction,
-		Class<?> clazz) {
+	protected <T, R, E extends Throwable> R[] transform(
+		T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<?> clazz) {
 
 		return TransformUtil.transform(array, unsafeFunction, clazz);
 	}
 
-	protected <T, R> R[] transformToArray(
-		java.util.Collection<T> collection,
-		UnsafeFunction<T, R, Exception> unsafeFunction, Class<?> clazz) {
+	protected <T, R, E extends Throwable> R[] transformToArray(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction,
+		Class<?> clazz) {
 
 		return TransformUtil.transformToArray(
 			collection, unsafeFunction, clazz);
 	}
 
-	protected <T, R> List<R> transformToList(
-		T[] array, UnsafeFunction<T, R, Exception> unsafeFunction) {
+	protected <T, R, E extends Throwable> List<R> transformToList(
+		T[] array, UnsafeFunction<T, R, E> unsafeFunction) {
 
 		return TransformUtil.transformToList(array, unsafeFunction);
 	}
 
+	protected <T, R, E extends Throwable> long[] transformToLongArray(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
+
+		return TransformUtil.transformToLongArray(collection, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> List<R> unsafeTransform(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransform(collection, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> R[] unsafeTransform(
+			T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<?> clazz)
+		throws E {
+
+		return TransformUtil.unsafeTransform(array, unsafeFunction, clazz);
+	}
+
+	protected <T, R, E extends Throwable> R[] unsafeTransformToArray(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction,
+			Class<?> clazz)
+		throws E {
+
+		return TransformUtil.unsafeTransformToArray(
+			collection, unsafeFunction, clazz);
+	}
+
+	protected <T, R, E extends Throwable> List<R> unsafeTransformToList(
+			T[] array, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransformToList(array, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> long[] unsafeTransformToLongArray(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransformToLongArray(
+			collection, unsafeFunction);
+	}
+
 	protected AcceptLanguage contextAcceptLanguage;
+	protected UnsafeBiConsumer
+		<Collection<NodeMetric>,
+		 UnsafeFunction<NodeMetric, NodeMetric, Exception>, Exception>
+			contextBatchUnsafeBiConsumer;
+	protected UnsafeBiConsumer
+		<Collection<NodeMetric>, UnsafeConsumer<NodeMetric, Exception>,
+		 Exception> contextBatchUnsafeConsumer;
 	protected com.liferay.portal.kernel.model.Company contextCompany;
 	protected HttpServletRequest contextHttpServletRequest;
 	protected HttpServletResponse contextHttpServletResponse;
@@ -377,6 +537,9 @@ public abstract class BaseNodeMetricResourceImpl
 	protected ResourceActionLocalService resourceActionLocalService;
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 	protected RoleLocalService roleLocalService;
+	protected SortParserProvider sortParserProvider;
+	protected VulcanBatchEngineExportTaskResource
+		vulcanBatchEngineExportTaskResource;
 	protected VulcanBatchEngineImportTaskResource
 		vulcanBatchEngineImportTaskResource;
 

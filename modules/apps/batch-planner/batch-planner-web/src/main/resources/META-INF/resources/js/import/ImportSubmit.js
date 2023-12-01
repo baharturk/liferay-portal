@@ -1,57 +1,61 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
-import {useModal} from '@clayui/modal';
 import PropTypes from 'prop-types';
 import React, {useCallback, useState} from 'react';
 
 import ImportModal from './ImportModal';
+import ImportPreviewModal from './ImportPreviewModal';
 
 function ImportSubmit({
-	disabled,
+	evaluateForm,
+	fieldsSelections,
+	fileContent,
 	formDataQuerySelector,
 	formImportURL,
-	portletNamespace,
+	formIsValid,
 }) {
-	const [visible, setVisible] = useState(false);
-	const {observer, onClose} = useModal({
-		onClose: () => setVisible(false),
-	});
-	const onButtonClick = useCallback(() => {
-		setVisible(true);
-	}, [setVisible]);
+	const [modalVisibile, setModalVisibile] = useState(false);
+	const [stage, setStage] = useState('preview');
+
+	const showPreviewModal = useCallback(() => {
+		evaluateForm();
+
+		if (formIsValid) {
+			setModalVisibile(true);
+		}
+	}, [evaluateForm, formIsValid]);
 
 	return (
 		<span className="mr-3">
 			<ClayButton
-				disabled={disabled}
 				displayType="primary"
-				id={`${portletNamespace}-import-submit`}
-				onClick={onButtonClick}
+				onClick={showPreviewModal}
 				type="button"
 			>
-				{Liferay.Language.get('import')}
+				{Liferay.Language.get('next')}
 			</ClayButton>
 
-			{visible && (
+			{modalVisibile && stage === 'preview' && (
+				<ImportPreviewModal
+					closeModal={() => setModalVisibile(false)}
+					fieldsSelections={fieldsSelections}
+					fileContent={fileContent}
+					startImport={() => setStage('import')}
+				/>
+			)}
+
+			{modalVisibile && stage === 'import' && (
 				<ImportModal
-					closeModal={onClose}
+					closeModal={() => {
+						setModalVisibile(false);
+						setStage('preview');
+					}}
 					formDataQuerySelector={formDataQuerySelector}
-					formSubmitURL={formImportURL}
-					namespace={portletNamespace}
-					observer={observer}
+					formImportURL={formImportURL}
 				/>
 			)}
 		</span>
@@ -59,10 +63,8 @@ function ImportSubmit({
 }
 
 ImportSubmit.propTypes = {
-	disabled: PropTypes.bool.isRequired,
 	formDataQuerySelector: PropTypes.string.isRequired,
 	formImportURL: PropTypes.string.isRequired,
-	portletNamespace: PropTypes.string.isRequired,
 };
 
 export default ImportSubmit;

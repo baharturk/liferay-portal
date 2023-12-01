@@ -1,26 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.internal.blueprint.parameter.contributor;
 
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.search.experiences.blueprint.parameter.SXPParameter;
 import com.liferay.search.experiences.blueprint.parameter.contributor.SXPParameterContributorDefinition;
 import com.liferay.search.experiences.internal.blueprint.parameter.BooleanSXPParameter;
@@ -100,21 +93,24 @@ public class ContextSXPParameterContributor implements SXPParameterContributor {
 				new LongSXPParameter("plid", true, layout.getPlid()));
 		}
 
-		Long scopeGroupId = (Long)searchContext.getAttribute(
-			"search.experiences.current.group.id");
+		long scopeGroupId = GetterUtil.getLong(
+			searchContext.getAttribute("search.experiences.scope.group.id"));
 
-		if (scopeGroupId != null) {
+		if (scopeGroupId != 0) {
 			sxpParameters.add(
 				new LongSXPParameter(
 					"context.scope_group_id", true, scopeGroupId));
 
-			Group group = _groupLocalService.fetchGroup(scopeGroupId);
+			try {
+				Group group = _groupLocalService.getGroup(scopeGroupId);
 
-			if (group != null) {
 				sxpParameters.add(
 					new BooleanSXPParameter(
 						"context.is_staging_group", true,
 						group.isStagingGroup()));
+			}
+			catch (PortalException portalException) {
+				exceptionListener.exceptionThrown(portalException);
 			}
 		}
 	}
@@ -126,7 +122,7 @@ public class ContextSXPParameterContributor implements SXPParameterContributor {
 
 	@Override
 	public List<SXPParameterContributorDefinition>
-		getSXPParameterContributorDefinitions(long companyId) {
+		getSXPParameterContributorDefinitions(long companyId, Locale locale) {
 
 		return Arrays.asList(
 			new SXPParameterContributorDefinition(

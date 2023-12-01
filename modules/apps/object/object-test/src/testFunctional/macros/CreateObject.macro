@@ -1,116 +1,68 @@
 definition {
 
-	macro activeCustomObject {
-		ObjectPortlet.selectCustomObject(label = "${objectName}");
+	@summary = "Default summary"
+	macro activeCustomObject(objectLabel = null) {
+		ObjectPortlet.selectCustomObject(label = ${objectLabel});
 
 		CreateObject.checkToggleActive();
 
 		CreateObject.saveObject();
 	}
 
-	macro addRelationshipAndSelectEntry {
+	@summary = "Default summary"
+	macro activeToogleAccountRestriction() {
+		Check.checkToggleSwitch(locator1 = "CreateObject#TOGGLE_ACCOUNT_RESTRICTION");
+	}
+
+	@summary = "Default summary"
+	macro addRelationshipAndSelectEntry(titleFieldName = null) {
 		LexiconEntry.gotoAdd();
+
+		var menuItem = "Select Existing One";
+
+		if (IsElementPresent(key_menuItem = ${menuItem}, locator1 = "MenuItem#ANY_MENU_ITEM")) {
+			MenuItem.click(menuItem = ${menuItem});
+		}
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		ClickNoError(
-			key_titleFieldName = "${titleFieldName}",
+			key_titleFieldName = ${titleFieldName},
 			locator1 = "CreateObject#SELECT_ENTRY_IN_RELATIONSHIP_TAB");
+
+		WaitForSPARefresh();
+
+		WaitForPageLoad();
+
+		Alert.viewSuccessMessage();
 	}
 
-	macro assertAddedEntryRelationshipIsDisplayed {
+	@summary = "Default summary"
+	macro assertAddedEntryRelationshipIsDisplayed(entry = null) {
 		LexiconEntry.gotoAdd();
 
 		Click(locator1 = "ObjectPortlet#SEARCH_RELATIONSHIP_ENTRY");
 
+		WaitForSPARefresh();
+
 		AssertElementPresent(
-			key_entry = "${entry}",
+			key_entry = ${entry},
 			locator1 = "CreateObject#ENTRY_RELATIONSHIP_FIELD_OPTION");
 	}
 
-	macro assertCanCollapseAndExpandEntryField {
-		LexiconEntry.gotoAdd();
+	@summary = "Default summary"
+	macro assertDisabledAllFields() {
+		for (var fieldsDisabled : list "Name,Label,Scope,Panel Link") {
+			AssertElementPresent(
+				key_nameDisabled = ${fieldsDisabled},
+				locator1 = "CreateObject#VIEW_OBJECT_DATA_DISABLED");
+		}
 
-		Click(locator1 = "CreateObject#COLLAPSE_EXPAND_OBJECT_PORTLET_ENTRY_FIELD");
-
-		WaitForSPARefresh();
-
-		AssertNotVisible(locator1 = "ObjectAdmin#ENTRY_STRING_VALUE_FIELD");
-
-		Click(locator1 = "CreateObject#COLLAPSE_EXPAND_OBJECT_PORTLET_ENTRY_FIELD");
-
-		WaitForSPARefresh();
-
-		WaitForVisible(locator1 = "ObjectAdmin#ENTRY_STRING_VALUE_FIELD");
-
-		AssertVisible(locator1 = "ObjectAdmin#ENTRY_STRING_VALUE_FIELD");
+		AssertElementPresent(locator1 = "CreateObject#SAVE_BUTTON_DISABLED");
 	}
 
-	macro assertCannotAddRelationshipTabFirst {
-		LexiconEntry.gotoAdd();
-
-		AssertElementPresent(locator1 = "CreateObject#DISABLED_TAB_TYPE_RELATIONSHIPS");
-	}
-
-	macro assertCustomObject {
-		AssertElementPresent(
-			key_labelName = "${labelName}",
-			locator1 = "CreateObject#OBJECT_NAME");
-	}
-
-	macro assertCustomObjectNotPresent {
-		AssertElementNotPresent(
-			key_labelName = "${labelName}",
-			locator1 = "CreateObject#OBJECT_NAME");
-	}
-
-	macro assertDisabledFieldName {
-		AssertElementPresent(locator1 = "CreateObject#DISABLED_FIELD_NAME");
-	}
-
-	macro assertDisabledFieldType {
-		AssertElementPresent(locator1 = "CreateObject#DISABLED_FIELD_TYPE");
-	}
-
-	macro assertDisabledObjectName {
-		AssertElementPresent(locator1 = "CreateObject#DISABLED_OBJECT_NAME");
-	}
-
-	macro assertDisabledPublishObjectButton {
-		AssertElementPresent(locator1 = "CreateObject#DISABLED_PUBLISH_OBJECT_BUTTON");
-	}
-
-	macro assertEntrySelectedOnRelationshipField {
-		AssertElementPresent(
-			key_entry = "${entry}",
-			locator1 = "CreateObject#VIEW_ENTRY_SELECTED_ON_RELATIONSHIP_FIELD");
-	}
-
-	macro assertFieldAddedOnBlock {
-		AssertElementPresent(
-			key_fieldLabelName = "${fieldLabelName}",
-			locator1 = "CreateObject#FIELD_ADDED_ON_BLOCK");
-	}
-
-	macro assertFieldName {
-		AssertTextEquals(
-			locator1 = "CreateObject#FIELD_NAME",
-			value1 = "${fieldName}");
-	}
-
-	macro assertFieldNotPresentInBlock {
-		AssertElementNotPresent(
-			key_fieldLabelName = "${fieldLabelName}",
-			locator1 = "CreateObject#FIELD_ADDED_ON_BLOCK");
-	}
-
-	macro assertFieldType {
-		AssertSelectedLabel(
-			locator1 = "CreateObject#FIELD_TYPE",
-			value1 = "${fieldType}");
-	}
-
-	macro assertLabelBasicInfo {
+	@summary = "Default summary"
+	macro assertLabelBasicInfo(fieldLabel = null) {
 		var key_fieldType = "value";
 
 		WaitForSPARefresh();
@@ -122,11 +74,12 @@ definition {
 		}
 
 		AssertElementPresent(
-			fieldLabel = "${fieldLabel}",
+			fieldLabel = ${fieldLabel},
 			locator1 = "CreateObject#FIELD_VALUE");
 	}
 
-	macro assertLabelBasicInfoNotPresent {
+	@summary = "Default summary"
+	macro assertLabelBasicInfoNotPresent(fieldLabel = null) {
 		var key_fieldType = "value";
 
 		WaitForSPARefresh();
@@ -138,170 +91,172 @@ definition {
 		}
 
 		AssertElementNotPresent(
-			fieldLabel = "${fieldLabel}",
+			fieldLabel = ${fieldLabel},
 			locator1 = "CreateObject#FIELD_VALUE");
 	}
 
-	macro assertObjectDefinitionName {
-		AssertTextEquals(
-			locator1 = "CreateObject#OBJECT_DEFINITION_NAME",
-			value1 = "${objectName}");
-	}
-
-	macro assertObjectFieldNameIsAutofilled {
+	@summary = "Default summary"
+	macro assertObjectFieldNameIsAutofilled(fieldName = null, fieldLabel = null) {
 		LexiconEntry.gotoAdd();
 
 		Type(
-			locator1 = "ObjectAdmin#OBJECT_FIELDS_LABEL_INPUT",
-			value1 = "${fieldLabel}");
+			locator1 = "ObjectField#LABEL_INPUT",
+			value1 = ${fieldLabel});
 
 		AssertElementPresent(
-			key_fieldName = "${fieldName}",
+			key_fieldName = ${fieldName},
 			locator1 = "CreateObject#VIEW_OBJECT_FIELD_NAME");
 	}
 
-	macro assertObjectLabel {
+	@summary = "Default summary"
+	macro assertOneColumnOnFieldEntry() {
+		AssertElementPresent(locator1 = "CreateObject#ASSERT_ONE_COLUMN_FIELD_ENTRY");
+
+		AssertElementNotPresent(locator1 = "CreateObject#ASSERT_TWO_COLUMN_FIELD_ENTRY");
+	}
+
+	@summary = "Default summary"
+	macro assertRelationshipNotPresent() {
+		LexiconEntry.gotoAdd();
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
 		AssertTextEquals(
-			locator1 = "CreateObject#OBJECT_LABEL",
-			value1 = "${labelName}");
+			locator1 = "Message#NO_ENTRIES",
+			value1 = "No entries were found.");
 	}
 
-	macro assertObjectNotPresent {
-		AssertElementNotPresent(
-			key_tabName = "${objectName}",
-			locator1 = "ObjectAdmin#ANY_TAB_ON_ENTRY");
+	@summary = "Default summary"
+	macro assertValuesOnObjectData(fieldLabel = null) {
+		var key_fieldType = "form-control";
+
+		AssertElementPresent(
+			fieldLabel = ${fieldLabel},
+			locator1 = "CreateObject#FIELD_VALUE");
 	}
 
-	macro assertObjectPluralLabel {
+	@summary = "Default summary"
+	macro assertValuesOnScope(valuePanelCategory = null, valueScope = null) {
 		AssertTextEquals(
-			locator1 = "CreateObject#OBJECT_PLURAL_LABEL",
-			value1 = "${pluralLabelName}");
+			key_labelName = "Scope",
+			locator1 = "ObjectAdmin#CLAY_GENERIC_BUTTON",
+			value1 = ${valueScope});
+
+		AssertTextEquals(
+			key_labelName = "Panel Link",
+			locator1 = "ObjectAdmin#CLAY_GENERIC_BUTTON",
+			value1 = ${valuePanelCategory});
 	}
 
-	macro assertPanelCategoryKey {
-		AssertElementPresent(
-			key_panelCategoryKey = "${panelCategoryKey}",
-			locator1 = "CreateObject#PANEL_CATEGORY_KEY_SELECTED");
+	@summary = "Default summary"
+	macro checkToggleActive() {
+		Check.checkToggleSwitch(locator1 = "CreateObject#ACTIVE_TOGGLE");
+
+		WaitForSPARefresh();
+
+		WaitForPageLoad();
 	}
 
-	macro assertRelatedObject {
-		AssertElementPresent(
-			key_RelatedObject = "${relatedObject}",
-			locator1 = "CreateObject#VIEW_RELATED_OBJECT_ON_RELATIONSHIP_FIELD");
+	@summary = "Default summary"
+	macro checkToggleInactive() {
+		Uncheck.uncheckToggleSwitch(locator1 = "CreateObject#ACTIVE_TOGGLE");
+
+		WaitForSPARefresh();
+
+		WaitForPageLoad();
 	}
 
-	macro assertSearchableSectionOptionsAppears {
-		AssertElementPresent(
-			key_radioOption = "${radioOption}",
-			locator1 = "ObjectAdmin#FIELDS_RADIO_OPTION");
-	}
-
-	macro assertTitleFieldIsSelected {
-		AssertElementPresent(
-			locator1 = "CreateObject#TITLE_FIELD",
-			value1 = "${fieldLabel}");
-	}
-
-	macro assertToggleCollapsibleChecked {
-		AssertChecked.assertCheckedNotVisible(locator1 = "CreateObject#TOGGLE_COLLAPSIBLE");
-	}
-
-	macro assertToggleMandatory {
-		AssertChecked.assertCheckedNotVisible(locator1 = "ObjectAdmin#OBJECT_FIELDS_MANDATORY_TOGGLE_SWITCH");
-	}
-
-	macro checkToggleActive {
-		Check.checkToggleSwitch(locator1 = "CreateObject#TOGGLE_ACTIVE");
-	}
-
-	macro checkToggleCollapsible {
-		Check.checkToggleSwitch(locator1 = "CreateObject#TOGGLE_COLLAPSIBLE");
-	}
-
-	macro checkToggleInactive {
-		Uncheck.uncheckToggleSwitch(locator1 = "CreateObject#TOGGLE_INACTIVE");
-	}
-
-	macro checkToggleMandatory {
-		Check.checkToggleSwitch(locator1 = "CreateObject#TOGGLE_MANDATORY");
-	}
-
-	macro chooseEntryOnRelationshipField {
-		Click(locator1 = "ObjectPortlet#SEARCH_RELATIONSHIP_ENTRY");
-
-		KeyPress(
-			locator1 = "ObjectPortlet#SEARCH_RELATIONSHIP_ENTRY",
-			value1 = "\BACK_SPACE");
-
-		Click(
-			key_picklistOption = "${entryOption}",
-			locator1 = "ObjectAdmin#ENTRY_PICKLIST_OPTION");
-	}
-
-	macro deleteEntryInRelationshipTab {
+	@summary = "Default summary"
+	macro deleteEntryInRelationshipTab(entryName = null, labelName = null) {
 		ObjectAdmin.gotoRelationshipsTab();
 
-		Click(locator1 = "CreateObject#DELETE_ENTRY_IN_RELATIONSHIP_TAB");
+		if (isSet(entryName)) {
+			Click.clickNoMouseOver(
+				key_entryName = ${entryName},
+				locator1 = "ObjectPortlet#DELETE_RELATIONSHIP_ENTRY");
+		}
+		else if (isSet(labelName)) {
+			Click(
+				key_objectLabel = ${labelName},
+				locator1 = "ObjectAdmin#OBJECT_KEBAB_MENU");
 
-		AssertElementNotPresent(locator1 = "CreateObject#KEBAB_MENU_BLOCK_FIELD_OPTION_DELETE");
+			MenuItem.clickNoError(menuItem = "Delete");
+		}
+
+		WaitForSPARefresh();
+
+		WaitForPageLoad();
 	}
 
-	macro deleteFieldOnBlock {
+	@summary = "Default summary"
+	macro deleteFieldOnBlock() {
 		Click(locator1 = "CreateObject#KEBAB_MENU_BLOCK_FIELD");
 
 		Click(locator1 = "CreateObject#KEBAB_MENU_BLOCK_FIELD_OPTION_DELETE");
 	}
 
-	macro deleteObjectViaUI {
+	@summary = "Default summary"
+	macro deleteObjectViaUI(objectLabel = null) {
 		Click(
-			key_text = "${objectName}",
-			locator1 = "Icon#ANY_VERTICAL_ELLIPSIS");
+			key_objectLabel = ${objectLabel},
+			locator1 = "ObjectAdmin#OBJECT_KEBAB_MENU");
 
 		MenuItem.clickNoError(menuItem = "Delete");
 	}
 
-	macro editLabel {
+	@summary = "Default summary"
+	macro desactiveToogleAccountRestriction() {
+		Uncheck.uncheckToggleSwitch(locator1 = "CreateObject#TOGGLE_ACCOUNT_RESTRICTION");
+	}
+
+	@summary = "Default summary"
+	macro editLabel(labelName = null) {
 		Type(
 			locator1 = "CreateObject#OBJECT_LABEL",
-			value1 = "${labelName}");
+			value1 = ${labelName});
 	}
 
-	macro editName {
-		Type(
-			locator1 = "CreateObject#FIELD_NAME",
-			value1 = "${fieldName}");
-	}
-
-	macro editPluralLabel {
+	@summary = "Default summary"
+	macro editPluralLabel(pluralLabelName = null) {
 		Type(
 			locator1 = "CreateObject#OBJECT_PLURAL_LABEL",
-			value1 = "${pluralLabelName}");
+			value1 = ${pluralLabelName});
 	}
 
-	macro editType {
-		Select(
-			locator1 = "CreateObject#FIELD_TYPE",
-			value1 = "${fieldType}");
-	}
-
-	macro inactiveCustomObject {
-		ObjectPortlet.selectCustomObject(label = "${objectName}");
+	@summary = "Default summary"
+	macro inactiveCustomObject(objectLabel = null) {
+		ObjectPortlet.selectCustomObject(label = ${objectLabel});
 
 		CreateObject.checkToggleInactive();
 
 		CreateObject.saveObject();
 	}
 
-	macro saveObject {
-		Click(locator1 = "CreateObject#SAVE_BUTTON");
+	@summary = "Default summary"
+	macro saveObject() {
+		Button.clickSave();
 
-		WaitForSPARefresh();
+		Alert.viewSuccessMessage();
+
+		WaitForElementNotPresent(locator1 = "Message#SUCCESS");
+
+		WaitForPageLoad();
 	}
 
-	macro selectDeletionType {
+	@summary = "Default summary"
+	macro selectAccountRestrictedField(accountRestrictedField = null) {
+		Click(locator1 = "CreateObject#ACCOUNT_RESTRICTED_FIELD");
+
+		Click(
+			key_menuItem = ${accountRestrictedField},
+			locator1 = "MenuItem#ANY_MENU_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro selectDeletionType(fieldName = null, deletionType = null) {
 		ObjectAdmin.gotoRelationshipsTab();
 
-		ObjectAdmin.goToRelationshipsDetails(fieldName = "${fieldName}");
+		ObjectAdmin.goToRelationshipsDetails(fieldName = ${fieldName});
 
 		WaitForSPARefresh();
 
@@ -309,40 +264,42 @@ definition {
 
 		Select(
 			locator1 = "CreateObject#SELECT_DELETION_TYPE",
-			value1 = "${deletionType}");
+			value1 = ${deletionType});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro selectScope(fieldLabel = null) {
+		Click(locator1 = "CreateObject#SCOPE");
+
+		Click(
+			key_menuItem = ${fieldLabel},
+			locator1 = "MenuItem#ANY_MENU_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro selectTitleField(currentOption = null,fieldLabel = null) {
+		ObjectAdmin.selectDropdownItem(
+			labelName = "Entry Title Field",
+			optionName = ${fieldLabel});
+	}
+
+	@summary = "Default summary"
+	macro viewAccountRestrictedFieldIsRequiredOnEntries(relationshipName = null) {
+		AssertElementPresent(
+			key_fieldName = ${relationshipName},
+			locator1 = "FormFields#TEXT_FIELD");
 
 		Button.clickSave();
+
+		Alert.viewRequiredField();
 	}
 
-	macro selectPanelCategoryKey {
-		Select(
-			locator1 = "CreateObject#PANEL_CATEGORY_KEY",
-			value1 = "${panelCategoryKey}");
-	}
-
-	macro selectTitleField {
-		Select(
-			locator1 = "CreateObject#TITLE_FIELD",
-			value1 = "${fieldLabel}");
-	}
-
-	macro toggleMandatory {
-		Check.toggleSwitch(locator1 = "CreateObject#TOGGLE_MANDATORY");
-	}
-
-	macro viewEmptyFieldTable {
-		AssertElementPresent(locator1 = "RemoteApps#EMPTY_REMOTE_TABLE_MESSAGE");
-	}
-
-	macro viewObject {
+	@summary = "Default summary"
+	macro withdrawObjectTask(objectLabel = null) {
 		Click(
-			key_labelName = "${labelName}",
-			locator1 = "CreateObject#VIEW_OBJECT");
-	}
-
-	macro withdrawObjectTask {
-		Click(
-			key_taskName = "${objectName}",
+			key_taskName = ${objectLabel},
 			locator1 = "WorkflowSubmissions#SUBMISSIONS_TASK_NAME");
 
 		Click(locator1 = "WorkflowSubmissions#SUBMISSIONS_DETAILS_PAGE_ELLIPSIS");

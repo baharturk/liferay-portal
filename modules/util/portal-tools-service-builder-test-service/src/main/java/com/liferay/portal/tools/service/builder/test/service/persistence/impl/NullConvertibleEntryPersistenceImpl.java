@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.persistence.impl;
@@ -40,7 +31,6 @@ import com.liferay.portal.tools.service.builder.test.service.persistence.NullCon
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.List;
@@ -149,7 +139,7 @@ public class NullConvertibleEntryPersistenceImpl
 
 		if (useFinderCache) {
 			result = dummyFinderCache.getResult(
-				_finderPathFetchByName, finderArgs);
+				_finderPathFetchByName, finderArgs, this);
 		}
 
 		if (result instanceof NullConvertibleEntry) {
@@ -253,7 +243,8 @@ public class NullConvertibleEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {name};
 
-		Long count = (Long)dummyFinderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)dummyFinderCache.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -723,7 +714,7 @@ public class NullConvertibleEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<NullConvertibleEntry>)dummyFinderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -793,7 +784,7 @@ public class NullConvertibleEntryPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)dummyFinderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -868,29 +859,13 @@ public class NullConvertibleEntryPersistenceImpl
 			new String[] {String.class.getName()}, new String[] {"name"},
 			false);
 
-		_setNullConvertibleEntryUtilPersistence(this);
+		NullConvertibleEntryUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setNullConvertibleEntryUtilPersistence(null);
+		NullConvertibleEntryUtil.setPersistence(null);
 
 		dummyEntityCache.removeCache(NullConvertibleEntryImpl.class.getName());
-	}
-
-	private void _setNullConvertibleEntryUtilPersistence(
-		NullConvertibleEntryPersistence nullConvertibleEntryPersistence) {
-
-		try {
-			Field field = NullConvertibleEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, nullConvertibleEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_NULLCONVERTIBLEENTRY =

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.multi.factor.authentication.email.otp.service.base;
@@ -32,6 +23,8 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -44,8 +37,6 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -326,6 +317,11 @@ public abstract class MFAEmailOTPEntryLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement MFAEmailOTPEntryLocalServiceImpl#deleteMFAEmailOTPEntry(MFAEmailOTPEntry) to avoid orphaned data");
+		}
+
 		return mfaEmailOTPEntryLocalService.deleteMFAEmailOTPEntry(
 			(MFAEmailOTPEntry)persistedModel);
 	}
@@ -391,7 +387,7 @@ public abstract class MFAEmailOTPEntryLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		MFAEmailOTPEntryLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -406,7 +402,8 @@ public abstract class MFAEmailOTPEntryLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		mfaEmailOTPEntryLocalService = (MFAEmailOTPEntryLocalService)aopProxy;
 
-		_setLocalServiceUtilService(mfaEmailOTPEntryLocalService);
+		MFAEmailOTPEntryLocalServiceUtil.setService(
+			mfaEmailOTPEntryLocalService);
 	}
 
 	/**
@@ -451,23 +448,6 @@ public abstract class MFAEmailOTPEntryLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		MFAEmailOTPEntryLocalService mfaEmailOTPEntryLocalService) {
-
-		try {
-			Field field =
-				MFAEmailOTPEntryLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, mfaEmailOTPEntryLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	protected MFAEmailOTPEntryLocalService mfaEmailOTPEntryLocalService;
 
 	@Reference
@@ -476,5 +456,8 @@ public abstract class MFAEmailOTPEntryLocalServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		MFAEmailOTPEntryLocalServiceBaseImpl.class);
 
 }

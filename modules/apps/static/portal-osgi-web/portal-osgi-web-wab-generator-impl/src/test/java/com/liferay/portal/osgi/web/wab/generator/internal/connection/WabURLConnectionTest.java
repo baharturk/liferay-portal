@@ -1,24 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.wab.generator.internal.connection;
 
 import com.liferay.portal.kernel.security.xml.SecureXMLFactoryProviderUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.security.xml.SecureXMLFactoryProviderImpl;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+import com.liferay.portal.util.FastDateFormatFactoryImpl;
 import com.liferay.portal.xml.SAXReaderImpl;
 
 import java.io.IOException;
@@ -44,6 +37,12 @@ public class WabURLConnectionTest {
 
 	@BeforeClass
 	public static void setUpClass() {
+		FastDateFormatFactoryUtil fastDateFormatFactoryUtil =
+			new FastDateFormatFactoryUtil();
+
+		fastDateFormatFactoryUtil.setFastDateFormatFactory(
+			new FastDateFormatFactoryImpl());
+
 		SAXReaderUtil saxReaderUtil = new SAXReaderUtil();
 
 		SAXReaderImpl secureSAXReaderImpl = new SAXReaderImpl();
@@ -94,7 +93,8 @@ public class WabURLConnectionTest {
 	public void testWabURLConnectionRequiredParamsCompatibilityMode()
 		throws Exception {
 
-		String uriString = _getURIString("/classic-theme.autodeployed.war");
+		String uriString = _getURIString(
+			"dependencies/classic-theme.autodeployed.war");
 
 		WabURLConnection wabURLConnection = new WabURLConnection(
 			null, null,

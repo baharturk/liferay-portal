@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.order.dto.v1_0;
@@ -58,7 +49,7 @@ public class OrderNote implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(OrderNote.class, json);
 	}
 
-	@Schema
+	@Schema(example = "Alessio Antonio Rendina")
 	public String getAuthor() {
 		return author;
 	}
@@ -86,7 +77,7 @@ public class OrderNote implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String author;
 
-	@Schema
+	@Schema(example = "This order will be shipped separately")
 	public String getContent() {
 		return content;
 	}
@@ -114,7 +105,7 @@ public class OrderNote implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String content;
 
-	@Schema
+	@Schema(example = "AB-34098-789-N")
 	public String getExternalReferenceCode() {
 		return externalReferenceCode;
 	}
@@ -143,7 +134,7 @@ public class OrderNote implements Serializable {
 	protected String externalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getId() {
 		return id;
 	}
@@ -169,7 +160,7 @@ public class OrderNote implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@Schema(example = "CAB-34098-789-N")
 	public String getOrderExternalReferenceCode() {
 		return orderExternalReferenceCode;
 	}
@@ -202,7 +193,7 @@ public class OrderNote implements Serializable {
 	protected String orderExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30128")
 	public Long getOrderId() {
 		return orderId;
 	}
@@ -230,7 +221,7 @@ public class OrderNote implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long orderId;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getRestricted() {
 		return restricted;
 	}
@@ -465,5 +456,7 @@ public class OrderNote implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

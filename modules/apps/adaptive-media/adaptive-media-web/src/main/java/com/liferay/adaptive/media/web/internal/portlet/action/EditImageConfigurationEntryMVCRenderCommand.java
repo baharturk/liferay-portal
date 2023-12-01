@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.web.internal.portlet.action;
@@ -24,8 +15,6 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Optional;
-
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 
@@ -36,7 +25,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + AMPortletKeys.ADAPTIVE_MEDIA,
 		"mvc.command.name=/adaptive_media/edit_image_configuration_entry"
@@ -55,16 +43,13 @@ public class EditImageConfigurationEntryMVCRenderCommand
 
 		String entryUuid = ParamUtil.getString(renderRequest, "entryUuid");
 
-		Optional<AMImageConfigurationEntry> amImageConfigurationEntryOptional =
+		AMImageConfigurationEntry amImageConfigurationEntry =
 			_amImageConfigurationHelper.getAMImageConfigurationEntry(
 				themeDisplay.getCompanyId(), entryUuid);
 
 		boolean configurationEntryEditable = true;
 
-		if (amImageConfigurationEntryOptional.isPresent()) {
-			AMImageConfigurationEntry amImageConfigurationEntry =
-				amImageConfigurationEntryOptional.get();
-
+		if (amImageConfigurationEntry != null) {
 			int entriesCount = _amImageEntryLocalService.getAMImageEntriesCount(
 				themeDisplay.getCompanyId(),
 				amImageConfigurationEntry.getUUID());
@@ -75,9 +60,7 @@ public class EditImageConfigurationEntryMVCRenderCommand
 		}
 
 		renderRequest.setAttribute(
-			AMWebKeys.CONFIGURATION_ENTRY,
-			amImageConfigurationEntryOptional.orElse(null));
-
+			AMWebKeys.CONFIGURATION_ENTRY, amImageConfigurationEntry);
 		renderRequest.setAttribute(
 			AMWebKeys.CONFIGURATION_ENTRY_EDITABLE, configurationEntryEditable);
 

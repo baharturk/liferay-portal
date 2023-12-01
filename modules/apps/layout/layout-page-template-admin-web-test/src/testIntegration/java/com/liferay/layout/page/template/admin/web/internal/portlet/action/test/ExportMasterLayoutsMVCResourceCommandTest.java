@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.portlet.action.test;
@@ -43,6 +34,7 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import java.io.File;
 
@@ -88,13 +80,16 @@ public class ExportMasterLayoutsMVCResourceCommandTest {
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
 				_serviceContext.getUserId(), _serviceContext.getScopeGroupId(),
 				0, "Master Page One",
-				LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT, 0,
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
 				WorkflowConstants.STATUS_APPROVED, _serviceContext);
 
-		_layoutPageTemplateStructureLocalService.addLayoutPageTemplateStructure(
-			TestPropsValues.getUserId(), _group.getGroupId(),
-			layoutPageTemplateEntry.getPlid(), _read("layout_data.json"),
-			_serviceContext);
+		_layoutPageTemplateStructureLocalService.
+			updateLayoutPageTemplateStructureData(
+				_group.getGroupId(), layoutPageTemplateEntry.getPlid(),
+				_segmentsExperienceLocalService.
+					fetchDefaultSegmentsExperienceId(
+						layoutPageTemplateEntry.getPlid()),
+				_read("layout_data.json"));
 
 		Repository repository = PortletFileRepositoryUtil.addPortletRepository(
 			_group.getGroupId(), RandomTestUtil.randomString(),
@@ -103,7 +98,7 @@ public class ExportMasterLayoutsMVCResourceCommandTest {
 		Class<?> clazz = getClass();
 
 		FileEntry fileEntry = PortletFileRepositoryUtil.addPortletFileEntry(
-			_group.getGroupId(), TestPropsValues.getUserId(),
+			null, _group.getGroupId(), TestPropsValues.getUserId(),
 			LayoutPageTemplateEntry.class.getName(),
 			layoutPageTemplateEntry.getLayoutPageTemplateEntryId(),
 			RandomTestUtil.randomString(), repository.getDlFolderId(),
@@ -145,7 +140,7 @@ public class ExportMasterLayoutsMVCResourceCommandTest {
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
 				_serviceContext.getUserId(), _serviceContext.getScopeGroupId(),
 				0, StringUtil.randomString(),
-				LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT, 0,
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
 				WorkflowConstants.STATUS_DRAFT, _serviceContext);
 
 		File file = ReflectionTestUtil.invoke(
@@ -177,7 +172,7 @@ public class ExportMasterLayoutsMVCResourceCommandTest {
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
 				_serviceContext.getUserId(), _serviceContext.getScopeGroupId(),
 				0, "Master Page One",
-				LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT, 0,
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
 				WorkflowConstants.STATUS_DRAFT, _serviceContext);
 
 		String fileName = ReflectionTestUtil.invoke(
@@ -277,7 +272,7 @@ public class ExportMasterLayoutsMVCResourceCommandTest {
 			_read(expectedFileName));
 
 		Assert.assertEquals(
-			expectedJSONObject.toJSONString(), jsonObject.toJSONString());
+			expectedJSONObject.toString(), jsonObject.toString());
 	}
 
 	private void _validateZipEntry(ZipEntry zipEntry, ZipFile zipFile)
@@ -317,6 +312,9 @@ public class ExportMasterLayoutsMVCResourceCommandTest {
 		filter = "mvc.command.name=/layout_page_template_admin/export_master_layouts"
 	)
 	private MVCResourceCommand _mvcResourceCommand;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	private ServiceContext _serviceContext;
 

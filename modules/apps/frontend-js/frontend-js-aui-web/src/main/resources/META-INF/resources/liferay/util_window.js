@@ -1,41 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-util-window',
 	(A) => {
-		var DOM = A.DOM;
-		var Lang = A.Lang;
-		var UA = A.UA;
+		const DOM = A.DOM;
+		const Lang = A.Lang;
+		const UA = A.UA;
 
-		var IE = UA.ie;
+		const IE = UA.ie;
 
-		var Util = Liferay.Util;
-		var Window = Util.Window;
+		const Util = Liferay.Util;
+		const Window = Util.Window;
 
-		var IE9 = IE === 9;
+		const IE9 = IE === 9;
 
-		var IE11 = IE === 11;
+		const IE11 = IE === 11;
 
-		var setWidth = function (modal, width) {
+		const setWidth = function (modal, width) {
 			if (IE9) {
 				modal.set('width', width + 1);
 				modal.set('width', width);
 			}
 		};
 
-		var LiferayModal = A.Component.create({
+		const LiferayModal = A.Component.create({
 			ATTRS: {
 				autoHeight: {
 					value: false,
@@ -66,7 +57,7 @@ AUI.add(
 
 				toolbars: {
 					valueFn() {
-						var instance = this;
+						const instance = this;
 
 						return {
 							header: [
@@ -75,8 +66,8 @@ AUI.add(
 									discardDefaultButtonCssClasses: true,
 									labelHTML:
 										'<svg class="lexicon-icon" focusable="false"><use href="' +
-										Liferay.ThemeDisplay.getPathThemeImages() +
-										'/clay/icons.svg#times" /><title>' +
+										Liferay.Icons.spritemap +
+										'#times" /><title>' +
 										Liferay.Language.get('close') +
 										'</title></svg>',
 									on: {
@@ -103,7 +94,7 @@ AUI.add(
 
 		A.mix(Window, {
 			_bindDOMWinResizeIfNeeded() {
-				var instance = this;
+				const instance = this;
 
 				if (!instance._winResizeHandler) {
 					instance._winResizeHandler = A.getWin().after(
@@ -115,20 +106,20 @@ AUI.add(
 			},
 
 			_bindWindowHooks(modal, config) {
-				var instance = this;
+				const instance = this;
 
-				var id = modal.get('id');
+				const id = modal.get('id');
 
-				var openingWindow = config.openingWindow;
+				const openingWindow = config.openingWindow;
 
-				var refreshWindow = config.refreshWindow;
+				const refreshWindow = config.refreshWindow;
 
 				modal._opener = openingWindow;
 				modal._refreshWindow = refreshWindow;
 
 				modal.after('destroy', () => {
 					if (modal._opener) {
-						var openerInFrame = !!modal._opener.frameElement;
+						const openerInFrame = !!modal._opener.frameElement;
 
 						if (openerInFrame) {
 							if (IE9) {
@@ -145,7 +136,7 @@ AUI.add(
 					modal = null;
 				});
 
-				var liferayHandles = modal._liferayHandles;
+				const liferayHandles = modal._liferayHandles;
 
 				liferayHandles.push(
 					Liferay.after('hashChange', (event) => {
@@ -155,18 +146,18 @@ AUI.add(
 
 				liferayHandles.push(
 					Liferay.after('popupReady', (event) => {
-						var iframeId = id + instance.IFRAME_SUFFIX;
+						const iframeId = id + instance.IFRAME_SUFFIX;
 
 						if (event.windowName === iframeId) {
 							event.dialog = modal;
 							event.details[0].dialog = modal;
 
-							var iframeNode = modal.iframe.node;
+							const iframeNode = modal.iframe.node;
 
-							var iframeElement = iframeNode.getDOM();
+							const iframeElement = iframeNode.getDOM();
 
 							if (event.doc) {
-								var modalUtil = event.win.Liferay.Util;
+								const modalUtil = event.win.Liferay.Util;
 
 								modalUtil.Window._opener = modal._opener;
 
@@ -178,17 +169,13 @@ AUI.add(
 							}
 
 							iframeNode.focus();
-
-							if (UA.ios) {
-								iframeNode.attr('scrolling', 'no');
-							}
 						}
 					})
 				);
 			},
 
 			_ensureDefaultId(config) {
-				var instance = this;
+				const instance = this;
 
 				if (!Lang.isValue(config.id)) {
 					config.id = A.guid();
@@ -200,11 +187,11 @@ AUI.add(
 			},
 
 			_getDialogIframeConfig(config) {
-				var dialogIframeConfig;
+				let dialogIframeConfig;
 
-				var iframeId = config.iframeId;
+				const iframeId = config.iframeId;
 
-				var uri = config.uri;
+				let uri = config.uri;
 
 				if (uri) {
 					if (config.cache === false) {
@@ -218,7 +205,7 @@ AUI.add(
 
 					const namespace = iframeURL.searchParams.get('p_p_id');
 
-					var bodyCssClass = ['dialog-iframe-popup'];
+					const bodyCssClass = ['dialog-iframe-popup'];
 
 					if (
 						config.dialogIframe &&
@@ -234,7 +221,7 @@ AUI.add(
 
 					uri = iframeURL.toString();
 
-					var defaultDialogIframeConfig = {
+					const defaultDialogIframeConfig = {
 						bodyCssClass: '',
 					};
 
@@ -242,13 +229,13 @@ AUI.add(
 						...defaultDialogIframeConfig,
 						...config.dialogIframe,
 						bindLoadHandler() {
-							var instance = this;
+							const instance = this;
 
-							var modal = instance.get('host');
+							const modal = instance.get('host');
 
-							var popupReady = false;
+							let popupReady = false;
 
-							var liferayHandles = modal._liferayHandles;
+							const liferayHandles = modal._liferayHandles;
 
 							liferayHandles.push(
 								Liferay.on('popupReady', (event) => {
@@ -281,20 +268,20 @@ AUI.add(
 			},
 
 			_getWindow(config) {
-				var instance = this;
+				const instance = this;
 
-				var id = config.id;
+				const id = config.id;
 
-				var modalConfig = instance._getWindowConfig(config);
+				const modalConfig = instance._getWindowConfig(config);
 
-				var dialogIframeConfig = instance._getDialogIframeConfig(
+				const dialogIframeConfig = instance._getDialogIframeConfig(
 					config
 				);
 
-				var modal = instance.getById(id);
+				let modal = instance.getById(id);
 
 				if (!modal) {
-					var titleNode = A.Node.create(instance.TITLE_TEMPLATE);
+					const titleNode = A.Node.create(instance.TITLE_TEMPLATE);
 
 					if (config.stack !== false) {
 						A.mix(modalConfig, {
@@ -324,7 +311,7 @@ AUI.add(
 						delete modalConfig.zIndex;
 					}
 
-					var openingWindow = config.openingWindow;
+					const openingWindow = config.openingWindow;
 
 					modal._opener = openingWindow;
 					modal._refreshWindow = config.refreshWindow;
@@ -340,7 +327,7 @@ AUI.add(
 
 					// LPS-93620
 
-					var originalFn = modal.iframe._onLoadIframe;
+					const originalFn = modal.iframe._onLoadIframe;
 
 					modal.iframe._onLoadIframe = function () {
 						try {
@@ -349,7 +336,7 @@ AUI.add(
 						catch (error) {}
 					};
 
-					var boundingBox = modal.get('boundingBox');
+					const boundingBox = modal.get('boundingBox');
 
 					boundingBox.addClass('cadmin');
 					boundingBox.addClass('dialog-iframe-modal');
@@ -369,15 +356,15 @@ AUI.add(
 			},
 
 			_getWindowConfig(config) {
-				var instance = this;
+				const instance = this;
 
-				var modalConfig = {
+				const modalConfig = {
 					...instance.DEFAULTS,
 					...config.dialog,
 				};
 
-				var height = modalConfig.height;
-				var width = modalConfig.width;
+				const height = modalConfig.height;
+				const width = modalConfig.width;
 
 				if (
 					height === 'auto' ||
@@ -403,9 +390,9 @@ AUI.add(
 			},
 
 			_register(modal) {
-				var instance = this;
+				const instance = this;
 
-				var id = modal.get('id');
+				const id = modal.get('id');
 
 				modal._liferayHandles = [];
 
@@ -414,9 +401,9 @@ AUI.add(
 			},
 
 			_resetFocus(modal) {
-				var contentBox = modal.get('contentBox');
+				const contentBox = modal.get('contentBox');
 
-				var input = contentBox.one('input[type=text]');
+				const input = contentBox.one('input[type=text]');
 
 				if (input) {
 					input.getDOM().focus();
@@ -424,10 +411,10 @@ AUI.add(
 			},
 
 			_setWindowDefaultSizeIfNeeded(modal) {
-				var autoSizeNode = modal.get('autoSizeNode');
+				const autoSizeNode = modal.get('autoSizeNode');
 
 				if (modal.get('autoHeight')) {
-					var height;
+					let height;
 
 					if (autoSizeNode) {
 						height = autoSizeNode.get('offsetHeight');
@@ -446,11 +433,11 @@ AUI.add(
 					}
 				}
 
-				var widthInitial = modal.get('width');
+				const widthInitial = modal.get('width');
 
 				if (widthInitial !== 'auto') {
 					if (modal.get('autoWidth')) {
-						var width;
+						let width;
 
 						if (autoSizeNode) {
 							width = autoSizeNode.get('offsetWidth');
@@ -475,9 +462,9 @@ AUI.add(
 			},
 
 			_syncWindowsUI() {
-				var instance = this;
+				const instance = this;
 
-				var modals = instance._map;
+				const modals = instance._map;
 
 				A.each(modals, (modal) => {
 					if (modal.get('visible')) {
@@ -489,9 +476,9 @@ AUI.add(
 			},
 
 			_unregister(modal) {
-				var instance = this;
+				const instance = this;
 
-				var id = modal.get('id');
+				const id = modal.get('id');
 
 				delete instance._map[id];
 				delete instance._map[id + instance.IFRAME_SUFFIX];
@@ -510,20 +497,20 @@ AUI.add(
 
 			IFRAME_SUFFIX: '_iframe_',
 
-			TITLE_TEMPLATE: '<h3 class="modal-title" />',
+			TITLE_TEMPLATE: '<div class="modal-title" />',
 
 			getByChild(child) {
-				var node = A.one(child).ancestor('.modal', true);
+				const node = A.one(child).ancestor('.modal', true);
 
 				return A.Widget.getByNode(node);
 			},
 
 			getWindow(config) {
-				var instance = this;
+				const instance = this;
 
 				instance._ensureDefaultId(config);
 
-				var modal = instance._getWindow(config);
+				const modal = instance._getWindow(config);
 
 				instance._bindDOMWinResizeIfNeeded();
 
@@ -533,7 +520,7 @@ AUI.add(
 
 				// LPS-106470, LPS-109906 resize modal mask
 
-				var mask = modal.get('maskNode');
+				const mask = modal.get('maskNode');
 
 				if (mask.getStyle('position') === 'absolute') {
 					mask.setStyle('height', '100%');
@@ -550,15 +537,15 @@ AUI.add(
 			},
 
 			hideByChild(child) {
-				var instance = this;
+				const instance = this;
 
 				return instance.getByChild(child).hide();
 			},
 
 			refreshByChild(child) {
-				var instance = this;
+				const instance = this;
 
-				var dialog = instance.getByChild(child);
+				const dialog = instance.getByChild(child);
 
 				if (dialog && dialog.io) {
 					dialog.io.start();

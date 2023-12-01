@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.configuration.admin.web.internal.util;
@@ -29,9 +20,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.metatype.AttributeDefinition;
@@ -48,8 +37,6 @@ public class AttributeDefinitionUtilTest {
 
 	@Before
 	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
 		Mockito.doReturn(
 			_ID
 		).when(
@@ -171,12 +158,10 @@ public class AttributeDefinitionUtilTest {
 
 	private static final String _ID = RandomTestUtil.randomString();
 
-	@Mock
-	private AttributeDefinition _attributeDefinition;
-
-	@Mock
-	private Configuration _configuration;
-
+	private final AttributeDefinition _attributeDefinition = Mockito.mock(
+		AttributeDefinition.class);
+	private final Configuration _configuration = Mockito.mock(
+		Configuration.class);
 	private final Dictionary<String, Object> _properties = new Hashtable<>();
 
 }

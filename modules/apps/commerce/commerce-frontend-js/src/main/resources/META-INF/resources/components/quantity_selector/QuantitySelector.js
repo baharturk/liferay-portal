@@ -1,71 +1,72 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import classnames from 'classnames';
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, {forwardRef, useRef} from 'react';
 
 import InputQuantitySelector from './InputQuantitySelector';
 import ListQuantitySelector from './ListQuantitySelector';
 
-function QuantitySelector({
-	allowedQuantities,
-	disabled,
-	maxQuantity,
-	minQuantity,
-	multipleQuantity,
-	name,
-	onUpdate,
-	quantity,
-	size,
-}) {
-	const Selector =
-		allowedQuantities?.length > 0
-			? ListQuantitySelector
-			: InputQuantitySelector;
+const QuantitySelector = forwardRef(
+	(
+		{
+			alignment,
+			allowedQuantities,
+			disabled,
+			max,
+			min,
+			name,
+			namespace,
+			onUpdate,
+			quantity,
+			size,
+			step,
+			unitOfMeasure,
+		},
+		providedRef
+	) => {
+		const inputRef = useRef();
 
-	return (
-		<Selector
-			allowedQuantities={allowedQuantities}
-			className={classnames({
-				[`form-control-${size}`]: size,
-				'quantity-selector': true,
-			})}
-			disabled={disabled}
-			maxQuantity={maxQuantity}
-			minQuantity={minQuantity}
-			multipleQuantity={multipleQuantity}
-			name={name}
-			onUpdate={onUpdate}
-			quantity={quantity}
-		/>
-	);
-}
+		const Selector =
+			allowedQuantities?.length > 0
+				? ListQuantitySelector
+				: InputQuantitySelector;
+
+		return (
+			<Selector
+				alignment={alignment}
+				allowedQuantities={allowedQuantities}
+				className={classnames({
+					[`form-control-${size}`]: size,
+					'quantity-selector': true,
+				})}
+				disabled={disabled}
+				max={max}
+				min={min}
+				name={name}
+				namespace={namespace}
+				onUpdate={onUpdate}
+				quantity={quantity}
+				ref={providedRef || inputRef}
+				step={step}
+				unitOfMeasure={unitOfMeasure}
+			/>
+		);
+	}
+);
 
 QuantitySelector.defaultProps = {
 	disabled: false,
-	minQuantity: 1,
-	multipleQuantity: 1,
-	quantity: 1,
 };
 
 QuantitySelector.propTypes = {
+	alignment: PropTypes.oneOf(['top', 'bottom']),
 	disabled: PropTypes.bool,
-	maxQuantity: PropTypes.number,
-	minQuantity: PropTypes.number,
-	multipleQuantity: PropTypes.number,
 	name: PropTypes.string,
+	namespace: PropTypes.string,
 	onUpdate: PropTypes.func.isRequired,
 	quantity: PropTypes.number,
 	size: PropTypes.oneOf(['lg', 'md', 'sm']),

@@ -1,54 +1,60 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React, {useEffect, useState} from 'react';
 
+import useClipboardJS from '../hooks/useClipboardJS';
 import ErrorBoundary from '../shared/ErrorBoundary';
 import ThemeContext from '../shared/ThemeContext';
-import {fetchData} from '../utils/fetch';
-import {renameKeys} from '../utils/language';
+import {COPY_BUTTON_CSS_CLASS} from '../utils/constants';
+import fetchData from '../utils/fetch/fetch_data';
+import formatLocaleWithUnderscores from '../utils/language/format_locale_with_underscores';
+import renameKeys from '../utils/language/rename_keys';
+import transformLocale from '../utils/language/transform_locale';
+import deleteLocalizedProperties from '../utils/sxp_element/delete_localized_properties';
+import {openInitialSuccessToast} from '../utils/toasts';
 import EditSXPElementForm from './EditSXPElementForm';
 
 /**
  * Gets the formatted description_i18n object from the sxp element response.
  * Also creates an object using the default locale and `description` field if
- * the description_i18n object is undefined.
+ * the description_i18n object is undefined. If the description_i18n object is
+ * {}, it will return object with placeholder: {'en_US': ''}.
  *
- * The expected return format is: [{'en_US': 'description'}]
+ * The expected return format is: {'en_US': 'description'}
  * @param {object} sxpElementResponse The response object from the GET
  * 	sxp-elements
  * @param {string} defaultLocale The default locale
- * @returns {Array}
+ * @returns {object}
  */
 const getDescriptionI18n = (sxpElementResponse, defaultLocale) => {
-	const descriptionObject = sxpElementResponse.description_i18n || {
-		[defaultLocale]: sxpElementResponse.description,
-	};
+	let descriptionObject = renameKeys(
+		sxpElementResponse.description_i18n,
+		transformLocale
+	);
 
-	return renameKeys(descriptionObject, (str) => str.replace('-', '_'));
+	if (!Object.keys(descriptionObject).length) {
+		descriptionObject = {[defaultLocale]: ''};
+	}
+
+	return renameKeys(descriptionObject, formatLocaleWithUnderscores);
 };
 
 /**
  * See `getDescriptionI18n`.
  * @param {object} sxpElementResponse The response object from the GET
  * 	sxp-elements
- * @param {string} defaultLocale The default locale
- * @returns {Array}
+ * @returns {object}
  */
-const getTitleI18n = (sxpElementResponse, defaultLocale) => {
-	const titleObject = sxpElementResponse.title_i18n || {
-		[defaultLocale]: sxpElementResponse.title,
-	};
+const getTitleI18n = (sxpElementResponse) => {
+	const titleObject = renameKeys(
+		sxpElementResponse.title_i18n,
+		transformLocale
+	);
 
-	return renameKeys(titleObject, (str) => str.replace('-', '_'));
+	return renameKeys(titleObject, formatLocaleWithUnderscores);
 };
 
 /**
@@ -63,14 +69,18 @@ const transformToSXPElementExportFormat = (
 ) => {
 	return {
 		description_i18n: getDescriptionI18n(sxpElementResponse, defaultLocale),
-		elementDefinition: sxpElementResponse.elementDefinition,
-		title_i18n: getTitleI18n(sxpElementResponse, defaultLocale),
+		elementDefinition: deleteLocalizedProperties(
+			sxpElementResponse.elementDefinition
+		),
+		title_i18n: getTitleI18n(sxpElementResponse),
 		type: sxpElementResponse.type,
 	};
 };
 
 export default function ({
 	defaultLocale,
+	learnMessages,
+	locale,
 	namespace,
 	redirectURL,
 	sxpElementId,
@@ -78,24 +88,24 @@ export default function ({
 	const [predefinedVariables, setPredefinedVariables] = useState(null);
 	const [sxpElementResponse, setSXPElementResponse] = useState(null);
 
+	useClipboardJS('.' + COPY_BUTTON_CSS_CLASS);
+
 	useEffect(() => {
-		fetchData(
-			`/o/search-experiences-rest/v1.0/sxp-elements/${sxpElementId}`,
-			{
-				method: 'GET',
-			},
-			(responseContent) => setSXPElementResponse(responseContent),
-			() => setSXPElementResponse({})
-		);
+		openInitialSuccessToast();
 
 		fetchData(
-			'/o/search-experiences-rest/v1.0/sxp-parameter-contributor-definitions',
-			{
-				method: 'GET',
-			},
-			(responseContent) => setPredefinedVariables(responseContent.items),
-			() => setPredefinedVariables([])
-		);
+			`/o/search-experiences-rest/v1.0/sxp-elements/${sxpElementId}`
+		)
+			.then((responseContent) => setSXPElementResponse(responseContent))
+			.catch(() => setSXPElementResponse({}));
+
+		fetchData(
+			'/o/search-experiences-rest/v1.0/sxp-parameter-contributor-definitions'
+		)
+			.then((responseContent) =>
+				setPredefinedVariables(responseContent.items)
+			)
+			.catch(() => setPredefinedVariables([]));
 	}, []); //eslint-disable-line
 
 	if (!sxpElementResponse || !predefinedVariables) {
@@ -107,25 +117,25 @@ export default function ({
 			value={{
 				availableLanguages: Liferay.Language.available,
 				defaultLocale,
+				learnMessages,
+				locale,
 				namespace,
 				redirectURL,
+				sxpType: 'sxpElement',
 			}}
 		>
 			<div className="edit-sxp-element-root">
 				<ErrorBoundary>
 					<EditSXPElementForm
-						initialDescription={getDescriptionI18n(
-							sxpElementResponse,
-							defaultLocale
-						)}
+						initialDescription={sxpElementResponse.description}
 						initialElementJSONEditorValue={transformToSXPElementExportFormat(
 							sxpElementResponse,
 							defaultLocale
 						)}
-						initialTitle={getTitleI18n(
-							sxpElementResponse,
-							defaultLocale
-						)}
+						initialExternalReferenceCode={
+							sxpElementResponse.externalReferenceCode
+						}
+						initialTitle={sxpElementResponse.title}
 						predefinedVariables={predefinedVariables}
 						readOnly={sxpElementResponse.readOnly}
 						sxpElementId={sxpElementId}

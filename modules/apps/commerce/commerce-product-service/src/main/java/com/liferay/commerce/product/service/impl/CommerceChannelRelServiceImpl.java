@@ -1,36 +1,38 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.impl;
 
+import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.model.CommerceChannelRel;
 import com.liferay.commerce.product.service.base.CommerceChannelRelServiceBaseImpl;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CommerceChannelRel"
+	},
+	service = AopService.class
+)
 public class CommerceChannelRelServiceImpl
 	extends CommerceChannelRelServiceBaseImpl {
 
@@ -102,8 +104,7 @@ public class CommerceChannelRelServiceImpl
 			getPermissionChecker(), commerceChannelRel.getCommerceChannelId(),
 			ActionKeys.VIEW);
 
-		return commerceChannelRelLocalService.getCommerceChannelRel(
-			commerceChannelRelId);
+		return commerceChannelRel;
 	}
 
 	@Override
@@ -119,37 +120,18 @@ public class CommerceChannelRelServiceImpl
 			commerceChannelId, start, end, orderByComparator);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
 	@Override
 	public List<CommerceChannelRel> getCommerceChannelRels(
-		String className, long classPK, int start, int end,
-		OrderByComparator<CommerceChannelRel> orderByComparator) {
+			String className, long classPK, String name, int start, int end)
+		throws PortalException {
 
-		return commerceChannelRelService.getCommerceChannelRels(
-			className, classPK, null, start, end);
-	}
-
-	@Override
-	public List<CommerceChannelRel> getCommerceChannelRels(
-		String className, long classPK, String name, int start, int end) {
+		if (className.equals(CPDefinition.class.getName())) {
+			_cpDefinitionModelResourcePermission.check(
+				getPermissionChecker(), classPK, ActionKeys.VIEW);
+		}
 
 		return commerceChannelRelFinder.findByC_C(
 			className, classPK, name, start, end, true);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public List<CommerceChannelRel> getCommerceChannelRels(
-		String className, long classPK, String classPKField, String name,
-		int start, int end) {
-
-		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -164,35 +146,37 @@ public class CommerceChannelRelServiceImpl
 	}
 
 	@Override
-	public int getCommerceChannelRelsCount(String className, long classPK) {
+	public int getCommerceChannelRelsCount(String className, long classPK)
+		throws PortalException {
+
 		return commerceChannelRelService.getCommerceChannelRelsCount(
 			className, classPK, StringPool.BLANK);
 	}
 
 	@Override
 	public int getCommerceChannelRelsCount(
-		String className, long classPK, String name) {
+			String className, long classPK, String name)
+		throws PortalException {
+
+		if (className.equals(CPDefinition.class.getName())) {
+			_cpDefinitionModelResourcePermission.check(
+				getPermissionChecker(), classPK, ActionKeys.VIEW);
+		}
 
 		return commerceChannelRelFinder.countByC_C(
 			className, classPK, name, true);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public int getCommerceChannelRelsCount(
-		String className, long classPK, String classPKField, String name) {
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CommerceChannel)"
+	)
+	private ModelResourcePermission<CommerceChannel>
+		_commerceChannelModelResourcePermission;
 
-		throw new UnsupportedOperationException();
-	}
-
-	private static volatile ModelResourcePermission<CommerceChannel>
-		_commerceChannelModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CommerceChannelServiceImpl.class,
-				"_commerceChannelModelResourcePermission",
-				CommerceChannel.class);
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CPDefinition)"
+	)
+	private ModelResourcePermission<CPDefinition>
+		_cpDefinitionModelResourcePermission;
 
 }

@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.resource.v2_0;
 
+import com.liferay.account.service.AccountEntryService;
+import com.liferay.account.service.AccountGroupService;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
-import com.liferay.commerce.account.service.CommerceAccountGroupService;
-import com.liferay.commerce.account.service.CommerceAccountService;
 import com.liferay.commerce.discount.exception.NoSuchDiscountException;
 import com.liferay.commerce.discount.model.CommerceDiscount;
 import com.liferay.commerce.discount.model.CommerceDiscountAccountRel;
@@ -49,7 +40,6 @@ import com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountOrderType;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountProduct;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountProductGroup;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountRule;
-import com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.DiscountDTOConverter;
 import com.liferay.headless.commerce.admin.pricing.internal.odata.entity.v2_0.DiscountEntityModel;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.DiscountAccountGroupUtil;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.DiscountAccountUtil;
@@ -63,9 +53,7 @@ import com.liferay.headless.commerce.admin.pricing.resource.v2_0.DiscountResourc
 import com.liferay.headless.commerce.core.util.DateConfig;
 import com.liferay.headless.commerce.core.util.ExpandoUtil;
 import com.liferay.headless.commerce.core.util.ServiceContextHelper;
-import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -73,6 +61,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
@@ -93,7 +82,6 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Zoltán Takács
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v2_0/discount.properties",
 	scope = ServiceScope.PROTOTYPE, service = DiscountResource.class
 )
@@ -156,18 +144,12 @@ public class DiscountResourceImpl extends BaseDiscountResourceImpl {
 			CommerceDiscount.class.getName(), search, pagination,
 			queryConfig -> queryConfig.setSelectedFieldNames(
 				Field.ENTRY_CLASS_PK),
-			new UnsafeConsumer() {
-
-				public void accept(Object object) throws Exception {
-					SearchContext searchContext = (SearchContext)object;
-
-					searchContext.setAttribute(
-						"skipCommerceAccountGroupValidation", Boolean.TRUE);
-					searchContext.setAttribute(
-						"status", WorkflowConstants.STATUS_ANY);
-					searchContext.setCompanyId(contextCompany.getCompanyId());
-				}
-
+			searchContext -> {
+				searchContext.setAttribute(
+					"skipCommerceAccountGroupValidation", Boolean.TRUE);
+				searchContext.setAttribute(
+					"status", WorkflowConstants.STATUS_ANY);
+				searchContext.setCompanyId(contextCompany.getCompanyId());
 			},
 			sorts,
 			document -> _toDiscount(
@@ -414,12 +396,11 @@ public class DiscountResourceImpl extends BaseDiscountResourceImpl {
 					continue;
 				}
 
-				DiscountAccountGroupUtil.
-					addCommerceDiscountCommerceAccountGroupRel(
-						_commerceAccountGroupService,
-						_commerceDiscountCommerceAccountGroupRelService,
-						discountAccountGroup, commerceDiscount,
-						_serviceContextHelper);
+				DiscountAccountGroupUtil.addCommerceDiscountAccountGroupRel(
+					_accountGroupService,
+					_commerceDiscountCommerceAccountGroupRelService,
+					discountAccountGroup, commerceDiscount,
+					_serviceContextHelper);
 			}
 		}
 
@@ -440,7 +421,7 @@ public class DiscountResourceImpl extends BaseDiscountResourceImpl {
 				}
 
 				DiscountAccountUtil.addCommerceDiscountAccountRel(
-					_commerceAccountService, _commerceDiscountAccountRelService,
+					_accountEntryService, _commerceDiscountAccountRelService,
 					discountAccount, commerceDiscount, _serviceContextHelper);
 			}
 		}
@@ -462,8 +443,9 @@ public class DiscountResourceImpl extends BaseDiscountResourceImpl {
 				}
 
 				DiscountCategoryUtil.addCommerceDiscountRel(
-					_assetCategoryLocalService, _commerceDiscountRelService,
-					discountCategory, commerceDiscount, _serviceContextHelper);
+					contextCompany.getGroupId(), _assetCategoryLocalService,
+					_commerceDiscountRelService, discountCategory,
+					commerceDiscount, _serviceContextHelper);
 			}
 		}
 
@@ -502,7 +484,7 @@ public class DiscountResourceImpl extends BaseDiscountResourceImpl {
 							commerceDiscount.getCommerceDiscountId(),
 							discountOrderType.getOrderTypeId());
 
-				if (commerceDiscountOrderTypeRel == null) {
+				if (commerceDiscountOrderTypeRel != null) {
 					continue;
 				}
 
@@ -551,9 +533,9 @@ public class DiscountResourceImpl extends BaseDiscountResourceImpl {
 					cProduct =
 						_cProductLocalService.
 							fetchCProductByExternalReferenceCode(
-								contextCompany.getCompanyId(),
 								discountProduct.
-									getProductExternalReferenceCode());
+									getProductExternalReferenceCode(),
+								contextCompany.getCompanyId());
 				}
 
 				if (cProduct == null) {
@@ -603,13 +585,13 @@ public class DiscountResourceImpl extends BaseDiscountResourceImpl {
 	private static final EntityModel _entityModel = new DiscountEntityModel();
 
 	@Reference
+	private AccountEntryService _accountEntryService;
+
+	@Reference
+	private AccountGroupService _accountGroupService;
+
+	@Reference
 	private AssetCategoryLocalService _assetCategoryLocalService;
-
-	@Reference
-	private CommerceAccountGroupService _commerceAccountGroupService;
-
-	@Reference
-	private CommerceAccountService _commerceAccountService;
 
 	@Reference
 	private CommerceChannelRelService _commerceChannelRelService;
@@ -647,8 +629,10 @@ public class DiscountResourceImpl extends BaseDiscountResourceImpl {
 	@Reference
 	private CProductLocalService _cProductLocalService;
 
-	@Reference
-	private DiscountDTOConverter _discountDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.DiscountDTOConverter)"
+	)
+	private DTOConverter<CommerceDiscount, Discount> _discountDTOConverter;
 
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;

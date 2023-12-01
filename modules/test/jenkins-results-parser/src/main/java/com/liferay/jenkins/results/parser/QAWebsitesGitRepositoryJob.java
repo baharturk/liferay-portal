@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -17,10 +8,14 @@ package com.liferay.jenkins.results.parser;
 import java.io.File;
 import java.io.IOException;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
@@ -44,6 +39,21 @@ public class QAWebsitesGitRepositoryJob
 	}
 
 	@Override
+	public JSONObject getJSONObject() {
+		if (jsonObject != null) {
+			return jsonObject;
+		}
+
+		jsonObject = super.getJSONObject();
+
+		jsonObject.put("project_names", _projectNames);
+		jsonObject.put("test_suite_name", _testSuiteName);
+		jsonObject.put("upstream_branch_name", _upstreamBranchName);
+
+		return jsonObject;
+	}
+
+	@Override
 	public PortalGitWorkingDirectory getPortalGitWorkingDirectory() {
 		return GitWorkingDirectoryFactory.newPortalGitWorkingDirectory(
 			"master");
@@ -59,26 +69,42 @@ public class QAWebsitesGitRepositoryJob
 	}
 
 	protected QAWebsitesGitRepositoryJob(
-		String jobName, BuildProfile buildProfile, String testSuiteName,
-		String upstreamBranchName, List<String> projectNames) {
+		BuildProfile buildProfile, String jobName, List<String> projectNames,
+		String testSuiteName, String upstreamBranchName) {
 
-		super(jobName, buildProfile);
+		super(buildProfile, jobName);
 
+		_projectNames = projectNames;
 		_testSuiteName = testSuiteName;
 		_upstreamBranchName = upstreamBranchName;
-		_projectNames = projectNames;
 
-		gitWorkingDirectory = GitWorkingDirectoryFactory.newGitWorkingDirectory(
-			_upstreamBranchName, _getQAWebsitesGitRepositoryDir(),
-			_getQAWebsitesRepositoryName());
+		_initialize();
+	}
 
-		setGitRepositoryDir(gitWorkingDirectory.getWorkingDirectory());
+	protected QAWebsitesGitRepositoryJob(JSONObject jsonObject) {
+		super(jsonObject);
 
-		checkGitRepositoryDir();
+		_testSuiteName = jsonObject.getString("test_suite_name");
+		_upstreamBranchName = jsonObject.getString("upstream_branch_name");
 
-		jobPropertiesFiles.add(new File(gitRepositoryDir, "test.properties"));
+		_projectNames = new ArrayList<>();
 
-		readJobProperties();
+		JSONArray projectNamesJSONArray = jsonObject.optJSONArray(
+			"project_names");
+
+		if (projectNamesJSONArray != null) {
+			for (int i = 0; i < projectNamesJSONArray.length(); i++) {
+				String projectName = projectNamesJSONArray.getString(i);
+
+				if (JenkinsResultsParserUtil.isNullOrEmpty(projectName)) {
+					continue;
+				}
+
+				_projectNames.add(projectName);
+			}
+		}
+
+		_initialize();
 	}
 
 	private File _getQAWebsitesGitRepositoryDir() {
@@ -126,6 +152,18 @@ public class QAWebsitesGitRepositoryJob
 		}
 
 		return qaWebsitesRepository;
+	}
+
+	private void _initialize() {
+		gitWorkingDirectory = GitWorkingDirectoryFactory.newGitWorkingDirectory(
+			_upstreamBranchName, _getQAWebsitesGitRepositoryDir(),
+			_getQAWebsitesRepositoryName());
+
+		setGitRepositoryDir(gitWorkingDirectory.getWorkingDirectory());
+
+		checkGitRepositoryDir();
+
+		jobPropertiesFiles.add(new File(gitRepositoryDir, "test.properties"));
 	}
 
 	private final List<String> _projectNames;

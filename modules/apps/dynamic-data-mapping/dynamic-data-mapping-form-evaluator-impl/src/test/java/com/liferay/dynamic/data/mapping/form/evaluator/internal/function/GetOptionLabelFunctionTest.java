@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.evaluator.internal.function;
@@ -29,12 +20,10 @@ import org.junit.Test;
 
 import org.mockito.Mockito;
 
-import org.powermock.api.mockito.PowerMockito;
-
 /**
  * @author Marcos Martins
  */
-public class GetOptionLabelFunctionTest extends PowerMockito {
+public class GetOptionLabelFunctionTest {
 
 	@ClassRule
 	@Rule
@@ -42,7 +31,7 @@ public class GetOptionLabelFunctionTest extends PowerMockito {
 		LiferayUnitTestRule.INSTANCE;
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		_getOptionLabelFunction = new GetOptionLabelFunction();
 	}
 
@@ -51,7 +40,7 @@ public class GetOptionLabelFunctionTest extends PowerMockito {
 		DefaultDDMExpressionFieldAccessor ddmExpressionFieldAccessor =
 			new DefaultDDMExpressionFieldAccessor();
 
-		DDMFormFieldOptions ddmFormFieldOptions = mock(
+		DDMFormFieldOptions ddmFormFieldOptions = Mockito.mock(
 			DDMFormFieldOptions.class);
 
 		LocalizedValue localizedValue = new LocalizedValue();
@@ -59,7 +48,7 @@ public class GetOptionLabelFunctionTest extends PowerMockito {
 		localizedValue.addString(LocaleUtil.US, "Option 1");
 		localizedValue.addString(LocaleUtil.BRAZIL, "Opcao 1");
 
-		when(
+		Mockito.when(
 			ddmFormFieldOptions.getOptionLabels(Mockito.eq("optionName"))
 		).thenReturn(
 			localizedValue
@@ -95,14 +84,14 @@ public class GetOptionLabelFunctionTest extends PowerMockito {
 		DefaultDDMExpressionFieldAccessor ddmExpressionFieldAccessor =
 			new DefaultDDMExpressionFieldAccessor();
 
-		DDMFormFieldOptions ddmFormFieldOptions = mock(
+		DDMFormFieldOptions ddmFormFieldOptions = Mockito.mock(
 			DDMFormFieldOptions.class);
 
 		LocalizedValue localizedValue = new LocalizedValue();
 
 		localizedValue.addString(LocaleUtil.US, "Option 1");
 
-		when(
+		Mockito.when(
 			ddmFormFieldOptions.getOptionLabels(Mockito.eq("optionName"))
 		).thenReturn(
 			localizedValue

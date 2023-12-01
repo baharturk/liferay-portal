@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.internal.exportimport.data.handler;
 
-import com.liferay.dynamic.data.lists.internal.exportimport.staged.model.repository.DDLRecordStagedModelRepository;
+import com.liferay.dynamic.data.lists.internal.exportimport.staged.model.repository.DDLRecordStagedModelRepositoryUtil;
 import com.liferay.dynamic.data.lists.model.DDLRecord;
 import com.liferay.dynamic.data.lists.model.DDLRecordSet;
 import com.liferay.dynamic.data.lists.service.DDLRecordSetLocalService;
@@ -27,7 +18,7 @@ import com.liferay.dynamic.data.mapping.io.DDMFormValuesSerializerSerializeRespo
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.StorageEngine;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
 import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
 import com.liferay.exportimport.data.handler.base.BaseStagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportPathUtil;
@@ -39,7 +30,6 @@ import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.xml.Element;
 
 import java.util.Map;
@@ -50,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Daniel Kocsis
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class DDLRecordStagedModelDataHandler
 	extends BaseStagedModelDataHandler<DDLRecord> {
 
@@ -143,15 +133,16 @@ public class DDLRecordStagedModelDataHandler
 		if ((existingRecord == null) ||
 			!portletDataContext.isDataStrategyMirror()) {
 
-			importedRecord = _ddlRecordStagedModelRepository.addStagedModel(
+			importedRecord = DDLRecordStagedModelRepositoryUtil.addStagedModel(
 				portletDataContext, importedRecord, ddmFormValues);
 		}
 		else {
 			importedRecord.setMvccVersion(existingRecord.getMvccVersion());
 			importedRecord.setRecordId(existingRecord.getRecordId());
 
-			importedRecord = _ddlRecordStagedModelRepository.updateStagedModel(
-				portletDataContext, importedRecord, ddmFormValues);
+			importedRecord =
+				DDLRecordStagedModelRepositoryUtil.updateStagedModel(
+					portletDataContext, importedRecord, ddmFormValues);
 		}
 
 		portletDataContext.importClassedModel(record, importedRecord);
@@ -162,46 +153,12 @@ public class DDLRecordStagedModelDataHandler
 		return _ddlRecordStagedModelRepository;
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDLRecordSetLocalService(
-		DDLRecordSetLocalService ddlRecordSetLocalService) {
-
-		_ddlRecordSetLocalService = ddlRecordSetLocalService;
-	}
-
-	@Reference(
-		target = "(model.class.name=com.liferay.dynamic.data.lists.model.DDLRecord)",
-		unbind = "-"
-	)
-	protected void setDDLRecordStagedModelRepository(
-		DDLRecordStagedModelRepository ddlRecordStagedModelRepository) {
-
-		_ddlRecordStagedModelRepository = ddlRecordStagedModelRepository;
-	}
-
-	@Reference(
-		target = "(model.class.name=com.liferay.dynamic.data.mapping.storage.DDMFormValues)",
-		unbind = "-"
-	)
-	protected void setDDMFormValuesExportImportContentProcessor(
-		ExportImportContentProcessor<DDMFormValues>
-			ddmFormValuesExportImportContentProcessor) {
-
-		_ddmFormValuesExportImportContentProcessor =
-			ddmFormValuesExportImportContentProcessor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setStorageEngine(StorageEngine storageEngine) {
-		_storageEngine = storageEngine;
-	}
-
 	@Override
 	protected void validateExport(
 			PortletDataContext portletDataContext, DDLRecord record)
 		throws PortletDataException {
 
-		int status = WorkflowConstants.STATUS_ANY;
+		int status;
 
 		try {
 			status = record.getStatus();
@@ -237,7 +194,7 @@ public class DDLRecordStagedModelDataHandler
 
 		recordElement.addAttribute("ddm-form-values-path", ddmFormValuesPath);
 
-		DDMFormValues ddmFormValues = _storageEngine.getDDMFormValues(
+		DDMFormValues ddmFormValues = _ddmStorageEngineManager.getDDMFormValues(
 			record.getDDMStorageId());
 
 		ddmFormValues =
@@ -285,17 +242,27 @@ public class DDLRecordStagedModelDataHandler
 		return ddmFormValuesSerializerSerializeResponse.getContent();
 	}
 
+	@Reference
 	private DDLRecordSetLocalService _ddlRecordSetLocalService;
-	private DDLRecordStagedModelRepository _ddlRecordStagedModelRepository;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.dynamic.data.lists.model.DDLRecord)"
+	)
+	private StagedModelRepository<DDLRecord> _ddlRecordStagedModelRepository;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.dynamic.data.mapping.storage.DDMFormValues)"
+	)
 	private ExportImportContentProcessor<DDMFormValues>
 		_ddmFormValuesExportImportContentProcessor;
+
+	@Reference
+	private DDMStorageEngineManager _ddmStorageEngineManager;
 
 	@Reference(target = "(ddm.form.values.deserializer.type=json)")
 	private DDMFormValuesDeserializer _jsonDDMFormValuesDeserializer;
 
 	@Reference(target = "(ddm.form.values.serializer.type=json)")
 	private DDMFormValuesSerializer _jsonDDMFormValuesSerializer;
-
-	private StorageEngine _storageEngine;
 
 }

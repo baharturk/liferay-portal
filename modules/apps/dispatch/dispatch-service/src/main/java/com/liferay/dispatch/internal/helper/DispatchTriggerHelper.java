@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.internal.helper;
@@ -26,6 +17,7 @@ import com.liferay.portal.kernel.scheduler.TriggerFactory;
 import com.liferay.portal.kernel.scheduler.messaging.SchedulerResponse;
 
 import java.util.Date;
+import java.util.TimeZone;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,18 +30,19 @@ public class DispatchTriggerHelper {
 
 	public void addSchedulerJob(
 			long dispatchTriggerId, String cronExpression, Date startDate,
-			Date endDate, StorageType storageType)
+			Date endDate, StorageType storageType, String timeZoneId)
 		throws DispatchTriggerSchedulerException {
 
 		Trigger trigger = _triggerFactory.createTrigger(
 			_getJobName(dispatchTriggerId), _getGroupName(dispatchTriggerId),
-			startDate, endDate, cronExpression);
+			startDate, endDate, cronExpression,
+			TimeZone.getTimeZone(timeZoneId));
 
 		try {
 			_schedulerEngineHelper.schedule(
 				trigger, storageType, null,
 				DispatchConstants.EXECUTOR_DESTINATION_NAME,
-				_getPayload(dispatchTriggerId), 1000);
+				_getPayload(dispatchTriggerId));
 
 			if (_log.isDebugEnabled()) {
 				_log.debug(
@@ -94,35 +87,32 @@ public class DispatchTriggerHelper {
 	public Date getNextFireDate(long dispatchTriggerId, StorageType storageType)
 		throws SchedulerException {
 
-		return _schedulerEngineHelper.getNextFireTime(
-			_getJobName(dispatchTriggerId), _getGroupName(dispatchTriggerId),
-			storageType);
+		SchedulerResponse schedulerResponse =
+			_schedulerEngineHelper.getScheduledJob(
+				_getJobName(dispatchTriggerId),
+				_getGroupName(dispatchTriggerId), storageType);
+
+		if (schedulerResponse == null) {
+			return null;
+		}
+
+		return _schedulerEngineHelper.getNextFireTime(schedulerResponse);
 	}
 
 	public Date getPreviousFireDate(
 			long dispatchTriggerId, StorageType storageType)
 		throws SchedulerException {
 
-		return _schedulerEngineHelper.getPreviousFireTime(
-			_getJobName(dispatchTriggerId), _getGroupName(dispatchTriggerId),
-			storageType);
-	}
-
-	public void unscheduleSchedulerJob(
-			long dispatchTriggerId, StorageType storageType)
-		throws DispatchTriggerSchedulerException {
-
-		try {
-			_schedulerEngineHelper.unschedule(
+		SchedulerResponse schedulerResponse =
+			_schedulerEngineHelper.getScheduledJob(
 				_getJobName(dispatchTriggerId),
 				_getGroupName(dispatchTriggerId), storageType);
+
+		if (schedulerResponse == null) {
+			return null;
 		}
-		catch (SchedulerException schedulerException) {
-			throw new DispatchTriggerSchedulerException(
-				"Unable to unschedule scheduler job for dispatch Trigger " +
-					dispatchTriggerId,
-				schedulerException);
-		}
+
+		return _schedulerEngineHelper.getPreviousFireTime(schedulerResponse);
 	}
 
 	private String _getGroupName(long dispatchTriggerId) {

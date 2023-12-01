@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import ClayLabel from '@clayui/label';
-import {ClayResultsBar} from '@clayui/management-toolbar';
+import {ManagementToolbar} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useContext} from 'react';
 
 import {concatValues} from '../../utils/utils';
@@ -24,7 +16,7 @@ const FilterItem = ({filterKey, name, value}) => {
 	const [, dispatch] = useContext(SearchContext);
 
 	return (
-		<ClayResultsBar.Item>
+		<ManagementToolbar.ResultsBarItem>
 			<ClayLabel
 				className="tbar-label"
 				closeButtonProps={{
@@ -38,7 +30,7 @@ const FilterItem = ({filterKey, name, value}) => {
 					<span className="font-weight-normal">{value}</span>
 				</span>
 			</ClayLabel>
-		</ClayResultsBar.Item>
+		</ManagementToolbar.ResultsBarItem>
 	);
 };
 
@@ -80,25 +72,29 @@ export default function ManagementToolbarResultsBar({
 
 	return (
 		<>
-			{(keywords || selectedFilters.length > 0) && !isLoading && (
-				<ClayResultsBar>
-					<ClayResultsBar.Item>
+			{(keywords || !!selectedFilters.length) && !isLoading && (
+				<ManagementToolbar.ResultsBar>
+					<ManagementToolbar.ResultsBarItem>
 						<span className="component-text text-truncate-inline">
 							<span className="text-truncate">
-								{Liferay.Util.sub(
-									Liferay.Language.get('x-results-for-x'),
+								{sub(
+									totalCount === 1
+										? Liferay.Language.get('x-result-for-x')
+										: Liferay.Language.get(
+												'x-results-for-x'
+										  ),
 									totalCount,
 									keywords
 								)}
 							</span>
 						</span>
-					</ClayResultsBar.Item>
+					</ManagementToolbar.ResultsBarItem>
 
 					{selectedFilters.map((filter, key) => (
 						<FilterItem key={key} {...filter} />
 					))}
 
-					<ClayResultsBar.Item expand>
+					<ManagementToolbar.ResultsBarItem expand>
 						<div className="tbar-section text-right">
 							<ClayButton
 								className="component-link tbar-link"
@@ -108,8 +104,8 @@ export default function ManagementToolbarResultsBar({
 								{Liferay.Language.get('clear-all')}
 							</ClayButton>
 						</div>
-					</ClayResultsBar.Item>
-				</ClayResultsBar>
+					</ManagementToolbar.ResultsBarItem>
+				</ManagementToolbar.ResultsBar>
 			)}
 		</>
 	);

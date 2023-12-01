@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.openid.connect.persistence.model.impl;
@@ -33,7 +24,6 @@ import com.liferay.portal.security.sso.openid.connect.persistence.model.OpenIdCo
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -74,8 +64,9 @@ public class OpenIdConnectSessionModelImpl
 		{"mvccVersion", Types.BIGINT}, {"openIdConnectSessionId", Types.BIGINT},
 		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
 		{"modifiedDate", Types.TIMESTAMP}, {"accessToken", Types.VARCHAR},
-		{"configurationPid", Types.VARCHAR}, {"idToken", Types.VARCHAR},
-		{"providerName", Types.VARCHAR}, {"refreshToken", Types.VARCHAR}
+		{"accessTokenExpirationDate", Types.TIMESTAMP},
+		{"authServerWellKnownURI", Types.VARCHAR}, {"clientId", Types.VARCHAR},
+		{"idToken", Types.VARCHAR}, {"refreshToken", Types.VARCHAR}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -88,14 +79,15 @@ public class OpenIdConnectSessionModelImpl
 		TABLE_COLUMNS_MAP.put("userId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("modifiedDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("accessToken", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("configurationPid", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("accessTokenExpirationDate", Types.TIMESTAMP);
+		TABLE_COLUMNS_MAP.put("authServerWellKnownURI", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("clientId", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("idToken", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("providerName", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("refreshToken", Types.VARCHAR);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table OpenIdConnectSession (mvccVersion LONG default 0 not null,openIdConnectSessionId LONG not null primary key,companyId LONG,userId LONG,modifiedDate DATE null,accessToken VARCHAR(3000) null,configurationPid VARCHAR(256) null,idToken VARCHAR(3999) null,providerName VARCHAR(75) null,refreshToken VARCHAR(2000) null)";
+		"create table OpenIdConnectSession (mvccVersion LONG default 0 not null,openIdConnectSessionId LONG not null primary key,companyId LONG,userId LONG,modifiedDate DATE null,accessToken VARCHAR(3000) null,accessTokenExpirationDate DATE null,authServerWellKnownURI VARCHAR(256) null,clientId VARCHAR(256) null,idToken VARCHAR(3999) null,refreshToken VARCHAR(2000) null)";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table OpenIdConnectSession";
@@ -116,20 +108,38 @@ public class OpenIdConnectSessionModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CONFIGURATIONPID_COLUMN_BITMASK = 1L;
+	public static final long ACCESSTOKENEXPIRATIONDATE_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 2L;
+	public static final long AUTHSERVERWELLKNOWNURI_COLUMN_BITMASK = 2L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long CLIENTID_COLUMN_BITMASK = 4L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long COMPANYID_COLUMN_BITMASK = 8L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long USERID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OPENIDCONNECTSESSIONID_COLUMN_BITMASK = 4L;
+	public static final long OPENIDCONNECTSESSIONID_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -221,123 +231,119 @@ public class OpenIdConnectSessionModelImpl
 	public Map<String, Function<OpenIdConnectSession, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<OpenIdConnectSession, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, OpenIdConnectSession>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			OpenIdConnectSession.class.getClassLoader(),
-			OpenIdConnectSession.class, ModelWrapper.class);
+		private static final Map<String, Function<OpenIdConnectSession, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<OpenIdConnectSession> constructor =
-				(Constructor<OpenIdConnectSession>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<OpenIdConnectSession, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<OpenIdConnectSession, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", OpenIdConnectSession::getMvccVersion);
+			attributeGetterFunctions.put(
+				"openIdConnectSessionId",
+				OpenIdConnectSession::getOpenIdConnectSessionId);
+			attributeGetterFunctions.put(
+				"companyId", OpenIdConnectSession::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", OpenIdConnectSession::getUserId);
+			attributeGetterFunctions.put(
+				"modifiedDate", OpenIdConnectSession::getModifiedDate);
+			attributeGetterFunctions.put(
+				"accessToken", OpenIdConnectSession::getAccessToken);
+			attributeGetterFunctions.put(
+				"accessTokenExpirationDate",
+				OpenIdConnectSession::getAccessTokenExpirationDate);
+			attributeGetterFunctions.put(
+				"authServerWellKnownURI",
+				OpenIdConnectSession::getAuthServerWellKnownURI);
+			attributeGetterFunctions.put(
+				"clientId", OpenIdConnectSession::getClientId);
+			attributeGetterFunctions.put(
+				"idToken", OpenIdConnectSession::getIdToken);
+			attributeGetterFunctions.put(
+				"refreshToken", OpenIdConnectSession::getRefreshToken);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<OpenIdConnectSession, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<OpenIdConnectSession, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<OpenIdConnectSession, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<OpenIdConnectSession, Object>>();
-		Map<String, BiConsumer<OpenIdConnectSession, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<OpenIdConnectSession, ?>>();
+		private static final Map
+			<String, BiConsumer<OpenIdConnectSession, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", OpenIdConnectSession::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<OpenIdConnectSession, Long>)
-				OpenIdConnectSession::setMvccVersion);
-		attributeGetterFunctions.put(
-			"openIdConnectSessionId",
-			OpenIdConnectSession::getOpenIdConnectSessionId);
-		attributeSetterBiConsumers.put(
-			"openIdConnectSessionId",
-			(BiConsumer<OpenIdConnectSession, Long>)
-				OpenIdConnectSession::setOpenIdConnectSessionId);
-		attributeGetterFunctions.put(
-			"companyId", OpenIdConnectSession::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<OpenIdConnectSession, Long>)
-				OpenIdConnectSession::setCompanyId);
-		attributeGetterFunctions.put("userId", OpenIdConnectSession::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<OpenIdConnectSession, Long>)
-				OpenIdConnectSession::setUserId);
-		attributeGetterFunctions.put(
-			"modifiedDate", OpenIdConnectSession::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<OpenIdConnectSession, Date>)
-				OpenIdConnectSession::setModifiedDate);
-		attributeGetterFunctions.put(
-			"accessToken", OpenIdConnectSession::getAccessToken);
-		attributeSetterBiConsumers.put(
-			"accessToken",
-			(BiConsumer<OpenIdConnectSession, String>)
-				OpenIdConnectSession::setAccessToken);
-		attributeGetterFunctions.put(
-			"configurationPid", OpenIdConnectSession::getConfigurationPid);
-		attributeSetterBiConsumers.put(
-			"configurationPid",
-			(BiConsumer<OpenIdConnectSession, String>)
-				OpenIdConnectSession::setConfigurationPid);
-		attributeGetterFunctions.put(
-			"idToken", OpenIdConnectSession::getIdToken);
-		attributeSetterBiConsumers.put(
-			"idToken",
-			(BiConsumer<OpenIdConnectSession, String>)
-				OpenIdConnectSession::setIdToken);
-		attributeGetterFunctions.put(
-			"providerName", OpenIdConnectSession::getProviderName);
-		attributeSetterBiConsumers.put(
-			"providerName",
-			(BiConsumer<OpenIdConnectSession, String>)
-				OpenIdConnectSession::setProviderName);
-		attributeGetterFunctions.put(
-			"refreshToken", OpenIdConnectSession::getRefreshToken);
-		attributeSetterBiConsumers.put(
-			"refreshToken",
-			(BiConsumer<OpenIdConnectSession, String>)
-				OpenIdConnectSession::setRefreshToken);
+		static {
+			Map<String, BiConsumer<OpenIdConnectSession, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<OpenIdConnectSession, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<OpenIdConnectSession, Long>)
+					OpenIdConnectSession::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"openIdConnectSessionId",
+				(BiConsumer<OpenIdConnectSession, Long>)
+					OpenIdConnectSession::setOpenIdConnectSessionId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<OpenIdConnectSession, Long>)
+					OpenIdConnectSession::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<OpenIdConnectSession, Long>)
+					OpenIdConnectSession::setUserId);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<OpenIdConnectSession, Date>)
+					OpenIdConnectSession::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"accessToken",
+				(BiConsumer<OpenIdConnectSession, String>)
+					OpenIdConnectSession::setAccessToken);
+			attributeSetterBiConsumers.put(
+				"accessTokenExpirationDate",
+				(BiConsumer<OpenIdConnectSession, Date>)
+					OpenIdConnectSession::setAccessTokenExpirationDate);
+			attributeSetterBiConsumers.put(
+				"authServerWellKnownURI",
+				(BiConsumer<OpenIdConnectSession, String>)
+					OpenIdConnectSession::setAuthServerWellKnownURI);
+			attributeSetterBiConsumers.put(
+				"clientId",
+				(BiConsumer<OpenIdConnectSession, String>)
+					OpenIdConnectSession::setClientId);
+			attributeSetterBiConsumers.put(
+				"idToken",
+				(BiConsumer<OpenIdConnectSession, String>)
+					OpenIdConnectSession::setIdToken);
+			attributeSetterBiConsumers.put(
+				"refreshToken",
+				(BiConsumer<OpenIdConnectSession, String>)
+					OpenIdConnectSession::setRefreshToken);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -380,6 +386,16 @@ public class OpenIdConnectSessionModelImpl
 		}
 
 		_companyId = companyId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalCompanyId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("companyId"));
 	}
 
 	@Override
@@ -461,22 +477,17 @@ public class OpenIdConnectSessionModelImpl
 	}
 
 	@Override
-	public String getConfigurationPid() {
-		if (_configurationPid == null) {
-			return "";
-		}
-		else {
-			return _configurationPid;
-		}
+	public Date getAccessTokenExpirationDate() {
+		return _accessTokenExpirationDate;
 	}
 
 	@Override
-	public void setConfigurationPid(String configurationPid) {
+	public void setAccessTokenExpirationDate(Date accessTokenExpirationDate) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_configurationPid = configurationPid;
+		_accessTokenExpirationDate = accessTokenExpirationDate;
 	}
 
 	/**
@@ -484,8 +495,64 @@ public class OpenIdConnectSessionModelImpl
 	 *             #getColumnOriginalValue(String)}
 	 */
 	@Deprecated
-	public String getOriginalConfigurationPid() {
-		return getColumnOriginalValue("configurationPid");
+	public Date getOriginalAccessTokenExpirationDate() {
+		return getColumnOriginalValue("accessTokenExpirationDate");
+	}
+
+	@Override
+	public String getAuthServerWellKnownURI() {
+		if (_authServerWellKnownURI == null) {
+			return "";
+		}
+		else {
+			return _authServerWellKnownURI;
+		}
+	}
+
+	@Override
+	public void setAuthServerWellKnownURI(String authServerWellKnownURI) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_authServerWellKnownURI = authServerWellKnownURI;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalAuthServerWellKnownURI() {
+		return getColumnOriginalValue("authServerWellKnownURI");
+	}
+
+	@Override
+	public String getClientId() {
+		if (_clientId == null) {
+			return "";
+		}
+		else {
+			return _clientId;
+		}
+	}
+
+	@Override
+	public void setClientId(String clientId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_clientId = clientId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalClientId() {
+		return getColumnOriginalValue("clientId");
 	}
 
 	@Override
@@ -505,25 +572,6 @@ public class OpenIdConnectSessionModelImpl
 		}
 
 		_idToken = idToken;
-	}
-
-	@Override
-	public String getProviderName() {
-		if (_providerName == null) {
-			return "";
-		}
-		else {
-			return _providerName;
-		}
-	}
-
-	@Override
-	public void setProviderName(String providerName) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_providerName = providerName;
 	}
 
 	@Override
@@ -610,9 +658,12 @@ public class OpenIdConnectSessionModelImpl
 		openIdConnectSessionImpl.setUserId(getUserId());
 		openIdConnectSessionImpl.setModifiedDate(getModifiedDate());
 		openIdConnectSessionImpl.setAccessToken(getAccessToken());
-		openIdConnectSessionImpl.setConfigurationPid(getConfigurationPid());
+		openIdConnectSessionImpl.setAccessTokenExpirationDate(
+			getAccessTokenExpirationDate());
+		openIdConnectSessionImpl.setAuthServerWellKnownURI(
+			getAuthServerWellKnownURI());
+		openIdConnectSessionImpl.setClientId(getClientId());
 		openIdConnectSessionImpl.setIdToken(getIdToken());
-		openIdConnectSessionImpl.setProviderName(getProviderName());
 		openIdConnectSessionImpl.setRefreshToken(getRefreshToken());
 
 		openIdConnectSessionImpl.resetOriginalValues();
@@ -637,12 +688,14 @@ public class OpenIdConnectSessionModelImpl
 			this.<Date>getColumnOriginalValue("modifiedDate"));
 		openIdConnectSessionImpl.setAccessToken(
 			this.<String>getColumnOriginalValue("accessToken"));
-		openIdConnectSessionImpl.setConfigurationPid(
-			this.<String>getColumnOriginalValue("configurationPid"));
+		openIdConnectSessionImpl.setAccessTokenExpirationDate(
+			this.<Date>getColumnOriginalValue("accessTokenExpirationDate"));
+		openIdConnectSessionImpl.setAuthServerWellKnownURI(
+			this.<String>getColumnOriginalValue("authServerWellKnownURI"));
+		openIdConnectSessionImpl.setClientId(
+			this.<String>getColumnOriginalValue("clientId"));
 		openIdConnectSessionImpl.setIdToken(
 			this.<String>getColumnOriginalValue("idToken"));
-		openIdConnectSessionImpl.setProviderName(
-			this.<String>getColumnOriginalValue("providerName"));
 		openIdConnectSessionImpl.setRefreshToken(
 			this.<String>getColumnOriginalValue("refreshToken"));
 
@@ -751,13 +804,35 @@ public class OpenIdConnectSessionModelImpl
 			openIdConnectSessionCacheModel.accessToken = null;
 		}
 
-		openIdConnectSessionCacheModel.configurationPid = getConfigurationPid();
+		Date accessTokenExpirationDate = getAccessTokenExpirationDate();
 
-		String configurationPid =
-			openIdConnectSessionCacheModel.configurationPid;
+		if (accessTokenExpirationDate != null) {
+			openIdConnectSessionCacheModel.accessTokenExpirationDate =
+				accessTokenExpirationDate.getTime();
+		}
+		else {
+			openIdConnectSessionCacheModel.accessTokenExpirationDate =
+				Long.MIN_VALUE;
+		}
 
-		if ((configurationPid != null) && (configurationPid.length() == 0)) {
-			openIdConnectSessionCacheModel.configurationPid = null;
+		openIdConnectSessionCacheModel.authServerWellKnownURI =
+			getAuthServerWellKnownURI();
+
+		String authServerWellKnownURI =
+			openIdConnectSessionCacheModel.authServerWellKnownURI;
+
+		if ((authServerWellKnownURI != null) &&
+			(authServerWellKnownURI.length() == 0)) {
+
+			openIdConnectSessionCacheModel.authServerWellKnownURI = null;
+		}
+
+		openIdConnectSessionCacheModel.clientId = getClientId();
+
+		String clientId = openIdConnectSessionCacheModel.clientId;
+
+		if ((clientId != null) && (clientId.length() == 0)) {
+			openIdConnectSessionCacheModel.clientId = null;
 		}
 
 		openIdConnectSessionCacheModel.idToken = getIdToken();
@@ -766,14 +841,6 @@ public class OpenIdConnectSessionModelImpl
 
 		if ((idToken != null) && (idToken.length() == 0)) {
 			openIdConnectSessionCacheModel.idToken = null;
-		}
-
-		openIdConnectSessionCacheModel.providerName = getProviderName();
-
-		String providerName = openIdConnectSessionCacheModel.providerName;
-
-		if ((providerName != null) && (providerName.length() == 0)) {
-			openIdConnectSessionCacheModel.providerName = null;
 		}
 
 		openIdConnectSessionCacheModel.refreshToken = getRefreshToken();
@@ -837,42 +904,12 @@ public class OpenIdConnectSessionModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<OpenIdConnectSession, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<OpenIdConnectSession, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<OpenIdConnectSession, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((OpenIdConnectSession)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, OpenIdConnectSession>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					OpenIdConnectSession.class, ModelWrapper.class);
 
 	}
 
@@ -883,14 +920,16 @@ public class OpenIdConnectSessionModelImpl
 	private Date _modifiedDate;
 	private boolean _setModifiedDate;
 	private String _accessToken;
-	private String _configurationPid;
+	private Date _accessTokenExpirationDate;
+	private String _authServerWellKnownURI;
+	private String _clientId;
 	private String _idToken;
-	private String _providerName;
 	private String _refreshToken;
 
 	public <T> T getColumnValue(String columnName) {
 		Function<OpenIdConnectSession, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -922,9 +961,12 @@ public class OpenIdConnectSessionModelImpl
 		_columnOriginalValues.put("userId", _userId);
 		_columnOriginalValues.put("modifiedDate", _modifiedDate);
 		_columnOriginalValues.put("accessToken", _accessToken);
-		_columnOriginalValues.put("configurationPid", _configurationPid);
+		_columnOriginalValues.put(
+			"accessTokenExpirationDate", _accessTokenExpirationDate);
+		_columnOriginalValues.put(
+			"authServerWellKnownURI", _authServerWellKnownURI);
+		_columnOriginalValues.put("clientId", _clientId);
 		_columnOriginalValues.put("idToken", _idToken);
-		_columnOriginalValues.put("providerName", _providerName);
 		_columnOriginalValues.put("refreshToken", _refreshToken);
 	}
 
@@ -951,13 +993,15 @@ public class OpenIdConnectSessionModelImpl
 
 		columnBitmasks.put("accessToken", 32L);
 
-		columnBitmasks.put("configurationPid", 64L);
+		columnBitmasks.put("accessTokenExpirationDate", 64L);
 
-		columnBitmasks.put("idToken", 128L);
+		columnBitmasks.put("authServerWellKnownURI", 128L);
 
-		columnBitmasks.put("providerName", 256L);
+		columnBitmasks.put("clientId", 256L);
 
-		columnBitmasks.put("refreshToken", 512L);
+		columnBitmasks.put("idToken", 512L);
+
+		columnBitmasks.put("refreshToken", 1024L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.workspace.internal.util;
@@ -29,6 +20,20 @@ import java.util.stream.Stream;
  */
 public class StringUtil {
 
+	public static String capitalize(String s) {
+		if ((s == null) || s.isEmpty()) {
+			return "";
+		}
+
+		char firstChar = s.charAt(0);
+
+		if (Character.isLowerCase(firstChar)) {
+			s = Character.toUpperCase(firstChar) + s.substring(1);
+		}
+
+		return s;
+	}
+
 	public static String getDockerSafeName(String name) {
 		Matcher matcher = _camelCasePattern.matcher(name);
 
@@ -41,6 +46,10 @@ public class StringUtil {
 		}
 
 		return dockerSafeName.toLowerCase();
+	}
+
+	public static String quote(Object object) {
+		return "\"" + object + "\"";
 	}
 
 	public static String read(InputStream inputStream) throws IOException {
@@ -71,6 +80,10 @@ public class StringUtil {
 		}
 
 		return new String(buffer, 0, offset, "UTF-8");
+	}
+
+	public static String toAlphaNumericLowerCase(String value) {
+		return toLowerCase(value.replaceAll("[^a-zA-Z0-9]", ""));
 	}
 
 	public static String toLowerCase(String s) {

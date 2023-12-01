@@ -1,40 +1,39 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.bootstrap;
 
 import com.liferay.petra.io.BigEndianCodec;
+import com.liferay.petra.process.ProcessExecutor;
+import com.liferay.petra.process.local.LocalProcessExecutor;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.bootstrap.log.BundleStartStopLogger;
+import com.liferay.portal.bootstrap.log.PortalSynchronousLogListener;
 import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
+import com.liferay.portal.kernel.concurrent.SystemExecutorServiceUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedInputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.lpkg.StaticLPKGResolver;
 import com.liferay.portal.kernel.module.framework.ThrowableCollector;
+import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
-import com.liferay.portal.kernel.util.NamedThreadFactory;
+import com.liferay.portal.kernel.util.ModuleFrameworkPropsValues;
 import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.module.framework.ModuleFramework;
 import com.liferay.portal.util.PropsValues;
 
@@ -82,9 +81,9 @@ import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.jar.Attributes;
 import java.util.jar.JarInputStream;
@@ -97,8 +96,10 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.SynchronousBundleListener;
 import org.osgi.framework.Version;
@@ -109,8 +110,9 @@ import org.osgi.framework.startlevel.FrameworkStartLevel;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
+import org.osgi.service.log.LogListener;
+import org.osgi.service.log.LogReaderService;
 
-import org.springframework.beans.factory.BeanIsAbstractException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -208,6 +210,24 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			currentThread.setContextClassLoader(classLoader);
 		}
 
+		BundleContext bundleContext = _framework.getBundleContext();
+
+		_bundleListener = new BundleStartStopLogger(bundleContext);
+
+		bundleContext.addBundleListener(_bundleListener);
+
+		ServiceReference<LogReaderService> serviceReference =
+			bundleContext.getServiceReference(LogReaderService.class);
+
+		if (serviceReference != null) {
+			LogReaderService logReaderService = bundleContext.getService(
+				serviceReference);
+
+			_logListener = new PortalSynchronousLogListener();
+
+			logReaderService.addLogListener(_logListener);
+		}
+
 		if (_log.isDebugEnabled()) {
 			_log.debug("Initialized the OSGi framework");
 		}
@@ -259,7 +279,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			FrameworkStartLevel.class);
 
 		frameworkStartLevel.setStartLevel(
-			PropsValues.MODULE_FRAMEWORK_RUNTIME_START_LEVEL);
+			ModuleFrameworkPropsValues.MODULE_FRAMEWORK_RUNTIME_START_LEVEL);
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("Started the OSGi framework");
@@ -279,7 +299,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			new DefaultNoticeableFuture<>();
 
 		frameworkStartLevel.setStartLevel(
-			PropsValues.MODULE_FRAMEWORK_BEGINNING_START_LEVEL,
+			ModuleFrameworkPropsValues.MODULE_FRAMEWORK_BEGINNING_START_LEVEL,
 			frameworkEvent -> defaultNoticeableFuture.set(frameworkEvent));
 
 		FrameworkEvent frameworkEvent = defaultNoticeableFuture.get();
@@ -287,6 +307,20 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 		if (frameworkEvent.getType() != FrameworkEvent.STARTLEVEL_CHANGED) {
 			ReflectionUtil.throwException(frameworkEvent.getThrowable());
 		}
+
+		BundleContext bundleContext = _framework.getBundleContext();
+
+		ServiceReference<LogReaderService> serviceReference =
+			bundleContext.getServiceReference(LogReaderService.class);
+
+		if (serviceReference != null) {
+			LogReaderService logReaderService = bundleContext.getService(
+				serviceReference);
+
+			logReaderService.removeLogListener(_logListener);
+		}
+
+		bundleContext.removeBundleListener(_bundleListener);
 
 		_framework.stop();
 
@@ -372,7 +406,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			return bundleContext.installBundle(location, inputStream);
 		}
 		catch (BundleException bundleException) {
-			_log.error(bundleException, bundleException);
+			_log.error(bundleException);
 
 			throw new PortalException(bundleException);
 		}
@@ -404,10 +438,17 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			Constants.FRAMEWORK_STORAGE,
 			PropsValues.MODULE_FRAMEWORK_STATE_DIR);
 
-		properties.put("eclipse.security", null);
 		properties.put(
-			"equinox.resolver.revision.batch.size",
-			PropsValues.MODULE_FRAMEWORK_RESOLVER_REVISION_BATCH_SIZE);
+			"ds.lock.timeout.milliseconds",
+			GetterUtil.getString(
+				SystemProperties.get("ds.lock.timeout.milliseconds"),
+				"1800000"));
+		properties.put(
+			"ds.stop.timeout.milliseconds",
+			GetterUtil.getString(
+				SystemProperties.get("ds.stop.timeout.milliseconds"),
+				"1800000"));
+		properties.put("eclipse.security", null);
 		properties.put("java.security.manager", null);
 		properties.put("org.osgi.framework.security", null);
 
@@ -471,11 +512,10 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			properties.put(key, value);
 		}
 
-		String systemPackagesExtra = _getSystemPackagesExtra(
-			attributes.getValue(Constants.EXPORT_PACKAGE));
-
 		properties.put(
-			Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA, systemPackagesExtra);
+			Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA,
+			_getSystemPackagesExtra(
+				attributes.getValue(Constants.EXPORT_PACKAGE)));
 
 		if (_log.isDebugEnabled()) {
 			for (Map.Entry<String, String> entry : properties.entrySet()) {
@@ -496,7 +536,8 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 
 		crc32.update(fileName.getBytes());
 
-		_calculateChecksum(file.lastModified(), crc32);
+		_calculateChecksum(file.canWrite() ? 1000L : -1000L, crc32);
+		_calculateChecksum(file.lastModified() / 1000, crc32);
 		_calculateChecksum(file.length(), crc32);
 
 		return crc32.getValue();
@@ -681,6 +722,31 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 		return string.substring(beginIndex, endIndex);
 	}
 
+	private OSGiBeanProperties _findOSGiBeanProperties(Object bean) {
+		Class<?> clazz = bean.getClass();
+
+		if (!(bean instanceof BaseLocalService)) {
+			return clazz.getAnnotation(OSGiBeanProperties.class);
+		}
+
+		for (Class<?> interfaceClass : clazz.getInterfaces()) {
+			if ((interfaceClass == BaseLocalService.class) ||
+				!BaseLocalService.class.isAssignableFrom(interfaceClass)) {
+
+				continue;
+			}
+
+			OSGiBeanProperties osgiBeanProperties =
+				interfaceClass.getAnnotation(OSGiBeanProperties.class);
+
+			if (osgiBeanProperties != null) {
+				return osgiBeanProperties;
+			}
+		}
+
+		return null;
+	}
+
 	private Attributes _getExtraManifestAttributes() {
 		try (InputStream inputStream =
 				ModuleFrameworkImpl.class.getResourceAsStream(
@@ -719,17 +785,6 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 
 		return StringUtil.replace(
 			uriString, CharPool.BACK_SLASH, CharPool.FORWARD_SLASH);
-	}
-
-	private Dictionary<String, Object> _getProperties(
-		Object bean, String beanName) {
-
-		Class<?> clazz = bean.getClass();
-
-		OSGiBeanProperties osgiBeanProperties = clazz.getAnnotation(
-			OSGiBeanProperties.class);
-
-		return _getProperties(osgiBeanProperties, beanName);
 	}
 
 	private Dictionary<String, Object> _getProperties(
@@ -798,7 +853,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 
 	private String _getSystemPackagesExtra(String exportedPackages) {
 		String[] systemPackagesExtra =
-			PropsValues.MODULE_FRAMEWORK_SYSTEM_PACKAGES_EXTRA;
+			ModuleFrameworkPropsValues.MODULE_FRAMEWORK_SYSTEM_PACKAGES_EXTRA;
 
 		StringBundler sb = new StringBundler();
 
@@ -886,12 +941,13 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 
 				if (header == null) {
 					bundleStartLevel.setStartLevel(
-						PropsValues.
+						ModuleFrameworkPropsValues.
 							MODULE_FRAMEWORK_DYNAMIC_INSTALL_START_LEVEL);
 				}
 				else {
 					bundleStartLevel.setStartLevel(
-						PropsValues.MODULE_FRAMEWORK_WEB_START_LEVEL);
+						ModuleFrameworkPropsValues.
+							MODULE_FRAMEWORK_WEB_START_LEVEL);
 				}
 
 				if (_isFragmentBundle(bundle)) {
@@ -929,18 +985,12 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			configurationFileInstallerClass.getDeclaredMethod(
 				"transformURL", File.class);
 
-		String encoding = bundleContext.getProperty(
-			"file.install.configEncoding");
-
-		if (encoding == null) {
-			encoding = StringPool.UTF8;
-		}
-
 		Object configurationFileInstaller = constructor.newInstance(
 			bundleContext.getService(
 				bundleContext.getServiceReference(
 					"org.osgi.service.cm.ConfigurationAdmin")),
-			encoding);
+			ModuleFrameworkPropsValues.
+				MODULE_FRAMEWORK_FILE_INSTALL_CONFIG_ENCODING);
 
 		File dir = new File(PropsValues.MODULE_FRAMEWORK_CONFIGS_DIR);
 
@@ -1014,19 +1064,21 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 				_log.debug(
 					StringBundler.concat(
 						"Setting bundle ", bundle, " at start level ",
-						PropsValues.MODULE_FRAMEWORK_BEGINNING_START_LEVEL));
+						ModuleFrameworkPropsValues.
+							MODULE_FRAMEWORK_BEGINNING_START_LEVEL));
 			}
 
 			BundleStartLevel bundleStartLevel = bundle.adapt(
 				BundleStartLevel.class);
 
 			bundleStartLevel.setStartLevel(
-				PropsValues.MODULE_FRAMEWORK_BEGINNING_START_LEVEL);
+				ModuleFrameworkPropsValues.
+					MODULE_FRAMEWORK_BEGINNING_START_LEVEL);
 
 			return bundle;
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			return null;
 		}
@@ -1155,7 +1207,12 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			_log.debug("Register application context");
 		}
 
-		List<ServiceRegistration<?>> serviceRegistrations = new ArrayList<>();
+		Collection<ServiceRegistration<?>> serviceRegistrations =
+			new ConcurrentLinkedQueue<>();
+
+		ExecutorService executorService =
+			SystemExecutorServiceUtil.getExecutorService();
+		List<Future<Void>> futures = new ArrayList<>();
 
 		ConfigurableListableBeanFactory configurableListableBeanFactory =
 			configurableApplicationContext.getBeanFactory();
@@ -1164,32 +1221,40 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			configurableListableBeanFactory.getBeanNamesIterator();
 
 		iterator.forEachRemaining(
-			beanName -> {
-				Object bean = null;
+			beanName -> futures.add(
+				executorService.submit(
+					() -> {
+						Object bean = null;
 
-				try {
-					bean = configurableApplicationContext.getBean(beanName);
-				}
-				catch (BeanIsAbstractException beanIsAbstractException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							beanIsAbstractException, beanIsAbstractException);
-					}
-				}
-				catch (Exception exception) {
-					_log.error(exception, exception);
-				}
+						try {
+							bean = configurableApplicationContext.getBean(
+								beanName);
+						}
+						catch (Exception exception) {
+							_log.error(exception);
+						}
 
-				if (bean != null) {
-					ServiceRegistration<?> serviceRegistration =
-						_registerService(
-							_framework.getBundleContext(), beanName, bean);
+						if (bean != null) {
+							ServiceRegistration<?> serviceRegistration =
+								_registerService(
+									_framework.getBundleContext(), beanName,
+									bean);
 
-					if (serviceRegistration != null) {
-						serviceRegistrations.add(serviceRegistration);
-					}
-				}
-			});
+							if (serviceRegistration != null) {
+								serviceRegistrations.add(serviceRegistration);
+							}
+						}
+					},
+					null)));
+
+		for (Future<Void> future : futures) {
+			try {
+				future.get();
+			}
+			catch (Exception exception) {
+				_log.error(exception);
+			}
+		}
 
 		_springContextServices.put(
 			configurableApplicationContext, serviceRegistrations);
@@ -1215,14 +1280,12 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 	private ServiceRegistration<?> _registerService(
 		BundleContext bundleContext, String beanName, Object bean) {
 
-		Class<?> clazz = bean.getClass();
-
-		OSGiBeanProperties osgiBeanProperties = clazz.getAnnotation(
-			OSGiBeanProperties.class);
+		OSGiBeanProperties osgiBeanProperties = _findOSGiBeanProperties(bean);
 
 		Set<String> names = OSGiBeanProperties.Service.interfaceNames(
 			bean, osgiBeanProperties,
-			PropsValues.MODULE_FRAMEWORK_SERVICES_IGNORED_INTERFACES);
+			ModuleFrameworkPropsValues.
+				MODULE_FRAMEWORK_SERVICES_IGNORED_INTERFACES);
 
 		if (names.isEmpty()) {
 			return null;
@@ -1297,7 +1360,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			});
 
 		for (String staticJarFileName :
-				PropsValues.MODULE_FRAMEWORK_STATIC_JARS) {
+				ModuleFrameworkPropsValues.MODULE_FRAMEWORK_STATIC_JARS) {
 
 			Path staticJarPath = Paths.get(
 				PropsValues.LIFERAY_SHIELDED_CONTAINER_LIB_PORTAL_DIR,
@@ -1374,7 +1437,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			}
 		}
 
-		String deployDir = bundleContext.getProperty("lpkg.deployer.dir");
+		String deployDir = PropsValues.MODULE_FRAMEWORK_MARKETPLACE_DIR;
 
 		for (String staticFileName :
 				StaticLPKGResolver.getStaticLPKGFileNames()) {
@@ -1454,7 +1517,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			new DefaultNoticeableFuture<>();
 
 		frameworkStartLevel.setStartLevel(
-			PropsValues.MODULE_FRAMEWORK_BEGINNING_START_LEVEL,
+			ModuleFrameworkPropsValues.MODULE_FRAMEWORK_BEGINNING_START_LEVEL,
 			frameworkEvent -> defaultNoticeableFuture.set(frameworkEvent));
 
 		FrameworkEvent frameworkEvent = defaultNoticeableFuture.get();
@@ -1474,16 +1537,11 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 
 		_installConfigs(bundleWiring.getClassLoader());
 
-		if (PropsValues.MODULE_FRAMEWORK_CONCURRENT_STARTUP_ENABLED) {
-			Runtime runtime = Runtime.getRuntime();
+		if (ModuleFrameworkPropsValues.
+				MODULE_FRAMEWORK_CONCURRENT_STARTUP_ENABLED) {
 
-			Thread currentThread = Thread.currentThread();
-
-			ExecutorService executorService = Executors.newFixedThreadPool(
-				runtime.availableProcessors(),
-				new NamedThreadFactory(
-					"ModuleFramework-Static-Bundles", Thread.NORM_PRIORITY,
-					currentThread.getContextClassLoader()));
+			ExecutorService executorService =
+				SystemExecutorServiceUtil.getExecutorService();
 
 			List<Future<Void>> futures = new ArrayList<>(bundles.size());
 
@@ -1500,8 +1558,6 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 							}));
 				}
 			}
-
-			executorService.shutdown();
 
 			for (Future<Void> future : futures) {
 				try {
@@ -1553,18 +1609,12 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			_log.debug("Setting up required service");
 		}
 
-		Props props = PropsUtil.getProps();
+		bundleContext.registerService(
+			ProcessExecutor.class, new LocalProcessExecutor(), null);
 
-		ServiceRegistration<Props> serviceRegistration =
-			bundleContext.registerService(
-				Props.class, props,
-				_getProperties(props, Props.class.getName()));
-
-		if (_log.isDebugEnabled()) {
-			_log.debug(
-				"Registered required service as " +
-					serviceRegistration.getReference());
-		}
+		bundleContext.registerService(
+			Props.class, PropsUtil.getProps(),
+			_getProperties(null, Props.class.getName()));
 	}
 
 	private void _startConfigurationBundles(Collection<Bundle> bundles)
@@ -1601,7 +1651,8 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			new DefaultNoticeableFuture<>();
 
 		frameworkStartLevel.setStartLevel(
-			PropsValues.MODULE_FRAMEWORK_DYNAMIC_INSTALL_START_LEVEL,
+			ModuleFrameworkPropsValues.
+				MODULE_FRAMEWORK_DYNAMIC_INSTALL_START_LEVEL,
 			frameworkEvent -> defaultNoticeableFuture.set(frameworkEvent));
 
 		FrameworkEvent frameworkEvent = defaultNoticeableFuture.get();
@@ -1622,7 +1673,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 		}
 
 		frameworkStartLevel.setStartLevel(
-			PropsValues.MODULE_FRAMEWORK_WEB_START_LEVEL,
+			ModuleFrameworkPropsValues.MODULE_FRAMEWORK_WEB_START_LEVEL,
 			webFrameworkEvent -> webDefaultNoticeableFuture.set(
 				webFrameworkEvent));
 
@@ -1679,7 +1730,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 	private void _unregisterApplicationContext(
 		ConfigurableApplicationContext configurableApplicationContext) {
 
-		List<ServiceRegistration<?>> serviceRegistrations =
+		Collection<ServiceRegistration<?>> serviceRegistrations =
 			_springContextServices.remove(configurableApplicationContext);
 
 		if (serviceRegistrations == null) {
@@ -1735,11 +1786,14 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 
 	private static final List<String> _configurationBundleSymbolicNames =
 		Arrays.asList(
-			PropsValues.MODULE_FRAMEWORK_CONFIGURATION_BUNDLE_SYMBOLIC_NAMES);
+			ModuleFrameworkPropsValues.
+				MODULE_FRAMEWORK_CONFIGURATION_BUNDLE_SYMBOLIC_NAMES);
 
+	private BundleListener _bundleListener;
 	private Framework _framework;
+	private LogListener _logListener;
 	private final Map
-		<ConfigurableApplicationContext, List<ServiceRegistration<?>>>
+		<ConfigurableApplicationContext, Collection<ServiceRegistration<?>>>
 			_springContextServices = new ConcurrentHashMap<>();
 
 }

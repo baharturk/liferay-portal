@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.dto.v1_0.util;
@@ -25,6 +16,7 @@ import com.liferay.headless.delivery.dto.v1_0.ContentStructureField;
 import com.liferay.headless.delivery.dto.v1_0.Option;
 import com.liferay.journal.article.dynamic.data.mapping.form.field.type.constants.JournalArticleDDMFormFieldTypeConstants;
 import com.liferay.layout.dynamic.data.mapping.form.field.type.constants.LayoutDDMFormFieldTypeConstants;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
@@ -32,14 +24,10 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.vulcan.util.GroupUtil;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * @author Cristina González
@@ -69,7 +57,7 @@ public class ContentStructureUtil {
 						ddmStructure.getDDMFormField(fieldName), locale),
 					ContentStructureField.class);
 				creator = CreatorUtil.toCreator(
-					portal, Optional.empty(),
+					null, portal,
 					userLocalService.fetchUser(ddmStructure.getUserId()));
 				dateCreated = ddmStructure.getCreateDate();
 				dateModified = ddmStructure.getModifiedDate();
@@ -159,34 +147,34 @@ public class ContentStructureUtil {
 				showLabel = ddmFormField.isShowLabel();
 
 				setOptions(
-					() -> Optional.ofNullable(
-						ddmFormField.getDDMFormFieldOptions()
-					).map(
-						DDMFormFieldOptions::getOptions
-					).map(
-						Map::entrySet
-					).map(
-						Set::stream
-					).orElseGet(
-						Stream::empty
-					).map(
-						entry -> new Option() {
-							{
-								LocalizedValue localizedValue =
-									entry.getValue();
+					() -> {
+						DDMFormFieldOptions ddmFormFieldOptions =
+							ddmFormField.getDDMFormFieldOptions();
 
-								setLabel(_toString(localizedValue, locale));
-								setLabel_i18n(
-									LocalizedMapUtil.getI18nMap(
-										acceptAllLanguage,
-										localizedValue.getValues()));
-
-								setValue(entry.getKey());
-							}
+						if (ddmFormFieldOptions == null) {
+							return new Option[0];
 						}
-					).toArray(
-						Option[]::new
-					));
+
+						Map<String, LocalizedValue> map =
+							ddmFormFieldOptions.getOptions();
+
+						return TransformUtil.transformToArray(
+							map.entrySet(),
+							entry -> new Option() {
+								{
+									LocalizedValue localizedValue =
+										entry.getValue();
+
+									label = _toString(localizedValue, locale);
+									label_i18n = LocalizedMapUtil.getI18nMap(
+										acceptAllLanguage,
+										localizedValue.getValues());
+
+									value = entry.getKey();
+								}
+							},
+							Option.class);
+					});
 			}
 		};
 	}

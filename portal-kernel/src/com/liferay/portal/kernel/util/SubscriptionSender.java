@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -26,6 +17,8 @@ import com.liferay.mail.kernel.template.MailTemplateContext;
 import com.liferay.mail.kernel.template.MailTemplateContextBuilder;
 import com.liferay.mail.kernel.template.MailTemplateFactoryUtil;
 import com.liferay.petra.lang.ClassLoaderPool;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -44,9 +37,9 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserNotificationDeliveryConstants;
 import com.liferay.portal.kernel.notifications.UserNotificationManagerUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.security.permission.BaseModelPermissionCheckerUtil;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionUtil;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.ResourceActionLocalServiceUtil;
@@ -144,16 +137,8 @@ public class SubscriptionSender implements Serializable {
 	public void flushNotifications() throws Exception {
 		initialize();
 
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		try {
-			if ((_classLoader != null) &&
-				(contextClassLoader != _classLoader)) {
-
-				currentThread.setContextClassLoader(_classLoader);
-			}
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				_classLoader)) {
 
 			for (Tuple tuple : _persistedSubscribersTuples) {
 				String className = (String)tuple.getObject(0);
@@ -241,13 +226,6 @@ public class SubscriptionSender implements Serializable {
 				sendEmail(to, locale);
 			}
 		}
-		finally {
-			if ((_classLoader != null) &&
-				(contextClassLoader != _classLoader)) {
-
-				currentThread.setContextClassLoader(contextClassLoader);
-			}
-		}
 	}
 
 	public void flushNotificationsAsync() {
@@ -324,14 +302,14 @@ public class SubscriptionSender implements Serializable {
 		setContextAttribute("[$COMPANY_NAME$]", company.getName());
 
 		if (Validator.isNotNull(_entryURL)) {
-			boolean secureConnection = HttpUtil.isSecure(_entryURL);
+			boolean secureConnection = HttpComponentsUtil.isSecure(_entryURL);
 
-			String portalURL = PortalUtil.getPortalURL(
-				company.getVirtualHostname(),
-				PortalUtil.getPortalServerPort(secureConnection),
-				secureConnection);
+			if (_entryURL.startsWith(
+					PortalUtil.getPortalURL(
+						company.getVirtualHostname(),
+						PortalUtil.getPortalServerPort(secureConnection),
+						secureConnection))) {
 
-			if (_entryURL.startsWith(portalURL)) {
 				setContextAttribute(
 					"[$PORTAL_URL$]",
 					company.getPortalURL(
@@ -565,7 +543,7 @@ public class SubscriptionSender implements Serializable {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -632,10 +610,9 @@ public class SubscriptionSender implements Serializable {
 		Boolean hasPermission = null;
 
 		if (Validator.isNotNull(className)) {
-			hasPermission =
-				BaseModelPermissionCheckerUtil.containsBaseModelPermission(
-					permissionChecker, groupId, className, classPK,
-					ActionKeys.VIEW);
+			hasPermission = ModelResourcePermissionUtil.contains(
+				permissionChecker, groupId, className, classPK,
+				ActionKeys.VIEW);
 
 			if ((hasPermission == null) || !hasPermission) {
 				return false;
@@ -669,22 +646,12 @@ public class SubscriptionSender implements Serializable {
 				subscription.getClassName(), ActionKeys.SUBSCRIBE);
 
 		if (resourceAction != null) {
-			return BaseModelPermissionCheckerUtil.containsBaseModelPermission(
+			return ModelResourcePermissionUtil.contains(
 				permissionChecker, groupId, subscription.getClassName(),
 				subscription.getClassPK(), ActionKeys.SUBSCRIBE);
 		}
 
 		return Boolean.TRUE;
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	protected void notifyPersistedSubscriber(Subscription subscription)
-		throws Exception {
-
-		notifyPersistedSubscriber(subscription, true);
 	}
 
 	protected void notifyPersistedSubscriber(
@@ -693,17 +660,6 @@ public class SubscriptionSender implements Serializable {
 
 		notifyPersistedSubscriber(
 			subscription, _className, _classPK, notifyImmediately);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	protected void notifyPersistedSubscriber(
-			Subscription subscription, String className, long classPK)
-		throws Exception {
-
-		notifyPersistedSubscriber(subscription, _className, _classPK, true);
 	}
 
 	protected void notifyPersistedSubscriber(
@@ -783,7 +739,7 @@ public class SubscriptionSender implements Serializable {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			return;
 		}
@@ -826,17 +782,25 @@ public class SubscriptionSender implements Serializable {
 				return;
 			}
 
-			sendNotification(user);
+			sendNotification(user, true);
 		}
 	}
 
 	protected void populateNotificationEventJSONObject(
 		JSONObject notificationEventJSONObject) {
 
+		String command = null;
+
+		if (serviceContext != null) {
+			command = serviceContext.getCommand();
+		}
+
 		notificationEventJSONObject.put(
 			"className", _className
 		).put(
 			"classPK", _classPK
+		).put(
+			"command", command
 		).put(
 			"context", _context
 		).put(
@@ -1098,13 +1062,13 @@ public class SubscriptionSender implements Serializable {
 		mailTemplateContextBuilder.put("[$FROM_ADDRESS$]", from.getAddress());
 		mailTemplateContextBuilder.put(
 			"[$FROM_NAME$]",
-			HtmlUtil.escape(
+			new EscapableObject<>(
 				GetterUtil.getString(from.getPersonal(), from.getAddress())));
 		mailTemplateContextBuilder.put(
-			"[$TO_ADDRESS$]", HtmlUtil.escape(to.getAddress()));
+			"[$TO_ADDRESS$]", new EscapableObject<>(to.getAddress()));
 		mailTemplateContextBuilder.put(
 			"[$TO_NAME$]",
-			HtmlUtil.escape(
+			new EscapableObject<>(
 				GetterUtil.getString(to.getPersonal(), to.getAddress())));
 
 		MailTemplateContext mailTemplateContext =

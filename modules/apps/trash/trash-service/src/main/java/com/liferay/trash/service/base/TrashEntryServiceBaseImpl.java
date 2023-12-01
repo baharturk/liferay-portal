@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.trash.service.base;
@@ -20,6 +11,8 @@ import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.BaseServiceImpl;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -27,8 +20,6 @@ import com.liferay.trash.model.TrashEntry;
 import com.liferay.trash.service.TrashEntryService;
 import com.liferay.trash.service.TrashEntryServiceUtil;
 import com.liferay.trash.service.persistence.TrashEntryPersistence;
-
-import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -57,7 +48,7 @@ public abstract class TrashEntryServiceBaseImpl
 	 */
 	@Deactivate
 	protected void deactivate() {
-		_setServiceUtilService(null);
+		TrashEntryServiceUtil.setService(null);
 	}
 
 	@Override
@@ -71,7 +62,7 @@ public abstract class TrashEntryServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		trashEntryService = (TrashEntryService)aopProxy;
 
-		_setServiceUtilService(trashEntryService);
+		TrashEntryServiceUtil.setService(trashEntryService);
 	}
 
 	/**
@@ -116,20 +107,6 @@ public abstract class TrashEntryServiceBaseImpl
 		}
 	}
 
-	private void _setServiceUtilService(TrashEntryService trashEntryService) {
-		try {
-			Field field = TrashEntryServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, trashEntryService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	@Reference
 	protected com.liferay.trash.service.TrashEntryLocalService
 		trashEntryLocalService;
@@ -142,5 +119,8 @@ public abstract class TrashEntryServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		TrashEntryServiceBaseImpl.class);
 
 }

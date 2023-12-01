@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service;
 
+import com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 
 /**
@@ -40,13 +32,11 @@ public class CommercePricingClassCPDefinitionRelServiceWrapper
 	}
 
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-				addCommercePricingClassCPDefinitionRel(
-					long commercePricingClassId, long cpDefinitionId,
-					com.liferay.portal.kernel.service.ServiceContext
-						serviceContext)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public CommercePricingClassCPDefinitionRel
+			addCommercePricingClassCPDefinitionRel(
+				long commercePricingClassId, long cpDefinitionId,
+				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelService.
 			addCommercePricingClassCPDefinitionRel(
@@ -54,13 +44,11 @@ public class CommercePricingClassCPDefinitionRelServiceWrapper
 	}
 
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-				deleteCommercePricingClassCPDefinitionRel(
-					com.liferay.commerce.pricing.model.
-						CommercePricingClassCPDefinitionRel
-							commercePricingClassCPDefinitionRel)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public CommercePricingClassCPDefinitionRel
+			deleteCommercePricingClassCPDefinitionRel(
+				CommercePricingClassCPDefinitionRel
+					commercePricingClassCPDefinitionRel)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelService.
 			deleteCommercePricingClassCPDefinitionRel(
@@ -68,11 +56,10 @@ public class CommercePricingClassCPDefinitionRelServiceWrapper
 	}
 
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-				deleteCommercePricingClassCPDefinitionRel(
-					long commercePricingClassCPDefinitionRelId)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public CommercePricingClassCPDefinitionRel
+			deleteCommercePricingClassCPDefinitionRel(
+				long commercePricingClassCPDefinitionRelId)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelService.
 			deleteCommercePricingClassCPDefinitionRel(
@@ -80,11 +67,10 @@ public class CommercePricingClassCPDefinitionRelServiceWrapper
 	}
 
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-				fetchCommercePricingClassCPDefinitionRel(
-					long commercePricingClassId, long cpDefinitionId)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public CommercePricingClassCPDefinitionRel
+			fetchCommercePricingClassCPDefinitionRel(
+				long commercePricingClassId, long cpDefinitionId)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelService.
 			fetchCommercePricingClassCPDefinitionRel(
@@ -92,11 +78,10 @@ public class CommercePricingClassCPDefinitionRelServiceWrapper
 	}
 
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-				getCommercePricingClassCPDefinitionRel(
-					long commercePricingClassCPDefinitionRelId)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public CommercePricingClassCPDefinitionRel
+			getCommercePricingClassCPDefinitionRel(
+				long commercePricingClassCPDefinitionRelId)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelService.
 			getCommercePricingClassCPDefinitionRel(
@@ -104,11 +89,10 @@ public class CommercePricingClassCPDefinitionRelServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel>
-				getCommercePricingClassCPDefinitionRelByClassId(
-					long commercePricingClassId)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommercePricingClassCPDefinitionRel>
+			getCommercePricingClassCPDefinitionRelByClassId(
+				long commercePricingClassId)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelService.
 			getCommercePricingClassCPDefinitionRelByClassId(
@@ -116,15 +100,12 @@ public class CommercePricingClassCPDefinitionRelServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel>
-				getCommercePricingClassCPDefinitionRels(
-					long commercePricingClassId, int start, int end,
-					com.liferay.portal.kernel.util.OrderByComparator
-						<com.liferay.commerce.pricing.model.
-							CommercePricingClassCPDefinitionRel>
-								orderByComparator)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommercePricingClassCPDefinitionRel>
+			getCommercePricingClassCPDefinitionRels(
+				long commercePricingClassId, int start, int end,
+				com.liferay.portal.kernel.util.OrderByComparator
+					<CommercePricingClassCPDefinitionRel> orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelService.
 			getCommercePricingClassCPDefinitionRels(
@@ -170,12 +151,11 @@ public class CommercePricingClassCPDefinitionRelServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel>
-				searchByCommercePricingClassId(
-					long commercePricingClassId, String name, String languageId,
-					int start, int end)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommercePricingClassCPDefinitionRel>
+			searchByCommercePricingClassId(
+				long commercePricingClassId, String name, String languageId,
+				int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelService.
 			searchByCommercePricingClassId(

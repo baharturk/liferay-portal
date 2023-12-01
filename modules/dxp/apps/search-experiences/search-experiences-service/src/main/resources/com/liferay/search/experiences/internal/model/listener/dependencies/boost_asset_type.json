@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Boost the given asset type over others."
+		"en_US": "boost-asset-type-description"
 	},
 	"elementDefinition": {
 		"category": "boost",
@@ -32,13 +32,13 @@
 				{
 					"fields": [
 						{
-							"label": "Asset Type",
+							"label": "asset-type",
 							"name": "entry_class_name",
 							"type": "searchableType"
 						},
 						{
 							"defaultValue": 10,
-							"label": "Boost",
+							"label": "boost",
 							"name": "boost",
 							"type": "number",
 							"typeOptions": {
@@ -50,7 +50,8 @@
 			]
 		}
 	},
+	"externalReferenceCode": "BOOST_ASSET_TYPE",
 	"title_i18n": {
-		"en_US": "Boost Asset Type"
+		"en_US": "boost-asset-type"
 	}
 }

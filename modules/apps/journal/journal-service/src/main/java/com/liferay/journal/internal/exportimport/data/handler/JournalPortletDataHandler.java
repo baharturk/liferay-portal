@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.exportimport.data.handler;
@@ -17,6 +8,7 @@ package com.liferay.journal.internal.exportimport.data.handler;
 import com.liferay.changeset.model.ChangesetCollection;
 import com.liferay.changeset.service.ChangesetCollectionLocalService;
 import com.liferay.changeset.service.ChangesetEntryLocalService;
+import com.liferay.data.engine.model.DEDataDefinitionFieldLink;
 import com.liferay.data.engine.service.DEDataDefinitionFieldLinkLocalService;
 import com.liferay.dynamic.data.lists.service.DDLRecordSetLocalService;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
@@ -36,6 +28,7 @@ import com.liferay.exportimport.kernel.lar.PortletDataHandler;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerBoolean;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerChoice;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerControl;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.exportimport.kernel.staging.Staging;
@@ -51,6 +44,7 @@ import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.service.JournalFeedLocalService;
 import com.liferay.journal.service.JournalFolderLocalService;
 import com.liferay.journal.util.JournalContent;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Disjunction;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -62,7 +56,6 @@ import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.Portal;
@@ -161,14 +154,14 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 	public boolean isPublishToLiveByDefault() {
 		try {
 			JournalServiceConfiguration journalServiceConfiguration =
-				ConfigurationProviderUtil.getCompanyConfiguration(
+				_configurationProvider.getCompanyConfiguration(
 					JournalServiceConfiguration.class,
 					CompanyThreadLocal.getCompanyId());
 
 			return journalServiceConfiguration.publishToLiveByDefaultEnabled();
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return true;
@@ -406,6 +399,28 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 					portletDataContext, ddmStructureElement);
 			}
 
+			for (Element ddmStructureElement : ddmStructureElements) {
+				List<Element> deDataDefinitionFieldLinkElements =
+					portletDataContext.getReferenceDataElements(
+						ddmStructureElement, DEDataDefinitionFieldLink.class,
+						null);
+
+				for (Element deDataDefinitionFieldLinkElement :
+						deDataDefinitionFieldLinkElements) {
+
+					String path =
+						deDataDefinitionFieldLinkElement.attributeValue("path");
+
+					DEDataDefinitionFieldLink deDataDefinitionFieldLink =
+						(DEDataDefinitionFieldLink)
+							portletDataContext.getZipEntryAsObject(
+								deDataDefinitionFieldLinkElement, path);
+
+					StagedModelDataHandlerUtil.importStagedModel(
+						portletDataContext, deDataDefinitionFieldLink);
+				}
+			}
+
 			// Importing DDM structure default values
 
 			for (Element articleElement : articleElements) {
@@ -498,60 +513,6 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 				portletDataContext);
 
 		folderActionableDynamicQuery.performCount();
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMStructureLocalService(
-		DDMStructureLocalService ddmStructureLocalService) {
-
-		_ddmStructureLocalService = ddmStructureLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMTemplateLocalService(
-		DDMTemplateLocalService ddmTemplateLocalService) {
-
-		_ddmTemplateLocalService = ddmTemplateLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJournalArticleLocalService(
-		JournalArticleLocalService journalArticleLocalService) {
-
-		_journalArticleLocalService = journalArticleLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJournalArticleStagedModelDataHandler(
-		JournalArticleStagedModelDataHandler
-			journalArticleStagedModelDataHandler) {
-
-		_journalArticleStagedModelDataHandler =
-			journalArticleStagedModelDataHandler;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJournalContent(JournalContent journalContent) {
-		_journalContent = journalContent;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJournalFeedLocalService(
-		JournalFeedLocalService journalFeedLocalService) {
-
-		_journalFeedLocalService = journalFeedLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJournalFolderLocalService(
-		JournalFolderLocalService journalFolderLocalService) {
-
-		_journalFolderLocalService = journalFolderLocalService;
-	}
-
-	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
-	protected void setModuleServiceLifecycle(
-		ModuleServiceLifecycle moduleServiceLifecycle) {
 	}
 
 	private ActionableDynamicQuery _getArticleActionableDynamicQuery(
@@ -717,14 +678,14 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 	private boolean _isVersionHistoryByDefaultEnabled() {
 		try {
 			JournalServiceConfiguration journalServiceConfiguration =
-				ConfigurationProviderUtil.getCompanyConfiguration(
+				_configurationProvider.getCompanyConfiguration(
 					JournalServiceConfiguration.class,
 					CompanyThreadLocal.getCompanyId());
 
 			return journalServiceConfiguration.versionHistoryByDefaultEnabled();
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return true;
@@ -779,16 +740,21 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 	private ChangesetEntryLocalService _changesetEntryLocalService;
 
 	@Reference
+	private ConfigurationProvider _configurationProvider;
+
+	@Reference
 	private DDLRecordSetLocalService _ddlRecordSetLocalService;
 
 	@Reference
 	private DDMStructureLayoutLocalService _ddmStructureLayoutLocalService;
 
+	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;
 
 	@Reference
 	private DDMStructureVersionLocalService _ddmStructureVersionLocalService;
 
+	@Reference
 	private DDMTemplateLocalService _ddmTemplateLocalService;
 
 	@Reference
@@ -798,12 +764,26 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 	@Reference
 	private ExportImportHelper _exportImportHelper;
 
+	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;
-	private JournalArticleStagedModelDataHandler
+
+	@Reference(
+		target = "(component.name=com.liferay.journal.internal.exportimport.data.handler.JournalArticleStagedModelDataHandler)"
+	)
+	private StagedModelDataHandler<JournalArticle>
 		_journalArticleStagedModelDataHandler;
+
+	@Reference
 	private JournalContent _journalContent;
+
+	@Reference
 	private JournalFeedLocalService _journalFeedLocalService;
+
+	@Reference
 	private JournalFolderLocalService _journalFolderLocalService;
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
+	private ModuleServiceLifecycle _moduleServiceLifecycle;
 
 	@Reference
 	private Portal _portal;

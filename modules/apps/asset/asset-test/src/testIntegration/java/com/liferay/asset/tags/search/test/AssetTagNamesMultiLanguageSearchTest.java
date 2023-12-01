@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.tags.search.test;
@@ -121,6 +112,34 @@ public class AssetTagNamesMultiLanguageSearchTest {
 	}
 
 	@Test
+	public void testDisplayLocaleDifferentFromDefaultLocale() throws Exception {
+		Locale indexLocale = LocaleUtil.US;
+		Locale queryLocale = LocaleUtil.JAPAN;
+		String title = "title should not match";
+		String tag = "searchtag";
+
+		Group group = _userSearchFixture.addGroup(
+			new GroupBlueprint() {
+				{
+					setDefaultLocale(indexLocale);
+				}
+			});
+
+		_fileEntrySearchFixture.addFileEntry(
+			new FileEntryBlueprint() {
+				{
+					setAssetTagNames(new String[] {tag});
+					setFileName(title);
+					setGroupId(group.getGroupId());
+					setTitle(title);
+					setUserId(getAdminUserId(group));
+				}
+			});
+
+		assertSearch(tag, group, queryLocale);
+	}
+
+	@Test
 	public void testEnglishTags() throws Exception {
 		Locale locale = LocaleUtil.US;
 		String title = "title should not match";
@@ -191,26 +210,28 @@ public class AssetTagNamesMultiLanguageSearchTest {
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
-	protected void assertDLFileEntryIndexer(String tagName, Locale locale)
+	protected void assertDLFileEntryIndexer(
+			String tagName, Group group, Locale locale)
 		throws Exception {
 
 		Indexer<DLFileEntry> indexer = indexerRegistry.getIndexer(
 			DLFileEntry.class);
 
-		SearchContext searchContext = getSearchContext(tagName, locale);
+		SearchContext searchContext = getSearchContext(tagName, group, locale);
 
 		Hits hits = indexer.search(searchContext);
 
 		assertHits(tagName, hits, searchContext);
 	}
 
-	protected void assertFacetedSearcher(String tagName, Locale locale)
+	protected void assertFacetedSearcher(
+			String tagName, Group group, Locale locale)
 		throws Exception {
 
 		FacetedSearcher facetedSearcher =
 			facetedSearcherManager.createFacetedSearcher();
 
-		SearchContext searchContext = getSearchContext(tagName, locale);
+		SearchContext searchContext = getSearchContext(tagName, group, locale);
 
 		searchContext.setEntryClassNames(
 			new String[] {DLFileEntry.class.getName()});
@@ -228,11 +249,18 @@ public class AssetTagNamesMultiLanguageSearchTest {
 			Field.ASSET_TAG_NAMES, Arrays.asList(tagName));
 	}
 
+	protected void assertSearch(String tagName, Group group, Locale locale)
+		throws Exception {
+
+		assertDLFileEntryIndexer(tagName, group, locale);
+		assertFacetedSearcher(tagName, group, locale);
+	}
+
 	protected void assertSearch(String tagName, Locale locale)
 		throws Exception {
 
-		assertDLFileEntryIndexer(tagName, locale);
-		assertFacetedSearcher(tagName, locale);
+		assertDLFileEntryIndexer(tagName, null, locale);
+		assertFacetedSearcher(tagName, null, locale);
 	}
 
 	protected long getAdminUserId(Group group) {
@@ -246,11 +274,16 @@ public class AssetTagNamesMultiLanguageSearchTest {
 		}
 	}
 
-	protected SearchContext getSearchContext(String keywords, Locale locale)
+	protected SearchContext getSearchContext(
+			String keywords, Group group, Locale locale)
 		throws Exception {
 
 		SearchContext searchContext = _userSearchFixture.getSearchContext(
 			keywords);
+
+		if (group != null) {
+			searchContext.setGroupIds(new long[] {group.getGroupId()});
+		}
 
 		searchContext.setLocale(locale);
 

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -37,6 +29,7 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.segments.constants.SegmentsEntryConstants;
@@ -55,10 +48,10 @@ import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.segments.test.util.SegmentsTestUtil;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -131,15 +124,10 @@ public class SegmentsEntryLocalServiceTest {
 			segmentsEntry.getSegmentsEntryId(), classPKs,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
-		List<SegmentsEntryRel> segmentsEntryRels =
+		long[] actualClassPKs = TransformUtil.transformToLongArray(
 			_segmentsEntryRelLocalService.getSegmentsEntryRels(
-				segmentsEntry.getSegmentsEntryId());
-
-		Stream<SegmentsEntryRel> stream = segmentsEntryRels.stream();
-
-		long[] actualClassPKs = stream.mapToLong(
-			SegmentsEntryRel::getClassPK
-		).toArray();
+				segmentsEntry.getSegmentsEntryId()),
+			SegmentsEntryRel::getClassPK);
 
 		Assert.assertTrue(ArrayUtil.containsAll(actualClassPKs, classPKs));
 	}
@@ -284,9 +272,10 @@ public class SegmentsEntryLocalServiceTest {
 			_group.getGroupId());
 
 		_segmentsExperienceLocalService.addSegmentsExperience(
-			segmentsEntry.getSegmentsEntryId(), 0, 0,
+			TestPropsValues.getUserId(), _group.getGroupId(),
+			segmentsEntry.getSegmentsEntryId(), 0,
 			RandomTestUtil.randomLocaleStringMap(), RandomTestUtil.randomInt(),
-			false,
+			false, new UnicodeProperties(true),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		_segmentsEntryLocalService.deleteSegmentsEntry(
@@ -342,11 +331,10 @@ public class SegmentsEntryLocalServiceTest {
 
 		Assert.assertTrue(segmentsEntriesCount > 0);
 
-		segmentsEntriesCount =
+		Assert.assertEquals(
+			0,
 			_segmentsEntryLocalService.getSegmentsEntriesCount(
-				childGroup.getGroupId(), false);
-
-		Assert.assertEquals(0, segmentsEntriesCount);
+				childGroup.getGroupId(), false));
 	}
 
 	@Test
@@ -382,7 +370,145 @@ public class SegmentsEntryLocalServiceTest {
 		BaseModelSearchResult<SegmentsEntry> baseModelSearchResult =
 			_segmentsEntryLocalService.searchSegmentsEntries(
 				segmentsEntry.getCompanyId(), segmentsEntry.getGroupId(),
-				segmentsEntry.getNameCurrentValue(), true, 0, 1, null);
+				segmentsEntry.getNameCurrentValue(), true,
+				new LinkedHashMap<>(), 0, 1, null);
+
+		List<SegmentsEntry> segmentsEntries =
+			baseModelSearchResult.getBaseModels();
+
+		Assert.assertEquals(
+			segmentsEntries.toString(), 1, segmentsEntries.size());
+		Assert.assertEquals(segmentsEntry, segmentsEntries.get(0));
+	}
+
+	@Test
+	public void testSearchSegmentsEntriesWithCompanyId()
+		throws PortalException {
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId());
+
+		BaseModelSearchResult<SegmentsEntry> baseModelSearchResult =
+			_segmentsEntryLocalService.searchSegmentsEntries(
+				segmentsEntry.getCompanyId(),
+				segmentsEntry.getNameCurrentValue(), new LinkedHashMap<>(), 0,
+				1, null);
+
+		List<SegmentsEntry> segmentsEntries =
+			baseModelSearchResult.getBaseModels();
+
+		Assert.assertEquals(
+			segmentsEntries.toString(), 1, segmentsEntries.size());
+		Assert.assertEquals(segmentsEntry, segmentsEntries.get(0));
+	}
+
+	@Test
+	public void testSearchSegmentsEntriesWithCompanyIdAndExcludedSegmentsEntryIds()
+		throws PortalException {
+
+		List<SegmentsEntry> initialSegmentsEntries =
+			_segmentsEntryLocalService.getSegmentsEntries(0, 100);
+
+		long[] excludedSegmentsEntryIds =
+			new long[initialSegmentsEntries.size() + 1];
+
+		for (int i = 0; i < initialSegmentsEntries.size(); i++) {
+			SegmentsEntry segmentsEntry = initialSegmentsEntries.get(i);
+
+			excludedSegmentsEntryIds[i] = segmentsEntry.getSegmentsEntryId();
+		}
+
+		SegmentsEntry segmentsEntry1 = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId());
+
+		excludedSegmentsEntryIds[initialSegmentsEntries.size()] =
+			segmentsEntry1.getSegmentsEntryId();
+
+		SegmentsEntry segmentsEntry2 = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId());
+
+		BaseModelSearchResult<SegmentsEntry> baseModelSearchResult =
+			_segmentsEntryLocalService.searchSegmentsEntries(
+				_group.getCompanyId(), null,
+				LinkedHashMapBuilder.<String, Object>put(
+					"excludedSegmentsEntryIds", excludedSegmentsEntryIds
+				).build(),
+				0, 10, null);
+
+		List<SegmentsEntry> segmentsEntries =
+			baseModelSearchResult.getBaseModels();
+
+		Assert.assertEquals(
+			segmentsEntries.toString(), 1, segmentsEntries.size());
+		Assert.assertEquals(segmentsEntry2, segmentsEntries.get(0));
+	}
+
+	@Test
+	public void testSearchSegmentsEntriesWithCompanyIdAndExcludedSources()
+		throws PortalException {
+
+		List<SegmentsEntry> initialSegmentsEntries =
+			_segmentsEntryLocalService.getSegmentsEntries(0, 100);
+
+		long[] excludedSegmentsEntryIds =
+			new long[initialSegmentsEntries.size()];
+
+		for (int i = 0; i < initialSegmentsEntries.size(); i++) {
+			SegmentsEntry segmentsEntry = initialSegmentsEntries.get(i);
+
+			excludedSegmentsEntryIds[i] = segmentsEntry.getSegmentsEntryId();
+		}
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId());
+
+		SegmentsTestUtil.addSegmentsEntry(
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(),
+			CriteriaSerializer.serialize(new Criteria()),
+			SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND,
+			RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		BaseModelSearchResult<SegmentsEntry> baseModelSearchResult =
+			_segmentsEntryLocalService.searchSegmentsEntries(
+				segmentsEntry.getCompanyId(), null,
+				LinkedHashMapBuilder.<String, Object>put(
+					"excludedSegmentsEntryIds", excludedSegmentsEntryIds
+				).put(
+					"excludedSources",
+					new String[] {
+						SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND
+					}
+				).build(),
+				0, 1, null);
+
+		List<SegmentsEntry> segmentsEntries =
+			baseModelSearchResult.getBaseModels();
+
+		Assert.assertEquals(
+			segmentsEntries.toString(), 1, segmentsEntries.size());
+		Assert.assertEquals(segmentsEntry, segmentsEntries.get(0));
+	}
+
+	@Test
+	public void testSearchSegmentsEntriesWithCompanyIdAndRoleIds()
+		throws PortalException {
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId());
+
+		_segmentsEntryRoleLocalService.addSegmentsEntryRole(
+			segmentsEntry.getSegmentsEntryId(), _role.getRoleId(),
+			ServiceContextTestUtil.getServiceContext());
+
+		BaseModelSearchResult<SegmentsEntry> baseModelSearchResult =
+			_segmentsEntryLocalService.searchSegmentsEntries(
+				segmentsEntry.getCompanyId(), null,
+				LinkedHashMapBuilder.<String, Object>put(
+					"roleIds", new long[] {_role.getRoleId()}
+				).build(),
+				0, 1, null);
 
 		List<SegmentsEntry> segmentsEntries =
 			baseModelSearchResult.getBaseModels();

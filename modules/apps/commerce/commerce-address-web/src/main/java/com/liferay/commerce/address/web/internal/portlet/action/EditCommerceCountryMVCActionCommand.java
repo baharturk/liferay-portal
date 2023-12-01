@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.address.web.internal.portlet.action;
@@ -23,7 +14,7 @@ import com.liferay.portal.kernel.exception.CountryA3Exception;
 import com.liferay.portal.kernel.exception.CountryNameException;
 import com.liferay.portal.kernel.exception.DuplicateCountryException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Country;
@@ -40,7 +31,7 @@ import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -62,7 +53,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Luca Pellizzon
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_COUNTRY,
 		"mvc.command.name=/commerce_country/edit_commerce_country"
@@ -152,8 +142,7 @@ public class EditCommerceCountryMVCActionCommand extends BaseMVCActionCommand {
 			deleteCountryIds = new long[] {countryId};
 		}
 		else {
-			deleteCountryIds = StringUtil.split(
-				ParamUtil.getString(actionRequest, "deleteCountryIds"), 0L);
+			deleteCountryIds = ParamUtil.getLongValues(actionRequest, "rowIds");
 		}
 
 		for (long deleteCountryId : deleteCountryIds) {
@@ -175,10 +164,6 @@ public class EditCommerceCountryMVCActionCommand extends BaseMVCActionCommand {
 				"/commerce_country/edit_commerce_country");
 			portletURL.setParameter(
 				"countryId", String.valueOf(country.getCountryId()));
-
-			String backURL = ParamUtil.getString(actionRequest, "backURL");
-
-			portletURL.setParameter("backURL", backURL);
 		}
 
 		return portletURL.toString();
@@ -187,26 +172,28 @@ public class EditCommerceCountryMVCActionCommand extends BaseMVCActionCommand {
 	private void _updateChannels(ActionRequest actionRequest) throws Exception {
 		long countryId = ParamUtil.getLong(actionRequest, "countryId");
 
-		long[] commerceChannelIds = StringUtil.split(
-			ParamUtil.getString(actionRequest, "commerceChannelIds"), 0L);
+		_commerceChannelRelService.deleteCommerceChannelRels(
+			Country.class.getName(), countryId);
 
 		boolean channelFilterEnabled = ParamUtil.getBoolean(
 			actionRequest, "channelFilterEnabled");
 
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			CommerceChannelRel.class.getName(), actionRequest);
+		if (channelFilterEnabled) {
+			long[] commerceChannelIds = StringUtil.split(
+				ParamUtil.getString(actionRequest, "commerceChannelIds"), 0L);
 
-		_commerceChannelRelService.deleteCommerceChannelRels(
-			Country.class.getName(), countryId);
+			ServiceContext serviceContext = ServiceContextFactory.getInstance(
+				CommerceChannelRel.class.getName(), actionRequest);
 
-		for (long commerceChannelId : commerceChannelIds) {
-			if (commerceChannelId == 0) {
-				continue;
+			for (long commerceChannelId : commerceChannelIds) {
+				if (commerceChannelId == 0) {
+					continue;
+				}
+
+				_commerceChannelRelService.addCommerceChannelRel(
+					Country.class.getName(), countryId, commerceChannelId,
+					serviceContext);
 			}
-
-			_commerceChannelRelService.addCommerceChannelRel(
-				Country.class.getName(), countryId, commerceChannelId,
-				serviceContext);
 		}
 
 		_countryService.updateGroupFilterEnabled(
@@ -223,7 +210,7 @@ public class EditCommerceCountryMVCActionCommand extends BaseMVCActionCommand {
 		boolean active = ParamUtil.getBoolean(actionRequest, "active");
 		boolean billingAllowed = ParamUtil.getBoolean(
 			actionRequest, "billingAllowed");
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name");
 		String number = ParamUtil.getString(actionRequest, "number");
 		double position = ParamUtil.getDouble(actionRequest, "position");
@@ -251,7 +238,7 @@ public class EditCommerceCountryMVCActionCommand extends BaseMVCActionCommand {
 
 		for (Map.Entry<Locale, String> entry : nameMap.entrySet()) {
 			_countryLocalService.updateCountryLocalization(
-				country, LanguageUtil.getLanguageId(entry.getKey()),
+				country, _language.getLanguageId(entry.getKey()),
 				entry.getValue());
 		}
 
@@ -273,6 +260,12 @@ public class EditCommerceCountryMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private CountryService _countryService;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

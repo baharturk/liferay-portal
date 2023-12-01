@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.definition.internal.parser;
@@ -37,10 +28,13 @@ import org.osgi.service.component.annotations.Component;
  * @author Marcellus Tavares
  * @author Norbert Kocsis
  */
-@Component(
-	immediate = true, property = "node.type=FORK", service = NodeValidator.class
-)
+@Component(service = NodeValidator.class)
 public class ForkNodeValidator extends BaseNodeValidator<Fork> {
+
+	@Override
+	public NodeType getNodeType() {
+		return NodeType.FORK;
+	}
 
 	@Override
 	protected void doValidate(Definition definition, Fork fork)
@@ -48,12 +42,12 @@ public class ForkNodeValidator extends BaseNodeValidator<Fork> {
 
 		if (fork.getIncomingTransitionsCount() == 0) {
 			throw new KaleoDefinitionValidationException.
-				MustSetIncomingTransition(fork.getName());
+				MustSetIncomingTransition(fork.getDefaultLabel());
 		}
 
 		if (fork.getOutgoingTransitionsCount() < 2) {
 			throw new KaleoDefinitionValidationException.
-				MustSetMultipleOutgoingTransition(fork.getName());
+				MustSetMultipleOutgoingTransition(fork.getDefaultLabel());
 		}
 
 		_traverse(fork);
@@ -120,7 +114,8 @@ public class ForkNodeValidator extends BaseNodeValidator<Fork> {
 			!sourceNodes.containsAll(targetNodes)) {
 
 			throw new KaleoDefinitionValidationException.
-				UnbalancedForkAndJoinNode(fork.getName(), join.getName());
+				UnbalancedForkAndJoinNode(
+					fork.getDefaultLabel(), join.getDefaultLabel());
 		}
 	}
 
@@ -163,7 +158,8 @@ public class ForkNodeValidator extends BaseNodeValidator<Fork> {
 				else if (!Objects.equals(join, targetNode)) {
 					throw new KaleoDefinitionValidationException.
 						MustPairedForkAndJoinNodes(
-							fork.getName(), targetNode.getName());
+							fork.getDefaultLabel(),
+							targetNode.getDefaultLabel());
 				}
 			}
 			else {
@@ -176,7 +172,7 @@ public class ForkNodeValidator extends BaseNodeValidator<Fork> {
 
 		if (join == null) {
 			throw new KaleoDefinitionValidationException.MustSetJoinNode(
-				fork.getName());
+				fork.getDefaultLabel());
 		}
 
 		_reverseTraverse(fork, join, targetNodes, joinForkMap);

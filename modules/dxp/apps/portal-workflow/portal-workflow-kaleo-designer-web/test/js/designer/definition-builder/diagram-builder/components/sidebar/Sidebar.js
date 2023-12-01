@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -37,14 +31,15 @@ describe('The Sidebar component should', () => {
 
 		const nodes = container.querySelectorAll('div.node');
 
-		expect(nodes.length).toBe(7);
-		expect(nodes[0].classList).toContain('end-node');
-		expect(nodes[1].classList).toContain('fork-node');
-		expect(nodes[2].classList).toContain('join-node');
-		expect(nodes[3].classList).toContain('join-xor-node');
-		expect(nodes[4].classList).toContain('start-node');
-		expect(nodes[5].classList).toContain('state-node');
-		expect(nodes[6].classList).toContain('task-node');
+		expect(nodes.length).toBe(8);
+		expect(nodes[0].classList).toContain('condition-node');
+		expect(nodes[1].classList).toContain('end-node');
+		expect(nodes[2].classList).toContain('fork-node');
+		expect(nodes[3].classList).toContain('join-node');
+		expect(nodes[4].classList).toContain('join-xor-node');
+		expect(nodes[5].classList).toContain('start-node');
+		expect(nodes[6].classList).toContain('state-node');
+		expect(nodes[7].classList).toContain('task-node');
 	});
 
 	it('Be rendered with selected node info when a node is selected', () => {
@@ -52,7 +47,7 @@ describe('The Sidebar component should', () => {
 			<MockDefinitionBuilderContext>
 				<MockDiagramBuilderContext
 					mockSelectedNode={{
-						data: {label: {'en-US': 'start node'}},
+						data: {label: {en_US: 'start node'}},
 						id: 'node_0',
 						type: 'start',
 					}}
@@ -74,17 +69,17 @@ describe('The Sidebar component should', () => {
 
 		expect(labels.length).toBe(3);
 		expect(labels[0]).toHaveTextContent('label*');
-		expect(labels[1]).toHaveTextContent('node id*');
+		expect(labels[1]).toHaveTextContent('node name*');
 		expect(labels[2]).toHaveTextContent('description');
 
 		const inputLabel = container.querySelector('input#nodeLabel');
-		const inputId = container.querySelector('input#nodeId');
+		const inputName = container.querySelector('input#nodeName');
 		const textareaDescription = container.querySelector(
 			'textarea#nodeDescription'
 		);
 
 		expect(inputLabel).toHaveValue('start node');
-		expect(inputId).toHaveValue('node_0');
+		expect(inputName).toHaveValue('node_0');
 		expect(textareaDescription).toHaveValue('');
 	});
 });

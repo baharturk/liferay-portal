@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.service.base;
@@ -34,6 +25,8 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -46,8 +39,6 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -340,6 +331,11 @@ public abstract class OAuth2AuthorizationLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement OAuth2AuthorizationLocalServiceImpl#deleteOAuth2Authorization(OAuth2Authorization) to avoid orphaned data");
+		}
+
 		return oAuth2AuthorizationLocalService.deleteOAuth2Authorization(
 			(OAuth2Authorization)persistedModel);
 	}
@@ -408,41 +404,41 @@ public abstract class OAuth2AuthorizationLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addOAuth2ScopeGrantOAuth2Authorization(
+	public boolean addOAuth2ScopeGrantOAuth2Authorization(
 		long oAuth2ScopeGrantId, long oAuth2AuthorizationId) {
 
-		oAuth2ScopeGrantPersistence.addOAuth2Authorization(
+		return oAuth2ScopeGrantPersistence.addOAuth2Authorization(
 			oAuth2ScopeGrantId, oAuth2AuthorizationId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addOAuth2ScopeGrantOAuth2Authorization(
+	public boolean addOAuth2ScopeGrantOAuth2Authorization(
 		long oAuth2ScopeGrantId, OAuth2Authorization oAuth2Authorization) {
 
-		oAuth2ScopeGrantPersistence.addOAuth2Authorization(
+		return oAuth2ScopeGrantPersistence.addOAuth2Authorization(
 			oAuth2ScopeGrantId, oAuth2Authorization);
 	}
 
 	/**
 	 */
 	@Override
-	public void addOAuth2ScopeGrantOAuth2Authorizations(
+	public boolean addOAuth2ScopeGrantOAuth2Authorizations(
 		long oAuth2ScopeGrantId, long[] oAuth2AuthorizationIds) {
 
-		oAuth2ScopeGrantPersistence.addOAuth2Authorizations(
+		return oAuth2ScopeGrantPersistence.addOAuth2Authorizations(
 			oAuth2ScopeGrantId, oAuth2AuthorizationIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addOAuth2ScopeGrantOAuth2Authorizations(
+	public boolean addOAuth2ScopeGrantOAuth2Authorizations(
 		long oAuth2ScopeGrantId,
 		List<OAuth2Authorization> oAuth2Authorizations) {
 
-		oAuth2ScopeGrantPersistence.addOAuth2Authorizations(
+		return oAuth2ScopeGrantPersistence.addOAuth2Authorizations(
 			oAuth2ScopeGrantId, oAuth2Authorizations);
 	}
 
@@ -584,7 +580,7 @@ public abstract class OAuth2AuthorizationLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		OAuth2AuthorizationLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -600,7 +596,8 @@ public abstract class OAuth2AuthorizationLocalServiceBaseImpl
 		oAuth2AuthorizationLocalService =
 			(OAuth2AuthorizationLocalService)aopProxy;
 
-		_setLocalServiceUtilService(oAuth2AuthorizationLocalService);
+		OAuth2AuthorizationLocalServiceUtil.setService(
+			oAuth2AuthorizationLocalService);
 	}
 
 	/**
@@ -646,23 +643,6 @@ public abstract class OAuth2AuthorizationLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		OAuth2AuthorizationLocalService oAuth2AuthorizationLocalService) {
-
-		try {
-			Field field =
-				OAuth2AuthorizationLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, oAuth2AuthorizationLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	protected OAuth2AuthorizationLocalService oAuth2AuthorizationLocalService;
 
 	@Reference
@@ -677,5 +657,8 @@ public abstract class OAuth2AuthorizationLocalServiceBaseImpl
 
 	@Reference
 	protected OAuth2ScopeGrantPersistence oAuth2ScopeGrantPersistence;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		OAuth2AuthorizationLocalServiceBaseImpl.class);
 
 }

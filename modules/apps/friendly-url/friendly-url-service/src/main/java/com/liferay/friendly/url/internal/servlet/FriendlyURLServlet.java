@@ -1,31 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.internal.servlet;
 
-import com.liferay.petra.encryptor.Encryptor;
-import com.liferay.petra.encryptor.EncryptorException;
+import com.liferay.friendly.url.configuration.FriendlyURLRedirectionConfiguration;
+import com.liferay.friendly.url.configuration.FriendlyURLRedirectionConfigurationProvider;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.encryptor.Encryptor;
+import com.liferay.portal.kernel.encryptor.EncryptorException;
+import com.liferay.portal.kernel.exception.LayoutPermissionException;
 import com.liferay.portal.kernel.exception.NoSuchGroupException;
 import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.login.AuthLoginGroupSettingsUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
@@ -34,27 +29,31 @@ import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutFriendlyURL;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.VirtualLayoutConstants;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.LayoutFriendlyURLSeparatorComposite;
+import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutFriendlyURLLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.LayoutService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
+import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.InactiveRequestHandler;
 import com.liferay.portal.kernel.servlet.PortalMessages;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.struts.LastPath;
-import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -64,14 +63,15 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.AsyncPortletServletRequest;
-import com.liferay.redirect.model.RedirectEntry;
-import com.liferay.redirect.service.RedirectEntryLocalService;
+import com.liferay.portlet.documentlibrary.constants.DLFriendlyURLConstants;
+import com.liferay.redirect.provider.RedirectProvider;
 import com.liferay.redirect.tracker.RedirectNotFoundTracker;
 import com.liferay.site.model.SiteFriendlyURL;
 import com.liferay.site.service.SiteFriendlyURLLocalService;
 
 import java.io.IOException;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -87,8 +87,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Brian Wing Shun Chan
@@ -112,7 +110,20 @@ public class FriendlyURLServlet extends HttpServlet {
 		int pos = path.indexOf(CharPool.SLASH, 1);
 
 		if (pos != -1) {
-			groupFriendlyURL = path.substring(0, pos);
+			String friendlyURL = path.substring(pos);
+
+			if (friendlyURL.startsWith(
+					DLFriendlyURLConstants.PATH_PREFIX_DOCUMENT)) {
+
+				String fileEntryFriendlyURL = friendlyURL.substring(
+					DLFriendlyURLConstants.PATH_PREFIX_DOCUMENT.length() - 1);
+
+				groupFriendlyURL = fileEntryFriendlyURL.substring(
+					0, fileEntryFriendlyURL.indexOf(CharPool.SLASH, 1));
+			}
+			else {
+				groupFriendlyURL = path.substring(0, pos);
+			}
 		}
 
 		long companyId = PortalInstances.getCompanyId(httpServletRequest);
@@ -126,6 +137,7 @@ public class FriendlyURLServlet extends HttpServlet {
 				groupFriendlyURL, companyId, group, locale);
 
 		String layoutFriendlyURL = null;
+		Redirect redirectProviderRedirect = null;
 
 		if ((pos != -1) && ((pos + 1) != path.length())) {
 			layoutFriendlyURL = path.substring(pos);
@@ -135,17 +147,13 @@ public class FriendlyURLServlet extends HttpServlet {
 					0, layoutFriendlyURL.length() - 1);
 			}
 
-			if (redirectEntryLocalService != null) {
-				RedirectEntry redirectEntry =
-					redirectEntryLocalService.fetchRedirectEntry(
-						group.getGroupId(),
-						_normalizeFriendlyURL(layoutFriendlyURL), true);
+			redirectProviderRedirect = _getRedirectProviderRedirect(
+				group.getGroupId(), httpServletRequest, layoutFriendlyURL);
 
-				if (redirectEntry != null) {
-					return new Redirect(
-						redirectEntry.getDestinationURL(), true,
-						redirectEntry.isPermanent());
-				}
+			if ((redirectProviderRedirect != null) &&
+				!_isSkipRedirect(httpServletRequest)) {
+
+				return redirectProviderRedirect;
 			}
 		}
 		else {
@@ -157,15 +165,8 @@ public class FriendlyURLServlet extends HttpServlet {
 			"request", httpServletRequest
 		).build();
 
-		ServiceContext serviceContext =
-			ServiceContextThreadLocal.getServiceContext();
-
-		if (serviceContext == null) {
-			serviceContext = ServiceContextFactory.getInstance(
-				httpServletRequest);
-
-			ServiceContextThreadLocal.pushServiceContext(serviceContext);
-		}
+		ServiceContextThreadLocal.pushServiceContext(
+			_getServiceContext(group, httpServletRequest));
 
 		Layout defaultLayout = null;
 
@@ -178,16 +179,84 @@ public class FriendlyURLServlet extends HttpServlet {
 						group.getGroupId(), _private, layoutFriendlyURL, params,
 						requestContext);
 
+			if (layoutFriendlyURLSeparatorComposite.isRedirect()) {
+				pos = path.indexOf(
+					layoutFriendlyURLSeparatorComposite.getURLSeparator());
+
+				if (pos != 1) {
+					String requestURL = portal.getCurrentCompleteURL(
+						httpServletRequest);
+
+					int friendlyURLPos = requestURL.indexOf(layoutFriendlyURL);
+
+					String friendlyURL =
+						layoutFriendlyURLSeparatorComposite.getFriendlyURL();
+
+					String redirectURL = null;
+
+					if (friendlyURLPos > 0) {
+						redirectURL =
+							requestURL.substring(0, friendlyURLPos) +
+								friendlyURL;
+					}
+					else {
+						redirectURL = StringBundler.concat(
+							portal.getPathContext(),
+							PropsValues.
+								LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING,
+							path.substring(0, pos), friendlyURL);
+					}
+
+					String queryString = HttpComponentsUtil.getQueryString(
+						portal.getOriginalServletRequest(httpServletRequest));
+
+					if (Validator.isNotNull(queryString)) {
+						redirectURL += StringPool.QUESTION + queryString;
+					}
+
+					return new Redirect(
+						redirectURL, true,
+						_isPermanentRedirect(group.getCompanyId()));
+				}
+			}
+
 			Layout layout = layoutFriendlyURLSeparatorComposite.getLayout();
 
-			PermissionChecker permissionChecker =
-				PermissionCheckerFactoryUtil.create(
-					_getUser(httpServletRequest));
+			if (layout != null) {
+				User user = _getUser(httpServletRequest);
 
-			if (!LayoutPermissionUtil.contains(
-					permissionChecker, layout, ActionKeys.VIEW)) {
+				PermissionChecker permissionChecker =
+					PermissionCheckerFactoryUtil.create(user);
 
-				throw new NoSuchLayoutException();
+				if (!LayoutPermissionUtil.contains(
+						permissionChecker, layout, ActionKeys.VIEW)) {
+
+					if (AuthLoginGroupSettingsUtil.isPromptEnabled(
+							group.getGroupId())) {
+
+						String redirect = portal.getLayoutActualURL(
+							layout, Portal.PATH_MAIN);
+
+						return new Redirect(redirect);
+					}
+
+					throw new LayoutPermissionException();
+				}
+
+				if (user.isGuestUser() && layout.isSystem() &&
+					Objects.equals(
+						layout.getFriendlyURL(),
+						PropsValues.CONTROL_PANEL_LAYOUT_FRIENDLY_URL)) {
+
+					throw new NoSuchLayoutException();
+				}
+
+				if ((redirectProviderRedirect != null) &&
+					!LayoutPermissionUtil.containsLayoutUpdatePermission(
+						permissionChecker, layout)) {
+
+					return redirectProviderRedirect;
+				}
 			}
 
 			defaultLayout = layout;
@@ -229,7 +298,9 @@ public class FriendlyURLServlet extends HttpServlet {
 
 				if (Validator.isNotNull(i18nLanguageId) &&
 					!LanguageUtil.isAvailableLocale(
-						group.getGroupId(), i18nLanguageId)) {
+						group.getGroupId(), i18nLanguageId) &&
+					(!portal.isGroupControlPanelPath(path) ||
+					 !LanguageUtil.isAvailableLocale(i18nLanguageId))) {
 
 					localeUnavailable = true;
 				}
@@ -240,7 +311,7 @@ public class FriendlyURLServlet extends HttpServlet {
 						locale)) {
 
 					Locale originalLocale = _setAlternativeLayoutFriendlyURL(
-						httpServletRequest, layout,
+						companyId, httpServletRequest, layout,
 						layoutFriendlyURLSeparatorCompositeFriendlyURL,
 						alternativeSiteFriendlyURL);
 
@@ -266,17 +337,27 @@ public class FriendlyURLServlet extends HttpServlet {
 					boolean forcePermanentRedirect = true;
 
 					if (Validator.isNull(i18nLanguageId)) {
-						forcePermanentRedirect = false;
+						forcePermanentRedirect = _isPermanentRedirect(
+							group.getCompanyId());
 					}
 
 					return new Redirect(redirect, true, forcePermanentRedirect);
 				}
 			}
 		}
-		catch (NoSuchLayoutException noSuchLayoutException) {
+		catch (LayoutPermissionException | NoSuchLayoutException exception) {
 			Layout redirectLayout = null;
 
-			if (layoutFriendlyURL == null) {
+			if (exception instanceof LayoutPermissionException) {
+				List<Layout> layouts = layoutService.getLayouts(
+					group.getGroupId(), _private,
+					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 1);
+
+				if (!layouts.isEmpty()) {
+					redirectLayout = layouts.get(0);
+				}
+			}
+			else if (layoutFriendlyURL == null) {
 				redirectLayout = defaultLayout;
 			}
 			else {
@@ -300,15 +381,22 @@ public class FriendlyURLServlet extends HttpServlet {
 				return new Redirect(redirect);
 			}
 
-			if (redirectNotFoundTracker != null) {
-				redirectNotFoundTracker.trackURL(
+			RedirectNotFoundTracker currentRedirectNotFoundTracker =
+				_redirectNotFoundTrackerSnapshot.get();
+
+			if (currentRedirectNotFoundTracker != null) {
+				currentRedirectNotFoundTracker.trackURL(
 					group, _normalizeFriendlyURL(layoutFriendlyURL));
 			}
 
 			if (Validator.isNotNull(
 					PropsValues.LAYOUT_FRIENDLY_URL_PAGE_NOT_FOUND)) {
 
-				throw noSuchLayoutException;
+				if (exception instanceof NoSuchLayoutException) {
+					throw exception;
+				}
+
+				throw new NoSuchLayoutException(exception);
 			}
 
 			httpServletResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
@@ -317,6 +405,9 @@ public class FriendlyURLServlet extends HttpServlet {
 				NoSuchLayoutException.class.getName(), Boolean.TRUE);
 
 			layoutFriendlyURL = null;
+		}
+		finally {
+			ServiceContextThreadLocal.popServiceContext();
 		}
 
 		String actualURL = portal.getActualURL(
@@ -330,22 +421,28 @@ public class FriendlyURLServlet extends HttpServlet {
 
 		long userId = portal.getUserId(httpServletRequest);
 
-		if ((userId > 0) && _isImpersonated(httpServletRequest, userId)) {
+		boolean impersonated = _isImpersonated(httpServletRequest, userId);
+
+		if ((userId > 0) && impersonated) {
 			try {
 				Company company = portal.getCompany(httpServletRequest);
 
-				String encDoAsUserId = Encryptor.encrypt(
+				String encDoAsUserId = encryptor.encrypt(
 					company.getKeyObj(), String.valueOf(userId));
 
-				actualURL = HttpUtil.setParameter(
+				actualURL = HttpComponentsUtil.setParameter(
 					actualURL, "doAsUserId", encDoAsUserId);
+
+				params = new HashMap<>(params);
+
+				params.remove("doAsUserId");
 			}
 			catch (EncryptorException encryptorException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(encryptorException, encryptorException);
+					_log.debug(encryptorException);
 				}
 
-				return new Redirect(actualURL);
+				return new Redirect(actualURL, false, false);
 			}
 		}
 
@@ -355,11 +452,13 @@ public class FriendlyURLServlet extends HttpServlet {
 			Objects.equals(layout.getType(), LayoutConstants.TYPE_URL)) {
 
 			actualURL = actualURL.concat(
-				HttpUtil.parameterMapToString(
+				HttpComponentsUtil.parameterMapToString(
 					params, !actualURL.contains(StringPool.QUESTION)));
 		}
 
-		return new Redirect(actualURL);
+		return new Redirect(
+			actualURL, false,
+			!impersonated && _isPermanentRedirect(group.getCompanyId()));
 	}
 
 	@Override
@@ -422,7 +521,7 @@ public class FriendlyURLServlet extends HttpServlet {
 		}
 		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(portalException, portalException);
+				_log.warn(portalException);
 			}
 
 			if (portalException instanceof NoSuchGroupException ||
@@ -582,6 +681,16 @@ public class FriendlyURLServlet extends HttpServlet {
 	}
 
 	@Reference
+	protected Encryptor encryptor;
+
+	@Reference
+	protected FriendlyURLNormalizer friendlyURLNormalizer;
+
+	@Reference
+	protected FriendlyURLRedirectionConfigurationProvider
+		friendlyURLRedirectionConfigurationProvider;
+
+	@Reference
 	protected GroupLocalService groupLocalService;
 
 	@Reference
@@ -594,19 +703,10 @@ public class FriendlyURLServlet extends HttpServlet {
 	protected LayoutLocalService layoutLocalService;
 
 	@Reference
+	protected LayoutService layoutService;
+
+	@Reference
 	protected Portal portal;
-
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected RedirectEntryLocalService redirectEntryLocalService;
-
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected RedirectNotFoundTracker redirectNotFoundTracker;
 
 	@Reference
 	protected SiteFriendlyURLLocalService siteFriendlyURLLocalService;
@@ -624,7 +724,7 @@ public class FriendlyURLServlet extends HttpServlet {
 				layoutFriendlyURLSeparatorCompositeFriendlyURL,
 				layoutFriendlyURL) ||
 			StringUtil.equalsIgnoreCase(
-				FriendlyURLNormalizerUtil.normalizeWithEncoding(
+				friendlyURLNormalizer.normalizeWithEncoding(
 					layoutFriendlyURLSeparatorCompositeFriendlyURL),
 				layoutFriendlyURL)) {
 
@@ -659,6 +759,15 @@ public class FriendlyURLServlet extends HttpServlet {
 		}
 
 		return alternativeSiteFriendlyURL;
+	}
+
+	private String _getFriendlyURLRedirectionType(long companyId) {
+		FriendlyURLRedirectionConfiguration
+			friendlyURLRedirectionConfiguration =
+				friendlyURLRedirectionConfigurationProvider.
+					getCompanyFriendlyURLRedirectionConfiguration(companyId);
+
+		return friendlyURLRedirectionConfiguration.redirectionType();
 	}
 
 	private Group _getGroup(String path, String friendlyURL, long companyId)
@@ -710,7 +819,7 @@ public class FriendlyURLServlet extends HttpServlet {
 
 		return new LastPath(
 			_friendlyURLPathPrefix, pathInfo,
-			HttpUtil.parameterMapToString(
+			HttpComponentsUtil.parameterMapToString(
 				httpServletRequest.getParameterMap()));
 	}
 
@@ -726,13 +835,64 @@ public class FriendlyURLServlet extends HttpServlet {
 		return requestURI.substring(_pathInfoOffset, pos);
 	}
 
+	private Redirect _getRedirectProviderRedirect(
+		long groupId, HttpServletRequest httpServletRequest,
+		String layoutFriendlyURL) {
+
+		RedirectProvider redirectProvider = _redirectProviderSnapshot.get();
+
+		if ((redirectProvider == null) ||
+			LiferayWindowState.isExclusive(httpServletRequest) ||
+			LiferayWindowState.isPopUp(httpServletRequest)) {
+
+			return null;
+		}
+
+		HttpServletRequest originalHttpServletRequest =
+			portal.getOriginalServletRequest(httpServletRequest);
+
+		RedirectProvider.Redirect redirect = redirectProvider.getRedirect(
+			groupId, _normalizeFriendlyURL(layoutFriendlyURL),
+			_normalizeFriendlyURL(originalHttpServletRequest.getRequestURI()),
+			httpServletRequest.getHeader(HttpHeaders.USER_AGENT));
+
+		if (redirect == null) {
+			return null;
+		}
+
+		return new Redirect(
+			redirect.getDestinationURL(), true, redirect.isPermanent());
+	}
+
+	private ServiceContext _getServiceContext(
+			Group group, HttpServletRequest httpServletRequest)
+		throws PortalException {
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			serviceContext = ServiceContextFactory.getInstance(
+				httpServletRequest);
+
+			ServiceContextThreadLocal.pushServiceContext(serviceContext);
+		}
+
+		serviceContext = (ServiceContext)serviceContext.clone();
+
+		serviceContext.setCompanyId(group.getCompanyId());
+		serviceContext.setScopeGroupId(group.getGroupId());
+
+		return serviceContext;
+	}
+
 	private User _getUser(HttpServletRequest httpServletRequest)
 		throws PortalException {
 
 		User user = portal.getUser(httpServletRequest);
 
 		if (user == null) {
-			user = userLocalService.getDefaultUser(
+			user = userLocalService.getGuestUser(
 				portal.getCompanyId(httpServletRequest));
 		}
 
@@ -753,18 +913,64 @@ public class FriendlyURLServlet extends HttpServlet {
 		return true;
 	}
 
-	private String _normalizeFriendlyURL(String friendlyURL) {
-		if (Validator.isNotNull(friendlyURL) &&
-			friendlyURL.startsWith(StringPool.SLASH)) {
+	private boolean _isPermanentRedirect(long companyId) {
+		if (Objects.equals(
+				_getFriendlyURLRedirectionType(companyId), "permanent")) {
 
-			return friendlyURL.substring(1);
+			return true;
 		}
 
-		return friendlyURL;
+		return false;
+	}
+
+	private boolean _isShowAlternativeLayoutFriendlyURLMessage(long companyId) {
+		FriendlyURLRedirectionConfiguration
+			friendlyURLRedirectionConfiguration =
+				friendlyURLRedirectionConfigurationProvider.
+					getCompanyFriendlyURLRedirectionConfiguration(companyId);
+
+		return friendlyURLRedirectionConfiguration.
+			showAlternativeLayoutFriendlyURLMessage();
+	}
+
+	private boolean _isSkipRedirect(HttpServletRequest httpServletRequest) {
+		String refererURL = httpServletRequest.getHeader(HttpHeaders.REFERER);
+
+		if (Validator.isNotNull(refererURL)) {
+			int index = refererURL.indexOf(CharPool.QUESTION);
+
+			if (index != -1) {
+				refererURL = refererURL.substring(0, index);
+			}
+		}
+
+		if (Validator.isNotNull(refererURL)) {
+			return refererURL.contains(
+				VirtualLayoutConstants.CANONICAL_URL_SEPARATOR +
+					GroupConstants.CONTROL_PANEL_FRIENDLY_URL);
+		}
+
+		return false;
+	}
+
+	private String _normalizeFriendlyURL(String friendlyURL) {
+		if (Validator.isNull(friendlyURL)) {
+			return friendlyURL;
+		}
+
+		String normalizedFriendlyURL =
+			friendlyURLNormalizer.normalizeWithEncoding(
+				HttpComponentsUtil.decodeURL(friendlyURL));
+
+		if (normalizedFriendlyURL.startsWith(StringPool.SLASH)) {
+			return normalizedFriendlyURL.substring(1);
+		}
+
+		return normalizedFriendlyURL;
 	}
 
 	private Locale _setAlternativeLayoutFriendlyURL(
-		HttpServletRequest httpServletRequest, Layout layout,
+		long companyId, HttpServletRequest httpServletRequest, Layout layout,
 		String friendlyURL, SiteFriendlyURL siteFriendlyURL) {
 
 		List<LayoutFriendlyURL> layoutFriendlyURLs =
@@ -796,19 +1002,29 @@ public class FriendlyURLServlet extends HttpServlet {
 		String alternativeLayoutFriendlyURL = portal.getLocalizedFriendlyURL(
 			httpServletRequest, layout, groupLocale, locale);
 
-		SessionMessages.add(
-			httpServletRequest, "alternativeLayoutFriendlyURL",
-			alternativeLayoutFriendlyURL);
+		if (_isShowAlternativeLayoutFriendlyURLMessage(companyId)) {
+			SessionMessages.add(
+				httpServletRequest, "alternativeLayoutFriendlyURL",
+				alternativeLayoutFriendlyURL);
 
-		PortalMessages.add(
-			httpServletRequest, PortalMessages.KEY_JSP_PATH,
-			"/html/common/themes/layout_friendly_url_redirect.jsp");
+			PortalMessages.add(
+				httpServletRequest, PortalMessages.KEY_JSP_PATH,
+				"/html/common/themes/layout_friendly_url_redirect.jsp");
+		}
 
 		return groupLocale;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		FriendlyURLServlet.class);
+
+	private static final Snapshot<RedirectNotFoundTracker>
+		_redirectNotFoundTrackerSnapshot = new Snapshot<>(
+			FriendlyURLServlet.class, RedirectNotFoundTracker.class, null,
+			true);
+	private static final Snapshot<RedirectProvider> _redirectProviderSnapshot =
+		new Snapshot<>(
+			FriendlyURLServlet.class, RedirectProvider.class, null, true);
 
 	private String _friendlyURLPathPrefix;
 	private int _pathInfoOffset;

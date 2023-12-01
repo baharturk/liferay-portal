@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React from 'react';
@@ -36,11 +27,6 @@ export default function dragFileIcon() {
 			<path
 				d="M26.5,18.1H51c2.1,0,3.8,1.7,3.8,3.8v16.4c0,2.1-1.7,3.8-3.8,3.8H26.5c-2.1,0-3.8-1.7-3.8-3.8V21.9 C22.7,19.8,24.4,18.1,26.5,18.1z"
 				fill="#6b6c7e"
-			/>
-
-			<path
-				d="M41.2,22.5h-6.8c-0.8,0-1.5,0.7-1.5,1.5v12c0,0.8,0.7,1.5,1.5,1.5h9c0.8,0,1.5-0.7,1.5-1.5v-9.8L41.2,22.5z M39,33.8h-3.8V33H39V33.8z M42.8,31.5h-7.5v-0.8h7.5V31.5z M42.8,29.2h-7.5v-0.8h7.5V29.2z"
-				fill="#ffffff"
 			/>
 		</svg>
 	);

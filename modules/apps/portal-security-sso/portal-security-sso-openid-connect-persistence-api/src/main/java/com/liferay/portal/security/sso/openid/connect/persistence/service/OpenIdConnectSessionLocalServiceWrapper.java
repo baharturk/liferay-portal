@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.openid.connect.persistence.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link OpenIdConnectSessionLocalService}.
@@ -131,9 +123,11 @@ public class OpenIdConnectSessionLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteOpenIdConnectSessions(String configurationPid) {
+	public void deleteOpenIdConnectSessions(
+		long companyId, String authServerWellKnownURI, String clientId) {
+
 		_openIdConnectSessionLocalService.deleteOpenIdConnectSessions(
-			configurationPid);
+			companyId, authServerWellKnownURI, clientId);
 	}
 
 	/**
@@ -264,10 +258,23 @@ public class OpenIdConnectSessionLocalServiceWrapper
 	@Override
 	public com.liferay.portal.security.sso.openid.connect.persistence.model.
 		OpenIdConnectSession fetchOpenIdConnectSession(
-			long userId, String configurationPid) {
+			long userId, String authServerWellKnownURI, String clientId) {
 
 		return _openIdConnectSessionLocalService.fetchOpenIdConnectSession(
-			userId, configurationPid);
+			userId, authServerWellKnownURI, clientId);
+	}
+
+	@Override
+	public java.util.List
+		<com.liferay.portal.security.sso.openid.connect.persistence.model.
+			OpenIdConnectSession>
+				getAccessTokenExpirationDateOpenIdConnectSessions(
+					java.util.Date ltAccessTokenExpirationDate, int start,
+					int end) {
+
+		return _openIdConnectSessionLocalService.
+			getAccessTokenExpirationDateOpenIdConnectSessions(
+				ltAccessTokenExpirationDate, start, end);
 	}
 
 	@Override
@@ -373,6 +380,11 @@ public class OpenIdConnectSessionLocalServiceWrapper
 
 		return _openIdConnectSessionLocalService.updateOpenIdConnectSession(
 			openIdConnectSession);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _openIdConnectSessionLocalService.getBasePersistence();
 	}
 
 	@Override

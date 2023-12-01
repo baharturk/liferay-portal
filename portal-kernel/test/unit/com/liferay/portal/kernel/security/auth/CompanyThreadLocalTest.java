@@ -1,92 +1,62 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.security.auth;
 
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.change.tracking.CTCollectionIdSupplier;
 import com.liferay.portal.kernel.model.CompanyConstants;
-import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
-import com.liferay.portal.kernel.test.rule.NewEnvTestRule;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.util.Props;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.ProxyFactory;
 
 import java.util.function.Consumer;
 
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mockito;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.osgi.framework.BundleContext;
 
 /**
  * @author Alberto Chaparro
  */
-@PrepareForTest(ServiceProxyFactory.class)
-@RunWith(PowerMockRunner.class)
-public class CompanyThreadLocalTest extends PowerMockito {
+public class CompanyThreadLocalTest {
 
-	@ClassRule
-	@Rule
-	public static final AggregateTestRule aggregateTestRule =
-		new AggregateTestRule(
-			CodeCoverageAssertor.INSTANCE, NewEnvTestRule.INSTANCE);
+	@BeforeClass
+	public static void setUpClass() {
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
-	@Before
-	public void setUp() {
-		mockStatic(ServiceProxyFactory.class);
+		bundleContext.registerService(
+			CTCollectionIdSupplier.class,
+			ProxyFactory.newDummyInstance(CTCollectionIdSupplier.class), null);
 
-		when(
-			ServiceProxyFactory.newServiceTrackedInstance(
-				Mockito.anyObject(), Mockito.anyObject(), Mockito.anyString(),
-				Mockito.anyBoolean(), Mockito.anyBoolean())
-		).thenReturn(
-			null
-		);
+		PropsUtil.setProps(ProxyFactory.newDummyInstance(Props.class));
 	}
 
 	@Test
 	public void testLock() {
-		_testLock(companyId -> CompanyThreadLocal.setCompanyId(companyId));
+		_testLock(CompanyThreadLocal::setCompanyId);
 	}
 
 	@Test
 	public void testLockWithSetWithSafeCloseable() {
-		_testLock(
-			companyId -> CompanyThreadLocal.setWithSafeCloseable(companyId));
+		_testLock(CompanyThreadLocal::setWithSafeCloseable);
 	}
 
 	private void _testLock(Consumer<Long> consumer) {
-		SafeCloseable safeCloseable = CompanyThreadLocal.lock(
-			CompanyConstants.SYSTEM);
+		try (SafeCloseable safeCloseable = CompanyThreadLocal.lock(
+				CompanyConstants.SYSTEM)) {
 
-		try {
 			consumer.accept(1L);
 
 			Assert.fail();
 		}
 		catch (UnsupportedOperationException unsupportedOperationException) {
 			Assert.assertNotNull(unsupportedOperationException);
-		}
-		finally {
-			safeCloseable.close();
 		}
 	}
 

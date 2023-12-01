@@ -1,34 +1,15 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
-<liferay-ui:icon
-	id="importObjectDefinitionIcon"
-	message="import-object"
-	onClick='<%= liferayPortletResponse.getNamespace() + "openImportObjectDefinitionModal();" %>'
-	url="javascript:;"
-/>
-
 <div>
-	<liferay-ui:error embed="<%= false %>" exception="<%= ObjectDefinitionNameException.MustBeginWithUpperCaseLetter.class %>" message="the-first-character-of-a-name-must-be-an-upper-case-letter" />
-	<liferay-ui:error embed="<%= false %>" key="importObjectDefinitionErrorMessage" message="the-structure-was-not-successfully-imported" />
-
 	<react:component
-		module="js/modals/ImportObjectDefinitionModal"
+		module="js/components/ModalImportObjectDefinition"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"importObjectDefinitionURL",
@@ -47,11 +28,16 @@
 </div>
 
 <aui:script>
-	function <portlet:namespace />openImportObjectDefinitionModal() {
-		Liferay.componentReady(
-			'<portlet:namespace />importObjectDefinitionModal'
-		).then((importObjectDefinitionModal) => {
-			importObjectDefinitionModal.open();
-		});
-	}
+	function <portlet:namespace />openImportObjectDefinitionModal() {}
+
+	Liferay.Util.setPortletConfigurationIconAction(
+		'<portlet:namespace />importObjectDefinition',
+		() => {
+			Liferay.componentReady(
+				'<portlet:namespace />importObjectDefinitionModal'
+			).then((importObjectDefinitionModal) => {
+				importObjectDefinitionModal.open();
+			});
+		}
+	);
 </aui:script>

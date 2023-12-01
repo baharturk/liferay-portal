@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -32,7 +23,7 @@ taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 page import="com.liferay.exportimport.kernel.exception.RemoteExportException" %><%@
 page import="com.liferay.exportimport.kernel.staging.LayoutStagingUtil" %><%@
 page import="com.liferay.exportimport.kernel.staging.StagingUtil" %><%@
-page import="com.liferay.petra.portlet.url.builder.PortletURLBuilder" %><%@
+page import="com.liferay.frontend.taglib.clay.servlet.taglib.util.JSPNavigationItemList" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
 page import="com.liferay.portal.kernel.dao.orm.QueryUtil" %><%@
 page import="com.liferay.portal.kernel.dao.search.ResultRow" %><%@
@@ -49,6 +40,7 @@ page import="com.liferay.portal.kernel.model.LayoutSetBranch" %><%@
 page import="com.liferay.portal.kernel.model.LayoutSetBranchConstants" %><%@
 page import="com.liferay.portal.kernel.model.User" %><%@
 page import="com.liferay.portal.kernel.portlet.LiferayWindowState" %><%@
+page import="com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder" %><%@
 page import="com.liferay.portal.kernel.security.auth.AuthException" %><%@
 page import="com.liferay.portal.kernel.security.permission.ActionKeys" %><%@
 page import="com.liferay.portal.kernel.service.LayoutBranchLocalServiceUtil" %><%@
@@ -63,8 +55,9 @@ page import="com.liferay.portal.kernel.service.permission.LayoutPermissionUtil" 
 page import="com.liferay.portal.kernel.service.permission.LayoutSetBranchPermissionUtil" %><%@
 page import="com.liferay.portal.kernel.servlet.SessionErrors" %><%@
 page import="com.liferay.portal.kernel.util.GetterUtil" %><%@
+page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
-page import="com.liferay.portal.kernel.util.HttpUtil" %><%@
+page import="com.liferay.portal.kernel.util.HttpComponentsUtil" %><%@
 page import="com.liferay.portal.kernel.util.ListUtil" %><%@
 page import="com.liferay.portal.kernel.util.ParamUtil" %><%@
 page import="com.liferay.portal.kernel.util.PortalUtil" %><%@
@@ -104,7 +97,7 @@ privateLayout = GetterUtil.getBoolean((String)renderRequest.getAttribute(WebKeys
 
 LayoutBranchDisplayContext layoutBranchDisplayContext = new LayoutBranchDisplayContext(request);
 LayoutSetBranchDisplayContext layoutSetBranchDisplayContext = new LayoutSetBranchDisplayContext(request);
-StagingBarDisplayContext stagingBarDisplayContext = new StagingBarDisplayContext(liferayPortletRequest, layout);
+StagingBarDisplayContext stagingBarDisplayContext = new StagingBarDisplayContext(liferayPortletRequest, liferayPortletResponse, layout);
 %>
 
 <%!

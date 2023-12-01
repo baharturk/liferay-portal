@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.service;
@@ -45,13 +36,14 @@ public class JournalFolderLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.journal.service.impl.JournalFolderLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static JournalFolder addFolder(
-			long userId, long groupId, long parentFolderId, String name,
-			String description,
+			String externalReferenceCode, long userId, long groupId,
+			long parentFolderId, String name, String description,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addFolder(
-			userId, groupId, parentFolderId, name, description, serviceContext);
+			externalReferenceCode, userId, groupId, parentFolderId, name,
+			description, serviceContext);
 	}
 
 	/**
@@ -264,6 +256,13 @@ public class JournalFolderLocalServiceUtil {
 		return getService().fetchJournalFolder(folderId);
 	}
 
+	public static JournalFolder fetchJournalFolderByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return getService().fetchJournalFolderByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the journal folder matching the UUID and group.
 	 *
@@ -437,6 +436,14 @@ public class JournalFolderLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getJournalFolder(folderId);
+	}
+
+	public static JournalFolder getJournalFolderByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getJournalFolderByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -694,6 +701,10 @@ public class JournalFolderLocalServiceUtil {
 
 	public static JournalFolderLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(JournalFolderLocalService service) {
+		_service = service;
 	}
 
 	private static volatile JournalFolderLocalService _service;

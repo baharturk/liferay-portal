@@ -1,30 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.addon.keep.alive.web.internal.servlet.taglib;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -43,7 +35,6 @@ import com.liferay.saml.util.PortletPropsKeys;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -54,7 +45,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Tomas Polesovsky
  */
-@Component(immediate = true, service = DynamicInclude.class)
+@Component(service = DynamicInclude.class)
 public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 
 	@Override
@@ -80,13 +71,17 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 		SamlProviderConfiguration samlProviderConfiguration =
 			_samlProviderConfigurationHelper.getSamlProviderConfiguration();
 
-		keepAliveURL = _http.addParameter(
+		keepAliveURL = HttpComponentsUtil.addParameter(
 			keepAliveURL, "entityId", samlProviderConfiguration.entityId());
 
 		try {
 			PrintWriter printWriter = httpServletResponse.getWriter();
 
-			printWriter.write("<script src=\"");
+			printWriter.write("<script");
+			printWriter.write(
+				ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+					httpServletRequest));
+			printWriter.write(" src=\"");
 			printWriter.write(HtmlUtil.escapeHREF(keepAliveURL));
 			printWriter.write("\" type=\"text/javascript\"></script>");
 		}
@@ -186,8 +181,8 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 			SamlWebKeys.SAML_SP_SESSION_KEY);
 
 		if (Validator.isNull(samlSpSessionKey)) {
-			samlSpSessionKey = CookieKeys.getCookie(
-				httpServletRequest, SamlWebKeys.SAML_SP_SESSION_KEY);
+			samlSpSessionKey = CookiesManagerUtil.getCookieValue(
+				SamlWebKeys.SAML_SP_SESSION_KEY, httpServletRequest);
 		}
 
 		return samlSpSessionKey;
@@ -208,9 +203,6 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 		KeepAliveSPPortalDynamicInclude.class);
 
 	@Reference
-	private Http _http;
-
-	@Reference
 	private SamlPeerBindingLocalService _samlPeerBindingLocalService;
 
 	@Reference
@@ -221,10 +213,5 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 
 	@Reference
 	private SamlSpSessionLocalService _samlSpSessionLocalService;
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.saml.addon.keep.alive.web)"
-	)
-	private ServletContext _servletContext;
 
 }

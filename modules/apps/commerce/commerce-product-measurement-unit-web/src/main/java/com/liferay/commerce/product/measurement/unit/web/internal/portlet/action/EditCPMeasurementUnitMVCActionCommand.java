@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.measurement.unit.web.internal.portlet.action;
 
 import com.liferay.commerce.product.constants.CPPortletKeys;
-import com.liferay.commerce.product.exception.CPMeasurementUnitKeyException;
+import com.liferay.commerce.product.exception.DuplicateCPMeasurementUnitKeyException;
 import com.liferay.commerce.product.exception.NoSuchCPMeasurementUnitException;
 import com.liferay.commerce.product.model.CPMeasurementUnit;
 import com.liferay.commerce.product.service.CPMeasurementUnitService;
@@ -27,9 +18,8 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 
 import java.util.Locale;
 import java.util.Map;
@@ -44,7 +34,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"javax.portlet.name=" + CPPortletKeys.CP_MEASUREMENT_UNIT,
 		"mvc.command.name=/cp_measurement_unit/edit_cp_measurement_unit"
@@ -80,7 +69,9 @@ public class EditCPMeasurementUnitMVCActionCommand
 
 				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
 			}
-			else if (exception instanceof CPMeasurementUnitKeyException) {
+			else if (exception instanceof
+						DuplicateCPMeasurementUnitKeyException) {
+
 				hideDefaultErrorMessage(actionRequest);
 				hideDefaultSuccessMessage(actionRequest);
 
@@ -108,10 +99,8 @@ public class EditCPMeasurementUnitMVCActionCommand
 			deleteCPMeasurementUnitIds = new long[] {cpMeasurementUnitId};
 		}
 		else {
-			deleteCPMeasurementUnitIds = StringUtil.split(
-				ParamUtil.getString(
-					actionRequest, "deleteCPMeasurementUnitIds"),
-				0L);
+			deleteCPMeasurementUnitIds = ParamUtil.getLongValues(
+				actionRequest, "rowIds");
 		}
 
 		for (long deleteCPMeasurementUnitId : deleteCPMeasurementUnitIds) {
@@ -138,7 +127,7 @@ public class EditCPMeasurementUnitMVCActionCommand
 		long cpMeasurementUnitId = ParamUtil.getLong(
 			actionRequest, "cpMeasurementUnitId");
 
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name");
 		String key = ParamUtil.getString(actionRequest, "key");
 		double rate = ParamUtil.getDouble(actionRequest, "rate");
@@ -153,13 +142,14 @@ public class EditCPMeasurementUnitMVCActionCommand
 
 		if (cpMeasurementUnitId <= 0) {
 			cpMeasurementUnit = _cpMeasurementUnitService.addCPMeasurementUnit(
-				nameMap, key, rate, primary, priority, type, serviceContext);
+				null, nameMap, key, rate, primary, priority, type,
+				serviceContext);
 		}
 		else {
 			cpMeasurementUnit =
 				_cpMeasurementUnitService.updateCPMeasurementUnit(
-					cpMeasurementUnitId, nameMap, key, rate, primary, priority,
-					type, serviceContext);
+					null, cpMeasurementUnitId, nameMap, key, rate, primary,
+					priority, type, serviceContext);
 		}
 
 		return cpMeasurementUnit;
@@ -167,5 +157,8 @@ public class EditCPMeasurementUnitMVCActionCommand
 
 	@Reference
 	private CPMeasurementUnitService _cpMeasurementUnitService;
+
+	@Reference
+	private Localization _localization;
 
 }

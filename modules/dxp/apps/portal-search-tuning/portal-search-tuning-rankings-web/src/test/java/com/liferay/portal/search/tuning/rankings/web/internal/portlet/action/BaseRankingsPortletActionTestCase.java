@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.rankings.web.internal.portlet.action;
@@ -26,13 +17,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.Optional;
 
 import javax.portlet.PortletRequest;
 import javax.portlet.PortletURL;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -50,8 +38,16 @@ public abstract class BaseRankingsPortletActionTestCase
 			builder
 		).when(
 			builder
+		).groupExternalReferenceCode(
+			Mockito.anyString()
+		);
+
+		Mockito.doReturn(
+			builder
+		).when(
+			builder
 		).index(
-			Matchers.anyString()
+			Mockito.anyString()
 		);
 
 		Mockito.doReturn(
@@ -59,7 +55,7 @@ public abstract class BaseRankingsPortletActionTestCase
 		).when(
 			builder
 		).queryStrings(
-			Matchers.anyCollection()
+			Mockito.anyCollection()
 		);
 
 		Mockito.doReturn(
@@ -67,7 +63,15 @@ public abstract class BaseRankingsPortletActionTestCase
 		).when(
 			builder
 		).rankingIndexName(
-			Matchers.anyObject()
+			Mockito.any()
+		);
+
+		Mockito.doReturn(
+			builder
+		).when(
+			builder
+		).sxpBlueprintExternalReferenceCode(
+			Mockito.anyString()
 		);
 
 		Mockito.doReturn(
@@ -75,7 +79,7 @@ public abstract class BaseRankingsPortletActionTestCase
 		).when(
 			builder
 		).unlessRankingDocumentId(
-			Matchers.anyString()
+			Mockito.anyString()
 		);
 
 		Mockito.doReturn(
@@ -95,7 +99,7 @@ public abstract class BaseRankingsPortletActionTestCase
 		).when(
 			duplicateQueryStringsDetector
 		).detect(
-			Matchers.anyObject()
+			Mockito.any()
 		);
 	}
 
@@ -105,7 +109,7 @@ public abstract class BaseRankingsPortletActionTestCase
 		).when(
 			indexNameBuilder
 		).getIndexName(
-			Matchers.anyLong()
+			Mockito.anyLong()
 		);
 	}
 
@@ -118,7 +122,7 @@ public abstract class BaseRankingsPortletActionTestCase
 		).when(
 			portletRequest
 		).getParameter(
-			Matchers.eq(paramName)
+			Mockito.eq(paramName)
 		);
 	}
 
@@ -128,31 +132,25 @@ public abstract class BaseRankingsPortletActionTestCase
 		ReflectionTestUtil.setFieldValue(
 			ranking, "_aliases", Arrays.asList("aliases"));
 		ReflectionTestUtil.setFieldValue(
+			ranking, "_groupExternalReferenceCode",
+			"groupExternalReferenceCode");
+		ReflectionTestUtil.setFieldValue(
 			ranking, "_hiddenDocumentIds",
 			new LinkedHashSet<String>(Arrays.asList("hiddenDocumentIds")));
 		ReflectionTestUtil.setFieldValue(
 			ranking, "_pins",
 			new ArrayList<Ranking.Pin>(
 				Arrays.asList(new Ranking.Pin(0, "id"))));
+		ReflectionTestUtil.setFieldValue(
+			ranking, "_sxpBlueprintExternalReferenceCode",
+			"sxpBlueprintExternalReferenceCode");
 
 		Mockito.doReturn(
-			Arrays.asList("hiddenDocumentIds")
-		).when(
 			ranking
-		).getHiddenDocumentIds();
-
-		Mockito.doReturn(
-			Arrays.asList("aliases")
-		).when(
-			ranking
-		).getAliases();
-
-		Mockito.doReturn(
-			Optional.of(ranking)
 		).when(
 			rankingIndexReader
-		).fetchOptional(
-			Matchers.anyObject(), Matchers.anyString()
+		).fetch(
+			Mockito.anyString(), Mockito.any()
 		);
 	}
 
@@ -170,16 +168,13 @@ public abstract class BaseRankingsPortletActionTestCase
 		).createRenderURL();
 	}
 
-	@Mock
-	protected DuplicateQueryStringsDetector duplicateQueryStringsDetector;
-
-	@Mock
-	protected IndexNameBuilder indexNameBuilder;
-
-	@Mock
-	protected RankingIndexReader rankingIndexReader;
-
-	@Mock
-	protected RankingStorageAdapter rankingStorageAdapter;
+	protected DuplicateQueryStringsDetector duplicateQueryStringsDetector =
+		Mockito.mock(DuplicateQueryStringsDetector.class);
+	protected IndexNameBuilder indexNameBuilder = Mockito.mock(
+		IndexNameBuilder.class);
+	protected RankingIndexReader rankingIndexReader = Mockito.mock(
+		RankingIndexReader.class);
+	protected RankingStorageAdapter rankingStorageAdapter = Mockito.mock(
+		RankingStorageAdapter.class);
 
 }

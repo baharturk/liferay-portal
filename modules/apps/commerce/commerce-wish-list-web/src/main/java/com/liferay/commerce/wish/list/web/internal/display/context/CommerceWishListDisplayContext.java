@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.web.internal.display.context;
@@ -19,6 +10,7 @@ import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.model.CommerceMoney;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.price.CommerceProductPriceCalculation;
+import com.liferay.commerce.product.catalog.CPCatalogEntry;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.util.CPDefinitionHelper;
@@ -34,7 +26,6 @@ import com.liferay.commerce.wish.list.util.CommerceWishListHttpHelper;
 import com.liferay.commerce.wish.list.util.comparator.CommerceWishListNameComparator;
 import com.liferay.commerce.wish.list.web.internal.display.context.helper.CommerceWishListRequestHelper;
 import com.liferay.commerce.wish.list.web.internal.util.CommerceWishListPortletUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -45,12 +36,15 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.TextFormatter;
 import com.liferay.portal.kernel.util.Validator;
+
+import java.math.BigDecimal;
 
 import java.util.Iterator;
 import java.util.List;
@@ -144,7 +138,7 @@ public class CommerceWishListDisplayContext {
 			}
 			catch (PortalException portalException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
+					_log.debug(portalException);
 				}
 			}
 		}
@@ -206,7 +200,7 @@ public class CommerceWishListDisplayContext {
 
 		CommerceMoney commerceMoney =
 			_commerceProductPriceCalculation.getFinalPrice(
-				cpInstance.getCPInstanceId(), 1,
+				cpInstance.getCPInstanceId(), BigDecimal.ONE, StringPool.BLANK,
 				_commerceWishListRequestHelper.getCommerceContext());
 
 		if (commerceMoney.isEmpty()) {
@@ -254,6 +248,18 @@ public class CommerceWishListDisplayContext {
 				commerceWishList.getCommerceWishListId()));
 
 		return _commerceWishListItemsSearchContainer;
+	}
+
+	public CPCatalogEntry getCPCatalogEntry(long cpDefinitionId)
+		throws PortalException {
+
+		CommerceContext commerceContext =
+			_commerceWishListRequestHelper.getCommerceContext();
+
+		return _cpDefinitionHelper.getCPCatalogEntry(
+			CommerceUtil.getCommerceAccountId(commerceContext),
+			commerceContext.getCommerceChannelGroupId(), cpDefinitionId,
+			_commerceWishListRequestHelper.getLocale());
 	}
 
 	public String getCPDefinitionURL(

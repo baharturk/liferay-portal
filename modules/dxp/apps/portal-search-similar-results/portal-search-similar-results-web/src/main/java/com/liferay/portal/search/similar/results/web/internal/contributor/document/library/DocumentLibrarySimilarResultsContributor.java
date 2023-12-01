@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.contributor.document.library;
@@ -24,6 +15,7 @@ import com.liferay.document.library.kernel.service.DLFolderLocalService;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.search.similar.results.web.internal.helper.HttpHelper;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
 import com.liferay.portal.search.similar.results.web.spi.contributor.SimilarResultsContributor;
@@ -53,7 +45,7 @@ public class DocumentLibrarySimilarResultsContributor
 		RouteBuilder routeBuilder, RouteHelper routeHelper) {
 
 		String[] parameters = _httpHelper.getFriendlyURLParameters(
-			routeHelper.getURLString());
+			HttpComponentsUtil.decodePath(routeHelper.getURLString()));
 
 		SearchStringUtil.requireEquals("document_library", parameters[0]);
 
@@ -92,32 +84,6 @@ public class DocumentLibrarySimilarResultsContributor
 		).uid(
 			Field.getUID(assetEntry.getClassName(), String.valueOf(classPK))
 		);
-	}
-
-	@Reference(unbind = "-")
-	public void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		_assetEntryLocalService = assetEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	public void setDLFileEntryLocalService(
-		DLFileEntryLocalService dlFileEntryLocalService) {
-
-		_dlFileEntryLocalService = dlFileEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	public void setDLFolderLocalService(
-		DLFolderLocalService dlFolderLocalService) {
-
-		_dlFolderLocalService = dlFolderLocalService;
-	}
-
-	@Reference(unbind = "-")
-	public void setHttpHelper(HttpHelper httpHelper) {
-		_httpHelper = httpHelper;
 	}
 
 	@Override
@@ -196,9 +162,16 @@ public class DocumentLibrarySimilarResultsContributor
 		return null;
 	}
 
+	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
 	private DLFileEntryLocalService _dlFileEntryLocalService;
+
+	@Reference
 	private DLFolderLocalService _dlFolderLocalService;
+
+	@Reference
 	private HttpHelper _httpHelper;
 
 }

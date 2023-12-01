@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayInput} from '@clayui/form';
@@ -21,12 +12,14 @@ import Radio from '../Radio/Radio.es';
 
 // @ts-ignore
 
-import Select from '../Select/Select.es';
+import Select from '../Select/Select';
 
 // @ts-ignore
 
 import Text from '../Text/Text.es';
 import {limitValue} from '../util/numericalOperations';
+
+import type {FieldChangeEventHandler, Locale, LocalizedValue} from '../types';
 
 type DecimalSymbol = ',' | '.';
 type ThousandsSeparator = DecimalSymbol | ' ' | "'" | 'none';
@@ -46,16 +39,16 @@ interface IProps {
 	append?: string;
 	appendType?: 'prefix' | 'suffix';
 	decimalPlaces: number;
-	decimalSymbol: DecimalSymbol[];
+	decimalSymbol: DecimalSymbol[] | DecimalSymbol;
 	decimalSymbols: ISelectProps<DecimalSymbol>[];
 	defaultLanguageId: Locale;
 	editingLanguageId: Locale;
 	ffDecimalPlacesSettingsEnabled: boolean;
 	onBlur: FocusEventHandler<HTMLInputElement>;
-	onChange: FieldChangeEventHandler;
+	onChange: FieldChangeEventHandler<unknown>;
 	onFocus: FocusEventHandler<HTMLInputElement>;
 	readOnly: boolean;
-	thousandsSeparator?: ThousandsSeparator[];
+	thousandsSeparator: ThousandsSeparator[] | ThousandsSeparator;
 	thousandsSeparators: ISelectProps<ThousandsSeparator>[];
 	value: INumericInputMaskValue;
 	visible: boolean;
@@ -92,6 +85,9 @@ const NumericInputMask: React.FC<IProps> = ({
 	const [thousandsSeparator, setThousandsSeparator] = useState(
 		thousandsSeparatorInitial
 	);
+	const [currentDecimalPlaces, setCurrentDecimalPlaces] = useState(
+		decimalPlacesInitial
+	);
 	const [decimalPlaces, setDecimalPlaces] = useState(decimalPlacesInitial);
 	const [decimalSymbol, setDecimalSymbol] = useState(decimalSymbolInitial);
 	const [append, setAppend] = useState(appendInitial);
@@ -111,10 +107,12 @@ const NumericInputMask: React.FC<IProps> = ({
 			return {
 				...item,
 				disabled: item.reference === decimalSymbol?.[0],
-				label: item.label?.[editingLanguageId] ?? item.label,
+				label:
+					item.label?.[Liferay.ThemeDisplay.getLanguageId()] ??
+					item.label,
 			};
 		});
-	}, [decimalSymbol, editingLanguageId, thousandsSeparatorsProp]);
+	}, [decimalSymbol, thousandsSeparatorsProp]);
 
 	useEffect(() => {
 		const newValue =
@@ -150,12 +148,10 @@ const NumericInputMask: React.FC<IProps> = ({
 					append,
 					appendType,
 					decimalPlaces,
-					// eslint-disable-next-line sort-keys
 					symbols: {
 						decimalSymbol,
 						thousandsSeparator,
 					},
-
 					// eslint-disable-next-line sort-keys
 					[key]: value,
 				},
@@ -170,19 +166,21 @@ const NumericInputMask: React.FC<IProps> = ({
 					<Select
 						label={Liferay.Language.get('thousands-separator')}
 						name="thousandsSeparator"
-						onBlur={onBlur}
-						onChange={(event: any, value: any) => {
+						onChange={(_: any, value: ThousandsSeparator[]) => {
 							handleChange('symbols', {
-								decimalSymbol: decimalSymbol?.[0],
+								decimalSymbol: (decimalSymbol as DecimalSymbol[])?.[0],
 								thousandsSeparator: value[0],
 							});
 
 							setThousandsSeparator(value[0]);
 						}}
-						onFocus={onFocus}
 						options={thousandsSeparators}
-						placeholder={Liferay.Language.get('choose-an-option')}
 						readOnly={readOnly}
+						selectedKey={
+							thousandsSeparator === '.'
+								? '$.2'
+								: (thousandsSeparator as string)
+						}
 						showEmptyOption={false}
 						value={thousandsSeparator}
 						visible={visible}
@@ -193,25 +191,27 @@ const NumericInputMask: React.FC<IProps> = ({
 					<Select
 						label={Liferay.Language.get('decimal-separator')}
 						name="decimalSymbol"
-						onBlur={onBlur}
-						onChange={(event: any, value: any) => {
+						onChange={(_: any, value: DecimalSymbol[]) => {
 							handleChange('symbols', {
 								decimalSymbol: value[0],
-								thousandsSeparator: thousandsSeparator?.includes(
+								thousandsSeparator: (thousandsSeparator?.includes(
 									'none'
 								)
 									? 'none'
-									: thousandsSeparator?.[0],
+									: thousandsSeparator[0]) as ThousandsSeparator,
 							});
 
 							setDecimalSymbol(value[0]);
 						}}
-						onFocus={onFocus}
 						options={decimalSymbols}
-						placeholder={Liferay.Language.get('choose-an-option')}
 						readOnly={readOnly}
+						selectedKey={
+							decimalSymbol === '.'
+								? '$.0'
+								: (decimalSymbol as string)
+						}
 						showEmptyOption={false}
-						value={decimalSymbol}
+						value={[]}
 						visible={visible}
 					/>
 				</div>
@@ -241,6 +241,7 @@ const NumericInputMask: React.FC<IProps> = ({
 								});
 
 								setDecimalPlaces(newValue);
+								setCurrentDecimalPlaces(newValue);
 								handleChange(
 									'decimalPlaces',
 									parseInt(newValue, 10)
@@ -252,19 +253,34 @@ const NumericInputMask: React.FC<IProps> = ({
 									? newValue.replace('-', '')
 									: newValue;
 
-								if (newValue <= MAX_DECIMAL_PLACES) {
-									newValue =
-										newValue === 0
-											? ''
-											: parseInt(newValue, 10);
+								if (
+									newValue.length > 2 ||
+									newValue > MAX_DECIMAL_PLACES ||
+									newValue === '0'
+								) {
+									return;
+								}
+
+								if (newValue === '') {
+									setDecimalPlaces(DEFAULT_DECIMAL_PLACES);
+
+									handleChange(
+										'decimalPlaces',
+										DEFAULT_DECIMAL_PLACES
+									);
+								}
+								else {
+									newValue = parseInt(newValue, 10);
 
 									setDecimalPlaces(newValue);
 
 									handleChange('decimalPlaces', newValue);
 								}
+
+								setCurrentDecimalPlaces(newValue);
 							}}
 							type="number"
-							value={decimalPlaces}
+							value={currentDecimalPlaces}
 						/>
 					</div>
 				</div>

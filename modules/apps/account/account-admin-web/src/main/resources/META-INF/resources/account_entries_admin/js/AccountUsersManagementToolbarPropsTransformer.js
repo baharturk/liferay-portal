@@ -1,25 +1,84 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSelectionModal, postForm} from 'frontend-js-web';
+import {
+	getCheckedCheckboxes,
+	openConfirmModal,
+	openModal,
+	openSelectionModal,
+	postForm,
+	sub,
+} from 'frontend-js-web';
+
+function openInviteAccountUsersModal(
+	accountEntryName,
+	requestInvitationsURL,
+	portletNamespace
+) {
+	openModal({
+		buttons: [
+			{
+				displayType: 'secondary',
+				label: Liferay.Language.get('cancel'),
+				type: 'cancel',
+			},
+			{
+				formId: `${portletNamespace}inviteUserForm`,
+				label: Liferay.Language.get('invite'),
+				type: 'submit',
+			},
+		],
+		containerProps: {
+			className: 'modal-height-xl',
+		},
+		id: `${portletNamespace}inviteUsersDialog`,
+		iframeBodyCssClass: '',
+		size: 'lg',
+		title: sub(Liferay.Language.get('invite-users-to-x'), accountEntryName),
+		url: requestInvitationsURL,
+	});
+}
+
+function openSelectAccountUsersModal(
+	accountEntryName,
+	assignAccountUsersURL,
+	selectAccountUsersURL,
+	portletNamespace
+) {
+	openSelectionModal({
+		buttonAddLabel: Liferay.Language.get('assign'),
+		containerProps: {
+			className: '',
+		},
+		iframeBodyCssClass: '',
+		multiple: true,
+		onSelect: (selectedItems) => {
+			if (!selectedItems?.length) {
+				return;
+			}
+
+			const form = document.getElementById(`${portletNamespace}fm`);
+
+			if (form) {
+				const values = selectedItems.map((item) => item.value);
+
+				postForm(form, {
+					data: {
+						accountUserIds: values.join(','),
+					},
+					url: assignAccountUsersURL,
+				});
+			}
+		},
+		title: sub(Liferay.Language.get('assign-users-to-x'), accountEntryName),
+		url: selectAccountUsersURL,
+	});
+}
 
 export default function propsTransformer({
-	additionalProps: {
-		accountEntryName,
-		assignAccountUsersURL,
-		selectAccountUsersURL,
-	},
+	additionalProps: {accountEntryName},
 	portletNamespace,
 	...otherProps
 }) {
@@ -31,61 +90,71 @@ export default function propsTransformer({
 			const action = data?.action;
 
 			if (action === 'removeUsers') {
-				if (
-					confirm(
-						Liferay.Language.get(
-							'are-you-sure-you-want-to-remove-the-selected-users'
-						)
-					)
-				) {
-					const form = document.getElementById(
-						`${portletNamespace}fm`
-					);
+				openConfirmModal({
+					message: Liferay.Language.get(
+						'are-you-sure-you-want-to-remove-the-selected-users'
+					),
+					onConfirm: (isConfirmed) => {
+						if (isConfirmed) {
+							const form = document.getElementById(
+								`${portletNamespace}fm`
+							);
 
-					if (form) {
-						postForm(form, {
-							data: {
-								accountUserIds: Liferay.Util.listCheckedExcept(
-									form,
-									`${portletNamespace}allRowIds`
-								),
-							},
-							url: data?.removeUsersURL,
-						});
-					}
-				}
+							if (form) {
+								postForm(form, {
+									data: {
+										accountUserIds: getCheckedCheckboxes(
+											form,
+											`${portletNamespace}allRowIds`
+										),
+									},
+									url: data?.removeUsersURL,
+								});
+							}
+						}
+					},
+				});
 			}
 		},
-		onCreateButtonClick: () => {
-			openSelectionModal({
-				buttonAddLabel: Liferay.Language.get('assign'),
-				multiple: true,
-				onSelect: (selectedItems) => {
-					if (!selectedItems?.length) {
-						return;
-					}
+		onCreateButtonClick: (event, {item}) => {
+			const data = item.data;
 
-					const form = document.getElementById(
-						`${portletNamespace}fm`
-					);
+			if (data?.action === 'inviteAccountUsers') {
+				openInviteAccountUsersModal(
+					accountEntryName,
+					data?.requestInvitationsURL,
+					portletNamespace
+				);
+			}
+			else if (data?.action === 'selectAccountUsers') {
+				openSelectAccountUsersModal(
+					accountEntryName,
+					data?.assignAccountUsersURL,
+					data?.selectAccountUsersURL,
+					portletNamespace
+				);
+			}
+		},
+		onCreationMenuItemClick: (event, {item}) => {
+			const data = item?.data;
 
-					if (form) {
-						const values = selectedItems.map((item) => item.value);
+			const action = data?.action;
 
-						postForm(form, {
-							data: {
-								accountUserIds: values.join(','),
-							},
-							url: assignAccountUsersURL,
-						});
-					}
-				},
-				title: Liferay.Util.sub(
-					Liferay.Language.get('assign-users-to-x'),
-					accountEntryName
-				),
-				url: selectAccountUsersURL,
-			});
+			if (action === 'inviteAccountUsers') {
+				openInviteAccountUsersModal(
+					accountEntryName,
+					data?.requestInvitationsURL,
+					portletNamespace
+				);
+			}
+			else if (action === 'selectAccountUsers') {
+				openSelectAccountUsersModal(
+					accountEntryName,
+					data?.assignAccountUsersURL,
+					data?.selectAccountUsersURL,
+					portletNamespace
+				);
+			}
 		},
 	};
 }

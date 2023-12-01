@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.internal.resource.v2_0;
@@ -19,9 +10,8 @@ import com.liferay.data.engine.field.type.util.LocalizedValueUtil;
 import com.liferay.data.engine.model.DEDataDefinitionFieldLink;
 import com.liferay.data.engine.model.DEDataListView;
 import com.liferay.data.engine.rest.dto.v2_0.DataListView;
-import com.liferay.data.engine.rest.internal.content.type.DataDefinitionContentTypeTracker;
 import com.liferay.data.engine.rest.internal.odata.entity.v2_0.DataDefinitionEntityModel;
-import com.liferay.data.engine.rest.internal.security.permission.resource.DataDefinitionModelResourcePermission;
+import com.liferay.data.engine.rest.internal.security.permission.resource.util.DataDefinitionPermissionUtil;
 import com.liferay.data.engine.rest.resource.v2_0.DataListViewResource;
 import com.liferay.data.engine.service.DEDataDefinitionFieldLinkLocalService;
 import com.liferay.data.engine.service.DEDataListViewLocalService;
@@ -34,10 +24,9 @@ import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
@@ -53,7 +42,6 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
 import java.util.Arrays;
@@ -81,8 +69,7 @@ import org.osgi.service.component.annotations.ServiceScope;
 	scope = ServiceScope.PROTOTYPE, service = DataListViewResource.class
 )
 @CTAware
-public class DataListViewResourceImpl
-	extends BaseDataListViewResourceImpl implements EntityModelResource {
+public class DataListViewResourceImpl extends BaseDataListViewResourceImpl {
 
 	@Override
 	public void deleteDataDefinitionDataListView(Long dataDefinitionId)
@@ -98,9 +85,9 @@ public class DataListViewResourceImpl
 
 	@Override
 	public void deleteDataListView(Long dataListViewId) throws Exception {
-		_dataDefinitionModelResourcePermission.check(
+		DataDefinitionPermissionUtil.check(
 			PermissionThreadLocal.getPermissionChecker(),
-			_getDDMStructureId(
+			_getDDMStructure(
 				_deDataListViewLocalService.getDEDataListView(dataListViewId)),
 			ActionKeys.DELETE);
 
@@ -115,7 +102,7 @@ public class DataListViewResourceImpl
 
 		if (pagination.getPageSize() > 250) {
 			throw new BadRequestException(
-				LanguageUtil.format(
+				_language.format(
 					contextAcceptLanguage.getPreferredLocale(),
 					"page-size-is-greater-than-x", 250));
 		}
@@ -172,9 +159,9 @@ public class DataListViewResourceImpl
 
 	@Override
 	public DataListView getDataListView(Long dataListViewId) throws Exception {
-		_dataDefinitionModelResourcePermission.check(
+		DataDefinitionPermissionUtil.check(
 			PermissionThreadLocal.getPermissionChecker(),
-			_getDDMStructureId(
+			_getDDMStructure(
 				_deDataListViewLocalService.getDEDataListView(dataListViewId)),
 			ActionKeys.VIEW);
 
@@ -201,7 +188,7 @@ public class DataListViewResourceImpl
 		DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
 			dataDefinitionId);
 
-		_dataDefinitionModelResourcePermission.checkPortletPermission(
+		DataDefinitionPermissionUtil.checkPortletPermission(
 			PermissionThreadLocal.getPermissionChecker(), ddmStructure,
 			DataActionKeys.ADD_DATA_DEFINITION);
 
@@ -226,9 +213,9 @@ public class DataListViewResourceImpl
 			Long dataListViewId, DataListView dataListView)
 		throws Exception {
 
-		_dataDefinitionModelResourcePermission.check(
+		DataDefinitionPermissionUtil.check(
 			PermissionThreadLocal.getPermissionChecker(),
-			_getDDMStructureId(
+			_getDDMStructure(
 				_deDataListViewLocalService.getDEDataListView(dataListViewId)),
 			ActionKeys.UPDATE);
 
@@ -332,8 +319,11 @@ public class DataListViewResourceImpl
 		return _portal.getClassNameId(DEDataListView.class);
 	}
 
-	private long _getDDMStructureId(DEDataListView deDataListView) {
-		return deDataListView.getDdmStructureId();
+	private DDMStructure _getDDMStructure(DEDataListView deDataListView)
+		throws Exception {
+
+		return _ddmStructureLocalService.getDDMStructure(
+			deDataListView.getDdmStructureId());
 	}
 
 	private DataListView _toDataListView(DEDataListView deDataListView)
@@ -359,7 +349,7 @@ public class DataListViewResourceImpl
 	}
 
 	private String _toJSON(Map<String, Object> appliedFilters) {
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
 		if (MapUtil.isEmpty(appliedFilters)) {
 			return jsonObject.toString();
@@ -375,7 +365,7 @@ public class DataListViewResourceImpl
 	private Map<String, Object> _toMap(String json) throws Exception {
 		Map<String, Object> map = new HashMap<>();
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(json);
+		JSONObject jsonObject = _jsonFactory.createJSONObject(json);
 
 		Set<String> keySet = jsonObject.keySet();
 
@@ -419,13 +409,6 @@ public class DataListViewResourceImpl
 		new DataDefinitionEntityModel();
 
 	@Reference
-	private DataDefinitionContentTypeTracker _dataDefinitionContentTypeTracker;
-
-	@Reference
-	private DataDefinitionModelResourcePermission
-		_dataDefinitionModelResourcePermission;
-
-	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;
 
 	@Reference
@@ -437,6 +420,9 @@ public class DataListViewResourceImpl
 
 	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

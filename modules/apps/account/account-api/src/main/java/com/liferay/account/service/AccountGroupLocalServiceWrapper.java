@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link AccountGroupLocalService}.
@@ -56,11 +48,12 @@ public class AccountGroupLocalServiceWrapper
 
 	@Override
 	public com.liferay.account.model.AccountGroup addAccountGroup(
-			long userId, String description, String name)
+			long userId, String description, String name,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountGroupLocalService.addAccountGroup(
-			userId, description, name);
+			userId, description, name, serviceContext);
 	}
 
 	@Override
@@ -253,34 +246,29 @@ public class AccountGroupLocalServiceWrapper
 		return _accountGroupLocalService.fetchAccountGroup(accountGroupId);
 	}
 
+	@Override
+	public com.liferay.account.model.AccountGroup
+		fetchAccountGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _accountGroupLocalService.
+			fetchAccountGroupByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
-	 * Returns the account group with the matching external reference code and company.
+	 * Returns the account group with the matching UUID and company.
 	 *
+	 * @param uuid the account group's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the account group's external reference code
 	 * @return the matching account group, or <code>null</code> if a matching account group could not be found
 	 */
 	@Override
 	public com.liferay.account.model.AccountGroup
-		fetchAccountGroupByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
+		fetchAccountGroupByUuidAndCompanyId(String uuid, long companyId) {
 
-		return _accountGroupLocalService.
-			fetchAccountGroupByExternalReferenceCode(
-				companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchAccountGroupByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.account.model.AccountGroup
-		fetchAccountGroupByReferenceCode(
-			long companyId, String externalReferenceCode) {
-
-		return _accountGroupLocalService.fetchAccountGroupByReferenceCode(
-			companyId, externalReferenceCode);
+		return _accountGroupLocalService.fetchAccountGroupByUuidAndCompanyId(
+			uuid, companyId);
 	}
 
 	/**
@@ -298,22 +286,36 @@ public class AccountGroupLocalServiceWrapper
 		return _accountGroupLocalService.getAccountGroup(accountGroupId);
 	}
 
+	@Override
+	public com.liferay.account.model.AccountGroup
+			getAccountGroupByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountGroupLocalService.getAccountGroupByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
-	 * Returns the account group with the matching external reference code and company.
+	 * Returns the account group with the matching UUID and company.
 	 *
+	 * @param uuid the account group's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the account group's external reference code
 	 * @return the matching account group
 	 * @throws PortalException if a matching account group could not be found
 	 */
 	@Override
 	public com.liferay.account.model.AccountGroup
-			getAccountGroupByExternalReferenceCode(
-				long companyId, String externalReferenceCode)
+			getAccountGroupByUuidAndCompanyId(String uuid, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _accountGroupLocalService.getAccountGroupByExternalReferenceCode(
-			companyId, externalReferenceCode);
+		return _accountGroupLocalService.getAccountGroupByUuidAndCompanyId(
+			uuid, companyId);
+	}
+
+	@Override
+	public long[] getAccountGroupIds(long accountEntryId) {
+		return _accountGroupLocalService.getAccountGroupIds(accountEntryId);
 	}
 
 	/**
@@ -347,6 +349,26 @@ public class AccountGroupLocalServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.account.model.AccountGroup>
+		getAccountGroups(
+			long companyId, String name, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<com.liferay.account.model.AccountGroup> orderByComparator) {
+
+		return _accountGroupLocalService.getAccountGroups(
+			companyId, name, start, end, orderByComparator);
+	}
+
+	@Override
+	public java.util.List<com.liferay.account.model.AccountGroup>
+		getAccountGroupsByAccountEntryId(
+			long accountEntryId, int start, int end) {
+
+		return _accountGroupLocalService.getAccountGroupsByAccountEntryId(
+			accountEntryId, start, end);
+	}
+
+	@Override
+	public java.util.List<com.liferay.account.model.AccountGroup>
 		getAccountGroupsByAccountGroupId(long[] accountGroupIds) {
 
 		return _accountGroupLocalService.getAccountGroupsByAccountGroupId(
@@ -369,6 +391,17 @@ public class AccountGroupLocalServiceWrapper
 	}
 
 	@Override
+	public long getAccountGroupsCount(long companyId, String name) {
+		return _accountGroupLocalService.getAccountGroupsCount(companyId, name);
+	}
+
+	@Override
+	public int getAccountGroupsCountByAccountEntryId(long accountEntryId) {
+		return _accountGroupLocalService.getAccountGroupsCountByAccountEntryId(
+			accountEntryId);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -380,6 +413,16 @@ public class AccountGroupLocalServiceWrapper
 		long companyId) {
 
 		return _accountGroupLocalService.getDefaultAccountGroup(companyId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return _accountGroupLocalService.getExportActionableDynamicQuery(
+			portletDataContext);
 	}
 
 	@Override
@@ -457,11 +500,36 @@ public class AccountGroupLocalServiceWrapper
 
 	@Override
 	public com.liferay.account.model.AccountGroup updateAccountGroup(
-			long accountGroupId, String description, String name)
+			long accountGroupId, String description, String name,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountGroupLocalService.updateAccountGroup(
-			accountGroupId, description, name);
+			accountGroupId, description, name, serviceContext);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountGroup updateExternalReferenceCode(
+			com.liferay.account.model.AccountGroup accountGroup,
+			String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountGroupLocalService.updateExternalReferenceCode(
+			accountGroup, externalReferenceCode);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountGroup updateExternalReferenceCode(
+			long accountGroupId, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountGroupLocalService.updateExternalReferenceCode(
+			accountGroupId, externalReferenceCode);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _accountGroupLocalService.getBasePersistence();
 	}
 
 	@Override

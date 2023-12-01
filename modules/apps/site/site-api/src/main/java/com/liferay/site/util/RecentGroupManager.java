@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.util;
@@ -50,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Julio Camarero
  */
-@Component(immediate = true, service = RecentGroupManager.class)
+@Component(service = RecentGroupManager.class)
 public class RecentGroupManager {
 
 	public void addRecentGroup(
@@ -106,33 +97,6 @@ public class RecentGroupManager {
 		return Collections.emptyList();
 	}
 
-	/**
-	 * @deprecated As of Judson (7.1.x), replaced by {@link
-	 *             #getRecentGroups(String, PortletRequest)}
-	 */
-	@Deprecated
-	protected List<Group> getRecentGroups(String value) {
-		long[] groupIds = StringUtil.split(value, 0L);
-
-		if (ArrayUtil.isEmpty(groupIds)) {
-			return Collections.emptyList();
-		}
-
-		List<Group> groups = new ArrayList<>(groupIds.length);
-
-		for (long groupId : groupIds) {
-			Group group = _groupLocalService.fetchGroup(groupId);
-
-			if (!_groupLocalService.isLiveGroupActive(group)) {
-				continue;
-			}
-
-			groups.add(group);
-		}
-
-		return groups;
-	}
-
 	protected List<Group> getRecentGroups(
 			String value, PortletRequest portletRequest)
 		throws Exception {
@@ -152,7 +116,8 @@ public class RecentGroupManager {
 		for (long groupId : groupIds) {
 			Group group = _groupLocalService.fetchGroup(groupId);
 
-			if (!GroupPermissionUtil.contains(
+			if ((group == null) ||
+				!GroupPermissionUtil.contains(
 					permissionChecker, group.getGroupId(), ActionKeys.VIEW) ||
 				!_groupLocalService.isLiveGroupActive(group)) {
 
@@ -181,10 +146,9 @@ public class RecentGroupManager {
 			portletRequest.setAttribute(
 				SiteWebKeys.GROUP_URL_PROVIDER_CONTROL_PANEL, Boolean.TRUE);
 
-			String groupURL = _groupURLProvider.getGroupURL(
-				group, portletRequest);
+			if (Validator.isNull(
+					_groupURLProvider.getGroupURL(group, portletRequest))) {
 
-			if (Validator.isNull(groupURL)) {
 				continue;
 			}
 
@@ -192,11 +156,6 @@ public class RecentGroupManager {
 		}
 
 		return groups;
-	}
-
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
 	}
 
 	private long _getLiveGroupId(long groupId) {
@@ -231,6 +190,7 @@ public class RecentGroupManager {
 	private static final Log _log = LogFactoryUtil.getLog(
 		RecentGroupManager.class);
 
+	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference

@@ -3,32 +3,19 @@ definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
+	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Product Info Management";
 
 	setUp {
-		TestCase.setUpPortalInstance();
-
-		User.firstLoginPG();
-
-		CommerceConfiguration.commerceStoreFrontSetUp();
+		CommerceConfiguration.commerceSetUp(storeFront = "true");
 	}
 
 	tearDown {
-		Navigator.openURL();
-
-		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
-			User.logoutPG();
-		}
-
-		User.firstLoginPG();
-
-		CommerceConfiguration.commerceAdminTearDown();
-
-		CommerceConfiguration.commerceInitializersTearDown();
+		CommerceConfiguration.commerceTearDown();
 	}
 
 	@description = "This is a test for COMMERCE-6066. AddANewProductGroup"
-	@priority = "3"
+	@priority = 3
 	test AddANewProductGroup {
 		property portal.acceptance = "false";
 
@@ -59,13 +46,13 @@ definition {
 
 		AssertElementPresent(
 			key_tableEntryName = "PG2",
-			locator1 = "RemoteApps#TABLE_ENTRY_NAME_REMOTE_TABLE");
+			locator1 = "ClientExtension#TABLE_ENTRY_NAME_REMOTE_TABLE");
 
 		Button.clickPublish();
 	}
 
 	@description = "This is a test for COMMERCE-6065. AddAPreExistingProductGroup"
-	@priority = "3"
+	@priority = 5
 	test AddAPreExistingProductGroup {
 		property portal.acceptance = "true";
 
@@ -84,7 +71,7 @@ definition {
 			locator1 = "TextInput#GENERIC_TEXT_INPUT",
 			value1 = "PG1");
 
-		Button.click(button = "Submit");
+		Button.clickSubmitButton();
 
 		CommerceNavigator.gotoPortlet(
 			category = "Product Management",
@@ -109,9 +96,9 @@ definition {
 	}
 
 	@description = "This is a test for COMMERCE-6068. EditAProductGroup"
-	@priority = "3"
+	@priority = 5
 	test EditAProductGroup {
-		property portal.acceptance = "false";
+		property portal.acceptance = "true";
 
 		// TODO Review
 
@@ -126,7 +113,7 @@ definition {
 			customFieldName = "Custom Field",
 			customFieldType = "Input Field",
 			customInputDataType = "Text",
-			resourceName = "Commerce Product Group");
+			resourceName = "Product Group");
 
 		CommerceNavigator.gotoPortlet(
 			category = "Product Management",
@@ -165,7 +152,7 @@ definition {
 	}
 
 	@description = "This is a test for COMMERCE-6067. RemoveAProductGroup"
-	@priority = "3"
+	@priority = 3
 	test RemoveAProductGroup {
 		property portal.acceptance = "false";
 

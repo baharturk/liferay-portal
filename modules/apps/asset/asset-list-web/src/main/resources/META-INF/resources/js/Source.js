@@ -1,18 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {delegate} from 'frontend-js-web';
+import {
+	addParams,
+	delegate,
+	openSelectionModal,
+	sub,
+	toggleDisabled,
+	toggleSelectBox,
+} from 'frontend-js-web';
 
 export default function ({classTypes, namespace}) {
 	const mapDDMStructures = {};
@@ -93,7 +91,7 @@ export default function ({classTypes, namespace}) {
 
 		if (enabledInput) {
 			popupButtons.forEach((popupButton) => {
-				Liferay.Util.toggleDisabled(popupButton, !enabledInputChecked);
+				toggleDisabled(popupButton, !enabledInputChecked);
 			});
 		}
 	};
@@ -186,7 +184,6 @@ export default function ({classTypes, namespace}) {
 		if (classTypeSelected) {
 			selectedSubtype = subtypeSelector[classTypeSelected.className];
 		}
-
 		toggleSaveButton(
 			assetSelector.value === '' || selectedSubtype?.value === ''
 		);
@@ -225,7 +222,7 @@ export default function ({classTypes, namespace}) {
 	};
 
 	classTypes.forEach(({className, classSubtypes}) => {
-		Liferay.Util.toggleSelectBox(
+		toggleSelectBox(
 			`${namespace}anyClassType${className}`,
 			'false',
 			`${namespace}${className}Boxes`
@@ -355,34 +352,42 @@ export default function ({classTypes, namespace}) {
 
 		if (fromBox.attr('id') === id || toBox.attr('id') === id) {
 			toggleSubclasses();
+
+			if (!document.getElementById(id).options.length) {
+				toggleSaveButton(true);
+			}
+			else {
+				toggleSaveButton(false);
+			}
 		}
 	});
 
 	const openModal = ({delegateTarget}) => {
 		let url = delegateTarget.dataset.href;
 
-		url = Liferay.Util.addParams(
+		url = addParams(
 			`${namespace}ddmStructureDisplayFieldValue=${encodeURIComponent(
 				ddmStructureDisplayFieldValueInput.value
 			)}`,
 			url
 		);
-		url = Liferay.Util.addParams(
+		url = addParams(
 			`${namespace}ddmStructureFieldName=${encodeURIComponent(
 				ddmStructureFieldNameInput.value
 			)}`,
 			url
 		);
-		url = Liferay.Util.addParams(
+		url = addParams(
 			`${namespace}ddmStructureFieldValue=${encodeURIComponent(
 				ddmStructureFieldValueInput.value
 			)}`,
 			url
 		);
 
-		Liferay.Util.openSelectionModal({
+		openSelectionModal({
 			customSelectEvent: true,
 			id: `${namespace}selectDDMStructure${delegateTarget.id}`,
+			iframeBodyCssClass: '',
 			onSelect: (selectedItem) => {
 				setDDMFields({
 					className: selectedItem.className,
@@ -393,7 +398,7 @@ export default function ({classTypes, namespace}) {
 				});
 			},
 			selectEventName: `${namespace}selectDDMStructureField`,
-			title: Liferay.Util.sub(
+			title: sub(
 				Liferay.Language.get('select-x'),
 				Liferay.Language.get('structure-field')
 			),
@@ -410,7 +415,7 @@ export default function ({classTypes, namespace}) {
 
 	eventDelegates.push(clickOpenModal);
 
-	Liferay.Util.toggleSelectBox(
+	toggleSelectBox(
 		`${namespace}anyAssetType`,
 		'false',
 		`${namespace}classNamesBoxes`

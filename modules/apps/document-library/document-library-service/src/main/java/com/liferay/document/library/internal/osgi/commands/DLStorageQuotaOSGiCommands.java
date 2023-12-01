@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.internal.osgi.commands;
 
 import com.liferay.document.library.service.DLStorageQuotaLocalService;
+import com.liferay.osgi.util.osgi.commands.OSGiCommands;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 
 import org.osgi.service.component.annotations.Component;
@@ -30,9 +21,9 @@ import org.osgi.service.component.annotations.Reference;
 	property = {
 		"osgi.command.function=update", "osgi.command.scope=documentLibrary"
 	},
-	service = DLStorageQuotaOSGiCommands.class
+	service = OSGiCommands.class
 )
-public class DLStorageQuotaOSGiCommands {
+public class DLStorageQuotaOSGiCommands implements OSGiCommands {
 
 	public void update(String... companyIds) {
 		for (String companyId : companyIds) {
@@ -46,7 +37,7 @@ public class DLStorageQuotaOSGiCommands {
 					companyId);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 
 				System.out.printf(
 					"Unable to update document library storage quota for " +
@@ -58,9 +49,6 @@ public class DLStorageQuotaOSGiCommands {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLStorageQuotaOSGiCommands.class);
-
-	@Reference
-	private CompanyLocalService _companyLocalService;
 
 	@Reference
 	private DLStorageQuotaLocalService _dlStorageQuotaLocalService;

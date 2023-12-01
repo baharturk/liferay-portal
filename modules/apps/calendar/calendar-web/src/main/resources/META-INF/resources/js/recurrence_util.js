@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-calendar-recurrence-util',
 	(A) => {
-		var STR_DASH = '-';
+		const STR_DASH = '-';
 
 		Liferay.RecurrenceUtil = {
 			_createConfirmationPanel(title, bodyContent, footerContent) {
@@ -36,16 +27,16 @@ AUI.add(
 			},
 
 			_createConfirmationPanelContent(description, options) {
-				var instance = this;
+				const instance = this;
 
-				var contentNode = A.Node.create(
+				const contentNode = A.Node.create(
 					A.Lang.sub(instance.RECURRING_EVENT_MODAL_TEMPLATE, {
 						description,
 					})
 				);
 
 				A.each(options, (option) => {
-					var optionRow = A.Lang.sub(
+					const optionRow = A.Lang.sub(
 						instance.RECURRING_EVENT_MODAL_ITEM_TEMPLATE,
 						{
 							confirmationDescription:
@@ -55,7 +46,7 @@ AUI.add(
 						}
 					);
 
-					var optionRowNode = A.Node.create(optionRow);
+					const optionRowNode = A.Node.create(optionRow);
 
 					new A.Button(option.button).render(optionRowNode.one('td'));
 
@@ -71,11 +62,9 @@ AUI.add(
 				allEventsInFn,
 				cancelFn
 			) {
-				var instance = this;
+				const instance = this;
 
-				var buttons;
-
-				var getButtonConfig = function (label, callback, cssClass) {
+				const getButtonConfig = function (label, callback, cssClass) {
 					return {
 						cssClass,
 						label,
@@ -91,7 +80,7 @@ AUI.add(
 					};
 				};
 
-				buttons = {
+				const buttons = {
 					confirmations: [
 						{
 							button: getButtonConfig(
@@ -169,11 +158,10 @@ AUI.add(
 			WEEKDAY_LABELS: {},
 
 			getSummary(recurrence) {
-				var instance = this;
+				const instance = this;
 
-				var key;
-				var params = [];
-				var parts = [];
+				const params = [];
+				const parts = [];
 
 				if (Number(recurrence.interval) === 1) {
 					parts.push(A.Lang.String.toLowerCase(recurrence.frequency));
@@ -224,11 +212,11 @@ AUI.add(
 				}
 				else if (
 					recurrence.frequency === instance.FREQUENCY.WEEKLY &&
-					recurrence.weekdays.length > 0
+					!!recurrence.weekdays.length
 				) {
 					parts.push('on-x');
 
-					var weekdays = recurrence.weekdays.map((item) => {
+					const weekdays = recurrence.weekdays.map((item) => {
 						return instance.WEEKDAY_LABELS[item];
 					});
 
@@ -246,14 +234,14 @@ AUI.add(
 				) {
 					parts.push('until-x-x-x');
 
-					var untilDate = recurrence.untilDate;
+					const untilDate = recurrence.untilDate;
 
 					params.push(instance.MONTH_LABELS[untilDate.getMonth()]);
 					params.push(untilDate.getDate());
 					params.push(untilDate.getFullYear());
 				}
 
-				key = parts.join(STR_DASH);
+				const key = parts.join(STR_DASH);
 
 				return A.Lang.sub(instance.RECURRENCE_SUMMARIES[key], params);
 			},
@@ -265,18 +253,16 @@ AUI.add(
 				allEventsInFn,
 				cancelFn
 			) {
-				var instance = this;
+				const instance = this;
 
-				var bodyContent;
-				var buttons = instance._getConfirmationPanelButtons(
+				const buttons = instance._getConfirmationPanelButtons(
 					onlyThisInstanceFn,
 					allFollowingFn,
 					allEventsInFn,
 					cancelFn
 				);
-				var footerContent;
-				var modalDescription;
-				var titleText;
+				let modalDescription;
+				let titleText;
 
 				if (actionName === 'delete') {
 					titleText = Liferay.Language.get('delete-recurring-event');
@@ -291,12 +277,12 @@ AUI.add(
 					);
 				}
 
-				bodyContent = instance._createConfirmationPanelContent(
+				const bodyContent = instance._createConfirmationPanelContent(
 					modalDescription,
 					buttons.confirmations
 				);
 
-				footerContent = [buttons.dismiss];
+				const footerContent = [buttons.dismiss];
 
 				instance.confirmationPanel = instance._createConfirmationPanel(
 					titleText,

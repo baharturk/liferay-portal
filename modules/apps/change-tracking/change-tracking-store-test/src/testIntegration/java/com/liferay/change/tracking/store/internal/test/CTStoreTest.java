@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.store.internal.test;
@@ -904,10 +895,10 @@ public class CTStoreTest {
 	private void _assertCTFileSize(String fileName, byte[] data)
 		throws Exception {
 
-		long fileSize = _ctStore.getFileSize(
-			_companyId, _REPOSITORY_ID, fileName, _VERSION_1);
-
-		Assert.assertEquals(data.length, fileSize);
+		Assert.assertEquals(
+			data.length,
+			_ctStore.getFileSize(
+				_companyId, _REPOSITORY_ID, fileName, _VERSION_1));
 	}
 
 	private void _assertCTFileVersions(String fileName, String... versions)
@@ -952,16 +943,16 @@ public class CTStoreTest {
 	private void _assertFileSize(String fileName, byte[] data)
 		throws Exception {
 
-		long fileSize = _fileSystemStore.getFileSize(
-			_companyId, _REPOSITORY_ID, fileName, _VERSION_1);
-
-		Assert.assertEquals(data.length, fileSize);
+		Assert.assertEquals(
+			data.length,
+			_fileSystemStore.getFileSize(
+				_companyId, _REPOSITORY_ID, fileName, _VERSION_1));
 	}
 
 	private void _assertHasCTFile(String fileName, byte[] data)
 		throws Exception {
 
-		if (data == null) {
+		if (data.length == 0) {
 			Assert.assertFalse(
 				_ctStore.hasFile(
 					_companyId, _REPOSITORY_ID, fileName, _VERSION_1));
@@ -976,7 +967,7 @@ public class CTStoreTest {
 	}
 
 	private void _assertHasFile(String fileName, byte[] data) throws Exception {
-		if (data == null) {
+		if (data.length == 0) {
 			Assert.assertFalse(
 				_fileSystemStore.hasFile(
 					_companyId, _REPOSITORY_ID, fileName, _VERSION_1));
@@ -1016,8 +1007,8 @@ public class CTStoreTest {
 
 	private CTCollection _createCTCollection() throws PortalException {
 		return _ctCollectionLocalService.addCTCollection(
-			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			CTStoreTest.class.getName(), null);
+			null, TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+			0, CTStoreTest.class.getName(), null);
 	}
 
 	private void _deleteCTDirectory(String dirName) {
@@ -1069,13 +1060,13 @@ public class CTStoreTest {
 		String fileName = "testFile";
 
 		try {
-			ctFileAssertor.assertFile(fileName, null);
+			ctFileAssertor.assertFile(fileName, new byte[0]);
 
 			Assert.fail();
 		}
 		catch (NoSuchFileException noSuchFileException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFileException, noSuchFileException);
+				_log.debug(noSuchFileException);
 			}
 		}
 
@@ -1101,13 +1092,13 @@ public class CTStoreTest {
 			_ctCollections[0],
 			() -> {
 				try {
-					ctFileAssertor.assertFile(fileName, null);
+					ctFileAssertor.assertFile(fileName, new byte[0]);
 
 					Assert.fail();
 				}
 				catch (NoSuchFileException noSuchFileException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(noSuchFileException, noSuchFileException);
+						_log.debug(noSuchFileException);
 					}
 				}
 
@@ -1183,7 +1174,7 @@ public class CTStoreTest {
 				_deleteCTSContent(fileName, _VERSION_1);
 
 				try {
-					ctFileAssertor.assertFile(fileName, null);
+					ctFileAssertor.assertFile(fileName, new byte[0]);
 
 					Assert.fail();
 				}
@@ -1200,26 +1191,26 @@ public class CTStoreTest {
 		_publish(_ctCollections[2]);
 
 		try {
-			ctFileAssertor.assertFile(fileName, null);
+			ctFileAssertor.assertFile(fileName, new byte[0]);
 
 			Assert.fail();
 		}
 		catch (NoSuchFileException noSuchFileException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFileException, noSuchFileException);
+				_log.debug(noSuchFileException);
 			}
 		}
 
 		_assertMethods(readMethod);
 
 		try {
-			fsFileAssertor.assertFile(fileName, null);
+			fsFileAssertor.assertFile(fileName, new byte[0]);
 
 			Assert.fail();
 		}
 		catch (NoSuchFileException noSuchFileException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFileException, noSuchFileException);
+				_log.debug(noSuchFileException);
 			}
 		}
 	}

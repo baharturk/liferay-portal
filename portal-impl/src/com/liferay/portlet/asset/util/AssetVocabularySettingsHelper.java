@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.util;
@@ -37,24 +28,6 @@ public class AssetVocabularySettingsHelper {
 	};
 
 	public static final long[] DEFAULT_SELECTED_CLASS_TYPE_PKS = {
-		AssetCategoryConstants.ALL_CLASS_TYPE_PK
-	};
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #DEFAULT_SELECTED_CLASS_NAME_IDS}
-	 */
-	@Deprecated
-	public static final long[] DEFAULT_SELECTED_CLASSNAME_IDS = {
-		AssetCategoryConstants.ALL_CLASS_NAME_ID
-	};
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #DEFAULT_SELECTED_CLASS_TYPE_PKS}
-	 */
-	@Deprecated
-	public static final long[] DEFAULT_SELECTED_CLASSTYPE_PKS = {
 		AssetCategoryConstants.ALL_CLASS_TYPE_PK
 	};
 
@@ -126,13 +99,12 @@ public class AssetVocabularySettingsHelper {
 
 			if (classNameIdAndClassTypePK.equals(
 					AssetCategoryConstants.
-						ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS)) {
+						ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS) &&
+				required) {
 
-				if (required) {
-					requiredClassNameIds.clear();
+				requiredClassNameIds.clear();
 
-					requiredClassNameIds.add(classNameIdAndClassTypePK);
-				}
+				requiredClassNameIds.add(classNameIdAndClassTypePK);
 
 				selectedClassNameIds.clear();
 
@@ -146,6 +118,17 @@ public class AssetVocabularySettingsHelper {
 			}
 
 			selectedClassNameIds.add(classNameIdAndClassTypePK);
+		}
+
+		if (selectedClassNameIds.contains(
+				AssetCategoryConstants.ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS)) {
+
+			selectedClassNameIds.clear();
+
+			selectedClassNameIds.add(
+				AssetCategoryConstants.ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS);
+
+			selectedClassNameIds.addAll(requiredClassNameIds);
 		}
 
 		_unicodeProperties.setProperty(
@@ -249,25 +232,10 @@ public class AssetVocabularySettingsHelper {
 		}
 
 		if (classNameIdsAndClassTypePKs[0].equals(
-				AssetCategoryConstants.ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS)) {
-
-			return true;
-		}
-
-		if (classTypePK == AssetCategoryConstants.ALL_CLASS_TYPE_PK) {
-			String prefix = classNameId + StringPool.COLON;
-
-			return ArrayUtil.exists(
+				AssetCategoryConstants.ALL_CLASS_NAME_IDS_AND_CLASS_TYPE_PKS) ||
+			ArrayUtil.contains(
 				classNameIdsAndClassTypePKs,
-				classNameIdsAndClassTypePK ->
-					classNameIdsAndClassTypePK.startsWith(prefix));
-		}
-
-		String classNameIdAndClassTypePK = getClassNameIdAndClassTypePK(
-			classNameId, classTypePK);
-
-		if (ArrayUtil.contains(
-				classNameIdsAndClassTypePKs, classNameIdAndClassTypePK)) {
+				getClassNameIdAndClassTypePK(classNameId, classTypePK))) {
 
 			return true;
 		}

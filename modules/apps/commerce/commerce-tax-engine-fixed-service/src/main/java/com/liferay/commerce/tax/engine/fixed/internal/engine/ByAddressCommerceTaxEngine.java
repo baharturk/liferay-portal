@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.tax.engine.fixed.internal.engine;
@@ -24,11 +15,11 @@ import com.liferay.commerce.tax.engine.fixed.configuration.CommerceTaxByAddressT
 import com.liferay.commerce.tax.engine.fixed.model.CommerceTaxFixedRateAddressRel;
 import com.liferay.commerce.tax.engine.fixed.service.CommerceTaxFixedRateAddressRelLocalService;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
@@ -46,7 +37,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = "commerce.tax.engine.key=" + ByAddressCommerceTaxEngine.KEY,
 	service = CommerceTaxEngine.class
 )
@@ -119,13 +109,13 @@ public class ByAddressCommerceTaxEngine implements CommerceTaxEngine {
 
 	@Override
 	public String getDescription(Locale locale) {
-		return LanguageUtil.get(
+		return _language.get(
 			_getResourceBundle(locale), "by-address-tax-rate-description");
 	}
 
 	@Override
 	public String getName(Locale locale) {
-		return LanguageUtil.get(_getResourceBundle(locale), KEY);
+		return _language.get(_getResourceBundle(locale), KEY);
 	}
 
 	private ResourceBundle _getResourceBundle(Locale locale) {
@@ -137,7 +127,7 @@ public class ByAddressCommerceTaxEngine implements CommerceTaxEngine {
 		try {
 			CommerceTaxByAddressTypeConfiguration
 				commerceTaxByAddressTypeConfiguration =
-					ConfigurationProviderUtil.getConfiguration(
+					_configurationProvider.getConfiguration(
 						CommerceTaxByAddressTypeConfiguration.class,
 						new GroupServiceSettingsLocator(
 							groupId,
@@ -148,7 +138,7 @@ public class ByAddressCommerceTaxEngine implements CommerceTaxEngine {
 				taxAppliedToShippingAddress();
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return false;
 		}
@@ -167,5 +157,11 @@ public class ByAddressCommerceTaxEngine implements CommerceTaxEngine {
 	@Reference
 	private CommerceTaxFixedRateAddressRelLocalService
 		_commerceTaxFixedRateAddressRelLocalService;
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private Language _language;
 
 }

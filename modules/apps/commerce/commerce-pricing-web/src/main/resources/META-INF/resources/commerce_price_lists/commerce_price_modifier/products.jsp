@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -50,9 +41,9 @@ long commercePriceModifierId = commercePriceListDisplayContext.getCommercePriceM
 						productData
 					)
 						.then(() => {
-							Liferay.fire(events.UPDATE_DATASET_DISPLAY, {
+							Liferay.fire(events.FDS_UPDATE_DISPLAY, {
 								id:
-									'<%= CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PRICE_MODIFIER_PRODUCT_DEFINITIONS %>',
+									'<%= CommercePricingFDSNames.PRICE_MODIFIER_PRODUCT_DEFINITIONS %>',
 							});
 						})
 						.catch((error) => {
@@ -70,8 +61,8 @@ long commercePriceModifierId = commercePriceListDisplayContext.getCommercePriceM
 					getSelectedItems: getSelectedItems,
 					inputPlaceholder: '<%= LanguageUtil.get(request, "find-a-product") %>',
 					itemSelectedMessage: '<%= LanguageUtil.get(request, "product-selected") %>',
-					linkedDatasetsId: [
-						'<%= CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PRICE_MODIFIER_PRODUCT_DEFINITIONS %>',
+					linkedDataSetsId: [
+						'<%= CommercePricingFDSNames.PRICE_MODIFIER_PRODUCT_DEFINITIONS %>',
 					],
 					itemCreation: false,
 					itemsKey: 'id',
@@ -87,7 +78,7 @@ long commercePriceModifierId = commercePriceListDisplayContext.getCommercePriceM
 							fieldName: 'productId',
 						},
 					],
-					spritemap: '<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg',
+					spritemap: '<%= themeDisplay.getPathThemeSpritemap() %>',
 					titleLabel: '<%= LanguageUtil.get(request, "add-existing-product") %>',
 				});
 			</aui:script>
@@ -98,15 +89,12 @@ long commercePriceModifierId = commercePriceListDisplayContext.getCommercePriceM
 				bodyClasses="p-0"
 				title='<%= LanguageUtil.get(request, "products") %>'
 			>
-				<clay:headless-data-set-display
-					apiURL="<%= commercePriceListDisplayContext.getPriceModifierCPDefinitionApiUrl() %>"
-					clayDataSetActionDropdownItems="<%= commercePriceListDisplayContext.getPriceModifierCPDefinitionClayDataSetActionDropdownItems() %>"
+				<frontend-data-set:headless-display
+					apiURL="<%= commercePriceListDisplayContext.getPriceModifierCPDefinitionAPIURL() %>"
+					fdsActionDropdownItems="<%= commercePriceListDisplayContext.getPriceModifierCPDefinitionFDSActionDropdownItems() %>"
 					formName="fm"
-					id="<%= CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PRICE_MODIFIER_PRODUCT_DEFINITIONS %>"
+					id="<%= CommercePricingFDSNames.PRICE_MODIFIER_PRODUCT_DEFINITIONS %>"
 					itemsPerPage="<%= 10 %>"
-					namespace="<%= liferayPortletResponse.getNamespace() %>"
-					pageNumber="<%= 1 %>"
-					portletURL="<%= currentURLObj %>"
 				/>
 			</commerce-ui:panel>
 		</div>

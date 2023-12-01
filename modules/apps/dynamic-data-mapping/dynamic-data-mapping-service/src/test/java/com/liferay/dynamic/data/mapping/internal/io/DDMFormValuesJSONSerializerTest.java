@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io;
@@ -27,6 +18,7 @@ import com.liferay.dynamic.data.mapping.test.util.DDMFormTestUtil;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormValuesTestUtil;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.portal.json.JSONFactoryImpl;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
@@ -248,8 +240,11 @@ public class DDMFormValuesJSONSerializerTest extends BaseDDMTestCase {
 
 		};
 
-		jsonObject.put("alt", "This is a image description. " + index);
-		jsonObject.put("data", "base64Value" + index);
+		jsonObject.put(
+			"alt", "This is a image description. " + index
+		).put(
+			"data", "base64Value" + index
+		);
 
 		return new UnlocalizedValue(jsonObject.toString());
 	}
@@ -321,18 +316,12 @@ public class DDMFormValuesJSONSerializerTest extends BaseDDMTestCase {
 	}
 
 	private void _setUpDDMFormValuesJSONSerializer() throws Exception {
-		field(
-			DDMFormValuesJSONSerializer.class, "_jsonFactory"
-		).set(
-			_ddmFormValuesJSONSerializer, new JSONFactoryImpl()
-		);
-
-		field(
-			DDMFormValuesJSONSerializer.class, "_serviceTrackerMap"
-		).set(
-			_ddmFormValuesJSONSerializer,
-			ProxyFactory.newDummyInstance(ServiceTrackerMap.class)
-		);
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormValuesJSONSerializer, "_jsonFactory",
+			new JSONFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormValuesJSONSerializer, "_serviceTrackerMap",
+			ProxyFactory.newDummyInstance(ServiceTrackerMap.class));
 	}
 
 	private final DDMFormValuesJSONSerializer _ddmFormValuesJSONSerializer =

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.service.base;
@@ -17,13 +8,7 @@ package com.liferay.calendar.service.base;
 import com.liferay.calendar.model.CalendarNotificationTemplate;
 import com.liferay.calendar.service.CalendarNotificationTemplateLocalService;
 import com.liferay.calendar.service.CalendarNotificationTemplateLocalServiceUtil;
-import com.liferay.calendar.service.persistence.CalendarBookingFinder;
-import com.liferay.calendar.service.persistence.CalendarBookingPersistence;
-import com.liferay.calendar.service.persistence.CalendarFinder;
 import com.liferay.calendar.service.persistence.CalendarNotificationTemplatePersistence;
-import com.liferay.calendar.service.persistence.CalendarPersistence;
-import com.liferay.calendar.service.persistence.CalendarResourceFinder;
-import com.liferay.calendar.service.persistence.CalendarResourcePersistence;
 import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
 import com.liferay.exportimport.kernel.lar.ManifestSummary;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -45,6 +30,8 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -59,8 +46,6 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -448,6 +433,11 @@ public abstract class CalendarNotificationTemplateLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement CalendarNotificationTemplateLocalServiceImpl#deleteCalendarNotificationTemplate(CalendarNotificationTemplate) to avoid orphaned data");
+		}
+
 		return calendarNotificationTemplateLocalService.
 			deleteCalendarNotificationTemplate(
 				(CalendarNotificationTemplate)persistedModel);
@@ -572,7 +562,7 @@ public abstract class CalendarNotificationTemplateLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		CalendarNotificationTemplateLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -589,7 +579,8 @@ public abstract class CalendarNotificationTemplateLocalServiceBaseImpl
 		calendarNotificationTemplateLocalService =
 			(CalendarNotificationTemplateLocalService)aopProxy;
 
-		_setLocalServiceUtilService(calendarNotificationTemplateLocalService);
+		CalendarNotificationTemplateLocalServiceUtil.setService(
+			calendarNotificationTemplateLocalService);
 	}
 
 	/**
@@ -651,36 +642,6 @@ public abstract class CalendarNotificationTemplateLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		CalendarNotificationTemplateLocalService
-			calendarNotificationTemplateLocalService) {
-
-		try {
-			Field field =
-				CalendarNotificationTemplateLocalServiceUtil.class.
-					getDeclaredField("_service");
-
-			field.setAccessible(true);
-
-			field.set(null, calendarNotificationTemplateLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
-	@Reference
-	protected CalendarPersistence calendarPersistence;
-
-	@Reference
-	protected CalendarFinder calendarFinder;
-
-	@Reference
-	protected CalendarBookingPersistence calendarBookingPersistence;
-
-	@Reference
-	protected CalendarBookingFinder calendarBookingFinder;
-
 	protected CalendarNotificationTemplateLocalService
 		calendarNotificationTemplateLocalService;
 
@@ -689,25 +650,10 @@ public abstract class CalendarNotificationTemplateLocalServiceBaseImpl
 		calendarNotificationTemplatePersistence;
 
 	@Reference
-	protected CalendarResourcePersistence calendarResourcePersistence;
-
-	@Reference
-	protected CalendarResourceFinder calendarResourceFinder;
-
-	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		CalendarNotificationTemplateLocalServiceBaseImpl.class);
 
 }

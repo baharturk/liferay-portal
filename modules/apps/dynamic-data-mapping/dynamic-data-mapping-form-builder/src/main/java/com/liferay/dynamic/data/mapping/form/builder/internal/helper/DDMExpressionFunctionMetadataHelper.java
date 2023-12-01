@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.builder.internal.helper;
 
 import com.liferay.dynamic.data.mapping.expression.DDMExpressionFunction;
-import com.liferay.dynamic.data.mapping.expression.DDMExpressionFunctionTracker;
+import com.liferay.dynamic.data.mapping.expression.DDMExpressionFunctionRegistry;
 import com.liferay.dynamic.data.mapping.form.builder.internal.util.DDMExpressionFunctionMetadata;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.AggregateResourceBundle;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
@@ -33,9 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,9 +32,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Rafael Praxedes
  */
-@Component(
-	immediate = true, service = DDMExpressionFunctionMetadataHelper.class
-)
+@Component(service = DDMExpressionFunctionMetadataHelper.class)
 public class DDMExpressionFunctionMetadataHelper {
 
 	public Map<String, List<DDMExpressionFunctionMetadata>>
@@ -78,28 +65,30 @@ public class DDMExpressionFunctionMetadataHelper {
 		Locale locale) {
 
 		Map<String, DDMExpressionFunction> customDDMExpressionFunctions =
-			_ddmExpressionFunctionTracker.getCustomDDMExpressionFunctions();
+			_ddmExpressionFunctionRegistry.getCustomDDMExpressionFunctions();
 
 		for (Map.Entry<String, DDMExpressionFunction> entry :
 				customDDMExpressionFunctions.entrySet()) {
+
+			Method method = null;
 
 			DDMExpressionFunction ddmExpressionFunction = entry.getValue();
 
 			Class<?> clazz = ddmExpressionFunction.getClass();
 
-			Stream<Method> stream = Arrays.stream(clazz.getMethods());
+			for (Method curMethod : clazz.getMethods()) {
+				if (Objects.equals(curMethod.getName(), "apply") &&
+					Objects.equals(curMethod.getReturnType(), Boolean.class)) {
 
-			Optional<Method> optional = stream.filter(
-				method ->
-					Objects.equals(method.getName(), "apply") &&
-					Objects.equals(method.getReturnType(), Boolean.class)
-			).findFirst();
+					method = curMethod;
 
-			if (!optional.isPresent()) {
-				continue;
+					break;
+				}
 			}
 
-			Method method = optional.get();
+			if (method == null) {
+				continue;
+			}
 
 			int parameterCount = method.getParameterCount();
 
@@ -134,12 +123,12 @@ public class DDMExpressionFunctionMetadataHelper {
 		_addDDMExpressionFunctionMetadata(
 			ddmExpressionFunctionMetadatasMap,
 			new DDMExpressionFunctionMetadata(
-				"belongs-to", LanguageUtil.get(resourceBundle, "belongs-to"),
+				"belongs-to", _language.get(resourceBundle, "belongs-to"),
 				_TYPE_BOOLEAN, new String[] {_TYPE_USER, _TYPE_LIST}));
 		_addDDMExpressionFunctionMetadata(
 			ddmExpressionFunctionMetadatasMap,
 			new DDMExpressionFunctionMetadata(
-				"equals-to", LanguageUtil.get(resourceBundle, "is-equal-to"),
+				"equals-to", _language.get(resourceBundle, "is-equal-to"),
 				_TYPE_BOOLEAN, new String[] {_TYPE_BOOLEAN, _TYPE_BOOLEAN}));
 
 		for (Map.Entry<String, String> entry : _binaryFunctions.entrySet()) {
@@ -147,13 +136,13 @@ public class DDMExpressionFunctionMetadataHelper {
 				ddmExpressionFunctionMetadatasMap,
 				new DDMExpressionFunctionMetadata(
 					entry.getKey(),
-					LanguageUtil.get(resourceBundle, entry.getValue()),
+					_language.get(resourceBundle, entry.getValue()),
 					_TYPE_BOOLEAN, new String[] {_TYPE_NUMBER, _TYPE_NUMBER}));
 			_addDDMExpressionFunctionMetadata(
 				ddmExpressionFunctionMetadatasMap,
 				new DDMExpressionFunctionMetadata(
 					entry.getKey(),
-					LanguageUtil.get(resourceBundle, entry.getValue()),
+					_language.get(resourceBundle, entry.getValue()),
 					_TYPE_BOOLEAN, new String[] {_TYPE_TEXT, _TYPE_TEXT}));
 		}
 
@@ -164,7 +153,7 @@ public class DDMExpressionFunctionMetadataHelper {
 				ddmExpressionFunctionMetadatasMap,
 				new DDMExpressionFunctionMetadata(
 					entry.getKey(),
-					LanguageUtil.get(resourceBundle, entry.getValue()),
+					_language.get(resourceBundle, entry.getValue()),
 					_TYPE_BOOLEAN, new String[] {_TYPE_NUMBER, _TYPE_NUMBER}));
 		}
 
@@ -175,7 +164,7 @@ public class DDMExpressionFunctionMetadataHelper {
 				ddmExpressionFunctionMetadatasMap,
 				new DDMExpressionFunctionMetadata(
 					entry.getKey(),
-					LanguageUtil.get(resourceBundle, entry.getValue()),
+					_language.get(resourceBundle, entry.getValue()),
 					_TYPE_BOOLEAN, new String[] {_TYPE_TEXT, _TYPE_TEXT}));
 		}
 
@@ -184,13 +173,13 @@ public class DDMExpressionFunctionMetadataHelper {
 				ddmExpressionFunctionMetadatasMap,
 				new DDMExpressionFunctionMetadata(
 					entry.getKey(),
-					LanguageUtil.get(resourceBundle, entry.getValue()),
+					_language.get(resourceBundle, entry.getValue()),
 					_TYPE_BOOLEAN, new String[] {_TYPE_NUMBER}));
 			_addDDMExpressionFunctionMetadata(
 				ddmExpressionFunctionMetadatasMap,
 				new DDMExpressionFunctionMetadata(
 					entry.getKey(),
-					LanguageUtil.get(resourceBundle, entry.getValue()),
+					_language.get(resourceBundle, entry.getValue()),
 					_TYPE_BOOLEAN, new String[] {_TYPE_TEXT}));
 		}
 	}
@@ -266,7 +255,10 @@ public class DDMExpressionFunctionMetadataHelper {
 		).build();
 
 	@Reference
-	private DDMExpressionFunctionTracker _ddmExpressionFunctionTracker;
+	private DDMExpressionFunctionRegistry _ddmExpressionFunctionRegistry;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

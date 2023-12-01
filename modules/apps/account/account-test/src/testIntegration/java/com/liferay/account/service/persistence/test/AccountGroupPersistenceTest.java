@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.persistence.test;
 
+import com.liferay.account.exception.DuplicateAccountGroupExternalReferenceCodeException;
 import com.liferay.account.exception.NoSuchGroupException;
 import com.liferay.account.model.AccountGroup;
 import com.liferay.account.service.AccountGroupLocalServiceUtil;
@@ -126,6 +118,8 @@ public class AccountGroupPersistenceTest {
 
 		newAccountGroup.setMvccVersion(RandomTestUtil.nextLong());
 
+		newAccountGroup.setUuid(RandomTestUtil.randomString());
+
 		newAccountGroup.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		newAccountGroup.setCompanyId(RandomTestUtil.nextLong());
@@ -154,6 +148,8 @@ public class AccountGroupPersistenceTest {
 		Assert.assertEquals(
 			existingAccountGroup.getMvccVersion(),
 			newAccountGroup.getMvccVersion());
+		Assert.assertEquals(
+			existingAccountGroup.getUuid(), newAccountGroup.getUuid());
 		Assert.assertEquals(
 			existingAccountGroup.getExternalReferenceCode(),
 			newAccountGroup.getExternalReferenceCode());
@@ -185,6 +181,44 @@ public class AccountGroupPersistenceTest {
 			existingAccountGroup.getType(), newAccountGroup.getType());
 	}
 
+	@Test(expected = DuplicateAccountGroupExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		AccountGroup accountGroup = addAccountGroup();
+
+		AccountGroup newAccountGroup = addAccountGroup();
+
+		newAccountGroup.setCompanyId(accountGroup.getCompanyId());
+
+		newAccountGroup = _persistence.update(newAccountGroup);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newAccountGroup);
+
+		newAccountGroup.setExternalReferenceCode(
+			accountGroup.getExternalReferenceCode());
+
+		_persistence.update(newAccountGroup);
+	}
+
+	@Test
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
+
+		_persistence.countByUuid("null");
+
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
+	}
+
 	@Test
 	public void testCountByAccountGroupId() throws Exception {
 		_persistence.countByAccountGroupId(RandomTestUtil.nextLong());
@@ -214,6 +248,15 @@ public class AccountGroupPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_LikeN() throws Exception {
+		_persistence.countByC_LikeN(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByC_LikeN(0L, "null");
+
+		_persistence.countByC_LikeN(0L, (String)null);
+	}
+
+	@Test
 	public void testCountByC_T() throws Exception {
 		_persistence.countByC_T(RandomTestUtil.nextLong(), "");
 
@@ -223,12 +266,12 @@ public class AccountGroupPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -256,11 +299,11 @@ public class AccountGroupPersistenceTest {
 
 	protected OrderByComparator<AccountGroup> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"AccountGroup", "mvccVersion", true, "externalReferenceCode", true,
-			"accountGroupId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true,
-			"defaultAccountGroup", true, "description", true, "name", true,
-			"type", true);
+			"AccountGroup", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true, "accountGroupId", true, "companyId",
+			true, "userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "defaultAccountGroup", true, "description",
+			true, "name", true, "type", true);
 	}
 
 	@Test
@@ -528,15 +571,15 @@ public class AccountGroupPersistenceTest {
 
 	private void _assertOriginalValues(AccountGroup accountGroup) {
 		Assert.assertEquals(
-			Long.valueOf(accountGroup.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				accountGroup, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			accountGroup.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				accountGroup, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(accountGroup.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				accountGroup, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected AccountGroup addAccountGroup() throws Exception {
@@ -545,6 +588,8 @@ public class AccountGroupPersistenceTest {
 		AccountGroup accountGroup = _persistence.create(pk);
 
 		accountGroup.setMvccVersion(RandomTestUtil.nextLong());
+
+		accountGroup.setUuid(RandomTestUtil.randomString());
 
 		accountGroup.setExternalReferenceCode(RandomTestUtil.randomString());
 

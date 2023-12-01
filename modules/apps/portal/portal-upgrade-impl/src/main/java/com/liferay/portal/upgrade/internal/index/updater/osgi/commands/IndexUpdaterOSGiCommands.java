@@ -1,27 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.internal.index.updater.osgi.commands;
 
+import com.liferay.osgi.util.osgi.commands.OSGiCommands;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.DataAccess;
-import com.liferay.portal.kernel.util.LoggingTimer;
-import com.liferay.portal.upgrade.internal.index.updater.IndexUpdaterUtil;
-
-import java.sql.Connection;
+import com.liferay.portal.db.index.IndexUpdaterUtil;
+import com.liferay.portal.kernel.module.util.BundleUtil;
 
 import org.apache.felix.service.command.Descriptor;
 
@@ -34,14 +21,13 @@ import org.osgi.service.component.annotations.Component;
  * @author Ricardo Couso
  */
 @Component(
-	immediate = true,
 	property = {
 		"osgi.command.function=updateIndexes",
 		"osgi.command.function=updateIndexesAll", "osgi.command.scope=upgrade"
 	},
-	service = IndexUpdaterOSGiCommands.class
+	service = OSGiCommands.class
 )
-public class IndexUpdaterOSGiCommands {
+public class IndexUpdaterOSGiCommands implements OSGiCommands {
 
 	@Descriptor("Update database indexes for a specific module via bundle ID")
 	public String updateIndexes(long bundleId) throws Exception {
@@ -52,7 +38,7 @@ public class IndexUpdaterOSGiCommands {
 				"Module " + bundleId + " does not exist");
 		}
 
-		if (IndexUpdaterUtil.isLiferayServiceBundle(bundle)) {
+		if (BundleUtil.isLiferayServiceBundle(bundle)) {
 			IndexUpdaterUtil.updateIndexes(bundle);
 
 			return "Completed update of indexes for module " + bundleId;
@@ -65,10 +51,16 @@ public class IndexUpdaterOSGiCommands {
 		"Update database indexes for specific a module via symbolic name"
 	)
 	public String updateIndexes(String bundleSymbolicName) throws Exception {
-		Bundle bundle = IndexUpdaterUtil.getBundle(
+		Bundle bundle = BundleUtil.getBundle(
 			_bundleContext, bundleSymbolicName);
 
-		if (IndexUpdaterUtil.isLiferayServiceBundle(bundle)) {
+		if (bundle == null) {
+			throw new IllegalArgumentException(
+				"Module with symbolic name " + bundleSymbolicName +
+					" does not exist");
+		}
+
+		if (BundleUtil.isLiferayServiceBundle(bundle)) {
 			IndexUpdaterUtil.updateIndexes(bundle);
 
 			return "Completed update of indexes for module " +
@@ -81,42 +73,15 @@ public class IndexUpdaterOSGiCommands {
 
 	@Descriptor("Update database indexes for all modules")
 	public String updateIndexesAll() throws Exception {
-		DB db = DBManagerUtil.getDB();
-
-		try (Connection connection = DataAccess.getConnection()) {
-			for (Bundle bundle : _bundleContext.getBundles()) {
-				if (!IndexUpdaterUtil.isLiferayServiceBundle(bundle)) {
-					continue;
-				}
-
-				String indexesSQL = IndexUpdaterUtil.getSQLTemplateString(
-					bundle, "indexes.sql");
-
-				if (indexesSQL == null) {
-					continue;
-				}
-
-				String tablesSQL = IndexUpdaterUtil.getSQLTemplateString(
-					bundle, "tables.sql");
-
-				if (tablesSQL == null) {
-					continue;
-				}
-
-				String loggingTimerName =
-					"Updating database indexes for " + bundle.getSymbolicName();
-
-				try (LoggingTimer loggingTimer = new LoggingTimer(
-						loggingTimerName)) {
-
-					db.updateIndexes(connection, tablesSQL, indexesSQL, true);
-				}
-				catch (Exception exception) {
-					System.out.println(
-						StringBundler.concat(
-							"Unable to update indexes for ",
-							bundle.getSymbolicName(), ": ", exception));
-				}
+		for (Bundle bundle : _bundleContext.getBundles()) {
+			try {
+				IndexUpdaterUtil.updateIndexes(bundle);
+			}
+			catch (Exception exception) {
+				System.out.println(
+					StringBundler.concat(
+						"Unable to update indexes for ",
+						bundle.getSymbolicName(), ": ", exception));
 			}
 		}
 

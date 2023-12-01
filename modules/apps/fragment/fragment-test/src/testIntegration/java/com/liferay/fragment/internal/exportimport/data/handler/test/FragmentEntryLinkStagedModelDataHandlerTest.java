@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.exportimport.data.handler.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase;
 import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.model.FragmentCollection;
@@ -28,6 +20,7 @@ import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -38,6 +31,7 @@ import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import java.util.List;
 import java.util.Map;
@@ -66,7 +60,7 @@ public class FragmentEntryLinkStagedModelDataHandlerTest
 	public void setUp() throws Exception {
 		super.setUp();
 
-		LayoutTestUtil.addLayout(stagingGroup);
+		_layout = LayoutTestUtil.addTypeContentLayout(stagingGroup);
 	}
 
 	@Test
@@ -94,7 +88,8 @@ public class FragmentEntryLinkStagedModelDataHandlerTest
 			"css", "html", "js", fragmentEntryLink.getConfiguration(),
 			fragmentEntryLink.getEditableValues(),
 			fragmentEntryLink.getNamespace(),
-			fragmentEntryLink.getPosition() + 1, serviceContext);
+			fragmentEntryLink.getPosition() + 1, fragmentEntryLink.getType(),
+			serviceContext);
 
 		try {
 			exportImportStagedModel(stagedModel);
@@ -115,16 +110,17 @@ public class FragmentEntryLinkStagedModelDataHandlerTest
 	public void testStageFragmentEntryLinkWithNoFragmentEntry()
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				stagingGroup.getGroupId(), TestPropsValues.getUserId());
-
 		StagedModel stagedModel =
 			_fragmentEntryLinkLocalService.addFragmentEntryLink(
-				TestPropsValues.getUserId(), stagingGroup.getGroupId(), 0, 0, 0,
+				TestPropsValues.getUserId(), stagingGroup.getGroupId(), 0, 0,
+				_segmentsExperienceLocalService.
+					fetchDefaultSegmentsExperienceId(_layout.getPlid()),
 				stagingGroup.getDefaultPublicPlid(), StringPool.BLANK, "html",
 				StringPool.BLANK, StringPool.BLANK, StringPool.BLANK,
-				StringPool.BLANK, 0, StringPool.BLANK, serviceContext);
+				StringPool.BLANK, 0, StringPool.BLANK,
+				FragmentConstants.TYPE_COMPONENT,
+				ServiceContextTestUtil.getServiceContext(
+					stagingGroup.getGroupId(), TestPropsValues.getUserId()));
 
 		try {
 			exportImportStagedModel(stagedModel);
@@ -149,18 +145,18 @@ public class FragmentEntryLinkStagedModelDataHandlerTest
 		StagedModel stagedModel = addStagedModel(
 			stagingGroup, dependentStagedModelsMap);
 
-		try {
-			exportImportStagedModel(stagedModel);
-		}
-		finally {
-			ExportImportThreadLocal.setPortletImportInProcess(false);
-		}
-
 		FragmentEntryLink fragmentEntryLink = (FragmentEntryLink)stagedModel;
 
 		Assert.assertNotNull(
 			_fragmentEntryLocalService.getFragmentEntry(
 				fragmentEntryLink.getFragmentEntryId()));
+
+		try {
+			_exportImportStagedModel(stagedModel, true);
+		}
+		finally {
+			ExportImportThreadLocal.setPortletImportInProcess(false);
+		}
 
 		StagedModel importedStagedModel = getStagedModel(
 			stagedModel.getUuid(), liveGroup);
@@ -195,15 +191,18 @@ public class FragmentEntryLinkStagedModelDataHandlerTest
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(), false, configuration, null, 0,
-				FragmentConstants.TYPE_COMPONENT,
+				FragmentConstants.TYPE_COMPONENT, null,
 				WorkflowConstants.STATUS_APPROVED, serviceContext);
 
 		return _fragmentEntryLinkLocalService.addFragmentEntryLink(
 			TestPropsValues.getUserId(), serviceContext.getScopeGroupId(), 0,
-			fragmentEntry.getFragmentEntryId(), 0, group.getDefaultPublicPlid(),
-			fragmentEntry.getCss(), fragmentEntry.getHtml(),
-			fragmentEntry.getJs(), fragmentEntry.getConfiguration(),
-			StringPool.BLANK, StringPool.BLANK, 1, StringPool.BLANK,
+			fragmentEntry.getFragmentEntryId(),
+			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
+				_layout.getPlid()),
+			group.getDefaultPublicPlid(), fragmentEntry.getCss(),
+			fragmentEntry.getHtml(), fragmentEntry.getJs(),
+			fragmentEntry.getConfiguration(), StringPool.BLANK,
+			StringPool.BLANK, 1, StringPool.BLANK, fragmentEntry.getType(),
 			serviceContext);
 	}
 
@@ -248,6 +247,40 @@ public class FragmentEntryLinkStagedModelDataHandlerTest
 			fragmentEntryLink.getPosition());
 	}
 
+	private void _exportImportStagedModel(
+			StagedModel stagedModel,
+			boolean deleteFragmentEntryAndFragmentEntryLinkBeforeImport)
+		throws Exception {
+
+		if (!deleteFragmentEntryAndFragmentEntryLinkBeforeImport) {
+			exportImportStagedModel(stagedModel);
+
+			return;
+		}
+
+		initExport();
+
+		StagedModelDataHandlerUtil.exportStagedModel(
+			portletDataContext, stagedModel);
+
+		FragmentEntryLink fragmentEntryLink = (FragmentEntryLink)stagedModel;
+
+		_fragmentEntryLinkLocalService.deleteFragmentEntryLink(
+			fragmentEntryLink);
+
+		_fragmentEntryLocalService.deleteFragmentEntry(
+			fragmentEntryLink.getFragmentEntryId());
+
+		initImport();
+
+		StagedModel exportedStagedModel = readExportedStagedModel(stagedModel);
+
+		Assert.assertNotNull(exportedStagedModel);
+
+		StagedModelDataHandlerUtil.importStagedModel(
+			portletDataContext, exportedStagedModel);
+	}
+
 	private String _read(String fileName) throws Exception {
 		return new String(
 			FileUtil.getBytes(getClass(), "dependencies/" + fileName));
@@ -258,5 +291,10 @@ public class FragmentEntryLinkStagedModelDataHandlerTest
 
 	@Inject
 	private FragmentEntryLocalService _fragmentEntryLocalService;
+
+	private Layout _layout;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 }

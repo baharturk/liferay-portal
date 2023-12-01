@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.mapper;
@@ -31,14 +22,12 @@ import org.osgi.service.component.annotations.Component;
 /**
  * @author Jürgen Kappler
  */
-@Component(service = LayoutStructureItemMapper.class)
+@Component(
+	property = "class.name=com.liferay.layout.util.structure.ColumnLayoutStructureItem",
+	service = LayoutStructureItemMapper.class
+)
 public class ColumnLayoutStructureItemMapper
 	implements LayoutStructureItemMapper {
-
-	@Override
-	public String getClassName() {
-		return ColumnLayoutStructureItem.class.getName();
-	}
 
 	@Override
 	public PageElement getPageElement(
@@ -57,12 +46,12 @@ public class ColumnLayoutStructureItemMapper
 						setColumnViewports(
 							() -> {
 								Map<String, JSONObject>
-									columnViewportConfigurations =
+									columnViewportConfigurationJSONObjects =
 										columnLayoutStructureItem.
-											getViewportConfigurations();
+											getViewportConfigurationJSONObjects();
 
 								if (MapUtil.isEmpty(
-										columnViewportConfigurations)) {
+										columnViewportConfigurationJSONObjects)) {
 
 									return null;
 								}
@@ -71,49 +60,50 @@ public class ColumnLayoutStructureItemMapper
 									new ColumnViewport[3];
 
 								columnViewports[0] = _toColumnViewport(
-									columnViewportConfigurations,
+									columnViewportConfigurationJSONObjects,
 									ViewportSize.MOBILE_LANDSCAPE);
 								columnViewports[1] = _toColumnViewport(
-									columnViewportConfigurations,
+									columnViewportConfigurationJSONObjects,
 									ViewportSize.PORTRAIT_MOBILE);
 								columnViewports[2] = _toColumnViewport(
-									columnViewportConfigurations,
+									columnViewportConfigurationJSONObjects,
 									ViewportSize.TABLET);
 
 								return columnViewports;
 							});
 					}
 				};
+				id = layoutStructureItem.getItemId();
 				type = Type.COLUMN;
 			}
 		};
 	}
 
 	private ColumnViewport _toColumnViewport(
-		Map<String, JSONObject> columnViewportConfigurationsMap,
+		Map<String, JSONObject> columnViewportConfigurationJSONObjects,
 		ViewportSize viewportSize) {
 
 		return new ColumnViewport() {
 			{
 				columnViewportDefinition =
 					_toColumnViewportColumnViewportDefinition(
-						columnViewportConfigurationsMap, viewportSize);
+						columnViewportConfigurationJSONObjects, viewportSize);
 				id = viewportSize.getViewportSizeId();
 			}
 		};
 	}
 
 	private ColumnViewportDefinition _toColumnViewportColumnViewportDefinition(
-		Map<String, JSONObject> columnViewportConfigurationsMap,
+		Map<String, JSONObject> columnViewportConfigurationJSONObjects,
 		ViewportSize viewportSize) {
 
-		if (!columnViewportConfigurationsMap.containsKey(
+		if (!columnViewportConfigurationJSONObjects.containsKey(
 				viewportSize.getViewportSizeId())) {
 
 			return null;
 		}
 
-		JSONObject jsonObject = columnViewportConfigurationsMap.get(
+		JSONObject jsonObject = columnViewportConfigurationJSONObjects.get(
 			viewportSize.getViewportSizeId());
 
 		return new ColumnViewportDefinition() {

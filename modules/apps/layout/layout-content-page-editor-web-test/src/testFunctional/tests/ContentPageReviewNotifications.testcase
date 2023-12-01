@@ -1,4 +1,4 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-lima"
 definition {
 
 	property custom.properties = "default.layout.template.id=1_column${line.separator}jsonws.web.service.paths.excludes=";
@@ -13,8 +13,8 @@ definition {
 			User.firstLoginPG();
 		}
 
-		task ("Add a site via JSON") {
-			JSONGroup.addGroup(groupName = "Test Site Name");
+		task ("Add a site via headless API") {
+			HeadlessSite.addSite(siteName = "Test Site Name");
 		}
 
 		task ("Import test fragments from dependencies folder") {
@@ -42,9 +42,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -55,7 +55,7 @@ definition {
 	}
 
 	@description = "This case ensures that the user is notified when someone comments on their content page fragment."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanViewComment {
 		JSONLayout.addPublicLayout(
@@ -89,7 +89,7 @@ definition {
 
 		Notifications.viewBadgeCount(
 			activePanel = "Notifications",
-			notificationCount = "1");
+			notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -105,10 +105,120 @@ definition {
 			fromNotifications = "true");
 	}
 
-	@description = "This test covers LPS-101493. It ensures that a user who replies to a comment will receive further reply notifications."
-	@priority = "4"
+	@description = "This case ensures that a user is notified when a reply is added to their comment."
+	@priority = 5
 	@refactordone
-	test CanViewCommentFurtherReply {
+	test CanViewCommentReply {
+		JSONLayout.addPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Content Page Name",
+			type = "content");
+
+		ContentPagesNavigator.openEditContentPage(
+			pageName = "Content Page Name",
+			siteName = "Test Site Name");
+
+		PageEditor.addFragment(
+			collectionName = "Collection Name",
+			fragmentName = "Title");
+
+		PageEditor.addComment(
+			fragmentComment = "Comment By User 1",
+			fragmentName = "Title");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "user2@liferay.com",
+			userLoginFullName = "userfn userln");
+
+		ContentPagesNavigator.openEditContentPage(
+			pageName = "Content Page Name",
+			siteName = "Test Site Name");
+
+		PageEditor.gotoCommentViaFragment(fragmentName = "Title");
+
+		PageEditor.replyToComment(commentReply = "Reply from User 2");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "test@liferay.com",
+			userLoginFullName = "Test Test");
+
+		Notifications.viewBadgeCount(
+			activePanel = "Notifications",
+			notificationCount = 1);
+
+		Notifications.gotoNotifications();
+
+		Notifications.viewNewComment(
+			contentBody = "Reply from User 2",
+			fragmentName = "Title",
+			user = "userfn userln");
+
+		Notifications.navigateToContent(contentBody = "Reply from User 2");
+
+		PageEditor.viewCommentReply(
+			commentReply = "Reply from User 2",
+			user = "userfn userln");
+	}
+
+	@description = "This case ensures a user who is mentioned in a comment will receive notifications."
+	@priority = 4
+	@refactordone
+	test CanViewMentionFromComment {
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "user2@liferay.com",
+			userLoginFullName = "userfn userln");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "test@liferay.com",
+			userLoginFullName = "Test Test");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Content Page Name",
+			type = "content");
+
+		ContentPagesNavigator.openEditContentPage(
+			pageName = "Content Page Name",
+			siteName = "Test Site Name");
+
+		PageEditor.addFragment(
+			collectionName = "Collection Name",
+			fragmentName = "Title");
+
+		PageEditor.addComment(
+			fragmentComment = "Comment by Test",
+			fragmentName = "Title",
+			mentionsUserFullName = "userfn userln",
+			mentionsUserScreenName = "user2");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "user2@liferay.com",
+			userLoginFullName = "userfn userln");
+
+		Notifications.viewBadgeCount(
+			activePanel = "Notifications",
+			notificationCount = 1);
+
+		Notifications.gotoNotifications();
+
+		Notifications.viewNewComment(
+			assetType = "fragment",
+			contentBody = "Comment by Test @user2",
+			mentioned = "true",
+			user = "Test Test");
+
+		Notifications.navigateToContent(contentBody = "Comment by Test @user2");
+
+		PageEditor.viewComment(
+			fragmentComment = "Comment by Test ",
+			mentionsUserFullName = "My Site",
+			mentionsUserScreenName = "user2");
+	}
+
+	@description = "This test covers LPS-101493. It ensures that a user who replies to a comment will receive further reply notifications."
+	@priority = 4
+	@refactordone
+	test WillReceiveNotificationsFromMultipleUsers {
 		JSONLayout.addPublicLayout(
 			groupName = "Test Site Name",
 			layoutName = "Content Page Name",
@@ -156,7 +266,7 @@ definition {
 
 		Notifications.viewBadgeCount(
 			activePanel = "Notifications",
-			notificationCount = "1");
+			notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -170,116 +280,6 @@ definition {
 		PageEditor.viewComment(
 			fragmentComment = "Reply from User Test",
 			fromNotifications = "true");
-	}
-
-	@description = "This case ensures that a user is notified when a reply is added to their comment."
-	@priority = "5"
-	@refactordone
-	test CanViewCommentReply {
-		JSONLayout.addPublicLayout(
-			groupName = "Test Site Name",
-			layoutName = "Content Page Name",
-			type = "content");
-
-		ContentPagesNavigator.openEditContentPage(
-			pageName = "Content Page Name",
-			siteName = "Test Site Name");
-
-		PageEditor.addFragment(
-			collectionName = "Collection Name",
-			fragmentName = "Title");
-
-		PageEditor.addComment(
-			fragmentComment = "Comment By User 1",
-			fragmentName = "Title");
-
-		User.logoutAndLoginPG(
-			userLoginEmailAddress = "user2@liferay.com",
-			userLoginFullName = "userfn userln");
-
-		ContentPagesNavigator.openEditContentPage(
-			pageName = "Content Page Name",
-			siteName = "Test Site Name");
-
-		PageEditor.gotoCommentViaFragment(fragmentName = "Title");
-
-		PageEditor.replyToComment(commentReply = "Reply from User 2");
-
-		User.logoutAndLoginPG(
-			userLoginEmailAddress = "test@liferay.com",
-			userLoginFullName = "Test Test");
-
-		Notifications.viewBadgeCount(
-			activePanel = "Notifications",
-			notificationCount = "1");
-
-		Notifications.gotoNotifications();
-
-		Notifications.viewNewComment(
-			contentBody = "Reply from User 2",
-			fragmentName = "Title",
-			user = "userfn userln");
-
-		Notifications.navigateToContent(contentBody = "Reply from User 2");
-
-		PageEditor.viewCommentReply(
-			commentReply = "Reply from User 2",
-			user = "userfn userln");
-	}
-
-	@description = "This case ensures a user who is mentioned in a comment will receive notifications."
-	@priority = "4"
-	@refactordone
-	test CanViewMentionFromComment {
-		User.logoutAndLoginPG(
-			userLoginEmailAddress = "user2@liferay.com",
-			userLoginFullName = "userfn userln");
-
-		User.logoutAndLoginPG(
-			userLoginEmailAddress = "test@liferay.com",
-			userLoginFullName = "Test Test");
-
-		JSONLayout.addPublicLayout(
-			groupName = "Test Site Name",
-			layoutName = "Content Page Name",
-			type = "content");
-
-		ContentPagesNavigator.openEditContentPage(
-			pageName = "Content Page Name",
-			siteName = "Test Site Name");
-
-		PageEditor.addFragment(
-			collectionName = "Collection Name",
-			fragmentName = "Title");
-
-		PageEditor.addComment(
-			fragmentComment = "Comment by Test",
-			fragmentName = "Title",
-			mentionsUserFullName = "userfn userln",
-			mentionsUserScreenName = "user2");
-
-		User.logoutAndLoginPG(
-			userLoginEmailAddress = "user2@liferay.com",
-			userLoginFullName = "userfn userln");
-
-		Notifications.viewBadgeCount(
-			activePanel = "Notifications",
-			notificationCount = "1");
-
-		Notifications.gotoNotifications();
-
-		Notifications.viewNewComment(
-			assetType = "fragment",
-			contentBody = "Comment by Test @user2",
-			mentioned = "true",
-			user = "Test Test");
-
-		Notifications.navigateToContent(contentBody = "Comment by Test @user2");
-
-		PageEditor.viewComment(
-			fragmentComment = "Comment by Test ",
-			mentionsUserFullName = "My Site",
-			mentionsUserScreenName = "user2");
 	}
 
 }

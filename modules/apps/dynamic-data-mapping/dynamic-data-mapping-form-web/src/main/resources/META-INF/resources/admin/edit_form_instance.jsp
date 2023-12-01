@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -80,24 +71,24 @@ renderResponse.setTitle((formInstance == null) ? LanguageUtil.get(request, "new-
 					<c:choose>
 						<c:when test="<%= disableCopyButton %>">
 							<button class="btn btn-secondary btn-sm disabled lfr-ddm-button lfr-ddm-share-url-button share-form-icon" data-original-title="<liferay-ui:message key="share" />" id="<portlet:namespace />publishIcon" title="<%= disableCopyButton ? LanguageUtil.get(request, "publish-the-form-to-get-its-shareable-link") : "" %>" type="button">
-								<%= LanguageUtil.get(request, "share") %>
+								<liferay-ui:message key="share" />
 							</button>
 						</c:when>
 						<c:otherwise>
 							<button class="btn btn-secondary btn-sm lfr-ddm-button lfr-ddm-share-url-button share-form-icon" id="<portlet:namespace />publishIcon" type="button">
-								<%= LanguageUtil.get(request, "share") %>
+								<liferay-ui:message key="share" />
 							</button>
 						</c:otherwise>
 					</c:choose>
 				</li>
 				<li class="nav-item pr-2">
 					<button class="btn btn-secondary btn-sm lfr-ddm-button lfr-ddm-preview-button" title="<%= LanguageUtil.get(request, "a-form-draft-will-be-saved-before-the-preview") %>">
-						<%= LanguageUtil.get(request, "preview") %>
+						<liferay-ui:message key="preview" />
 					</button>
 				</li>
 				<li class="nav-item pl-2 pr-2">
 					<button class="btn btn-secondary btn-sm lfr-ddm-button lfr-ddm-save-button">
-						<%= LanguageUtil.get(request, "save") %>
+						<liferay-ui:message key="save" />
 					</button>
 				</li>
 				<li class="nav-item pr-2">
@@ -157,11 +148,15 @@ renderResponse.setTitle((formInstance == null) ? LanguageUtil.get(request, "new-
 					).put(
 						"context", formBuilderContextJSONObject
 					).put(
+						"dataEngineModule", ddmFormAdminDisplayContext.getDataEngineModule()
+					).put(
 						"dataProviderInstanceParameterSettingsURL", dataProviderInstanceParameterSettingsURL
 					).put(
 						"dataProviderInstancesURL", dataProviderInstancesURL
 					).put(
 						"defaultLanguageId", ddmFormAdminDisplayContext.getDefaultLanguageId()
+					).put(
+						"displayChartAsTable", ddmFormAdminDisplayContext.isDisplayChartAsTable()
 					).put(
 						"elementSets", ddmFormAdminDisplayContext.getFieldSetsJSONArray()
 					).put(
@@ -185,6 +180,8 @@ renderResponse.setTitle((formInstance == null) ? LanguageUtil.get(request, "new-
 					).put(
 						"localizedName", ddmFormAdminDisplayContext.getFormLocalizedNameJSONObject(formInstance)
 					).put(
+						"mainRequire", ddmFormAdminDisplayContext.getMainRequire()
+					).put(
 						"portletNamespace", liferayPortletResponse.getNamespace()
 					).put(
 						"published", ddmFormAdminDisplayContext.isFormPublished()
@@ -203,7 +200,7 @@ renderResponse.setTitle((formInstance == null) ? LanguageUtil.get(request, "new-
 					).put(
 						"showPublishAlert", ddmFormAdminDisplayContext.isShowPublishAlert()
 					).put(
-						"spritemap", themeDisplay.getPathThemeImages() + "/clay/icons.svg"
+						"spritemap", themeDisplay.getPathThemeSpritemap()
 					).put(
 						"view", "formBuilder"
 					).build()

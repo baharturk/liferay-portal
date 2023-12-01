@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Boost contents having the current session language as the default language."
+		"en_US": "boost-contents-for-the-current-language-description"
 	},
 	"elementDefinition": {
 		"category": "boost",
@@ -47,7 +47,7 @@
 					"fields": [
 						{
 							"defaultValue": 20,
-							"label": "Boost",
+							"label": "boost",
 							"name": "boost",
 							"type": "number",
 							"typeOptions": {
@@ -59,7 +59,8 @@
 			]
 		}
 	},
+	"externalReferenceCode": "BOOST_CONTENTS_FOR_THE_CURRENT_LANGUAGE",
 	"title_i18n": {
-		"en_US": "Boost Contents for the Current Language"
+		"en_US": "boost-contents-for-the-current-language"
 	}
 }

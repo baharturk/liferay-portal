@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -58,6 +49,7 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "view-at
 	additionalProps="<%= expandoDisplayContext.getAdditionalProps() %>"
 	creationMenu="<%= expandoDisplayContext.getCreationMenu() %>"
 	disabled="<%= attributeNames.size() == 0 %>"
+	itemsTotal="<%= attributeNames.size() %>"
 	propsTransformer="js/ExpandoManagementToolbarPropsTransformer"
 	searchContainerId="customFields"
 	selectable="<%= true %>"
@@ -70,11 +62,8 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "view-at
 	<aui:input name="columnIds" type="hidden" />
 
 	<clay:container-fluid>
-		<liferay-ui:breadcrumb
-			showCurrentGroup="<%= false %>"
-			showGuestGroup="<%= false %>"
-			showLayout="<%= false %>"
-			showPortletBreadcrumb="<%= true %>"
+		<liferay-site-navigation:breadcrumb
+			breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, true, true) %>"
 		/>
 	</clay:container-fluid>
 
@@ -100,7 +89,7 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "view-at
 
 			ExpandoColumn expandoColumn = ExpandoColumnLocalServiceUtil.getDefaultTableColumn(company.getCompanyId(), modelResource, name);
 
-			UnicodeProperties typeSettings = expandoColumn.getTypeSettingsProperties();
+			UnicodeProperties typeSettingsUnicodeProperties = expandoColumn.getTypeSettingsProperties();
 			%>
 
 			<portlet:renderURL var="rowURL">

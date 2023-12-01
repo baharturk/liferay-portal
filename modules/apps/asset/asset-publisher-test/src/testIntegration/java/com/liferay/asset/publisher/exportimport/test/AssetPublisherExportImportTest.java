@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.exportimport.test;
@@ -30,6 +21,7 @@ import com.liferay.asset.test.util.AssetTestUtil;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
+import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
@@ -86,6 +78,7 @@ import com.liferay.portletmvc4spring.test.mock.web.portlet.MockPortletRequest;
 import java.io.Serializable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -501,7 +494,7 @@ public class AssetPublisherExportImportTest
 
 		groups.add(layoutGroup1);
 
-		Layout layout2 = LayoutTestUtil.addLayout(group);
+		Layout layout2 = LayoutTestUtil.addTypePortletLayout(group);
 
 		Group layoutGroup2 = GroupTestUtil.addGroup(
 			TestPropsValues.getUserId(), layout2);
@@ -814,7 +807,7 @@ public class AssetPublisherExportImportTest
 		Company company = _companyLocalService.getCompany(
 			layout.getCompanyId());
 
-		Layout secondLayout = LayoutTestUtil.addLayout(group);
+		Layout secondLayout = LayoutTestUtil.addTypePortletLayout(group);
 
 		GroupTestUtil.addGroup(TestPropsValues.getUserId(), secondLayout);
 
@@ -855,7 +848,7 @@ public class AssetPublisherExportImportTest
 
 	@Test
 	public void testSeveralLegacyLayoutScopeIds() throws Exception {
-		Layout secondLayout = LayoutTestUtil.addLayout(group);
+		Layout secondLayout = LayoutTestUtil.addTypePortletLayout(group);
 
 		GroupTestUtil.addGroup(TestPropsValues.getUserId(), secondLayout);
 
@@ -922,8 +915,10 @@ public class AssetPublisherExportImportTest
 		throws Exception {
 
 		return _dlFileEntryTypeLocalService.addFileEntryType(
-			serviceContext.getUserId(), groupId, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), new long[] {ddmStructureId},
+			serviceContext.getUserId(), groupId, ddmStructureId, null,
+			Collections.singletonMap(LocaleUtil.US, StringUtil.randomString()),
+			Collections.singletonMap(LocaleUtil.US, StringUtil.randomString()),
+			DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_DEFAULT,
 			serviceContext);
 	}
 
@@ -969,7 +964,7 @@ public class AssetPublisherExportImportTest
 					ExportImportHelperUtil.getLayoutIds(layouts),
 					getExportParameterMap());
 
-		ExportImportConfiguration exportConfiguration =
+		ExportImportConfiguration exportImportConfiguration =
 			_exportImportConfigurationLocalService.
 				addDraftExportImportConfiguration(
 					user.getUserId(),
@@ -977,7 +972,7 @@ public class AssetPublisherExportImportTest
 					exportLayoutSettingsMap);
 
 		larFile = _exportImportLocalService.exportLayoutsAsFile(
-			exportConfiguration);
+			exportImportConfiguration);
 
 		// Import site LAR
 
@@ -987,14 +982,15 @@ public class AssetPublisherExportImportTest
 					user, importedGroup.getGroupId(), layout.isPrivateLayout(),
 					null, getImportParameterMap());
 
-		ExportImportConfiguration importConfiguration =
+		exportImportConfiguration =
 			_exportImportConfigurationLocalService.
 				addDraftExportImportConfiguration(
 					user.getUserId(),
 					ExportImportConfigurationConstants.TYPE_IMPORT_LAYOUT,
 					importLayoutSettingsMap);
 
-		_exportImportLocalService.importLayouts(importConfiguration, larFile);
+		_exportImportLocalService.importLayouts(
+			exportImportConfiguration, larFile);
 
 		importedLayout = _layoutLocalService.getLayoutByUuidAndGroupId(
 			layout.getUuid(), importedGroup.getGroupId(),
@@ -1081,7 +1077,7 @@ public class AssetPublisherExportImportTest
 
 		SearchContainer<AssetEntry> searchContainer = new SearchContainer<>();
 
-		searchContainer.setTotal(10);
+		searchContainer.setResultsAndTotal(Collections::emptyList, 10);
 
 		List<AssetEntryResult> actualAssetEntryResults =
 			_assetPublisherHelper.getAssetEntryResults(
@@ -1129,10 +1125,10 @@ public class AssetPublisherExportImportTest
 			assetEntries = addAssetEntries(
 				scopeGroup, 3, assetEntries, serviceContext);
 
-			String scopeId = _assetPublisherHelper.getScopeId(
-				scopeGroup, group.getGroupId());
-
-			scopeIds = ArrayUtil.append(scopeIds, scopeId);
+			scopeIds = ArrayUtil.append(
+				scopeIds,
+				_assetPublisherHelper.getScopeId(
+					scopeGroup, group.getGroupId()));
 		}
 
 		PortletPreferences importedPortletPreferences =
@@ -1141,6 +1137,8 @@ public class AssetPublisherExportImportTest
 					"assetEntryXml", getAssetEntriesXmls(assetEntries)
 				).put(
 					"scopeIds", scopeIds
+				).put(
+					"selectionStyle", new String[] {"dynamic"}
 				).build());
 
 		String[] importedScopeIds = importedPortletPreferences.getValues(
@@ -1208,7 +1206,7 @@ public class AssetPublisherExportImportTest
 				" does not belong to group ", expectedGroupId),
 			expectedGroupId, importedVocabulary.getGroupId());
 
-		_assetVocabularyLocalService.deleteAssetVocabulary(assetVocabulary);
+		_assetVocabularyLocalService.deleteVocabulary(assetVocabulary);
 	}
 
 	private static Configuration _assetPublisherWebConfiguration;
@@ -1247,7 +1245,9 @@ public class AssetPublisherExportImportTest
 	@Inject
 	private LayoutLocalService _layoutLocalService;
 
-	@Inject(filter = "component.name=*.LayoutStagedModelDataHandler")
+	@Inject(
+		filter = "component.name=com.liferay.layout.admin.web.internal.exportimport.data.handler.LayoutStagedModelDataHandler"
+	)
 	private StagedModelDataHandler<?> _layoutStagedModelDataHandler;
 
 	private PermissionChecker _permissionChecker;
@@ -1255,10 +1255,14 @@ public class AssetPublisherExportImportTest
 	@Inject
 	private Portal _portal;
 
-	@Inject(filter = "component.name=*.StagedGroupStagedModelDataHandler")
+	@Inject(
+		filter = "component.name=com.liferay.site.internal.exportimport.data.handler.StagedGroupStagedModelDataHandler"
+	)
 	private StagedModelDataHandler<?> _stagedGroupStagedModelDataHandler;
 
-	@Inject(filter = "component.name=*.StagedLayoutSetStagedModelDataHandler")
+	@Inject(
+		filter = "component.name=com.liferay.layout.internal.exportimport.data.handler.StagedLayoutSetStagedModelDataHandler"
+	)
 	private StagedModelDataHandler<?> _stagedLayoutSetStagedModelDataHandler;
 
 }

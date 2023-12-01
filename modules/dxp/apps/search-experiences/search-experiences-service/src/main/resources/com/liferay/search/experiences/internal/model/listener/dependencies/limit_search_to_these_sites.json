@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Limit search scope to the given sites."
+		"en_US": "limit-search-to-these-sites-description"
 	},
 	"elementDefinition": {
 		"category": "filter",
@@ -29,7 +29,7 @@
 				{
 					"fields": [
 						{
-							"label": "Group IDs",
+							"label": "group-ids",
 							"name": "scope_group_ids",
 							"type": "multiselect"
 						}
@@ -38,7 +38,8 @@
 			]
 		}
 	},
+	"externalReferenceCode": "LIMIT_SEARCH_TO_THESE_SITES",
 	"title_i18n": {
-		"en_US": "Limit Search to These Sites"
+		"en_US": "limit-search-to-these-sites"
 	}
 }

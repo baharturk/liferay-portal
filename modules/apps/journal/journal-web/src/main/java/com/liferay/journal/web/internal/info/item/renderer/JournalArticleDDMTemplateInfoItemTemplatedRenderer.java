@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.info.item.renderer;
@@ -22,7 +13,7 @@ import com.liferay.info.item.renderer.InfoItemTemplatedRenderer;
 import com.liferay.info.item.renderer.template.InfoItemRendererTemplate;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -35,8 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
@@ -94,20 +83,19 @@ public class JournalArticleDDMTemplateInfoItemTemplatedRenderer
 					GetterUtil.getLong(classTypeKey)));
 		}
 
-		Stream<DDMStructure> stream = ddmStructures.stream();
+		List<InfoItemRendererTemplate> infoItemRendererTemplates =
+			new ArrayList<>();
 
-		return stream.flatMap(
-			ddmStructure -> {
-				List<DDMTemplate> ddmTemplates = ddmStructure.getTemplates();
-
-				return ddmTemplates.stream();
+		for (DDMStructure ddmStructure : ddmStructures) {
+			for (DDMTemplate ddmTemplate : ddmStructure.getTemplates()) {
+				infoItemRendererTemplates.add(
+					new InfoItemRendererTemplate(
+						ddmTemplate.getName(locale),
+						ddmTemplate.getTemplateKey()));
 			}
-		).map(
-			ddmTemplate -> new InfoItemRendererTemplate(
-				ddmTemplate.getName(locale), ddmTemplate.getTemplateKey())
-		).collect(
-			Collectors.toList()
-		);
+		}
+
+		return infoItemRendererTemplates;
 	}
 
 	@Override
@@ -145,7 +133,7 @@ public class JournalArticleDDMTemplateInfoItemTemplatedRenderer
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(locale, "ddm-template");
+		return _language.get(locale, "ddm-template");
 	}
 
 	@Override
@@ -153,6 +141,12 @@ public class JournalArticleDDMTemplateInfoItemTemplatedRenderer
 		JournalArticle article, String templateKey,
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse) {
+
+		if (!JournalArticleRendererUtil.isShowArticle(
+				httpServletRequest, article)) {
+
+			return;
+		}
 
 		if (Validator.isNull(templateKey)) {
 			render(article, httpServletRequest, httpServletResponse);
@@ -174,21 +168,21 @@ public class JournalArticleDDMTemplateInfoItemTemplatedRenderer
 		catch (Exception exception) {
 			throw new RuntimeException(exception);
 		}
-	}
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.journal.web)", unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		_servletContext = servletContext;
+		finally {
+			httpServletRequest.removeAttribute(WebKeys.JOURNAL_TEMPLATE_ID);
+		}
 	}
 
 	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;
 
 	@Reference
+	private Language _language;
+
+	@Reference
 	private Portal _portal;
 
+	@Reference(target = "(osgi.web.symbolicname=com.liferay.journal.web)")
 	private ServletContext _servletContext;
 
 	@Reference

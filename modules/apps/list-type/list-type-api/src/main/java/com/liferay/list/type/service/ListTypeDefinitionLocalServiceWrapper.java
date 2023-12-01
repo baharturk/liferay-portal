@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.list.type.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link ListTypeDefinitionLocalService}.
@@ -57,11 +49,23 @@ public class ListTypeDefinitionLocalServiceWrapper
 
 	@Override
 	public com.liferay.list.type.model.ListTypeDefinition addListTypeDefinition(
-			long userId, java.util.Map<java.util.Locale, String> nameMap)
+			String externalReferenceCode, long userId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _listTypeDefinitionLocalService.addListTypeDefinition(
-			userId, nameMap);
+			externalReferenceCode, userId);
+	}
+
+	@Override
+	public com.liferay.list.type.model.ListTypeDefinition addListTypeDefinition(
+			String externalReferenceCode, long userId,
+			java.util.Map<java.util.Locale, String> nameMap, boolean system,
+			java.util.List<com.liferay.list.type.model.ListTypeEntry>
+				listTypeEntries)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _listTypeDefinitionLocalService.addListTypeDefinition(
+			externalReferenceCode, userId, nameMap, system, listTypeEntries);
 	}
 
 	/**
@@ -255,6 +259,16 @@ public class ListTypeDefinitionLocalServiceWrapper
 			listTypeDefinitionId);
 	}
 
+	@Override
+	public com.liferay.list.type.model.ListTypeDefinition
+		fetchListTypeDefinitionByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _listTypeDefinitionLocalService.
+			fetchListTypeDefinitionByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the list type definition with the matching UUID and company.
 	 *
@@ -309,6 +323,17 @@ public class ListTypeDefinitionLocalServiceWrapper
 
 		return _listTypeDefinitionLocalService.getListTypeDefinition(
 			listTypeDefinitionId);
+	}
+
+	@Override
+	public com.liferay.list.type.model.ListTypeDefinition
+			getListTypeDefinitionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _listTypeDefinitionLocalService.
+			getListTypeDefinitionByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	/**
@@ -400,12 +425,20 @@ public class ListTypeDefinitionLocalServiceWrapper
 	@Override
 	public com.liferay.list.type.model.ListTypeDefinition
 			updateListTypeDefinition(
-				long listTypeDefinitionId,
-				java.util.Map<java.util.Locale, String> nameMap)
+				String externalReferenceCode, long listTypeDefinitionId,
+				long userId, java.util.Map<java.util.Locale, String> nameMap,
+				java.util.List<com.liferay.list.type.model.ListTypeEntry>
+					listTypeEntries)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _listTypeDefinitionLocalService.updateListTypeDefinition(
-			listTypeDefinitionId, nameMap);
+			externalReferenceCode, listTypeDefinitionId, userId, nameMap,
+			listTypeEntries);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _listTypeDefinitionLocalService.getBasePersistence();
 	}
 
 	@Override

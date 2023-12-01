@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.dto.v1_0;
@@ -271,6 +262,44 @@ public class Layout implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ContentDisplay contentDisplay;
+
+	@Schema
+	@Valid
+	public FlexWrap getFlexWrap() {
+		return flexWrap;
+	}
+
+	@JsonIgnore
+	public String getFlexWrapAsString() {
+		if (flexWrap == null) {
+			return null;
+		}
+
+		return flexWrap.toString();
+	}
+
+	public void setFlexWrap(FlexWrap flexWrap) {
+		this.flexWrap = flexWrap;
+	}
+
+	@JsonIgnore
+	public void setFlexWrap(
+		UnsafeSupplier<FlexWrap, Exception> flexWrapUnsafeSupplier) {
+
+		try {
+			flexWrap = flexWrapUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected FlexWrap flexWrap;
 
 	@Schema(deprecated = true)
 	@Valid
@@ -785,6 +814,20 @@ public class Layout implements Serializable {
 			sb.append("\"");
 		}
 
+		if (flexWrap != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"flexWrap\": ");
+
+			sb.append("\"");
+
+			sb.append(flexWrap);
+
+			sb.append("\"");
+		}
+
 		if (justify != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1093,6 +1136,44 @@ public class Layout implements Serializable {
 
 	}
 
+	@GraphQLName("FlexWrap")
+	public static enum FlexWrap {
+
+		NO_WRAP("NoWrap"), WRAP("Wrap"), WRAP_REVERSE("WrapReverse");
+
+		@JsonCreator
+		public static FlexWrap create(String value) {
+			if ((value == null) || value.equals("")) {
+				return null;
+			}
+
+			for (FlexWrap flexWrap : values()) {
+				if (Objects.equals(flexWrap.getValue(), value)) {
+					return flexWrap;
+				}
+			}
+
+			throw new IllegalArgumentException("Invalid enum value: " + value);
+		}
+
+		@JsonValue
+		public String getValue() {
+			return _value;
+		}
+
+		@Override
+		public String toString() {
+			return _value;
+		}
+
+		private FlexWrap(String value) {
+			_value = value;
+		}
+
+		private final String _value;
+
+	}
+
 	@GraphQLName("Justify")
 	public static enum Justify {
 
@@ -1291,5 +1372,7 @@ public class Layout implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

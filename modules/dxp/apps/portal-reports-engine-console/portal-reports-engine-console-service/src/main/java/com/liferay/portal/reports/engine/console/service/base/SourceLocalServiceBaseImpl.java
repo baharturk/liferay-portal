@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.service.base;
@@ -34,6 +25,8 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -47,16 +40,10 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.reports.engine.console.model.Source;
 import com.liferay.portal.reports.engine.console.service.SourceLocalService;
 import com.liferay.portal.reports.engine.console.service.SourceLocalServiceUtil;
-import com.liferay.portal.reports.engine.console.service.persistence.DefinitionFinder;
-import com.liferay.portal.reports.engine.console.service.persistence.DefinitionPersistence;
-import com.liferay.portal.reports.engine.console.service.persistence.EntryFinder;
-import com.liferay.portal.reports.engine.console.service.persistence.EntryPersistence;
 import com.liferay.portal.reports.engine.console.service.persistence.SourceFinder;
 import com.liferay.portal.reports.engine.console.service.persistence.SourcePersistence;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -403,6 +390,11 @@ public abstract class SourceLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement SourceLocalServiceImpl#deleteSource(Source) to avoid orphaned data");
+		}
+
 		return sourceLocalService.deleteSource((Source)persistedModel);
 	}
 
@@ -513,7 +505,7 @@ public abstract class SourceLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		SourceLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -528,7 +520,7 @@ public abstract class SourceLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		sourceLocalService = (SourceLocalService)aopProxy;
 
-		_setLocalServiceUtilService(sourceLocalService);
+		SourceLocalServiceUtil.setService(sourceLocalService);
 	}
 
 	/**
@@ -573,34 +565,6 @@ public abstract class SourceLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		SourceLocalService sourceLocalService) {
-
-		try {
-			Field field = SourceLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, sourceLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
-	@Reference
-	protected DefinitionPersistence definitionPersistence;
-
-	@Reference
-	protected DefinitionFinder definitionFinder;
-
-	@Reference
-	protected EntryPersistence entryPersistence;
-
-	@Reference
-	protected EntryFinder entryFinder;
-
 	protected SourceLocalService sourceLocalService;
 
 	@Reference
@@ -613,16 +577,7 @@ public abstract class SourceLocalServiceBaseImpl
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		SourceLocalServiceBaseImpl.class);
 
 }

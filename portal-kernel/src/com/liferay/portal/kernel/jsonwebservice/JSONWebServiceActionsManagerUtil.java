@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.jsonwebservice;
+
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.lang.reflect.Method;
 
@@ -29,14 +22,20 @@ import javax.servlet.http.HttpServletRequest;
 public class JSONWebServiceActionsManagerUtil {
 
 	public static Set<String> getContextNames() {
-		return _jsonWebServiceActionsManager.getContextNames();
+		JSONWebServiceActionsManager jsonWebServiceActionsManager =
+			_jsonWebServiceActionsManagerSnapshot.get();
+
+		return jsonWebServiceActionsManager.getContextNames();
 	}
 
 	public static JSONWebServiceAction getJSONWebServiceAction(
 			HttpServletRequest httpServletRequest)
 		throws NoSuchJSONWebServiceException {
 
-		return _jsonWebServiceActionsManager.getJSONWebServiceAction(
+		JSONWebServiceActionsManager jsonWebServiceActionsManager =
+			_jsonWebServiceActionsManagerSnapshot.get();
+
+		return jsonWebServiceActionsManager.getJSONWebServiceAction(
 			httpServletRequest);
 	}
 
@@ -45,82 +44,78 @@ public class JSONWebServiceActionsManagerUtil {
 			Map<String, Object> parameterMap)
 		throws NoSuchJSONWebServiceException {
 
-		return _jsonWebServiceActionsManager.getJSONWebServiceAction(
+		JSONWebServiceActionsManager jsonWebServiceActionsManager =
+			_jsonWebServiceActionsManagerSnapshot.get();
+
+		return jsonWebServiceActionsManager.getJSONWebServiceAction(
 			httpServletRequest, path, method, parameterMap);
 	}
 
 	public static JSONWebServiceActionMapping getJSONWebServiceActionMapping(
 		String signature) {
 
-		return _jsonWebServiceActionsManager.getJSONWebServiceActionMapping(
+		JSONWebServiceActionsManager jsonWebServiceActionsManager =
+			_jsonWebServiceActionsManagerSnapshot.get();
+
+		return jsonWebServiceActionsManager.getJSONWebServiceActionMapping(
 			signature);
 	}
 
 	public static List<JSONWebServiceActionMapping>
 		getJSONWebServiceActionMappings(String contextName) {
 
-		return _jsonWebServiceActionsManager.getJSONWebServiceActionMappings(
-			contextName);
-	}
+		JSONWebServiceActionsManager jsonWebServiceActionsManager =
+			_jsonWebServiceActionsManagerSnapshot.get();
 
-	public static int getJSONWebServiceActionsCount(String contextName) {
-		return _jsonWebServiceActionsManager.getJSONWebServiceActionsCount(
+		return jsonWebServiceActionsManager.getJSONWebServiceActionMappings(
 			contextName);
 	}
 
 	public static JSONWebServiceActionsManager
 		getJSONWebServiceActionsManager() {
 
-		return _jsonWebServiceActionsManager;
-	}
-
-	public static JSONWebServiceNaming getJSONWebServiceNaming() {
-		return _jsonWebServiceActionsManager.getJSONWebServiceNaming();
-	}
-
-	public static void registerJSONWebServiceAction(
-		String contextName, String contextPath, Class<?> actionClass,
-		Method actionMethod, String path, String method) {
-
-		_jsonWebServiceActionsManager.registerJSONWebServiceAction(
-			contextName, contextPath, actionClass, actionMethod, path, method);
+		return _jsonWebServiceActionsManagerSnapshot.get();
 	}
 
 	public static void registerJSONWebServiceAction(
 		String contextName, String contextPath, Object actionObject,
 		Class<?> actionClass, Method actionMethod, String path, String method) {
 
-		_jsonWebServiceActionsManager.registerJSONWebServiceAction(
+		JSONWebServiceActionsManager jsonWebServiceActionsManager =
+			_jsonWebServiceActionsManagerSnapshot.get();
+
+		jsonWebServiceActionsManager.registerJSONWebServiceAction(
 			contextName, contextPath, actionObject, actionClass, actionMethod,
 			path, method);
 	}
 
 	public static int registerServletContext(ServletContext servletContext) {
-		return _jsonWebServiceActionsManager.registerServletContext(
+		JSONWebServiceActionsManager jsonWebServiceActionsManager =
+			_jsonWebServiceActionsManagerSnapshot.get();
+
+		return jsonWebServiceActionsManager.registerServletContext(
 			servletContext);
 	}
 
 	public static int unregisterJSONWebServiceActions(Object actionObject) {
-		return _jsonWebServiceActionsManager.unregisterJSONWebServiceActions(
+		JSONWebServiceActionsManager jsonWebServiceActionsManager =
+			_jsonWebServiceActionsManagerSnapshot.get();
+
+		return jsonWebServiceActionsManager.unregisterJSONWebServiceActions(
 			actionObject);
 	}
 
-	public static int unregisterJSONWebServiceActions(String contextPath) {
-		return _jsonWebServiceActionsManager.unregisterJSONWebServiceActions(
-			contextPath);
-	}
-
 	public static int unregisterServletContext(ServletContext servletContext) {
-		return _jsonWebServiceActionsManager.unregisterServletContext(
+		JSONWebServiceActionsManager jsonWebServiceActionsManager =
+			_jsonWebServiceActionsManagerSnapshot.get();
+
+		return jsonWebServiceActionsManager.unregisterServletContext(
 			servletContext);
 	}
 
-	public void setJSONWebServiceActionsManager(
-		JSONWebServiceActionsManager jsonWebServiceActionsManager) {
-
-		_jsonWebServiceActionsManager = jsonWebServiceActionsManager;
-	}
-
-	private static JSONWebServiceActionsManager _jsonWebServiceActionsManager;
+	private static final Snapshot<JSONWebServiceActionsManager>
+		_jsonWebServiceActionsManagerSnapshot = new Snapshot<>(
+			JSONWebServiceActionsManagerUtil.class,
+			JSONWebServiceActionsManager.class);
 
 }

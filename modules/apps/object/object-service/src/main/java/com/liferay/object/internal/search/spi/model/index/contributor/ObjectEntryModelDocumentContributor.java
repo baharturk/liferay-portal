@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.internal.search.spi.model.index.contributor;
 
+import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.entry.util.ObjectEntryValuesUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
@@ -107,6 +100,15 @@ public class ObjectEntryModelDocumentContributor
 			_log.debug("Object entry " + objectEntry);
 		}
 
+		document.add(
+			new Field(
+				Field.getSortableFieldName(Field.ENTRY_CLASS_PK),
+				document.get(Field.ENTRY_CLASS_PK)));
+		document.add(
+			new Field(
+				Field.getSortableFieldName("externalReferenceCode"),
+				objectEntry.getExternalReferenceCode()));
+
 		FieldArray fieldArray = (FieldArray)document.getField(
 			"nestedFieldArray");
 
@@ -131,7 +133,7 @@ public class ObjectEntryModelDocumentContributor
 
 		List<ObjectField> objectFields =
 			_objectFieldLocalService.getObjectFields(
-				objectEntry.getObjectDefinitionId());
+				objectEntry.getObjectDefinitionId(), false);
 
 		StringBundler sb = new StringBundler(objectFields.size() * 4);
 
@@ -147,8 +149,6 @@ public class ObjectEntryModelDocumentContributor
 
 		document.add(
 			new Field("objectEntryTitle", objectEntry.getTitleValue()));
-
-		document.remove(Field.USER_NAME);
 	}
 
 	private void _contribute(
@@ -174,6 +174,17 @@ public class ObjectEntryModelDocumentContributor
 		}
 
 		String objectFieldName = objectField.getName();
+
+		if (StringUtil.equals(
+				objectField.getBusinessType(),
+				ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT) ||
+			StringUtil.equals(
+				objectField.getBusinessType(),
+				ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT)) {
+
+			value = ObjectEntryValuesUtil.getValueString(objectField, values);
+		}
+
 		String valueString = String.valueOf(value);
 
 		if (objectField.isIndexedAsKeyword()) {
@@ -254,10 +265,7 @@ public class ObjectEntryModelDocumentContributor
 	}
 
 	private String _getDateString(Object value) {
-		Format format = FastDateFormatFactoryUtil.getSimpleDateFormat(
-			"yyyyMMddHHmmss");
-
-		return format.format(value);
+		return _format.format(value);
 	}
 
 	private String _getSortableValue(String value) {
@@ -278,6 +286,9 @@ public class ObjectEntryModelDocumentContributor
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ObjectEntryModelDocumentContributor.class);
+
+	private static final Format _format =
+		FastDateFormatFactoryUtil.getSimpleDateFormat("yyyyMMddHHmmss");
 
 	private final String _className;
 	private final ObjectDefinitionLocalService _objectDefinitionLocalService;

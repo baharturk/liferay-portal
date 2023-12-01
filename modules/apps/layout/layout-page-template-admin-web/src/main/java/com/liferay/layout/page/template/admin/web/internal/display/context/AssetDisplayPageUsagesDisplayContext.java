@@ -1,43 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.display.context;
 
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
-import com.liferay.asset.display.page.service.AssetDisplayPageEntryServiceUtil;
+import com.liferay.asset.display.page.service.AssetDisplayPageEntryService;
 import com.liferay.asset.kernel.exception.NoSuchEntryException;
 import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.asset.kernel.service.AssetEntryServiceUtil;
-import com.liferay.document.library.kernel.model.DLFileEntry;
-import com.liferay.info.constants.InfoDisplayWebKeys;
+import com.liferay.asset.kernel.service.AssetEntryService;
 import com.liferay.info.field.InfoFieldValue;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
+import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
 import com.liferay.layout.page.template.admin.web.internal.util.comparator.AssetDisplayPageEntryModifiedDateComparator;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
-import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Locale;
@@ -55,16 +44,21 @@ import javax.servlet.http.HttpServletRequest;
 public class AssetDisplayPageUsagesDisplayContext {
 
 	public AssetDisplayPageUsagesDisplayContext(
-		HttpServletRequest httpServletRequest, RenderRequest renderRequest,
-		RenderResponse renderResponse) {
+		AssetDisplayPageEntryService assetDisplayPageEntryService,
+		AssetEntryService assetEntryService,
+		HttpServletRequest httpServletRequest,
+		InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
+		InfoItemServiceRegistry infoItemServiceRegistry, Portal portal,
+		RenderRequest renderRequest, RenderResponse renderResponse) {
 
+		_assetDisplayPageEntryService = assetDisplayPageEntryService;
+		_assetEntryService = assetEntryService;
 		_httpServletRequest = httpServletRequest;
+		_infoSearchClassMapperRegistry = infoSearchClassMapperRegistry;
+		_infoItemServiceRegistry = infoItemServiceRegistry;
+		_portal = portal;
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
-
-		_infoItemServiceTracker =
-			(InfoItemServiceTracker)httpServletRequest.getAttribute(
-				InfoDisplayWebKeys.INFO_ITEM_SERVICE_TRACKER);
 	}
 
 	public long getClassNameId() {
@@ -166,20 +160,18 @@ public class AssetDisplayPageUsagesDisplayContext {
 
 		searchContainer.setOrderByComparator(
 			new AssetDisplayPageEntryModifiedDateComparator(orderByAsc));
-
 		searchContainer.setOrderByType(getOrderByType());
-		searchContainer.setResults(
-			AssetDisplayPageEntryServiceUtil.getAssetDisplayPageEntries(
+		searchContainer.setResultsAndTotal(
+			() -> _assetDisplayPageEntryService.getAssetDisplayPageEntries(
 				getClassNameId(), getClassTypeId(),
 				getLayoutPageTemplateEntryId(), isDefaultTemplate(),
 				searchContainer.getStart(), searchContainer.getEnd(),
-				searchContainer.getOrderByComparator()));
-		searchContainer.setRowChecker(
-			new EmptyOnClickRowChecker(_renderResponse));
-		searchContainer.setTotal(
-			AssetDisplayPageEntryServiceUtil.getAssetDisplayPageEntriesCount(
+				searchContainer.getOrderByComparator()),
+			_assetDisplayPageEntryService.getAssetDisplayPageEntriesCount(
 				getClassNameId(), getClassTypeId(),
 				getLayoutPageTemplateEntryId(), isDefaultTemplate()));
+		searchContainer.setRowChecker(
+			new EmptyOnClickRowChecker(_renderResponse));
 
 		_searchContainer = searchContainer;
 
@@ -190,16 +182,11 @@ public class AssetDisplayPageUsagesDisplayContext {
 			AssetDisplayPageEntry assetDisplayPageEntry, Locale locale)
 		throws PortalException {
 
-		String className = assetDisplayPageEntry.getClassName();
-
-		if (Objects.equals(className, FileEntry.class.getName())) {
-			className = DLFileEntry.class.getName();
-		}
-
-		AssetEntry assetEntry = null;
+		String className = _infoSearchClassMapperRegistry.getSearchClassName(
+			assetDisplayPageEntry.getClassName());
 
 		try {
-			assetEntry = AssetEntryServiceUtil.getEntry(
+			AssetEntry assetEntry = _assetEntryService.getEntry(
 				className, assetDisplayPageEntry.getClassPK());
 
 			return assetEntry.getTitle(locale);
@@ -210,45 +197,44 @@ public class AssetDisplayPageUsagesDisplayContext {
 			}
 		}
 
-		String title = StringPool.BLANK;
-
 		InfoItemObjectProvider<?> infoItemObjectProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
+			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemObjectProvider.class,
-				PortalUtil.getClassName(getClassNameId()));
+				_portal.getClassName(getClassNameId()),
+				ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
 		if (infoItemObjectProvider == null) {
-			return title;
+			return StringPool.BLANK;
 		}
 
 		InfoItemFieldValuesProvider<Object> infoItemFieldValuesProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
+			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFieldValuesProvider.class,
-				PortalUtil.getClassName(getClassNameId()));
+				_portal.getClassName(getClassNameId()));
 
 		if (infoItemFieldValuesProvider == null) {
-			return title;
+			return StringPool.BLANK;
 		}
 
 		Object infoItem = infoItemObjectProvider.getInfoItem(
 			new ClassPKInfoItemIdentifier(assetDisplayPageEntry.getClassPK()));
 
 		if (infoItem == null) {
-			return title;
+			return StringPool.BLANK;
 		}
 
 		InfoFieldValue<Object> infoFieldValue =
 			infoItemFieldValuesProvider.getInfoFieldValue(infoItem, "title");
 
 		if (infoFieldValue == null) {
-			return title;
+			return StringPool.BLANK;
 		}
 
 		Object infoFieldValueValue = infoFieldValue.getValue(
 			LocaleUtil.getMostRelevantLocale());
 
 		if (infoFieldValueValue == null) {
-			return title;
+			return StringPool.BLANK;
 		}
 
 		return String.valueOf(infoFieldValueValue);
@@ -265,14 +251,18 @@ public class AssetDisplayPageUsagesDisplayContext {
 		return _defaultTemplate;
 	}
 
+	private final AssetDisplayPageEntryService _assetDisplayPageEntryService;
+	private final AssetEntryService _assetEntryService;
 	private Long _classNameId;
 	private Long _classTypeId;
 	private Boolean _defaultTemplate;
 	private final HttpServletRequest _httpServletRequest;
-	private final InfoItemServiceTracker _infoItemServiceTracker;
+	private final InfoItemServiceRegistry _infoItemServiceRegistry;
+	private final InfoSearchClassMapperRegistry _infoSearchClassMapperRegistry;
 	private Long _layoutPageTemplateEntryId;
 	private String _orderByCol;
 	private String _orderByType;
+	private final Portal _portal;
 	private String _redirect;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;

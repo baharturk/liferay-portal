@@ -1,23 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.form.internal.resource.v1_0;
 
 import com.liferay.headless.form.dto.v1_0.FormRecord;
 import com.liferay.headless.form.resource.v1_0.FormRecordResource;
+import com.liferay.petra.function.UnsafeBiConsumer;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.search.Sort;
@@ -27,32 +21,43 @@ import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParser;
 import com.liferay.portal.odata.filter.FilterParserProvider;
+import com.liferay.portal.odata.sort.SortField;
+import com.liferay.portal.odata.sort.SortParser;
+import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.batch.engine.VulcanBatchEngineTaskItemDelegate;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTaskResource;
 import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResource;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.ActionUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.io.Serializable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -139,6 +144,8 @@ public abstract class BaseFormRecordResourceImpl
 	 *
 	 * curl -X 'PUT' 'http://localhost:8080/o/headless-form/v1.0/form-records/batch'  -u 'test@liferay.com:test'
 	 */
+	@Deprecated
+	@io.swagger.v3.oas.annotations.Operation(deprecated = true)
 	@io.swagger.v3.oas.annotations.Parameters(
 		value = {
 			@io.swagger.v3.oas.annotations.Parameter(
@@ -222,6 +229,77 @@ public abstract class BaseFormRecordResourceImpl
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -X 'POST' 'http://localhost:8080/o/headless-form/v1.0/forms/{formId}/form-records/export-batch'  -u 'test@liferay.com:test'
+	 */
+	@Deprecated
+	@io.swagger.v3.oas.annotations.Operation(deprecated = true)
+	@io.swagger.v3.oas.annotations.Parameters(
+		value = {
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH,
+				name = "formId"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "callbackURL"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "contentType"
+			),
+			@io.swagger.v3.oas.annotations.Parameter(
+				in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY,
+				name = "fieldNames"
+			)
+		}
+	)
+	@io.swagger.v3.oas.annotations.tags.Tags(
+		value = {@io.swagger.v3.oas.annotations.tags.Tag(name = "FormRecord")}
+	)
+	@javax.ws.rs.Consumes("application/json")
+	@javax.ws.rs.Path("/forms/{formId}/form-records/export-batch")
+	@javax.ws.rs.POST
+	@javax.ws.rs.Produces("application/json")
+	@Override
+	public Response postFormFormRecordsPageExportBatch(
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.validation.constraints.NotNull
+			@javax.ws.rs.PathParam("formId")
+			Long formId,
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.QueryParam("callbackURL")
+			String callbackURL,
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.DefaultValue("JSON")
+			@javax.ws.rs.QueryParam("contentType")
+			String contentType,
+			@io.swagger.v3.oas.annotations.Parameter(hidden = true)
+			@javax.ws.rs.QueryParam("fieldNames")
+			String fieldNames)
+		throws Exception {
+
+		vulcanBatchEngineExportTaskResource.setContextAcceptLanguage(
+			contextAcceptLanguage);
+		vulcanBatchEngineExportTaskResource.setContextCompany(contextCompany);
+		vulcanBatchEngineExportTaskResource.setContextHttpServletRequest(
+			contextHttpServletRequest);
+		vulcanBatchEngineExportTaskResource.setContextUriInfo(contextUriInfo);
+		vulcanBatchEngineExportTaskResource.setContextUser(contextUser);
+		vulcanBatchEngineExportTaskResource.setGroupLocalService(
+			groupLocalService);
+
+		Response.ResponseBuilder responseBuilder = Response.accepted();
+
+		return responseBuilder.entity(
+			vulcanBatchEngineExportTaskResource.postExportTask(
+				FormRecord.class.getName(), callbackURL, contentType,
+				fieldNames)
+		).build();
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -X 'POST' 'http://localhost:8080/o/headless-form/v1.0/forms/{formId}/form-records' -d $'{"creator": ___, "draft": ___, "formFieldValues": ___, "formId": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
 	 */
 	@Deprecated
@@ -258,6 +336,8 @@ public abstract class BaseFormRecordResourceImpl
 	 *
 	 * curl -X 'POST' 'http://localhost:8080/o/headless-form/v1.0/forms/{formId}/form-records/batch'  -u 'test@liferay.com:test'
 	 */
+	@Deprecated
+	@io.swagger.v3.oas.annotations.Operation(deprecated = true)
 	@io.swagger.v3.oas.annotations.Parameters(
 		value = {
 			@io.swagger.v3.oas.annotations.Parameter(
@@ -340,24 +420,64 @@ public abstract class BaseFormRecordResourceImpl
 	@Override
 	@SuppressWarnings("PMD.UnusedLocalVariable")
 	public void create(
-			java.util.Collection<FormRecord> formRecords,
+			Collection<FormRecord> formRecords,
 			Map<String, Serializable> parameters)
 		throws Exception {
 
-		UnsafeConsumer<FormRecord, Exception> formRecordUnsafeConsumer =
-			formRecord -> postFormFormRecord(
-				Long.parseLong((String)parameters.get("formId")), formRecord);
+		UnsafeFunction<FormRecord, FormRecord, Exception>
+			formRecordUnsafeFunction = null;
 
-		for (FormRecord formRecord : formRecords) {
-			formRecordUnsafeConsumer.accept(formRecord);
+		String createStrategy = (String)parameters.getOrDefault(
+			"createStrategy", "INSERT");
+
+		if (StringUtil.equalsIgnoreCase(createStrategy, "INSERT")) {
+			if (parameters.containsKey("formId")) {
+				formRecordUnsafeFunction = formRecord -> postFormFormRecord(
+					_parseLong((String)parameters.get("formId")), formRecord);
+			}
+			else {
+				throw new NotSupportedException(
+					"One of the following parameters must be specified: [formId]");
+			}
+		}
+
+		if (formRecordUnsafeFunction == null) {
+			throw new NotSupportedException(
+				"Create strategy \"" + createStrategy +
+					"\" is not supported for FormRecord");
+		}
+
+		if (contextBatchUnsafeBiConsumer != null) {
+			contextBatchUnsafeBiConsumer.accept(
+				formRecords, formRecordUnsafeFunction);
+		}
+		else if (contextBatchUnsafeConsumer != null) {
+			contextBatchUnsafeConsumer.accept(
+				formRecords, formRecordUnsafeFunction::apply);
+		}
+		else {
+			for (FormRecord formRecord : formRecords) {
+				formRecordUnsafeFunction.apply(formRecord);
+			}
 		}
 	}
 
 	@Override
 	public void delete(
-			java.util.Collection<FormRecord> formRecords,
+			Collection<FormRecord> formRecords,
 			Map<String, Serializable> parameters)
 		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	public Set<String> getAvailableCreateStrategies() {
+		return SetUtil.fromArray("INSERT");
+	}
+
+	public Set<String> getAvailableUpdateStrategies() {
+		return SetUtil.fromArray("UPDATE");
 	}
 
 	@Override
@@ -375,14 +495,24 @@ public abstract class BaseFormRecordResourceImpl
 		return null;
 	}
 
+	public String getVersion() {
+		return "v1.0";
+	}
+
 	@Override
 	public Page<FormRecord> read(
 			Filter filter, Pagination pagination, Sort[] sorts,
 			Map<String, Serializable> parameters, String search)
 		throws Exception {
 
-		return getFormFormRecordsPage(
-			Long.parseLong((String)parameters.get("formId")), pagination);
+		if (parameters.containsKey("formId")) {
+			return getFormFormRecordsPage(
+				_parseLong((String)parameters.get("formId")), pagination);
+		}
+		else {
+			throw new NotSupportedException(
+				"One of the following parameters must be specified: [formId]");
+		}
 	}
 
 	@Override
@@ -409,20 +539,71 @@ public abstract class BaseFormRecordResourceImpl
 
 	@Override
 	public void update(
-			java.util.Collection<FormRecord> formRecords,
+			Collection<FormRecord> formRecords,
 			Map<String, Serializable> parameters)
 		throws Exception {
 
-		for (FormRecord formRecord : formRecords) {
-			putFormRecord(
+		UnsafeFunction<FormRecord, FormRecord, Exception>
+			formRecordUnsafeFunction = null;
+
+		String updateStrategy = (String)parameters.getOrDefault(
+			"updateStrategy", "UPDATE");
+
+		if (StringUtil.equalsIgnoreCase(updateStrategy, "UPDATE")) {
+			formRecordUnsafeFunction = formRecord -> putFormRecord(
 				formRecord.getId() != null ? formRecord.getId() :
-					Long.parseLong((String)parameters.get("formRecordId")),
+					_parseLong((String)parameters.get("formRecordId")),
 				formRecord);
 		}
+
+		if (formRecordUnsafeFunction == null) {
+			throw new NotSupportedException(
+				"Update strategy \"" + updateStrategy +
+					"\" is not supported for FormRecord");
+		}
+
+		if (contextBatchUnsafeBiConsumer != null) {
+			contextBatchUnsafeBiConsumer.accept(
+				formRecords, formRecordUnsafeFunction);
+		}
+		else if (contextBatchUnsafeConsumer != null) {
+			contextBatchUnsafeConsumer.accept(
+				formRecords, formRecordUnsafeFunction::apply);
+		}
+		else {
+			for (FormRecord formRecord : formRecords) {
+				formRecordUnsafeFunction.apply(formRecord);
+			}
+		}
+	}
+
+	private Long _parseLong(String value) {
+		if (value != null) {
+			return Long.parseLong(value);
+		}
+
+		return null;
 	}
 
 	public void setContextAcceptLanguage(AcceptLanguage contextAcceptLanguage) {
 		this.contextAcceptLanguage = contextAcceptLanguage;
+	}
+
+	public void setContextBatchUnsafeBiConsumer(
+		UnsafeBiConsumer
+			<Collection<FormRecord>,
+			 UnsafeFunction<FormRecord, FormRecord, Exception>, Exception>
+				contextBatchUnsafeBiConsumer) {
+
+		this.contextBatchUnsafeBiConsumer = contextBatchUnsafeBiConsumer;
+	}
+
+	public void setContextBatchUnsafeConsumer(
+		UnsafeBiConsumer
+			<Collection<FormRecord>, UnsafeConsumer<FormRecord, Exception>,
+			 Exception> contextBatchUnsafeConsumer) {
+
+		this.contextBatchUnsafeConsumer = contextBatchUnsafeConsumer;
 	}
 
 	public void setContextCompany(
@@ -433,6 +614,13 @@ public abstract class BaseFormRecordResourceImpl
 
 	public void setContextHttpServletRequest(
 		HttpServletRequest contextHttpServletRequest) {
+
+		if ((contextHttpServletRequest != null) &&
+			(contextHttpServletRequest.getAttribute(WebKeys.CTX) == null)) {
+
+			contextHttpServletRequest.setAttribute(
+				WebKeys.CTX, ServletContextPool.get(StringPool.BLANK));
+		}
 
 		this.contextHttpServletRequest = contextHttpServletRequest;
 	}
@@ -485,6 +673,26 @@ public abstract class BaseFormRecordResourceImpl
 		this.roleLocalService = roleLocalService;
 	}
 
+	public void setSortParserProvider(SortParserProvider sortParserProvider) {
+		this.sortParserProvider = sortParserProvider;
+	}
+
+	public void setVulcanBatchEngineExportTaskResource(
+		VulcanBatchEngineExportTaskResource
+			vulcanBatchEngineExportTaskResource) {
+
+		this.vulcanBatchEngineExportTaskResource =
+			vulcanBatchEngineExportTaskResource;
+	}
+
+	public void setVulcanBatchEngineImportTaskResource(
+		VulcanBatchEngineImportTaskResource
+			vulcanBatchEngineImportTaskResource) {
+
+		this.vulcanBatchEngineImportTaskResource =
+			vulcanBatchEngineImportTaskResource;
+	}
+
 	@Override
 	public Filter toFilter(
 		String filterString, Map<String, List<String>> multivaluedMap) {
@@ -505,9 +713,49 @@ public abstract class BaseFormRecordResourceImpl
 		}
 		catch (Exception exception) {
 			_log.error("Invalid filter " + filterString, exception);
+
+			return null;
+		}
+	}
+
+	@Override
+	public Sort[] toSorts(String sortString) {
+		if (Validator.isNull(sortString)) {
+			return null;
 		}
 
-		return null;
+		try {
+			SortParser sortParser = sortParserProvider.provide(
+				getEntityModel(Collections.emptyMap()));
+
+			if (sortParser == null) {
+				return null;
+			}
+
+			com.liferay.portal.odata.sort.Sort oDataSort =
+				new com.liferay.portal.odata.sort.Sort(
+					sortParser.parse(sortString));
+
+			List<SortField> sortFields = oDataSort.getSortFields();
+
+			Sort[] sorts = new Sort[sortFields.size()];
+
+			for (int i = 0; i < sortFields.size(); i++) {
+				SortField sortField = sortFields.get(i);
+
+				sorts[i] = new Sort(
+					sortField.getSortableFieldName(
+						contextAcceptLanguage.getPreferredLocale()),
+					!sortField.isAscending());
+			}
+
+			return sorts;
+		}
+		catch (Exception exception) {
+			_log.error("Invalid sort " + sortString, exception);
+
+			return new Sort[0];
+		}
 	}
 
 	protected Map<String, String> addAction(
@@ -544,35 +792,84 @@ public abstract class BaseFormRecordResourceImpl
 			actionName, siteId, methodName, null, permissionName, siteId);
 	}
 
-	protected <T, R> List<R> transform(
-		java.util.Collection<T> collection,
-		UnsafeFunction<T, R, Exception> unsafeFunction) {
+	protected <T, R, E extends Throwable> List<R> transform(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
 
 		return TransformUtil.transform(collection, unsafeFunction);
 	}
 
-	protected <T, R> R[] transform(
-		T[] array, UnsafeFunction<T, R, Exception> unsafeFunction,
-		Class<?> clazz) {
+	protected <T, R, E extends Throwable> R[] transform(
+		T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<?> clazz) {
 
 		return TransformUtil.transform(array, unsafeFunction, clazz);
 	}
 
-	protected <T, R> R[] transformToArray(
-		java.util.Collection<T> collection,
-		UnsafeFunction<T, R, Exception> unsafeFunction, Class<?> clazz) {
+	protected <T, R, E extends Throwable> R[] transformToArray(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction,
+		Class<?> clazz) {
 
 		return TransformUtil.transformToArray(
 			collection, unsafeFunction, clazz);
 	}
 
-	protected <T, R> List<R> transformToList(
-		T[] array, UnsafeFunction<T, R, Exception> unsafeFunction) {
+	protected <T, R, E extends Throwable> List<R> transformToList(
+		T[] array, UnsafeFunction<T, R, E> unsafeFunction) {
 
 		return TransformUtil.transformToList(array, unsafeFunction);
 	}
 
+	protected <T, R, E extends Throwable> long[] transformToLongArray(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
+
+		return TransformUtil.transformToLongArray(collection, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> List<R> unsafeTransform(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransform(collection, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> R[] unsafeTransform(
+			T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<?> clazz)
+		throws E {
+
+		return TransformUtil.unsafeTransform(array, unsafeFunction, clazz);
+	}
+
+	protected <T, R, E extends Throwable> R[] unsafeTransformToArray(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction,
+			Class<?> clazz)
+		throws E {
+
+		return TransformUtil.unsafeTransformToArray(
+			collection, unsafeFunction, clazz);
+	}
+
+	protected <T, R, E extends Throwable> List<R> unsafeTransformToList(
+			T[] array, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransformToList(array, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> long[] unsafeTransformToLongArray(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransformToLongArray(
+			collection, unsafeFunction);
+	}
+
 	protected AcceptLanguage contextAcceptLanguage;
+	protected UnsafeBiConsumer
+		<Collection<FormRecord>,
+		 UnsafeFunction<FormRecord, FormRecord, Exception>, Exception>
+			contextBatchUnsafeBiConsumer;
+	protected UnsafeBiConsumer
+		<Collection<FormRecord>, UnsafeConsumer<FormRecord, Exception>,
+		 Exception> contextBatchUnsafeConsumer;
 	protected com.liferay.portal.kernel.model.Company contextCompany;
 	protected HttpServletRequest contextHttpServletRequest;
 	protected HttpServletResponse contextHttpServletResponse;
@@ -585,6 +882,9 @@ public abstract class BaseFormRecordResourceImpl
 	protected ResourceActionLocalService resourceActionLocalService;
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 	protected RoleLocalService roleLocalService;
+	protected SortParserProvider sortParserProvider;
+	protected VulcanBatchEngineExportTaskResource
+		vulcanBatchEngineExportTaskResource;
 	protected VulcanBatchEngineImportTaskResource
 		vulcanBatchEngineImportTaskResource;
 

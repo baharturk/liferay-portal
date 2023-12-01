@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useResource} from '@clayui/data-provider';
@@ -99,6 +90,12 @@ const DEFAULT_DATA_LAYOUT = {
 };
 
 export function useData({dataDefinitionId, dataLayoutId}) {
+	let pathContext = themeDisplay.getPathContext();
+
+	if (!pathContext || pathContext === '/') {
+		pathContext = '';
+	}
+
 	const {resource: dataDefinition} = useResource({
 		fetch: customFetch({
 			defaultData: DEFAULT_DATA_DEFINITION,
@@ -109,7 +106,7 @@ export function useData({dataDefinitionId, dataLayoutId}) {
 		fetchRetry: {
 			attempts: 0,
 		},
-		link: `${window.location.origin}/o/data-engine/v2.0/data-definitions/${dataDefinitionId}`,
+		link: `${window.location.origin}${pathContext}/o/data-engine/v2.0/data-definitions/${dataDefinitionId}`,
 	});
 
 	const {resource: dataLayout} = useResource({
@@ -122,7 +119,7 @@ export function useData({dataDefinitionId, dataLayoutId}) {
 		fetchRetry: {
 			attempts: 0,
 		},
-		link: `${window.location.origin}/o/data-engine/v2.0/data-layouts/${dataLayoutId}`,
+		link: `${window.location.origin}${pathContext}/o/data-engine/v2.0/data-layouts/${dataLayoutId}`,
 	});
 
 	return {dataDefinition, dataLayout};

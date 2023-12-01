@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.source.formatter.checkstyle;
@@ -20,7 +11,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.source.formatter.SourceFormatterMessage;
-import com.liferay.source.formatter.checks.configuration.SourceFormatterSuppressions;
+import com.liferay.source.formatter.check.configuration.SourceFormatterSuppressions;
 import com.liferay.source.formatter.checkstyle.util.CheckstyleLogger;
 import com.liferay.source.formatter.checkstyle.util.CheckstyleUtil;
 
@@ -205,7 +196,7 @@ public class Checker extends com.puppycrawl.tools.checkstyle.Checker {
 		}
 		catch (CheckstyleException checkstyleException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(checkstyleException, checkstyleException);
+				_log.debug(checkstyleException);
 			}
 
 			return new TreeSet<>();

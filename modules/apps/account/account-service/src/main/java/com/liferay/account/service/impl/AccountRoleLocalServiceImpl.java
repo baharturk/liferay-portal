@@ -1,60 +1,47 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.impl;
 
 import com.liferay.account.constants.AccountConstants;
-import com.liferay.account.constants.AccountRoleConstants;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountRole;
-import com.liferay.account.model.AccountRoleTable;
 import com.liferay.account.service.base.AccountRoleLocalServiceBaseImpl;
 import com.liferay.account.service.persistence.AccountEntryPersistence;
-import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
-import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
-import com.liferay.petra.sql.dsl.expression.Predicate;
-import com.liferay.petra.sql.dsl.query.FromStep;
-import com.liferay.petra.sql.dsl.query.GroupByStep;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.aop.AopService;
-import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
-import com.liferay.portal.kernel.model.RoleTable;
-import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.search.SortFactory;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.vulcan.util.TransformUtil;
+import com.liferay.portal.search.document.Document;
+import com.liferay.portal.search.hits.SearchHits;
+import com.liferay.portal.search.searcher.SearchRequest;
+import com.liferay.portal.search.searcher.SearchRequestBuilder;
+import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
+import com.liferay.portal.search.searcher.SearchResponse;
+import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.util.PortalInstances;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -100,13 +87,13 @@ public class AccountRoleLocalServiceImpl
 
 		role.setClassPK(accountRole.getAccountRoleId());
 
-		_roleLocalService.updateRole(role);
+		role = _roleLocalService.updateRole(role);
 
 		_resourceLocalService.addResources(
 			role.getCompanyId(), 0, userId, AccountRole.class.getName(),
 			accountRole.getAccountRoleId(), false, false, false);
 
-		return addAccountRole(accountRole);
+		return accountRoleLocalService.addAccountRole(accountRole);
 	}
 
 	@Override
@@ -131,33 +118,6 @@ public class AccountRoleLocalServiceImpl
 
 		for (long accountRoleId : accountRoleIds) {
 			associateUser(accountEntryId, accountRoleId, userId);
-		}
-	}
-
-	@Override
-	public void checkCompanyAccountRoles(long companyId)
-		throws PortalException {
-
-		Company company = _companyLocalService.getCompany(companyId);
-
-		_checkAccountRole(
-			company, AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_MEMBER);
-		_checkAccountRole(
-			company,
-			AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_ADMINISTRATOR);
-
-		Role role = _roleLocalService.fetchRole(
-			companyId, AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_MANAGER);
-
-		if (role == null) {
-			User defaultUser = company.getDefaultUser();
-
-			_roleLocalService.addRole(
-				defaultUser.getUserId(), null, 0,
-				AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_MANAGER, null,
-				_roleDescriptionsMaps.get(
-					AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_MANAGER),
-				RoleConstants.TYPE_ORGANIZATION, null, null);
 		}
 	}
 
@@ -194,7 +154,7 @@ public class AccountRoleLocalServiceImpl
 	public void deleteAccountRolesByCompanyId(long companyId)
 		throws PortalException {
 
-		if (!CompanyThreadLocal.isDeleteInProcess()) {
+		if (!PortalInstances.isCurrentCompanyInDeletionProcess()) {
 			throw new UnsupportedOperationException(
 				"Deleting account roles by company must be called when " +
 					"deleting a company");
@@ -203,7 +163,7 @@ public class AccountRoleLocalServiceImpl
 		for (AccountRole accountRole :
 				accountRolePersistence.findByCompanyId(companyId)) {
 
-			deleteAccountRole(accountRole);
+			accountRoleLocalService.deleteAccountRole(accountRole);
 		}
 	}
 
@@ -226,13 +186,10 @@ public class AccountRoleLocalServiceImpl
 		AccountEntry accountEntry = _accountEntryPersistence.findByPrimaryKey(
 			accountEntryId);
 
-		List<UserGroupRole> userGroupRoles =
-			_userGroupRoleLocalService.getUserGroupRoles(
-				userId, accountEntry.getAccountEntryGroupId());
-
 		return TransformUtil.transform(
 			ListUtil.filter(
-				userGroupRoles,
+				_userGroupRoleLocalService.getUserGroupRoles(
+					userId, accountEntry.getAccountEntryGroupId()),
 				userGroupRole -> {
 					try {
 						Role role = userGroupRole.getRole();
@@ -240,12 +197,19 @@ public class AccountRoleLocalServiceImpl
 						return role.getType() == RoleConstants.TYPE_ACCOUNT;
 					}
 					catch (PortalException portalException) {
-						_log.error(portalException, portalException);
+						_log.error(portalException);
 
 						return false;
 					}
 				}),
 			userGroupRole -> getAccountRoleByRoleId(userGroupRole.getRoleId()));
+	}
+
+	@Override
+	public List<AccountRole> getAccountRolesByAccountEntryIds(
+		long companyId, long[] accountEntryIds) {
+
+		return accountRolePersistence.findByC_A(companyId, accountEntryIds);
 	}
 
 	@Override
@@ -276,24 +240,35 @@ public class AccountRoleLocalServiceImpl
 		LinkedHashMap<String, Object> params, int start, int end,
 		OrderByComparator<?> orderByComparator) {
 
-		return BaseModelSearchResult.createWithStartAndEnd(
-			startAndEnd -> accountRoleLocalService.dslQuery(
-				_getGroupByStep(
-					accountEntryIds, companyId,
-					DSLQueryFactoryUtil.select(AccountRoleTable.INSTANCE),
-					keywords, params
-				).orderBy(
-					RoleTable.INSTANCE, orderByComparator
-				).limit(
-					startAndEnd.getStart(), startAndEnd.getEnd()
-				)),
-			accountRoleLocalService.dslQueryCount(
-				_getGroupByStep(
-					accountEntryIds, companyId,
-					DSLQueryFactoryUtil.countDistinct(
-						AccountRoleTable.INSTANCE.roleId),
-					keywords, params)),
-			start, end);
+		SearchResponse searchResponse = _searcher.search(
+			_getSearchRequest(
+				companyId, accountEntryIds, keywords, params, start, end,
+				orderByComparator));
+
+		SearchHits searchHits = searchResponse.getSearchHits();
+
+		return new BaseModelSearchResult<AccountRole>(
+			TransformUtil.transform(
+				searchHits.getSearchHits(),
+				searchHit -> {
+					Document document = searchHit.getDocument();
+
+					long accountRoleId = document.getLong(Field.ENTRY_CLASS_PK);
+
+					AccountRole accountRole = fetchAccountRole(accountRoleId);
+
+					if (accountRole == null) {
+						Indexer<AccountRole> indexer =
+							IndexerRegistryUtil.getIndexer(AccountRole.class);
+
+						indexer.delete(
+							document.getLong(Field.COMPANY_ID),
+							document.getString(Field.UID));
+					}
+
+					return accountRole;
+				}),
+			searchResponse.getTotalHits());
 	}
 
 	@Override
@@ -337,145 +312,88 @@ public class AccountRoleLocalServiceImpl
 			new long[] {accountRole.getRoleId()});
 	}
 
-	private void _checkAccountRole(Company company, String roleName)
-		throws PortalException {
+	private SearchRequest _getSearchRequest(
+		long companyId, long[] accountEntryIds, String keywords,
+		LinkedHashMap<String, Object> params, int start, int end,
+		OrderByComparator<?> orderByComparator) {
 
-		Role role = _roleLocalService.fetchRole(
-			company.getCompanyId(), roleName);
+		SearchRequestBuilder searchRequestBuilder =
+			_searchRequestBuilderFactory.builder();
 
-		if (role != null) {
-			if (MapUtil.isEmpty(role.getDescriptionMap())) {
-				role.setDescriptionMap(
-					_roleDescriptionsMaps.get(role.getName()));
+		searchRequestBuilder.entryClassNames(
+			AccountRole.class.getName()
+		).emptySearchEnabled(
+			true
+		).highlightEnabled(
+			false
+		).withSearchContext(
+			searchContext -> {
+				searchContext.setCompanyId(companyId);
 
-				_roleLocalService.updateRole(role);
+				if (!Validator.isBlank(keywords)) {
+					searchContext.setKeywords(keywords);
+				}
+
+				searchContext.setEnd(end);
+				searchContext.setStart(start);
+
+				if (orderByComparator != null) {
+					searchContext.setSorts(
+						_sortFactory.getSort(
+							AccountRole.class,
+							orderByComparator.getOrderByFields()[0],
+							orderByComparator.isAscending() ? "asc" : "desc"));
+				}
+
+				if (ArrayUtil.isNotEmpty(accountEntryIds)) {
+					searchContext.setAttribute(
+						"accountEntryIds", accountEntryIds);
+				}
+
+				if (MapUtil.isEmpty(params)) {
+					return;
+				}
+
+				String[] excludedRoleNames = (String[])params.get(
+					"excludedRoleNames");
+
+				if (ArrayUtil.isNotEmpty(excludedRoleNames)) {
+					searchContext.setAttribute(
+						"excludedRoleNames", excludedRoleNames);
+				}
+
+				long permissionUserId = GetterUtil.getLong(
+					params.get("permissionUserId"));
+
+				if (permissionUserId != GetterUtil.DEFAULT_LONG) {
+					searchContext.setUserId(permissionUserId);
+				}
 			}
-
-			return;
-		}
-
-		User defaultUser = company.getDefaultUser();
-
-		addAccountRole(
-			defaultUser.getUserId(), AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
-			roleName, null, _roleDescriptionsMaps.get(roleName));
-	}
-
-	private GroupByStep _getGroupByStep(
-		long[] accountEntryIds, long companyId, FromStep fromStep,
-		String keywords, LinkedHashMap<String, Object> params) {
-
-		return fromStep.from(
-			AccountRoleTable.INSTANCE
-		).innerJoinON(
-			RoleTable.INSTANCE,
-			RoleTable.INSTANCE.roleId.eq(AccountRoleTable.INSTANCE.roleId)
-		).where(
-			AccountRoleTable.INSTANCE.companyId.eq(
-				companyId
-			).and(
-				() -> {
-					if (ArrayUtil.isEmpty(accountEntryIds)) {
-						return null;
-					}
-
-					return AccountRoleTable.INSTANCE.accountEntryId.in(
-						ArrayUtil.toLongArray(accountEntryIds));
-				}
-			).and(
-				() -> {
-					if (params == null) {
-						return null;
-					}
-
-					String[] excludedRoleNames = (String[])params.get(
-						"excludedRoleNames");
-
-					if (ArrayUtil.isEmpty(excludedRoleNames)) {
-						return null;
-					}
-
-					return RoleTable.INSTANCE.name.notIn(excludedRoleNames);
-				}
-			).and(
-				() -> {
-					if (params == null) {
-						return null;
-					}
-
-					Long[] excludedRoleIds = (Long[])params.get(
-						"excludedRoleIds");
-
-					if (ArrayUtil.isEmpty(excludedRoleIds)) {
-						return null;
-					}
-
-					return RoleTable.INSTANCE.roleId.notIn(excludedRoleIds);
-				}
-			).and(
-				() -> {
-					if (Validator.isNull(keywords)) {
-						return null;
-					}
-
-					return Predicate.withParentheses(
-						_customSQL.getKeywordsPredicate(
-							DSLFunctionFactoryUtil.lower(
-								RoleTable.INSTANCE.name),
-							_customSQL.keywords(keywords, true)
-						).or(
-							_customSQL.getKeywordsPredicate(
-								DSLFunctionFactoryUtil.lower(
-									RoleTable.INSTANCE.title),
-								_customSQL.keywords(keywords))
-						).or(
-							_customSQL.getKeywordsPredicate(
-								DSLFunctionFactoryUtil.lower(
-									RoleTable.INSTANCE.description),
-								_customSQL.keywords(keywords))
-						));
-				}
-			)
 		);
+
+		return searchRequestBuilder.build();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		AccountRoleLocalServiceImpl.class);
 
-	private static final Map<String, Map<Locale, String>>
-		_roleDescriptionsMaps = HashMapBuilder.<String, Map<Locale, String>>put(
-			AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_ADMINISTRATOR,
-			Collections.singletonMap(
-				LocaleUtil.US,
-				"Account Administrators are super users of their account.")
-		).put(
-			AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_MANAGER,
-			Collections.singletonMap(
-				LocaleUtil.US,
-				"Account Managers who belong to an organization can " +
-					"administer all accounts associated to that organization.")
-		).put(
-			AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_MEMBER,
-			Collections.singletonMap(
-				LocaleUtil.US,
-				"All users who belong to an account have this role within " +
-					"that account.")
-		).build();
-
 	@Reference
 	private AccountEntryPersistence _accountEntryPersistence;
-
-	@Reference
-	private CompanyLocalService _companyLocalService;
-
-	@Reference
-	private CustomSQL _customSQL;
 
 	@Reference
 	private ResourceLocalService _resourceLocalService;
 
 	@Reference
 	private RoleLocalService _roleLocalService;
+
+	@Reference
+	private Searcher _searcher;
+
+	@Reference
+	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
+
+	@Reference
+	private SortFactory _sortFactory;
 
 	@Reference
 	private UserGroupRoleLocalService _userGroupRoleLocalService;

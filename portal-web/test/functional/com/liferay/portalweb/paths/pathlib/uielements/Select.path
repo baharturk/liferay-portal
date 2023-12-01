@@ -12,7 +12,7 @@
 <tbody>
 <tr>
 	<td>ADDRESS_TYPE</td>
-	<td>//div[label[contains(.,'Type')]]/select[contains(@name,'addressType')]</td>
+	<td>//div[label[contains(.,'Type')]]/select[contains(@name,'addressListTypeId0')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -21,8 +21,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ANY_ARIA_LABEL</td>
+	<td>//select[contains(@aria-label,'${ariaLabel}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ANY_DISABLED</td>
 	<td>//div[not(contains(@class,'hide'))]/div[contains(@class,'input-select-wrapper')][label[contains(.,'${key_selectFieldLabel}')]]/select[contains(@class,'disabled')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ANY_ID</td>
+	<td>//select[contains(@id,'${selectId}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -32,7 +42,7 @@
 </tr>
 <tr>
 	<td>BORDER_BOTTOM_SELECT_FIELD</td>
-	<td>//div[contains(@class,'label')][normalize-space()='${key_borderBottom}']/following-sibling::div[1]//div[label[contains(.,'${key_fieldLabel}')]]/select</td>
+	<td>//button[contains(@class,'collapse-icon')][normalize-space()='${key_borderBottom}']/following-sibling::div[1]//div[label[contains(.,'${key_fieldLabel}')]]/select</td>
 	<td></td>
 </tr>
 <tr>
@@ -97,7 +107,7 @@
 </tr>
 <tr>
 	<td>DISPLAY_TEMPLATE</td>
-	<td>//div[label[contains(.,'Display Template')]]/select</td>
+	<td>//button[contains(@class,'display-template-selector')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -118,6 +128,16 @@
 <tr>
 	<td>GENERIC_SELECT_FIELD</td>
 	<td>//div[label[normalize-space(text())='${key_fieldLabel}']]/select</td>
+	<td></td>
+</tr>
+<tr>
+	<td>GENERIC_SELECT_FIELD_WITH_ICON</td>
+	<td>//div[label[*[name()='svg'][contains(@class,'lexicon-icon-${key_text}')]]]//following-sibling::select</td>
+	<td></td>
+</tr>
+<tr>
+	<td>GENERIC_SELECT_FIELD_WITH_ICON_TEXT</td>
+	<td>//div[label[*[name()='svg'][contains(@class,'lexicon-icon-${key_text}')]]]//following-sibling::div/span[contains(@class,'text-truncate')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -206,8 +226,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>SELECT_VALUE_ID</td>
+	<td>//select[contains(@id,'${selectFieldId}')]/option[normalize-space(text())='${option}']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>SELECT</td>
 	<td>//select</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SELECT_FIELD_LABEL</td>
+	<td>//label[normalize-space(text())='${selectFieldLabel}']//following-sibling::select</td>
 	<td></td>
 </tr>
 <tr>
@@ -246,8 +276,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>USER_AGENT</td>
+	<td>//select[contains(@name,'userAgent_${key_index}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>WORKFLOW_DEFAULT</td>
 	<td>//select[contains(@id,'workflowDefinition-1')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>HEADLESS_SERVERS</td>
+	<td>//div[contains(@class,'servers')]//select</td>
 	<td></td>
 </tr>
 </tbody>

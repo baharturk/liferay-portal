@@ -1,34 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-search-modified-facet',
 	(A) => {
-		var DEFAULTS_FORM_VALIDATOR = A.config.FormValidator;
+		const DEFAULTS_FORM_VALIDATOR = A.config.FormValidator;
 
-		var FacetUtil = Liferay.Search.FacetUtil;
-		var Util = Liferay.Util;
+		const FacetUtil = Liferay.Search.FacetUtil;
+		const Util = Liferay.Util;
 
-		var ModifiedFacetFilter = function (config) {
-			var instance = this;
+		const ModifiedFacetFilter = function (config) {
+			const instance = this;
 
 			instance.form = config.form;
-			instance.fromInputDatePicker = config.fromInputDatePicker;
+			instance.fromInputDatePicker =
+				config.fromInputDatePicker ||
+				instance._getInputDatePicker(config.fromInputName);
 			instance.fromInputName = config.fromInputName;
 			instance.namespace = config.namespace;
 			instance.searchCustomRangeButton = config.searchCustomRangeButton;
-			instance.toInputDatePicker = config.toInputDatePicker;
+			instance.toInputDatePicker =
+				config.toInputDatePicker ||
+				instance._getInputDatePicker(config.toInputName);
 			instance.toInputName = config.toInputName;
 
 			instance.fromInput = A.one('#' + instance.fromInputName);
@@ -42,23 +37,15 @@ AUI.add(
 					A.bind(instance.filter, instance)
 				);
 			}
-
-			if (instance.fromInput) {
-				instance.fromInput.on('keydown', instance._onDateInputKeyDown);
-			}
-
-			if (instance.toInput) {
-				instance.toInput.on('keydown', instance._onDateInputKeyDown);
-			}
 		};
 
-		var ModifiedFacetFilterUtil = {
+		const ModifiedFacetFilterUtil = {
 			clearSelections() {
-				var param = this.getParameterName();
-				var paramFrom = param + 'From';
-				var paramTo = param + 'To';
+				const param = this.getParameterName();
+				const paramFrom = param + 'From';
+				const paramTo = param + 'To';
 
-				var parameterArray = document.location.search
+				let parameterArray = document.location.search
 					.substr(1)
 					.split('&');
 
@@ -94,7 +81,7 @@ AUI.add(
 			 * @returns {String} The date string.
 			 */
 			toLocaleDateStringFormatted(date) {
-				var localDate = new Date(date);
+				const localDate = new Date(date);
 
 				localDate.setMinutes(
 					date.getMinutes() - date.getTimezoneOffset()
@@ -105,10 +92,22 @@ AUI.add(
 		};
 
 		A.mix(ModifiedFacetFilter.prototype, {
-			_initializeFormValidator() {
-				var instance = this;
+			_getInputDatePicker(inputName) {
+				const inputElements = document.getElementsByName(inputName);
 
-				var dateRangeRuleName = instance.namespace + 'dateRange';
+				if (inputElements[0]) {
+					return Liferay.component(
+						`${inputElements[0].getAttribute('id')}DatePicker`
+					);
+				}
+
+				return null;
+			},
+
+			_initializeFormValidator() {
+				const instance = this;
+
+				const dateRangeRuleName = instance.namespace + 'dateRange';
 
 				A.mix(
 					DEFAULTS_FORM_VALIDATOR.STRINGS,
@@ -133,7 +132,7 @@ AUI.add(
 					true
 				);
 
-				var customRangeValidator = new A.FormValidator({
+				const customRangeValidator = new A.FormValidator({
 					boundingBox: instance.form,
 					fieldContainer: 'div',
 					on: {
@@ -160,7 +159,7 @@ AUI.add(
 					},
 				});
 
-				var onRangeSelectionChange = function () {
+				const onRangeSelectionChange = function () {
 					customRangeValidator.validate();
 				};
 
@@ -179,32 +178,26 @@ AUI.add(
 				}
 			},
 
-			_onDateInputKeyDown(event) {
-				if (!event.isKey('TAB')) {
-					event.preventDefault();
-				}
-			},
-
 			filter() {
-				var instance = this;
+				const instance = this;
 
-				var fromDate = instance.fromInputDatePicker.getDate();
+				const fromDate = instance.fromInputDatePicker.getDate();
 
-				var toDate = instance.toInputDatePicker.getDate();
+				const toDate = instance.toInputDatePicker.getDate();
 
-				var modifiedFromParameter = ModifiedFacetFilterUtil.toLocaleDateStringFormatted(
+				const modifiedFromParameter = ModifiedFacetFilterUtil.toLocaleDateStringFormatted(
 					fromDate
 				);
 
-				var modifiedToParameter = ModifiedFacetFilterUtil.toLocaleDateStringFormatted(
+				const modifiedToParameter = ModifiedFacetFilterUtil.toLocaleDateStringFormatted(
 					toDate
 				);
 
-				var param = ModifiedFacetFilterUtil.getParameterName();
-				var paramFrom = param + 'From';
-				var paramTo = param + 'To';
+				const param = ModifiedFacetFilterUtil.getParameterName();
+				const paramFrom = param + 'From';
+				const paramTo = param + 'To';
 
-				var parameterArray = document.location.search
+				let parameterArray = document.location.search
 					.substr(1)
 					.split('&');
 
@@ -223,7 +216,7 @@ AUI.add(
 					parameterArray
 				);
 
-				var startParameterNameElement = document.getElementById(
+				const startParameterNameElement = document.getElementById(
 					instance.namespace + 'start-parameter-name'
 				);
 

@@ -1,6 +1,7 @@
 @component-name = "portal-security"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "AntiSamy";
@@ -12,9 +13,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -24,11 +25,13 @@ definition {
 		}
 	}
 
-	@description = "LPS-112581 TC-4: AntiSamy configuration XML should be configurable through the Portal"
-	@priority = "5"
+	@description = "LPS-112581 TC-4: AntiSamy configuration XML should be configurable through the Portal."
+	@priority = 3
 	test AntiSamyConfigXMLShouldBeConfigurableInPortal {
 		property antisamy.enabled = "true";
-		property test.name.skip.portal.instance = "AntiSamy#AntiSamyConfigXMLShouldBeConfigurableInPortal";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Verify that AntiSamy module has been started") {
 			SAMLNavigation.viewConsoleValue(consoleValue = "STARTED com.liferay.portal.security.antisamy");
@@ -58,11 +61,13 @@ definition {
 		}
 	}
 
-	@description = "LPS-112581 TC-3: Knowledge base specific AntiSamy rule should work and sanitize dynamic parameter from KB article"
-	@priority = "5"
+	@description = "LPS-112581 TC-3: Knowledge base specific AntiSamy rule should work and sanitize dynamic parameter from KB article."
+	@priority = 3
 	test ModelSpecificAntiSamyRulesShouldWorkForModel {
 		property antisamy.enabled = "true";
-		property test.name.skip.portal.instance = "AntiSamy#ModelSpecificAntiSamyRulesShouldWorkForModel";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Verify that AntiSamy module has been started") {
 			SAMLNavigation.viewConsoleValue(consoleValue = "STARTED com.liferay.portal.security.antisamy");
@@ -88,6 +93,7 @@ definition {
 
 			KBArticle.editCP(
 				kbArticleTitle = "Test AntiSamy",
+				kbArticleTitleEdit = "Test AntiSamy Edit",
 				saveAsDraft = "true");
 		}
 
@@ -96,8 +102,8 @@ definition {
 		}
 	}
 
-	@description = "LRQA-42763 TC-1: Javascript injected into Web Content Display page should be sanitized by AntiSamy"
-	@priority = "4"
+	@description = "LRQA-42763 TC-1: Javascript injected into Web Content Display page should be sanitized by AntiSamy."
+	@priority = 3
 	test ScriptInWebContentDisplayPortletShouldBeSanitized {
 		task ("Add public widget page") {
 			JSONLayout.addPublicLayout(
@@ -121,20 +127,20 @@ definition {
 
 			Navigator.gotoPage(pageName = "Web Content Display Page");
 
-			WebContent.addPGViaWCD(
-				webContentContent = "${webContentContent}",
+			WebContentDisplayPortlet.add(
+				webContentContent = ${webContentContent},
 				webContentTitle = "WC WebContent Title");
 		}
 
 		task ("Assert that script is sanitized so page content remains unchanged") {
-			WebContent.viewPGViaWCD(
-				webContentContent = "PASS",
-				webContentTitle = "Web Content Title");
+			WebContentDisplayPortlet.viewContent(
+				webContentContent = "p id='demo'>FAIL</p>",
+				webContentTitle = "WC WebContent Title");
 		}
 	}
 
-	@description = "LRQA-4988 TC-1: Javascript injected into Wiki portlet should be sanitized by AntiSamy"
-	@priority = "4"
+	@description = "LRQA-4988 TC-1: Javascript injected into Wiki portlet should be sanitized by AntiSamy."
+	@priority = 3
 	test ScriptInWikiPortletShouldBeSanitized {
 		task ("Add public widget page") {
 			JSONLayout.addPublicLayout(
@@ -160,7 +166,7 @@ definition {
 
 			WikiPage.addFrontPagePG(
 				htmlSource = "true",
-				wikiPageContent = "${wikiPageContent}");
+				wikiPageContent = ${wikiPageContent});
 		}
 
 		task ("Assert that script is sanitized so page content remains unchanged") {

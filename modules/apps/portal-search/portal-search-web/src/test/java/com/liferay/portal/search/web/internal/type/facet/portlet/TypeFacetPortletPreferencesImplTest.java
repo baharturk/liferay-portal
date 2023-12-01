@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.type.facet.portlet;
@@ -23,7 +14,6 @@ import com.liferay.portal.search.internal.asset.SearchableAssetClassNamesProvide
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -31,10 +21,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Adam Brandizzi
@@ -48,10 +35,8 @@ public class TypeFacetPortletPreferencesImplTest {
 
 	@Before
 	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
 		typeFacetPortletPreferencesImpl = new TypeFacetPortletPreferencesImpl(
-			_objectDefinitionLocalService, Optional.empty(),
+			_objectDefinitionLocalService, null,
 			new SearchableAssetClassNamesProviderImpl() {
 				{
 					assetRendererFactoryRegistry =
@@ -136,12 +121,10 @@ public class TypeFacetPortletPreferencesImplTest {
 
 	protected static final String CLASS_NAME_2 = "com.liferay.model.Model2";
 
-	@Mock
-	protected AssetRendererFactory<?> assetRendererFactory1;
-
-	@Mock
-	protected AssetRendererFactory<?> assetRendererFactory2;
-
+	protected AssetRendererFactory<?> assetRendererFactory1 = Mockito.mock(
+		AssetRendererFactory.class);
+	protected AssetRendererFactory<?> assetRendererFactory2 = Mockito.mock(
+		AssetRendererFactory.class);
 	protected TypeFacetPortletPreferencesImpl typeFacetPortletPreferencesImpl;
 
 	private void _mockAssetRendererFactoryGetClassName(
@@ -169,7 +152,7 @@ public class TypeFacetPortletPreferencesImplTest {
 
 		Mockito.when(
 			_assetRendererFactoryRegistry.getAssetRendererFactories(
-				Matchers.anyLong())
+				Mockito.anyLong())
 		).thenReturn(
 			Arrays.asList(assetRendererFactories)
 		);
@@ -185,13 +168,11 @@ public class TypeFacetPortletPreferencesImplTest {
 		);
 	}
 
-	@Mock
-	private AssetRendererFactoryRegistry _assetRendererFactoryRegistry;
-
-	@Mock
-	private ObjectDefinitionLocalService _objectDefinitionLocalService;
-
-	@Mock
-	private SearchEngineHelper _searchEngineHelper;
+	private final AssetRendererFactoryRegistry _assetRendererFactoryRegistry =
+		Mockito.mock(AssetRendererFactoryRegistry.class);
+	private final ObjectDefinitionLocalService _objectDefinitionLocalService =
+		Mockito.mock(ObjectDefinitionLocalService.class);
+	private final SearchEngineHelper _searchEngineHelper = Mockito.mock(
+		SearchEngineHelper.class);
 
 }

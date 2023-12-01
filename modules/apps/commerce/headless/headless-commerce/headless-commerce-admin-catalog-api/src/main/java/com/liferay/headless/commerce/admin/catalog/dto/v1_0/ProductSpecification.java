@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.dto.v1_0;
@@ -64,7 +55,7 @@ public class ProductSpecification implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "31130")
 	public Long getId() {
 		return id;
 	}
@@ -90,7 +81,9 @@ public class ProductSpecification implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@Schema(
+		example = "{en_US=Hand Saw, hr_HR=Product Name HR, hu_HU=Product Name HU}"
+	)
 	@Valid
 	public Map<String, String> getLabel() {
 		return label;
@@ -120,7 +113,7 @@ public class ProductSpecification implements Serializable {
 	protected Map<String, String> label;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30129")
 	public Long getOptionCategoryId() {
 		return optionCategoryId;
 	}
@@ -149,7 +142,7 @@ public class ProductSpecification implements Serializable {
 	protected Long optionCategoryId;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "1.2")
 	public Double getPriority() {
 		return priority;
 	}
@@ -178,7 +171,7 @@ public class ProductSpecification implements Serializable {
 	protected Double priority;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30129")
 	public Long getProductId() {
 		return productId;
 	}
@@ -207,7 +200,7 @@ public class ProductSpecification implements Serializable {
 	protected Long productId;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30129")
 	public Long getSpecificationId() {
 		return specificationId;
 	}
@@ -235,7 +228,7 @@ public class ProductSpecification implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long specificationId;
 
-	@Schema
+	@Schema(example = "specification-key")
 	public String getSpecificationKey() {
 		return specificationKey;
 	}
@@ -264,7 +257,7 @@ public class ProductSpecification implements Serializable {
 	@NotEmpty
 	protected String specificationKey;
 
-	@Schema
+	@Schema(example = "{en_US=Croatia, hr_HR=Hrvatska, hu_HU=Horvatorszag}")
 	@Valid
 	public Map<String, String> getValue() {
 		return value;
@@ -500,5 +493,7 @@ public class ProductSpecification implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

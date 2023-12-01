@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.content.internal.resource.v1_0;
@@ -25,9 +16,9 @@ import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.headless.admin.content.resource.v1_0.PageDefinitionResource;
 import com.liferay.headless.delivery.dto.v1_0.PageDefinition;
+import com.liferay.layout.importer.LayoutsImporter;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateActionKeys;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateConstants;
-import com.liferay.layout.page.template.importer.LayoutPageTemplatesImporter;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -59,7 +50,6 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletResponse;
 
 import javax.ws.rs.NotAuthorizedException;
@@ -148,11 +138,11 @@ public class PageDefinitionResourceImpl extends BasePageDefinitionResourceImpl {
 		ObjectWriter objectWriter = objectMapper.writer(filterProvider);
 
 		try {
-			_layoutPageTemplatesImporter.importPageElement(
+			_layoutsImporter.importPageElement(
 				layout, layoutStructure, layoutStructure.getMainItemId(),
 				objectWriter.writeValueAsString(
 					pageDefinition.getPageElement()),
-				0);
+				0, true);
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
@@ -187,18 +177,11 @@ public class PageDefinitionResourceImpl extends BasePageDefinitionResourceImpl {
 
 		LayoutSet layoutSet = layout.getLayoutSet();
 
-		ServletContext servletContext = ServletContextPool.get(
-			StringPool.BLANK);
-
-		if (contextHttpServletRequest.getAttribute(WebKeys.CTX) == null) {
-			contextHttpServletRequest.setAttribute(WebKeys.CTX, servletContext);
-		}
-
 		Document document = Jsoup.parse(
 			ThemeUtil.include(
-				servletContext, contextHttpServletRequest,
-				contextHttpServletResponse, "portal_normal.ftl",
-				layoutSet.getTheme(), false));
+				ServletContextPool.get(StringPool.BLANK),
+				contextHttpServletRequest, contextHttpServletResponse,
+				"portal_normal.ftl", layoutSet.getTheme(), false));
 
 		_layoutLocalService.deleteLayout(layout.getPlid(), serviceContext);
 
@@ -258,10 +241,10 @@ public class PageDefinitionResourceImpl extends BasePageDefinitionResourceImpl {
 		_layoutPageTemplatePortletResourcePermission;
 
 	@Reference
-	private LayoutPageTemplatesImporter _layoutPageTemplatesImporter;
+	private LayoutPermission _layoutPermission;
 
 	@Reference
-	private LayoutPermission _layoutPermission;
+	private LayoutsImporter _layoutsImporter;
 
 	@Reference
 	private Portal _portal;

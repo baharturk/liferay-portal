@@ -1,23 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {ClayButtonWithIcon} from '@clayui/button';
+import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import {ClayDropDownWithItems} from '@clayui/drop-down';
-import ClayManagementToolbar from '@clayui/management-toolbar';
+import ClayIcon from '@clayui/icon';
+import {LinkOrButton} from '@clayui/shared';
+import {ManagementToolbar as FrontendManagementToolbar} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
-import React, {useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 
+import normalizeDropdownItems from '../normalize_dropdown_items';
 import ActionControls from './ActionControls';
 import CreationMenu from './CreationMenu';
 import FeatureFlagContext from './FeatureFlagContext';
@@ -29,6 +24,8 @@ import SelectionControls from './SelectionControls';
 
 import './ManagementToolbar.scss';
 
+const noop = () => {};
+
 function ManagementToolbar({
 	clearResultsURL,
 	clearSelectionURL,
@@ -37,20 +34,23 @@ function ManagementToolbar({
 	filterDropdownItems,
 	filterLabelItems,
 	itemsTotal,
+	itemsType,
 	infoPanelId,
 	initialActionDropdownItems,
 	initialCheckboxStatus,
 	initialSelectAllButtonVisible,
 	initialSelectedItems,
-	onActionButtonClick = () => {},
-	onCheckboxChange = () => {},
-	onClearSelectionButtonClick = () => {},
-	onCreateButtonClick = () => {},
-	onCreationMenuItemClick = () => {},
-	onInfoButtonClick = () => {},
-	onFilterDropdownItemClick = () => {},
-	onSelectAllButtonClick = () => {},
+	onActionButtonClick = noop,
+	onCheckboxChange = noop,
+	onClearSelectionButtonClick = noop,
+	onCreateButtonClick = noop,
+	onCreationMenuItemClick = noop,
+	onInfoButtonClick = noop,
+	onFilterDropdownItemClick = noop,
+	onOrderDropdownItemClick = noop,
+	onSelectAllButtonClick = noop,
 	onShowMoreButtonClick,
+	orderDropdownItems,
 	searchActionURL,
 	searchContainerId,
 	searchData,
@@ -58,6 +58,7 @@ function ManagementToolbar({
 	searchFormName,
 	searchInputAutoFocus,
 	searchInputName,
+	searchResultsTitle,
 	searchValue,
 	selectAllURL,
 	selectable,
@@ -76,25 +77,48 @@ function ManagementToolbar({
 	);
 	const [active, setActive] = useState(initialCheckboxStatus !== 'unchecked');
 	const [searchMobile, setSearchMobile] = useState(false);
+	const normalizedViewTypeItems = useMemo(
+		() => normalizeDropdownItems(viewTypeItems),
+		[viewTypeItems]
+	);
+	const activeViewType = useMemo(
+		() => viewTypeItems?.find((item) => item.active),
+		[viewTypeItems]
+	);
+	const viewTypeTitle = sub(
+		Liferay.Language.get('select-view-currently-selected-x'),
+		activeViewType?.label
+	);
+
+	const searchButtonRef = useRef();
+
+	useEffect(() => {
+		if (searchMobile) {
+			const searchButton = searchButtonRef.current;
+
+			return () => searchButton?.focus();
+		}
+	}, [searchMobile]);
 
 	return (
 		<FeatureFlagContext.Provider
 			value={{showDesignImprovements: showDesignImprovementsFF}}
 		>
-			<ClayManagementToolbar active={active}>
-				<ClayManagementToolbar.ItemList>
+			<FrontendManagementToolbar.Container active={active}>
+				<FrontendManagementToolbar.ItemList>
 					{selectable && (
 						<SelectionControls
 							actionDropdownItems={actionDropdownItems}
 							active={active}
 							clearSelectionURL={clearSelectionURL}
-							disabled={disabled}
+							disabled={disabled || itemsTotal === 0}
 							initialCheckboxStatus={initialCheckboxStatus}
 							initialSelectAllButtonVisible={
 								initialSelectAllButtonVisible
 							}
 							initialSelectedItems={initialSelectedItems}
 							itemsTotal={itemsTotal}
+							itemsType={itemsType}
 							onCheckboxChange={onCheckboxChange}
 							onClearButtonClick={onClearSelectionButtonClick}
 							onSelectAllButtonClick={onSelectAllButtonClick}
@@ -119,15 +143,18 @@ function ManagementToolbar({
 							onFilterDropdownItemClick={
 								onFilterDropdownItemClick
 							}
+							onOrderDropdownItemClick={onOrderDropdownItemClick}
+							orderDropdownItems={orderDropdownItems}
 							sortingOrder={sortingOrder}
 							sortingURL={sortingURL}
 						/>
 					)}
-				</ClayManagementToolbar.ItemList>
+				</FrontendManagementToolbar.ItemList>
 
 				{!active && showSearch && (
 					<SearchControls
 						disabled={disabled}
+						onCloseSearchMobile={() => setSearchMobile(false)}
 						searchActionURL={searchActionURL}
 						searchData={searchData}
 						searchFormMethod={searchFormMethod}
@@ -136,14 +163,14 @@ function ManagementToolbar({
 						searchInputName={searchInputName}
 						searchMobile={searchMobile}
 						searchValue={searchValue}
-						setSearchMobile={setSearchMobile}
 					/>
 				)}
 
-				<ClayManagementToolbar.ItemList>
+				<FrontendManagementToolbar.ItemList role="none">
 					{!active && showSearch && (
 						<SearchControls.ShowMobileButton
 							disabled={disabled}
+							ref={searchButtonRef}
 							setSearchMobile={setSearchMobile}
 						/>
 					)}
@@ -165,27 +192,49 @@ function ManagementToolbar({
 						</>
 					) : (
 						<>
-							{viewTypeItems && (
-								<ClayManagementToolbar.Item>
+							{normalizedViewTypeItems && (
+								<FrontendManagementToolbar.Item>
 									<ClayDropDownWithItems
-										items={viewTypeItems}
+										items={normalizedViewTypeItems}
 										trigger={
-											<ClayButtonWithIcon
-												className="nav-link nav-link-monospaced"
-												displayType="unstyled"
-												symbol={
-													viewTypeItems.find(
-														(item) => item.active
-													)?.icon || ''
-												}
-											/>
+											showDesignImprovementsFF ? (
+												<ClayButton
+													aria-label={viewTypeTitle}
+													className="nav-link"
+													displayType="unstyled"
+													title={viewTypeTitle}
+												>
+													{activeViewType?.icon && (
+														<ClayIcon
+															symbol={
+																activeViewType?.icon
+															}
+														/>
+													)}
+
+													<ClayIcon
+														className="inline-item inline-item-after"
+														symbol="caret-double-l"
+													/>
+												</ClayButton>
+											) : (
+												<ClayButtonWithIcon
+													aria-label={viewTypeTitle}
+													className="nav-link nav-link-monospaced"
+													displayType="unstyled"
+													symbol={
+														activeViewType?.icon
+													}
+													title={viewTypeTitle}
+												/>
+											)
 										}
 									/>
-								</ClayManagementToolbar.Item>
+								</FrontendManagementToolbar.Item>
 							)}
 
 							{showCreationMenu && (
-								<ClayManagementToolbar.Item>
+								<FrontendManagementToolbar.Item>
 									{creationMenu ? (
 										<CreationMenu
 											{...creationMenu}
@@ -199,6 +248,16 @@ function ManagementToolbar({
 												onShowMoreButtonClick
 											}
 										/>
+									) : showDesignImprovementsFF ? (
+										<LinkOrButton
+											className="nav-btn"
+											displayType="primary"
+											onClick={onCreateButtonClick}
+											symbol="plus"
+											wide
+										>
+											{Liferay.Language.get('new')}
+										</LinkOrButton>
 									) : (
 										<ClayButtonWithIcon
 											className="nav-btn nav-btn-monospaced"
@@ -207,7 +266,7 @@ function ManagementToolbar({
 											symbol="plus"
 										/>
 									)}
-								</ClayManagementToolbar.Item>
+								</FrontendManagementToolbar.Item>
 							)}
 						</>
 					)}
@@ -219,15 +278,17 @@ function ManagementToolbar({
 							separator={active}
 						/>
 					)}
-				</ClayManagementToolbar.ItemList>
-			</ClayManagementToolbar>
+				</FrontendManagementToolbar.ItemList>
+			</FrontendManagementToolbar.Container>
 
 			{showResultsBar && (
 				<ResultsBar
 					clearResultsURL={clearResultsURL}
 					filterLabelItems={filterLabelItems}
 					itemsTotal={itemsTotal}
+					searchContainerId={searchContainerId}
 					searchValue={searchValue}
+					title={searchResultsTitle}
 				/>
 			)}
 		</FeatureFlagContext.Provider>
@@ -254,16 +315,19 @@ ManagementToolbar.propTypes = {
 		'unchecked',
 	]),
 	itemsTotal: PropTypes.number,
+	itemsType: PropTypes.string,
 	onCheckboxChange: PropTypes.func,
 	onCreateButtonClick: PropTypes.func,
 	onInfoButtonClick: PropTypes.func,
 	onViewTypeSelect: PropTypes.func,
+	orderDropdownItems: PropTypes.array,
 	searchActionURL: PropTypes.string,
 	searchContainerId: PropTypes.string,
 	searchData: PropTypes.object,
 	searchFormMethod: PropTypes.string,
 	searchFormName: PropTypes.string,
 	searchInputName: PropTypes.string,
+	searchResultsTitle: PropTypes.string,
 	searchValue: PropTypes.string,
 	selectAllURL: PropTypes.string,
 	selectable: PropTypes.bool,

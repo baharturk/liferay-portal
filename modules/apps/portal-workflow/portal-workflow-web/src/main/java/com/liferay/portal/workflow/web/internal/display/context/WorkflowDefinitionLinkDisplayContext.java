@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.web.internal.display.context;
@@ -18,7 +9,6 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -34,6 +24,7 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
 import com.liferay.portal.kernel.theme.PortletDisplay;
@@ -48,13 +39,14 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowDefinition;
-import com.liferay.portal.kernel.workflow.WorkflowDefinitionManagerUtil;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
 import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
-import com.liferay.portal.kernel.workflow.comparator.WorkflowComparatorFactoryUtil;
+import com.liferay.portal.kernel.workflow.WorkflowHandlerVisibleFilter;
+import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
 import com.liferay.portal.workflow.constants.WorkflowDefinitionConstants;
 import com.liferay.portal.workflow.constants.WorkflowPortletKeys;
 import com.liferay.portal.workflow.constants.WorkflowWebKeys;
+import com.liferay.portal.workflow.util.WorkflowDefinitionManagerUtil;
 import com.liferay.portal.workflow.web.internal.constants.WorkflowDefinitionLinkResourcesConstants;
 import com.liferay.portal.workflow.web.internal.display.context.helper.WorkflowDefinitionLinkRequestHelper;
 import com.liferay.portal.workflow.web.internal.search.WorkflowDefinitionLinkSearch;
@@ -89,7 +81,9 @@ public class WorkflowDefinitionLinkDisplayContext {
 	public WorkflowDefinitionLinkDisplayContext(
 		RenderRequest renderRequest, RenderResponse renderResponse,
 		WorkflowDefinitionLinkLocalService workflowDefinitionLinkLocalService,
-		ResourceBundleLoader resourceBundleLoader) {
+		ResourceBundleLoader resourceBundleLoader,
+		WorkflowHandlerVisibleFilter workflowHandlerVisibleFilter,
+		WorkflowComparatorFactory workflowComparatorFactory) {
 
 		_workflowDefinitionLinkLocalService =
 			workflowDefinitionLinkLocalService;
@@ -106,6 +100,8 @@ public class WorkflowDefinitionLinkDisplayContext {
 			_httpServletRequest);
 
 		_resourceBundleLoader = resourceBundleLoader;
+		_workflowHandlerVisibleFilter = workflowHandlerVisibleFilter;
+		_workflowComparatorFactory = workflowComparatorFactory;
 	}
 
 	public WorkflowDefinition fetchDefaultWorkflowDefinition(String className)
@@ -335,13 +331,10 @@ public class WorkflowDefinitionLinkDisplayContext {
 				searchTerms.getKeywords(), false);
 		}
 
-		searchContainer.setResults(
-			ListUtil.subList(
-				ListUtil.sort(
-					workflowDefinitionLinkSearchEntries,
-					searchContainer.getOrderByComparator()),
-				searchContainer.getStart(), searchContainer.getEnd()));
-		searchContainer.setTotal(workflowDefinitionLinkSearchEntries.size());
+		searchContainer.setResultsAndTotal(
+			ListUtil.sort(
+				workflowDefinitionLinkSearchEntries,
+				searchContainer.getOrderByComparator()));
 
 		return searchContainer;
 	}
@@ -405,8 +398,7 @@ public class WorkflowDefinitionLinkDisplayContext {
 			WorkflowDefinitionManagerUtil.getActiveWorkflowDefinitions(
 				_workflowDefinitionLinkRequestHelper.getCompanyId(),
 				QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-				WorkflowComparatorFactoryUtil.getDefinitionNameComparator(
-					true)),
+				_workflowComparatorFactory.getDefinitionNameComparator(true)),
 			new WorkflowDefinitionScopePredicate(
 				WorkflowDefinitionConstants.SCOPE_ALL));
 
@@ -561,7 +553,17 @@ public class WorkflowDefinitionLinkDisplayContext {
 
 		return ListUtil.filter(
 			workflowHandlers,
-			workflowHandler -> workflowHandler.isVisible(group));
+			workflowHandler -> {
+				WorkflowHandlerVisibleFilter workflowHandlerVisibleFilter =
+					_workflowHandlerVisibleFilter;
+
+				if (workflowHandlerVisibleFilter == null) {
+					return workflowHandler.isVisible();
+				}
+
+				return workflowHandlerVisibleFilter.isVisible(
+					workflowHandler, group);
+			});
 	}
 
 	private WorkflowDefinitionLinkSearchEntry
@@ -649,9 +651,7 @@ public class WorkflowDefinitionLinkDisplayContext {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					noSuchWorkflowDefinitionLinkException,
-					noSuchWorkflowDefinitionLinkException);
+				_log.debug(noSuchWorkflowDefinitionLinkException);
 			}
 
 			return null;
@@ -668,10 +668,12 @@ public class WorkflowDefinitionLinkDisplayContext {
 	private String _orderByType;
 	private final PortalPreferences _portalPreferences;
 	private final ResourceBundleLoader _resourceBundleLoader;
+	private final WorkflowComparatorFactory _workflowComparatorFactory;
 	private final WorkflowDefinitionLinkLocalService
 		_workflowDefinitionLinkLocalService;
 	private final WorkflowDefinitionLinkRequestHelper
 		_workflowDefinitionLinkRequestHelper;
 	private List<WorkflowDefinition> _workflowDefinitions;
+	private final WorkflowHandlerVisibleFilter _workflowHandlerVisibleFilter;
 
 }

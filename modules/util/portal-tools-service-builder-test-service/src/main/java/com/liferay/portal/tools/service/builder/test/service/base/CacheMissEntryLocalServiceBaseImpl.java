@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.base;
@@ -29,12 +20,14 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -47,8 +40,6 @@ import com.liferay.portal.tools.service.builder.test.service.CacheMissEntryLocal
 import com.liferay.portal.tools.service.builder.test.service.persistence.CacheMissEntryPersistence;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -67,7 +58,8 @@ import javax.sql.DataSource;
  */
 public abstract class CacheMissEntryLocalServiceBaseImpl
 	extends BaseLocalServiceImpl
-	implements CacheMissEntryLocalService, IdentifiableOSGiService {
+	implements CacheMissEntryLocalService, CTService<CacheMissEntry>,
+			   IdentifiableOSGiService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -318,6 +310,11 @@ public abstract class CacheMissEntryLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement CacheMissEntryLocalServiceImpl#deleteCacheMissEntry(CacheMissEntry) to avoid orphaned data");
+		}
+
 		return cacheMissEntryLocalService.deleteCacheMissEntry(
 			(CacheMissEntry)persistedModel);
 	}
@@ -443,18 +440,11 @@ public abstract class CacheMissEntryLocalServiceBaseImpl
 	}
 
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register(
-			"com.liferay.portal.tools.service.builder.test.model.CacheMissEntry",
-			cacheMissEntryLocalService);
-
-		_setLocalServiceUtilService(cacheMissEntryLocalService);
+		CacheMissEntryLocalServiceUtil.setService(cacheMissEntryLocalService);
 	}
 
 	public void destroy() {
-		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.portal.tools.service.builder.test.model.CacheMissEntry");
-
-		_setLocalServiceUtilService(null);
+		CacheMissEntryLocalServiceUtil.setService(null);
 	}
 
 	/**
@@ -514,22 +504,6 @@ public abstract class CacheMissEntryLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		CacheMissEntryLocalService cacheMissEntryLocalService) {
-
-		try {
-			Field field = CacheMissEntryLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, cacheMissEntryLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	@BeanReference(type = CacheMissEntryLocalService.class)
 	protected CacheMissEntryLocalService cacheMissEntryLocalService;
 
@@ -542,8 +516,7 @@ public abstract class CacheMissEntryLocalServiceBaseImpl
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@ServiceReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry
-		persistedModelLocalServiceRegistry;
+	private static final Log _log = LogFactoryUtil.getLog(
+		CacheMissEntryLocalServiceBaseImpl.class);
 
 }

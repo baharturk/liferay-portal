@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {getClosestAssetElement} from '../utils/assets';
@@ -28,6 +19,25 @@ const onReady = (fn) => {
 	}
 
 	return () => document.removeEventListener('DOMContentLoaded', fn);
+};
+
+/**
+ * Creates an event listener for all event types in events array.
+ *
+ * @param {Array.string} events Array of event type.
+ * @param {Function} fn The event listener callback.
+ * @returns {Function} The function to remove all the event listers that were added from events param.
+ */
+const onEvents = (events, fn) => {
+	if (events) {
+		events.forEach((eventName) => document.addEventListener(eventName, fn));
+
+		return () => {
+			events.forEach((eventName) => {
+				document.removeEventListener(eventName, fn);
+			});
+		};
+	}
 };
 
 const clickEvent = ({
@@ -137,4 +147,4 @@ const removeDups = (results, items) => {
 	);
 };
 
-export {clickEvent, onReady, removeDups, sortByEventDate};
+export {clickEvent, onEvents, onReady, removeDups, sortByEventDate};

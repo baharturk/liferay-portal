@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.workflow;
@@ -45,8 +36,8 @@ public class DefaultWorkflowInstance implements Serializable, WorkflowInstance {
 	}
 
 	@Override
-	public List<String> getCurrentNodeNames() {
-		return _currentNodeNames;
+	public List<WorkflowNode> getCurrentWorkflowNodes() {
+		return _currentWorkflowNodes;
 	}
 
 	@Override
@@ -71,16 +62,6 @@ public class DefaultWorkflowInstance implements Serializable, WorkflowInstance {
 	@Override
 	public Date getStartDate() {
 		return _startDate;
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 * #getCurrentNodeNames()}
-	 */
-	@Deprecated
-	@Override
-	public String getState() {
-		return _state;
 	}
 
 	@Override
@@ -127,8 +108,10 @@ public class DefaultWorkflowInstance implements Serializable, WorkflowInstance {
 		_childrenWorkflowInstances = childrenWorkflowInstances;
 	}
 
-	public void setCurrentNodeNames(List<String> currentNodeNames) {
-		_currentNodeNames = currentNodeNames;
+	public void setCurrentWorkflowNodes(
+		List<WorkflowNode> currentWorkflowNodes) {
+
+		_currentWorkflowNodes = currentWorkflowNodes;
 	}
 
 	public void setEndDate(Date endDate) {
@@ -144,15 +127,6 @@ public class DefaultWorkflowInstance implements Serializable, WorkflowInstance {
 
 	public void setStartDate(Date startDate) {
 		_startDate = startDate;
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 * #setCurrentNodeNames(List)}
-	 */
-	@Deprecated
-	public void setState(String state) {
-		_state = state;
 	}
 
 	public void setWorkflowContext(Map<String, Serializable> workflowContext) {
@@ -174,11 +148,10 @@ public class DefaultWorkflowInstance implements Serializable, WorkflowInstance {
 	private boolean _active;
 	private List<WorkflowInstance> _childrenWorkflowInstances =
 		new ArrayList<>();
-	private List<String> _currentNodeNames;
+	private List<WorkflowNode> _currentWorkflowNodes;
 	private Date _endDate;
 	private WorkflowInstance _parentWorkflowInstance;
 	private Date _startDate;
-	private String _state;
 	private Map<String, Serializable> _workflowContext;
 	private String _workflowDefinitionName;
 	private int _workflowDefinitionVersion;

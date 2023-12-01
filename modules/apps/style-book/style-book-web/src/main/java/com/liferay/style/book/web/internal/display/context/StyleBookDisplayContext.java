@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.web.internal.display.context;
 
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
@@ -32,6 +24,8 @@ import com.liferay.style.book.util.comparator.StyleBookEntryCreateDateComparator
 import com.liferay.style.book.util.comparator.StyleBookEntryNameComparator;
 import com.liferay.style.book.web.internal.security.permissions.resource.StyleBookPermission;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import javax.portlet.PortletURL;
@@ -109,14 +103,32 @@ public class StyleBookDisplayContext {
 					themeDisplay.getScopeGroupId(), _getKeywords()));
 		}
 		else {
-			styleBookEntriesSearchContainer.setResultsAndTotal(
-				() -> StyleBookEntryLocalServiceUtil.getStyleBookEntries(
-					themeDisplay.getScopeGroupId(),
-					styleBookEntriesSearchContainer.getStart(),
-					styleBookEntriesSearchContainer.getEnd(),
-					styleBookEntriesSearchContainer.getOrderByComparator()),
+			List<StyleBookEntry> styleBookEntries = new ArrayList<>();
+
+			int styleBookEntriesCount =
 				StyleBookEntryLocalServiceUtil.getStyleBookEntriesCount(
-					themeDisplay.getScopeGroupId()));
+					themeDisplay.getScopeGroupId());
+
+			int start = styleBookEntriesSearchContainer.getStart();
+			int end = styleBookEntriesSearchContainer.getEnd();
+
+			if (start == 0) {
+				end -= 1;
+				styleBookEntries.add(
+					_getStyleFromThemeStyleBookEntry(
+						themeDisplay.getScopeGroupId()));
+			}
+			else {
+				start -= 1;
+			}
+
+			styleBookEntries.addAll(
+				StyleBookEntryLocalServiceUtil.getStyleBookEntries(
+					themeDisplay.getScopeGroupId(), start, end,
+					styleBookEntriesSearchContainer.getOrderByComparator()));
+
+			styleBookEntriesSearchContainer.setResultsAndTotal(
+				() -> styleBookEntries, styleBookEntriesCount + 1);
 		}
 
 		if (StyleBookPermission.contains(
@@ -186,6 +198,26 @@ public class StyleBookDisplayContext {
 		}
 
 		return orderByComparator;
+	}
+
+	private StyleBookEntry _getStyleFromThemeStyleBookEntry(long groupId) {
+		StyleBookEntry styleFromThemeStyleBookEntry =
+			StyleBookEntryLocalServiceUtil.create();
+
+		styleFromThemeStyleBookEntry.setHeadId(-1);
+		styleFromThemeStyleBookEntry.setStyleBookEntryId(0);
+		styleFromThemeStyleBookEntry.setGroupId(groupId);
+		styleFromThemeStyleBookEntry.setName(
+			LanguageUtil.get(_httpServletRequest, "styles-from-theme"));
+
+		StyleBookEntry defaultStyleBookEntry =
+			StyleBookEntryLocalServiceUtil.fetchDefaultStyleBookEntry(groupId);
+
+		if (defaultStyleBookEntry == null) {
+			styleFromThemeStyleBookEntry.setDefaultStyleBookEntry(true);
+		}
+
+		return styleFromThemeStyleBookEntry;
 	}
 
 	private boolean _isSearch() {

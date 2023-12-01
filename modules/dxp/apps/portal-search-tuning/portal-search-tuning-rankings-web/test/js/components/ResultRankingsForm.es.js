@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {act, fireEvent, render, waitFor, within} from '@testing-library/react';
@@ -31,14 +25,14 @@ const UNPIN_BUTTON_LABEL = 'unpin-result';
 function renderTestResultRankingsForm(props) {
 	return render(
 		<ResultRankingsForm
-			cancelUrl="cancel"
-			fetchDocumentsHiddenUrl={FETCH_HIDDEN_DOCUMENTS_URL}
-			fetchDocumentsSearchUrl={FETCH_SEARCH_DOCUMENTS_URL}
-			fetchDocumentsVisibleUrl={FETCH_VISIBLE_DOCUMENTS_URL}
+			cancelURL="cancel"
+			fetchDocumentsHiddenURL={FETCH_HIDDEN_DOCUMENTS_URL}
+			fetchDocumentsSearchURL={FETCH_SEARCH_DOCUMENTS_URL}
+			fetchDocumentsVisibleURL={FETCH_VISIBLE_DOCUMENTS_URL}
 			formName={FORM_NAME}
 			initialInactive={false}
 			searchQuery=""
-			validateFormUrl={VALIDATE_FORM_URL}
+			validateFormURL={VALIDATE_FORM_URL}
 			{...props}
 		/>
 	);
@@ -83,36 +77,45 @@ describe('ResultRankingsForm', () => {
 	);
 
 	it.each`
-		initialAliases             | addedAliases | expected                           | description
-		${['one', 'two', 'three']} | ${[]}        | ${['one', 'two', 'three']}         | ${'initial aliases'}
-		${[]}                      | ${['one']}   | ${['one']}                         | ${'added alias'}
-		${['one', 'two', 'three']} | ${['four']}  | ${['one', 'two', 'three', 'four']} | ${'added alias with initial'}
-		${[]}                      | ${[' ']}     | ${[]}                              | ${'blank alias'}
-		${[]}                      | ${[' one ']} | ${['one']}                         | ${'trimmed alias'}
-		${['one', 'two', 'three']} | ${['one']}   | ${['one', 'two', 'three']}         | ${'no duplicate aliases'}
-	`('renders $description', ({addedAliases, expected, initialAliases}) => {
-		const {container} = renderTestResultRankingsForm({
-			initialAliases,
-		});
+		initialAliases             | addedAliases | expectedValue | expected                           | description
+		${['one', 'two', 'three']} | ${[]}        | ${''}         | ${['one', 'two', 'three']}         | ${'initial aliases'}
+		${[]}                      | ${['one']}   | ${''}         | ${['one']}                         | ${'added alias'}
+		${['one', 'two', 'three']} | ${['four']}  | ${''}         | ${['one', 'two', 'three', 'four']} | ${'added alias with initial'}
+		${[]}                      | ${['']}      | ${''}         | ${[]}                              | ${'blank alias'}
+		${[]}                      | ${[' one ']} | ${''}         | ${['one']}                         | ${'trimmed alias'}
+		${['one', 'two', 'three']} | ${['one']}   | ${''}         | ${['one', 'two', 'three']}         | ${'no duplicate aliases'}
+	`(
+		'renders $description',
+		({addedAliases, expected, expectedValue, initialAliases}) => {
+			const {container} = renderTestResultRankingsForm({
+				initialAliases,
+			});
 
-		const input = container.querySelector('.form-control-inset');
+			const input = container.querySelector('.form-control-inset');
 
-		addedAliases.forEach((alias) => {
-			fireEvent.change(input, {target: {value: alias}});
+			addedAliases.forEach((alias) => {
+				fireEvent.change(input, {target: {value: alias}});
 
-			fireEvent.keyDown(input, {key: 'Enter', keyCode: 13, which: 13});
-		});
+				fireEvent.keyDown(input, {
+					key: 'Enter',
+					keyCode: 13,
+					which: 13,
+				});
+			});
 
-		expect(input.getAttribute('value')).toBe('');
+			expect(input.getAttribute('value')).toBe(expectedValue);
 
-		const tagsElement = container.querySelectorAll('.label-item-expand');
+			const tagsElement = container.querySelectorAll(
+				'.label-item-expand'
+			);
 
-		expect(tagsElement).toHaveLength(expected.length);
+			expect(tagsElement).toHaveLength(expected.length);
 
-		tagsElement.forEach((element, i) => {
-			expect(element).toHaveTextContent(expected[i]);
-		});
-	});
+			tagsElement.forEach((element, i) => {
+				expect(element).toHaveTextContent(expected[i]);
+			});
+		}
+	);
 
 	it('removes an initial alias after clicking delete', async () => {
 		const {container} = renderTestResultRankingsForm({
@@ -131,8 +134,8 @@ describe('ResultRankingsForm', () => {
 
 	it.each`
 		id       | button               | selector
-		${'100'} | ${HIDE_BUTTON_LABEL} | ${'#hiddenIdsAdded'}
-		${'200'} | ${SHOW_BUTTON_LABEL} | ${'#hiddenIdsRemoved'}
+		${'100'} | ${HIDE_BUTTON_LABEL} | ${'#addedHiddenIds'}
+		${'200'} | ${SHOW_BUTTON_LABEL} | ${'#removedHiddenIds'}
 	`('updates the $selector', async ({button, id, selector}) => {
 		const {
 			container,
@@ -153,8 +156,8 @@ describe('ResultRankingsForm', () => {
 
 	it.each`
 		id       | button               | newButton            | selector
-		${'100'} | ${HIDE_BUTTON_LABEL} | ${SHOW_BUTTON_LABEL} | ${'#hiddenIdsAdded'}
-		${'200'} | ${SHOW_BUTTON_LABEL} | ${HIDE_BUTTON_LABEL} | ${'#hiddenIdsRemoved'}
+		${'100'} | ${HIDE_BUTTON_LABEL} | ${SHOW_BUTTON_LABEL} | ${'#addedHiddenIds'}
+		${'200'} | ${SHOW_BUTTON_LABEL} | ${HIDE_BUTTON_LABEL} | ${'#removedHiddenIds'}
 	`(
 		'updates the $selector back',
 		async ({button, id, newButton, selector}) => {

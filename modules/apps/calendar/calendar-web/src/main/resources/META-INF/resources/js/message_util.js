@@ -1,36 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-calendar-message-util',
 	(A) => {
-		var Lang = A.Lang;
+		const Lang = A.Lang;
 
-		var STR_BLANK = '';
+		const STR_BLANK = '';
 
-		var TPL_MESSAGE_UPDATE_ALL_INVITED =
+		const TPL_MESSAGE_UPDATE_ALL_INVITED =
 			'<p class="calendar-portlet-confirmation-text">' +
 			Liferay.Language.get('invited-users-will-be-notified') +
 			'</p>';
 
 		Liferay.CalendarMessageUtil = {
 			_queueableQuestionUpdateAllInvited(data) {
-				var instance = this;
+				const instance = this;
 
-				var answers = data.answers;
+				const answers = data.answers;
 
-				var showNextQuestion = A.bind('run', instance.queue);
+				const showNextQuestion = A.bind('run', instance.queue);
 
 				if (answers.cancel) {
 					A.soon(showNextQuestion);
@@ -51,11 +42,11 @@ AUI.add(
 			},
 
 			_queueableQuestionUpdateRecurring(data) {
-				var instance = this;
+				const instance = this;
 
-				var answers = data.answers;
+				const answers = data.answers;
 
-				var showNextQuestion = A.bind('run', instance.queue);
+				const showNextQuestion = A.bind('run', instance.queue);
 
 				if (answers.cancel) {
 					A.soon(showNextQuestion);
@@ -85,17 +76,17 @@ AUI.add(
 			},
 
 			_queueableQuestionUserCalendarOnly(data) {
-				var instance = this;
+				const instance = this;
 
-				var answers = data.answers;
+				const answers = data.answers;
 
-				var showNextQuestion = A.bind('run', instance.queue);
+				const showNextQuestion = A.bind('run', instance.queue);
 
 				if (answers.cancel) {
 					A.soon(showNextQuestion);
 				}
 				else {
-					var content = [
+					const content = [
 						'<p class="calendar-portlet-confirmation-text">',
 						Lang.sub(
 							Liferay.Language.get(
@@ -121,9 +112,9 @@ AUI.add(
 			},
 
 			confirm(message, yesButtonLabel, noButtonLabel, yesFn, noFn) {
-				var confirmationPanel;
+				let confirmationPanel; // eslint-disable-line prefer-const
 
-				var getButtonConfig = function (label, callback) {
+				const getButtonConfig = function (label, callback) {
 					return {
 						label,
 						on: {
@@ -159,11 +150,11 @@ AUI.add(
 			},
 
 			promptSchedulerEventUpdate(data) {
-				var instance = this;
+				const instance = this;
 
 				data.answers = {};
 
-				var queue = new A.AsyncQueue();
+				const queue = new A.AsyncQueue();
 
 				if (data.recurring) {
 					queue.add({

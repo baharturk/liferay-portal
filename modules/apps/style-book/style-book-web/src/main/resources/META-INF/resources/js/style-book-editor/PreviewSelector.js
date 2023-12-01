@@ -1,29 +1,37 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import ClayDropDown, {Align} from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
-import {StyleBookContext} from './StyleBookContext';
 import {config} from './config';
 import {LAYOUT_TYPES} from './constants/layoutTypes';
+import {
+	usePreviewLayout,
+	usePreviewLayoutType,
+	useSetLoading,
+	useSetPreviewLayout,
+	useSetPreviewLayoutType,
+} from './contexts/LayoutContext';
+import {itemSelectorValueFromFragmentCollection} from './item_selector_value/itemSelectorValueFromFragmentCollection';
+import {itemSelectorValueFromLayout} from './item_selector_value/itemSelectorValueFromLayout';
 import openItemSelector from './openItemSelector';
 
 const LAYOUT_TYPES_OPTIONS = [
+	{
+		label: Liferay.Language.get('display-page-templates'),
+		type: LAYOUT_TYPES.displayPageTemplate,
+	},
+	{
+		label: Liferay.Language.get('fragments'),
+		type: LAYOUT_TYPES.fragmentCollection,
+	},
 	{
 		label: Liferay.Language.get('masters'),
 		type: LAYOUT_TYPES.master,
@@ -36,35 +44,23 @@ const LAYOUT_TYPES_OPTIONS = [
 		label: Liferay.Language.get('page-templates'),
 		type: LAYOUT_TYPES.pageTemplate,
 	},
-	{
-		label: Liferay.Language.get('display-page-templates'),
-		type: LAYOUT_TYPES.displayPageTemplate,
-	},
 ];
 
 export default function PreviewSelector() {
-	const {previewLayout} = useContext(StyleBookContext);
-
-	const previewLayoutType = config.previewOptions.find((type) =>
-		type.data.recentLayouts.find((layout) => layout === previewLayout)
-	)?.type;
-
-	const [layoutType, setLayoutType] = useState(previewLayoutType);
+	const previewLayoutType = usePreviewLayoutType();
 
 	return (
 		<>
-			<LayoutTypeSelector
-				layoutType={layoutType}
-				setLayoutType={setLayoutType}
-			/>
+			<LayoutTypeSelector layoutType={previewLayoutType} />
 
-			<LayoutSelector layoutType={layoutType} />
+			<LayoutSelector layoutType={previewLayoutType} />
 		</>
 	);
 }
 
-export function LayoutTypeSelector({layoutType, setLayoutType}) {
+export function LayoutTypeSelector({layoutType}) {
 	const [active, setActive] = useState(false);
+	const setPreviewLayoutType = useSetPreviewLayoutType();
 
 	return (
 		<ClayDropDown
@@ -80,7 +76,7 @@ export function LayoutTypeSelector({layoutType, setLayoutType}) {
 				<ClayButton
 					className="form-control-select ml-3 style-book-editor__preview-selector text-left"
 					displayType="secondary"
-					small
+					size="sm"
 					type="button"
 				>
 					<span>
@@ -106,7 +102,7 @@ export function LayoutTypeSelector({layoutType, setLayoutType}) {
 							key={type}
 							onClick={() => {
 								setActive(false);
-								setLayoutType(type);
+								setPreviewLayoutType(type);
 							}}
 						>
 							{label}
@@ -120,14 +116,13 @@ export function LayoutTypeSelector({layoutType, setLayoutType}) {
 
 LayoutTypeSelector.propTypes = {
 	layoutType: PropTypes.string.isRequired,
-	setLayoutType: PropTypes.func.isRequired,
 };
 
 export function LayoutSelector({layoutType}) {
 	const [active, setActive] = useState(false);
-	const {previewLayout, setLoading, setPreviewLayout} = useContext(
-		StyleBookContext
-	);
+	const previewLayout = usePreviewLayout();
+	const setLoading = useSetLoading();
+	const setPreviewLayout = useSetPreviewLayout();
 
 	const previewData = config.previewOptions.find(
 		(option) => option.type === layoutType
@@ -143,7 +138,7 @@ export function LayoutSelector({layoutType}) {
 		setLoading(true);
 		setPreviewLayout(previewData.recentLayouts[0]);
 		setRecentLayouts(previewData.recentLayouts);
-	}, [setPreviewLayout, previewData, setLoading]);
+	}, [previewData, setLoading, setPreviewLayout]);
 
 	const selectPreviewLayout = (layout) => {
 		if (
@@ -161,15 +156,16 @@ export function LayoutSelector({layoutType}) {
 	const handleMoreButtonClick = () => {
 		openItemSelector({
 			callback: (item) => {
-				const data = JSON.parse(item.value);
+				const value = JSON.parse(item.value);
 
-				const layout = {
-					name: data.name,
-					private: data.private,
-					url: urlWithPreviewParameter(data.previewURL),
-				};
-
-				selectPreviewLayout(layout);
+				if (layoutType === LAYOUT_TYPES.fragmentCollection) {
+					selectPreviewLayout(
+						itemSelectorValueFromFragmentCollection(value)
+					);
+				}
+				else {
+					selectPreviewLayout(itemSelectorValueFromLayout(value));
+				}
 			},
 			itemSelectorURL,
 		});
@@ -189,7 +185,7 @@ export function LayoutSelector({layoutType}) {
 				<ClayButton
 					className="form-control-select ml-3 style-book-editor__preview-selector text-left"
 					displayType="secondary"
-					small
+					size="sm"
 					type="button"
 				>
 					<span>{previewLayout?.name}</span>
@@ -222,7 +218,7 @@ export function LayoutSelector({layoutType}) {
 				{totalLayouts > recentLayouts.length && (
 					<>
 						<ClayDropDown.Caption>
-							{Liferay.Util.sub(
+							{sub(
 								Liferay.Language.get('showing-x-of-x-items'),
 								recentLayouts.length,
 								totalLayouts
@@ -278,12 +274,4 @@ function getNextRecentLayouts(recentLayouts, selectedLayout) {
 	];
 
 	return nextRecentLayouts;
-}
-
-function urlWithPreviewParameter(url) {
-	const nextURL = new URL(url);
-
-	nextURL.searchParams.set('styleBookEntryPreview', true);
-
-	return nextURL.href;
 }

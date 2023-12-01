@@ -1,43 +1,36 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal;
 
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchPermissionChecker;
-import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.UserBag;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.search.configuration.SearchPermissionCheckerConfiguration;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
+import java.util.Collections;
+
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author André de Oliveira
@@ -51,17 +44,20 @@ public class SearchPermissionCheckerImplTest {
 
 	@Before
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
-
 		Mockito.doReturn(
 			_indexer
 		).when(
 			_indexerRegistry
 		).getIndexer(
-			Mockito.anyString()
+			Mockito.nullable(String.class)
 		);
 
 		_searchPermissionChecker = _createSearchPermissionChecker();
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		_searchPermissionCheckerImpl.deactivate();
 	}
 
 	@Test
@@ -82,28 +78,37 @@ public class SearchPermissionCheckerImplTest {
 		_whenPermissionCheckerGetUserBag(_userBag);
 		_whenUserGetUserId(userId);
 
-		BooleanFilter booleanFilter = null;
-
-		BooleanFilter permissionBooleanFilter =
+		Assert.assertNotNull(
 			_searchPermissionChecker.getPermissionBooleanFilter(
-				0, null, userId, null, booleanFilter, new SearchContext());
-
-		Assert.assertNotNull(permissionBooleanFilter);
+				0, null, userId, null, null, new SearchContext()));
 	}
 
 	private SearchPermissionCheckerImpl _createSearchPermissionChecker() {
-		return new SearchPermissionCheckerImpl() {
-			{
-				indexerRegistry = _indexerRegistry;
-				permissionChecker = _permissionChecker;
-				resourcePermissionLocalService =
-					_resourcePermissionLocalService;
-				roleLocalService = _roleLocalService;
-				searchPermissionCheckerConfiguration =
-					_searchPermissionCheckerConfiguration;
-				userLocalService = _userLocalService;
-			}
-		};
+		_searchPermissionCheckerImpl = new SearchPermissionCheckerImpl();
+
+		ReflectionTestUtil.setFieldValue(
+			_searchPermissionCheckerImpl, "_indexerRegistry", _indexerRegistry);
+		ReflectionTestUtil.setFieldValue(
+			_searchPermissionCheckerImpl, "_permissionChecker",
+			_permissionChecker);
+		ReflectionTestUtil.setFieldValue(
+			_searchPermissionCheckerImpl, "_resourcePermissionLocalService",
+			_resourcePermissionLocalService);
+		ReflectionTestUtil.setFieldValue(
+			_searchPermissionCheckerImpl, "_roleLocalService",
+			_roleLocalService);
+		ReflectionTestUtil.setFieldValue(
+			_searchPermissionCheckerImpl,
+			"_searchPermissionCheckerConfiguration",
+			_searchPermissionCheckerConfiguration);
+		ReflectionTestUtil.setFieldValue(
+			_searchPermissionCheckerImpl, "_userLocalService",
+			_userLocalService);
+
+		_searchPermissionCheckerImpl.activate(
+			SystemBundleUtil.getBundleContext(), Collections.emptyMap());
+
+		return _searchPermissionCheckerImpl;
 	}
 
 	private boolean _whenIndexerIsPermissionAware(boolean permissionAware) {
@@ -140,34 +145,24 @@ public class SearchPermissionCheckerImplTest {
 		).getUserId();
 	}
 
-	@Mock
-	private Indexer<?> _indexer;
-
-	@Mock
-	private IndexerRegistry _indexerRegistry;
-
-	@Mock
-	private PermissionChecker _permissionChecker;
-
-	@Mock
-	private ResourcePermissionLocalService _resourcePermissionLocalService;
-
-	@Mock
-	private RoleLocalService _roleLocalService;
-
+	private final Indexer<?> _indexer = Mockito.mock(Indexer.class);
+	private final IndexerRegistry _indexerRegistry = Mockito.mock(
+		IndexerRegistry.class);
+	private final PermissionChecker _permissionChecker = Mockito.mock(
+		PermissionChecker.class);
+	private final ResourcePermissionLocalService
+		_resourcePermissionLocalService = Mockito.mock(
+			ResourcePermissionLocalService.class);
+	private final RoleLocalService _roleLocalService = Mockito.mock(
+		RoleLocalService.class);
 	private SearchPermissionChecker _searchPermissionChecker;
-
-	@Mock
-	private SearchPermissionCheckerConfiguration
-		_searchPermissionCheckerConfiguration;
-
-	@Mock
-	private User _user;
-
-	@Mock
-	private UserBag _userBag;
-
-	@Mock
-	private UserLocalService _userLocalService;
+	private final SearchPermissionCheckerConfiguration
+		_searchPermissionCheckerConfiguration = Mockito.mock(
+			SearchPermissionCheckerConfiguration.class);
+	private SearchPermissionCheckerImpl _searchPermissionCheckerImpl;
+	private final User _user = Mockito.mock(User.class);
+	private final UserBag _userBag = Mockito.mock(UserBag.class);
+	private final UserLocalService _userLocalService = Mockito.mock(
+		UserLocalService.class);
 
 }

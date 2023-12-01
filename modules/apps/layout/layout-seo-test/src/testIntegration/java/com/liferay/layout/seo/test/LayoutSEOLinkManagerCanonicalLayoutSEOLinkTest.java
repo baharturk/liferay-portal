@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.seo.test;
@@ -18,6 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.seo.kernel.LayoutSEOLink;
 import com.liferay.layout.seo.kernel.LayoutSEOLinkManager;
 import com.liferay.layout.seo.service.LayoutSEOEntryLocalService;
+import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.model.Company;
@@ -68,11 +60,11 @@ public class LayoutSEOLinkManagerCanonicalLayoutSEOLinkTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_layout = _layoutLocalService.getLayout(TestPropsValues.getPlid());
-
 		_group = GroupTestUtil.addGroup();
 
-		_layout.setGroupId(_group.getGroupId());
+		LayoutTestUtil.addTypePortletLayout(_group);
+
+		_layout = LayoutTestUtil.addTypePortletLayout(_group);
 
 		ServiceContext serviceContext = new ServiceContext();
 
@@ -97,12 +89,9 @@ public class LayoutSEOLinkManagerCanonicalLayoutSEOLinkTest {
 			RandomTestUtil.randomString(), _themeDisplay, _layout, false,
 			false);
 
-		Map<Locale, String> alternateURLs = _portal.getAlternateURLs(
-			canonicalURL, _themeDisplay, _layout);
-
 		LayoutSEOLink canonicalLayoutSEOLink =
 			_layoutSEOLinkManager.getCanonicalLayoutSEOLink(
-				_layout, LocaleUtil.getDefault(), canonicalURL, alternateURLs);
+				_layout, LocaleUtil.getDefault(), canonicalURL, _themeDisplay);
 
 		Assert.assertEquals(canonicalURL, canonicalLayoutSEOLink.getHref());
 	}
@@ -115,9 +104,6 @@ public class LayoutSEOLinkManagerCanonicalLayoutSEOLinkTest {
 			RandomTestUtil.randomString(), _themeDisplay, _layout, false,
 			false);
 
-		Map<Locale, String> alternateURLs = _portal.getAlternateURLs(
-			canonicalURL, _themeDisplay, _layout);
-
 		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
 			TestPropsValues.getUserId(), _group.getGroupId(), false,
 			_layout.getLayoutId(), false,
@@ -127,7 +113,7 @@ public class LayoutSEOLinkManagerCanonicalLayoutSEOLinkTest {
 
 		LayoutSEOLink canonicalLayoutSEOLink =
 			_layoutSEOLinkManager.getCanonicalLayoutSEOLink(
-				_layout, LocaleUtil.getDefault(), canonicalURL, alternateURLs);
+				_layout, LocaleUtil.getDefault(), canonicalURL, _themeDisplay);
 
 		Assert.assertEquals(canonicalURL, canonicalLayoutSEOLink.getHref());
 	}
@@ -146,12 +132,9 @@ public class LayoutSEOLinkManagerCanonicalLayoutSEOLinkTest {
 		String canonicalURL = _portal.getCanonicalURL(
 			RandomTestUtil.randomString(), _themeDisplay, _layout, true, false);
 
-		Map<Locale, String> alternateURLs = _portal.getAlternateURLs(
-			canonicalURL, _themeDisplay, _layout);
-
 		LayoutSEOLink canonicalLayoutSEOLink =
 			_layoutSEOLinkManager.getCanonicalLayoutSEOLink(
-				_layout, LocaleUtil.getDefault(), canonicalURL, alternateURLs);
+				_layout, LocaleUtil.getDefault(), canonicalURL, _themeDisplay);
 
 		Assert.assertEquals(
 			"http://example.com", canonicalLayoutSEOLink.getHref());
@@ -170,7 +153,7 @@ public class LayoutSEOLinkManagerCanonicalLayoutSEOLinkTest {
 			() -> {
 				LayoutSEOLink canonicalLayoutSEOLink =
 					_layoutSEOLinkManager.getCanonicalLayoutSEOLink(
-						_layout, LocaleUtil.CHINA, canonicalURL, alternateURLs);
+						_layout, LocaleUtil.CHINA, canonicalURL, _themeDisplay);
 
 				Assert.assertEquals(
 					alternateURLs.getOrDefault(LocaleUtil.CHINA, canonicalURL),
@@ -192,11 +175,11 @@ public class LayoutSEOLinkManagerCanonicalLayoutSEOLinkTest {
 		themeDisplay.setPermissionChecker(
 			PermissionThreadLocal.getPermissionChecker());
 		themeDisplay.setPlid(_layout.getPlid());
+		themeDisplay.setScopeGroupId(_group.getGroupId());
 		themeDisplay.setSecure(false);
 		themeDisplay.setServerName(_VIRTUAL_HOSTNAME);
 		themeDisplay.setServerPort(_SERVER_PORT);
 		themeDisplay.setSiteGroupId(_group.getGroupId());
-		themeDisplay.setScopeGroupId(_group.getGroupId());
 
 		return themeDisplay;
 	}

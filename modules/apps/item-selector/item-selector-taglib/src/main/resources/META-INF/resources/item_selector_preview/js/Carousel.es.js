@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -17,6 +8,7 @@ import ClayIcon from '@clayui/icon';
 import ClayTabs from '@clayui/tabs';
 import React, {useState} from 'react';
 
+import NoPreview from './NoPreview.es';
 import PreviewImage from './PreviewImage.es';
 import PreviewVideo from './PreviewVideo.es';
 
@@ -74,14 +66,16 @@ const InfoPanel = ({metadata}) => {
 
 	return (
 		<div className="info-panel sidenav-menu-slider">
-			<div className="sidebar-header">
-				<ClayTabs modern>{itemsHeader}</ClayTabs>
-			</div>
+			<div className="sidebar sidenav-menu">
+				<div className="sidebar-header">
+					<ClayTabs>{itemsHeader}</ClayTabs>
+				</div>
 
-			<div className="sidebar-body">
-				<ClayTabs.Content activeIndex={activeTabKeyValue} fade>
-					{itemsContent}
-				</ClayTabs.Content>
+				<div className="sidebar-body">
+					<ClayTabs.Content activeIndex={activeTabKeyValue} fade>
+						{itemsContent}
+					</ClayTabs.Content>
+				</div>
 			</div>
 		</div>
 	);
@@ -91,6 +85,7 @@ const Carousel = ({
 	currentItem,
 	handleClickNext,
 	handleClickPrevious,
+	isImage,
 	showArrows = true,
 }) => {
 	const isVideo = currentItem.type === 'video';
@@ -111,11 +106,13 @@ const Carousel = ({
 
 				{isVideo ? (
 					<PreviewVideo html={videoHtml} />
-				) : (
+				) : isImage ? (
 					<PreviewImage
 						src={currentItem.url || currentItem.base64}
 						title={currentItem.title}
 					/>
+				) : (
+					<NoPreview />
 				)}
 
 				{showArrows && (

@@ -1,22 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.cart.internal.resource.v1_0;
 
 import com.liferay.headless.commerce.delivery.cart.dto.v1_0.CartItem;
 import com.liferay.headless.commerce.delivery.cart.resource.v1_0.CartItemResource;
+import com.liferay.petra.function.UnsafeBiConsumer;
+import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.search.Sort;
@@ -26,32 +21,43 @@ import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParser;
 import com.liferay.portal.odata.filter.FilterParserProvider;
+import com.liferay.portal.odata.sort.SortField;
+import com.liferay.portal.odata.sort.SortParser;
+import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.batch.engine.VulcanBatchEngineTaskItemDelegate;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTaskResource;
 import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResource;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.ActionUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.io.Serializable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -182,7 +188,7 @@ public abstract class BaseCartItemResourceImpl
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -X 'PATCH' 'http://localhost:8080/o/headless-commerce-delivery-cart/v1.0/cart-items/{cartItemId}' -d $'{"cartItems": ___, "customFields": ___, "errorMessages": ___, "options": ___, "price": ___, "productId": ___, "quantity": ___, "settings": ___, "skuId": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
+	 * curl -X 'PATCH' 'http://localhost:8080/o/headless-commerce-delivery-cart/v1.0/cart-items/{cartItemId}' -d $'{"cartItems": ___, "customFields": ___, "errorMessages": ___, "options": ___, "price": ___, "productId": ___, "quantity": ___, "replacedSkuId": ___, "settings": ___, "skuId": ___, "skuUnitOfMeasure": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
 	 */
 	@io.swagger.v3.oas.annotations.Operation(
 		description = "Retrive information of the given Cart."
@@ -213,11 +219,6 @@ public abstract class BaseCartItemResourceImpl
 
 		CartItem existingCartItem = getCartItem(cartItemId);
 
-		if (cartItem.getAdaptiveMediaImageHTMLTag() != null) {
-			existingCartItem.setAdaptiveMediaImageHTMLTag(
-				cartItem.getAdaptiveMediaImageHTMLTag());
-		}
-
 		if (cartItem.getCustomFields() != null) {
 			existingCartItem.setCustomFields(cartItem.getCustomFields());
 		}
@@ -226,49 +227,24 @@ public abstract class BaseCartItemResourceImpl
 			existingCartItem.setErrorMessages(cartItem.getErrorMessages());
 		}
 
-		if (cartItem.getName() != null) {
-			existingCartItem.setName(cartItem.getName());
-		}
-
 		if (cartItem.getOptions() != null) {
 			existingCartItem.setOptions(cartItem.getOptions());
-		}
-
-		if (cartItem.getParentCartItemId() != null) {
-			existingCartItem.setParentCartItemId(
-				cartItem.getParentCartItemId());
 		}
 
 		if (cartItem.getProductId() != null) {
 			existingCartItem.setProductId(cartItem.getProductId());
 		}
 
-		if (cartItem.getProductURLs() != null) {
-			existingCartItem.setProductURLs(cartItem.getProductURLs());
-		}
-
 		if (cartItem.getQuantity() != null) {
 			existingCartItem.setQuantity(cartItem.getQuantity());
 		}
 
-		if (cartItem.getSku() != null) {
-			existingCartItem.setSku(cartItem.getSku());
+		if (cartItem.getReplacedSkuId() != null) {
+			existingCartItem.setReplacedSkuId(cartItem.getReplacedSkuId());
 		}
 
 		if (cartItem.getSkuId() != null) {
 			existingCartItem.setSkuId(cartItem.getSkuId());
-		}
-
-		if (cartItem.getSubscription() != null) {
-			existingCartItem.setSubscription(cartItem.getSubscription());
-		}
-
-		if (cartItem.getThumbnail() != null) {
-			existingCartItem.setThumbnail(cartItem.getThumbnail());
-		}
-
-		if (cartItem.getValid() != null) {
-			existingCartItem.setValid(cartItem.getValid());
 		}
 
 		preparePatch(cartItem, existingCartItem);
@@ -279,7 +255,7 @@ public abstract class BaseCartItemResourceImpl
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -X 'PUT' 'http://localhost:8080/o/headless-commerce-delivery-cart/v1.0/cart-items/{cartItemId}' -d $'{"cartItems": ___, "customFields": ___, "errorMessages": ___, "options": ___, "price": ___, "productId": ___, "quantity": ___, "settings": ___, "skuId": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
+	 * curl -X 'PUT' 'http://localhost:8080/o/headless-commerce-delivery-cart/v1.0/cart-items/{cartItemId}' -d $'{"cartItems": ___, "customFields": ___, "errorMessages": ___, "options": ___, "price": ___, "productId": ___, "quantity": ___, "replacedSkuId": ___, "settings": ___, "skuId": ___, "skuUnitOfMeasure": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
 	 */
 	@io.swagger.v3.oas.annotations.Operation(
 		description = "update the given Cart."
@@ -407,7 +383,7 @@ public abstract class BaseCartItemResourceImpl
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -X 'POST' 'http://localhost:8080/o/headless-commerce-delivery-cart/v1.0/carts/{cartId}/items' -d $'{"cartItems": ___, "customFields": ___, "errorMessages": ___, "options": ___, "price": ___, "productId": ___, "quantity": ___, "settings": ___, "skuId": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
+	 * curl -X 'POST' 'http://localhost:8080/o/headless-commerce-delivery-cart/v1.0/carts/{cartId}/items' -d $'{"cartItems": ___, "customFields": ___, "errorMessages": ___, "options": ___, "price": ___, "productId": ___, "quantity": ___, "replacedSkuId": ___, "settings": ___, "skuId": ___, "skuUnitOfMeasure": ___}' --header 'Content-Type: application/json' -u 'test@liferay.com:test'
 	 */
 	@io.swagger.v3.oas.annotations.Operation(
 		description = "Add new Items to a Cart, return the whole Cart updated."
@@ -442,20 +418,31 @@ public abstract class BaseCartItemResourceImpl
 	@Override
 	@SuppressWarnings("PMD.UnusedLocalVariable")
 	public void create(
-			java.util.Collection<CartItem> cartItems,
+			Collection<CartItem> cartItems,
 			Map<String, Serializable> parameters)
 		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Override
 	public void delete(
-			java.util.Collection<CartItem> cartItems,
+			Collection<CartItem> cartItems,
 			Map<String, Serializable> parameters)
 		throws Exception {
 
 		for (CartItem cartItem : cartItems) {
 			deleteCartItem(cartItem.getId());
 		}
+	}
+
+	public Set<String> getAvailableCreateStrategies() {
+		return SetUtil.fromArray();
+	}
+
+	public Set<String> getAvailableUpdateStrategies() {
+		return SetUtil.fromArray("PARTIAL_UPDATE", "UPDATE");
 	}
 
 	@Override
@@ -473,13 +460,18 @@ public abstract class BaseCartItemResourceImpl
 		return null;
 	}
 
+	public String getVersion() {
+		return "v1.0";
+	}
+
 	@Override
 	public Page<CartItem> read(
 			Filter filter, Pagination pagination, Sort[] sorts,
 			Map<String, Serializable> parameters, String search)
 		throws Exception {
 
-		return null;
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Override
@@ -506,20 +498,78 @@ public abstract class BaseCartItemResourceImpl
 
 	@Override
 	public void update(
-			java.util.Collection<CartItem> cartItems,
+			Collection<CartItem> cartItems,
 			Map<String, Serializable> parameters)
 		throws Exception {
 
-		for (CartItem cartItem : cartItems) {
-			putCartItem(
+		UnsafeFunction<CartItem, CartItem, Exception> cartItemUnsafeFunction =
+			null;
+
+		String updateStrategy = (String)parameters.getOrDefault(
+			"updateStrategy", "UPDATE");
+
+		if (StringUtil.equalsIgnoreCase(updateStrategy, "PARTIAL_UPDATE")) {
+			cartItemUnsafeFunction = cartItem -> patchCartItem(
 				cartItem.getId() != null ? cartItem.getId() :
-					Long.parseLong((String)parameters.get("cartItemId")),
+					_parseLong((String)parameters.get("cartItemId")),
 				cartItem);
 		}
+
+		if (StringUtil.equalsIgnoreCase(updateStrategy, "UPDATE")) {
+			cartItemUnsafeFunction = cartItem -> putCartItem(
+				cartItem.getId() != null ? cartItem.getId() :
+					_parseLong((String)parameters.get("cartItemId")),
+				cartItem);
+		}
+
+		if (cartItemUnsafeFunction == null) {
+			throw new NotSupportedException(
+				"Update strategy \"" + updateStrategy +
+					"\" is not supported for CartItem");
+		}
+
+		if (contextBatchUnsafeBiConsumer != null) {
+			contextBatchUnsafeBiConsumer.accept(
+				cartItems, cartItemUnsafeFunction);
+		}
+		else if (contextBatchUnsafeConsumer != null) {
+			contextBatchUnsafeConsumer.accept(
+				cartItems, cartItemUnsafeFunction::apply);
+		}
+		else {
+			for (CartItem cartItem : cartItems) {
+				cartItemUnsafeFunction.apply(cartItem);
+			}
+		}
+	}
+
+	private Long _parseLong(String value) {
+		if (value != null) {
+			return Long.parseLong(value);
+		}
+
+		return null;
 	}
 
 	public void setContextAcceptLanguage(AcceptLanguage contextAcceptLanguage) {
 		this.contextAcceptLanguage = contextAcceptLanguage;
+	}
+
+	public void setContextBatchUnsafeBiConsumer(
+		UnsafeBiConsumer
+			<Collection<CartItem>,
+			 UnsafeFunction<CartItem, CartItem, Exception>, Exception>
+				contextBatchUnsafeBiConsumer) {
+
+		this.contextBatchUnsafeBiConsumer = contextBatchUnsafeBiConsumer;
+	}
+
+	public void setContextBatchUnsafeConsumer(
+		UnsafeBiConsumer
+			<Collection<CartItem>, UnsafeConsumer<CartItem, Exception>,
+			 Exception> contextBatchUnsafeConsumer) {
+
+		this.contextBatchUnsafeConsumer = contextBatchUnsafeConsumer;
 	}
 
 	public void setContextCompany(
@@ -530,6 +580,13 @@ public abstract class BaseCartItemResourceImpl
 
 	public void setContextHttpServletRequest(
 		HttpServletRequest contextHttpServletRequest) {
+
+		if ((contextHttpServletRequest != null) &&
+			(contextHttpServletRequest.getAttribute(WebKeys.CTX) == null)) {
+
+			contextHttpServletRequest.setAttribute(
+				WebKeys.CTX, ServletContextPool.get(StringPool.BLANK));
+		}
 
 		this.contextHttpServletRequest = contextHttpServletRequest;
 	}
@@ -582,6 +639,26 @@ public abstract class BaseCartItemResourceImpl
 		this.roleLocalService = roleLocalService;
 	}
 
+	public void setSortParserProvider(SortParserProvider sortParserProvider) {
+		this.sortParserProvider = sortParserProvider;
+	}
+
+	public void setVulcanBatchEngineExportTaskResource(
+		VulcanBatchEngineExportTaskResource
+			vulcanBatchEngineExportTaskResource) {
+
+		this.vulcanBatchEngineExportTaskResource =
+			vulcanBatchEngineExportTaskResource;
+	}
+
+	public void setVulcanBatchEngineImportTaskResource(
+		VulcanBatchEngineImportTaskResource
+			vulcanBatchEngineImportTaskResource) {
+
+		this.vulcanBatchEngineImportTaskResource =
+			vulcanBatchEngineImportTaskResource;
+	}
+
 	@Override
 	public Filter toFilter(
 		String filterString, Map<String, List<String>> multivaluedMap) {
@@ -602,9 +679,49 @@ public abstract class BaseCartItemResourceImpl
 		}
 		catch (Exception exception) {
 			_log.error("Invalid filter " + filterString, exception);
+
+			return null;
+		}
+	}
+
+	@Override
+	public Sort[] toSorts(String sortString) {
+		if (Validator.isNull(sortString)) {
+			return null;
 		}
 
-		return null;
+		try {
+			SortParser sortParser = sortParserProvider.provide(
+				getEntityModel(Collections.emptyMap()));
+
+			if (sortParser == null) {
+				return null;
+			}
+
+			com.liferay.portal.odata.sort.Sort oDataSort =
+				new com.liferay.portal.odata.sort.Sort(
+					sortParser.parse(sortString));
+
+			List<SortField> sortFields = oDataSort.getSortFields();
+
+			Sort[] sorts = new Sort[sortFields.size()];
+
+			for (int i = 0; i < sortFields.size(); i++) {
+				SortField sortField = sortFields.get(i);
+
+				sorts[i] = new Sort(
+					sortField.getSortableFieldName(
+						contextAcceptLanguage.getPreferredLocale()),
+					!sortField.isAscending());
+			}
+
+			return sorts;
+		}
+		catch (Exception exception) {
+			_log.error("Invalid sort " + sortString, exception);
+
+			return new Sort[0];
+		}
 	}
 
 	protected Map<String, String> addAction(
@@ -644,35 +761,83 @@ public abstract class BaseCartItemResourceImpl
 	protected void preparePatch(CartItem cartItem, CartItem existingCartItem) {
 	}
 
-	protected <T, R> List<R> transform(
-		java.util.Collection<T> collection,
-		UnsafeFunction<T, R, Exception> unsafeFunction) {
+	protected <T, R, E extends Throwable> List<R> transform(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
 
 		return TransformUtil.transform(collection, unsafeFunction);
 	}
 
-	protected <T, R> R[] transform(
-		T[] array, UnsafeFunction<T, R, Exception> unsafeFunction,
-		Class<?> clazz) {
+	protected <T, R, E extends Throwable> R[] transform(
+		T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<?> clazz) {
 
 		return TransformUtil.transform(array, unsafeFunction, clazz);
 	}
 
-	protected <T, R> R[] transformToArray(
-		java.util.Collection<T> collection,
-		UnsafeFunction<T, R, Exception> unsafeFunction, Class<?> clazz) {
+	protected <T, R, E extends Throwable> R[] transformToArray(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction,
+		Class<?> clazz) {
 
 		return TransformUtil.transformToArray(
 			collection, unsafeFunction, clazz);
 	}
 
-	protected <T, R> List<R> transformToList(
-		T[] array, UnsafeFunction<T, R, Exception> unsafeFunction) {
+	protected <T, R, E extends Throwable> List<R> transformToList(
+		T[] array, UnsafeFunction<T, R, E> unsafeFunction) {
 
 		return TransformUtil.transformToList(array, unsafeFunction);
 	}
 
+	protected <T, R, E extends Throwable> long[] transformToLongArray(
+		Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
+
+		return TransformUtil.transformToLongArray(collection, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> List<R> unsafeTransform(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransform(collection, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> R[] unsafeTransform(
+			T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<?> clazz)
+		throws E {
+
+		return TransformUtil.unsafeTransform(array, unsafeFunction, clazz);
+	}
+
+	protected <T, R, E extends Throwable> R[] unsafeTransformToArray(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction,
+			Class<?> clazz)
+		throws E {
+
+		return TransformUtil.unsafeTransformToArray(
+			collection, unsafeFunction, clazz);
+	}
+
+	protected <T, R, E extends Throwable> List<R> unsafeTransformToList(
+			T[] array, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransformToList(array, unsafeFunction);
+	}
+
+	protected <T, R, E extends Throwable> long[] unsafeTransformToLongArray(
+			Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction)
+		throws E {
+
+		return TransformUtil.unsafeTransformToLongArray(
+			collection, unsafeFunction);
+	}
+
 	protected AcceptLanguage contextAcceptLanguage;
+	protected UnsafeBiConsumer
+		<Collection<CartItem>, UnsafeFunction<CartItem, CartItem, Exception>,
+		 Exception> contextBatchUnsafeBiConsumer;
+	protected UnsafeBiConsumer
+		<Collection<CartItem>, UnsafeConsumer<CartItem, Exception>, Exception>
+			contextBatchUnsafeConsumer;
 	protected com.liferay.portal.kernel.model.Company contextCompany;
 	protected HttpServletRequest contextHttpServletRequest;
 	protected HttpServletResponse contextHttpServletResponse;
@@ -685,6 +850,9 @@ public abstract class BaseCartItemResourceImpl
 	protected ResourceActionLocalService resourceActionLocalService;
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 	protected RoleLocalService roleLocalService;
+	protected SortParserProvider sortParserProvider;
+	protected VulcanBatchEngineExportTaskResource
+		vulcanBatchEngineExportTaskResource;
 	protected VulcanBatchEngineImportTaskResource
 		vulcanBatchEngineImportTaskResource;
 

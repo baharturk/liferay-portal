@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.resource.v1_0.test;
@@ -29,6 +20,7 @@ import com.liferay.headless.commerce.admin.catalog.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.catalog.client.resource.v1_0.PinResource;
 import com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0.PinSerDes;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -42,6 +34,7 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
@@ -50,7 +43,7 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
@@ -59,18 +52,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
@@ -210,7 +201,7 @@ public abstract class BasePinResourceTestCase {
 
 	@Test
 	public void testGraphQLDeletePin() throws Exception {
-		Pin pin = testGraphQLPin_addPin();
+		Pin pin = testGraphQLDeletePin_addPin();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -223,6 +214,10 @@ public abstract class BasePinResourceTestCase {
 							}
 						})),
 				"JSONObject/data", "Object/deletePin"));
+	}
+
+	protected Pin testGraphQLDeletePin_addPin() throws Exception {
+		return testGraphQLPin_addPin();
 	}
 
 	@Test
@@ -242,7 +237,7 @@ public abstract class BasePinResourceTestCase {
 		Page<Pin> page = pinResource.getProductByExternalReferenceCodePinsPage(
 			externalReferenceCode, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantExternalReferenceCode != null) {
 			Pin irrelevantPin =
@@ -250,14 +245,16 @@ public abstract class BasePinResourceTestCase {
 					irrelevantExternalReferenceCode, randomIrrelevantPin());
 
 			page = pinResource.getProductByExternalReferenceCodePinsPage(
-				irrelevantExternalReferenceCode, null, Pagination.of(1, 2),
-				null);
+				irrelevantExternalReferenceCode, null,
+				Pagination.of(1, (int)totalCount + 1), null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantPin), (List<Pin>)page.getItems());
-			assertValid(page);
+			assertContains(irrelevantPin, (List<Pin>)page.getItems());
+			assertValid(
+				page,
+				testGetProductByExternalReferenceCodePinsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		Pin pin1 = testGetProductByExternalReferenceCodePinsPage_addPin(
@@ -269,15 +266,28 @@ public abstract class BasePinResourceTestCase {
 		page = pinResource.getProductByExternalReferenceCodePinsPage(
 			externalReferenceCode, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(pin1, pin2), (List<Pin>)page.getItems());
-		assertValid(page);
+		assertContains(pin1, (List<Pin>)page.getItems());
+		assertContains(pin2, (List<Pin>)page.getItems());
+		assertValid(
+			page,
+			testGetProductByExternalReferenceCodePinsPage_getExpectedActions(
+				externalReferenceCode));
 
 		pinResource.deletePin(pin1.getId());
 
 		pinResource.deletePin(pin2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetProductByExternalReferenceCodePinsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -286,6 +296,12 @@ public abstract class BasePinResourceTestCase {
 
 		String externalReferenceCode =
 			testGetProductByExternalReferenceCodePinsPage_getExternalReferenceCode();
+
+		Page<Pin> pinPage =
+			pinResource.getProductByExternalReferenceCodePinsPage(
+				externalReferenceCode, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(pinPage.getTotalCount());
 
 		Pin pin1 = testGetProductByExternalReferenceCodePinsPage_addPin(
 			externalReferenceCode, randomPin());
@@ -297,26 +313,30 @@ public abstract class BasePinResourceTestCase {
 			externalReferenceCode, randomPin());
 
 		Page<Pin> page1 = pinResource.getProductByExternalReferenceCodePinsPage(
-			externalReferenceCode, null, Pagination.of(1, 2), null);
+			externalReferenceCode, null, Pagination.of(1, totalCount + 2),
+			null);
 
 		List<Pin> pins1 = (List<Pin>)page1.getItems();
 
-		Assert.assertEquals(pins1.toString(), 2, pins1.size());
+		Assert.assertEquals(pins1.toString(), totalCount + 2, pins1.size());
 
 		Page<Pin> page2 = pinResource.getProductByExternalReferenceCodePinsPage(
-			externalReferenceCode, null, Pagination.of(2, 2), null);
+			externalReferenceCode, null, Pagination.of(2, totalCount + 2),
+			null);
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<Pin> pins2 = (List<Pin>)page2.getItems();
 
 		Assert.assertEquals(pins2.toString(), 1, pins2.size());
 
 		Page<Pin> page3 = pinResource.getProductByExternalReferenceCodePinsPage(
-			externalReferenceCode, null, Pagination.of(1, 3), null);
+			externalReferenceCode, null, Pagination.of(1, (int)totalCount + 3),
+			null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(pin1, pin2, pin3), (List<Pin>)page3.getItems());
+		assertContains(pin1, (List<Pin>)page3.getItems());
+		assertContains(pin2, (List<Pin>)page3.getItems());
+		assertContains(pin3, (List<Pin>)page3.getItems());
 	}
 
 	@Test
@@ -326,9 +346,21 @@ public abstract class BasePinResourceTestCase {
 		testGetProductByExternalReferenceCodePinsPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, pin1, pin2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					pin1, entityField.getName(),
 					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetProductByExternalReferenceCodePinsPageWithSortDouble()
+		throws Exception {
+
+		testGetProductByExternalReferenceCodePinsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, pin1, pin2) -> {
+				BeanTestUtil.setProperty(pin1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(pin2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -339,8 +371,8 @@ public abstract class BasePinResourceTestCase {
 		testGetProductByExternalReferenceCodePinsPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, pin1, pin2) -> {
-				BeanUtils.setProperty(pin1, entityField.getName(), 0);
-				BeanUtils.setProperty(pin2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(pin1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(pin2, entityField.getName(), 1);
 			});
 	}
 
@@ -355,27 +387,27 @@ public abstract class BasePinResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -383,12 +415,12 @@ public abstract class BasePinResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -425,22 +457,27 @@ public abstract class BasePinResourceTestCase {
 		pin2 = testGetProductByExternalReferenceCodePinsPage_addPin(
 			externalReferenceCode, pin2);
 
+		Page<Pin> page = pinResource.getProductByExternalReferenceCodePinsPage(
+			externalReferenceCode, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<Pin> ascPage =
 				pinResource.getProductByExternalReferenceCodePinsPage(
-					externalReferenceCode, null, Pagination.of(1, 2),
+					externalReferenceCode, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(pin1, pin2), (List<Pin>)ascPage.getItems());
+			assertContains(pin1, (List<Pin>)ascPage.getItems());
+			assertContains(pin2, (List<Pin>)ascPage.getItems());
 
 			Page<Pin> descPage =
 				pinResource.getProductByExternalReferenceCodePinsPage(
-					externalReferenceCode, null, Pagination.of(1, 2),
+					externalReferenceCode, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(pin2, pin1), (List<Pin>)descPage.getItems());
+			assertContains(pin2, (List<Pin>)descPage.getItems());
+			assertContains(pin1, (List<Pin>)descPage.getItems());
 		}
 	}
 
@@ -487,78 +524,94 @@ public abstract class BasePinResourceTestCase {
 
 	@Test
 	public void testGetProductIdPinsPage() throws Exception {
-		Long productId = testGetProductIdPinsPage_getProductId();
-		Long irrelevantProductId =
-			testGetProductIdPinsPage_getIrrelevantProductId();
+		Long id = testGetProductIdPinsPage_getId();
+		Long irrelevantId = testGetProductIdPinsPage_getIrrelevantId();
 
 		Page<Pin> page = pinResource.getProductIdPinsPage(
-			productId, null, Pagination.of(1, 10), null);
+			id, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
-		if (irrelevantProductId != null) {
+		if (irrelevantId != null) {
 			Pin irrelevantPin = testGetProductIdPinsPage_addPin(
-				irrelevantProductId, randomIrrelevantPin());
+				irrelevantId, randomIrrelevantPin());
 
 			page = pinResource.getProductIdPinsPage(
-				irrelevantProductId, null, Pagination.of(1, 2), null);
+				irrelevantId, null, Pagination.of(1, (int)totalCount + 1),
+				null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantPin), (List<Pin>)page.getItems());
-			assertValid(page);
+			assertContains(irrelevantPin, (List<Pin>)page.getItems());
+			assertValid(
+				page,
+				testGetProductIdPinsPage_getExpectedActions(irrelevantId));
 		}
 
-		Pin pin1 = testGetProductIdPinsPage_addPin(productId, randomPin());
+		Pin pin1 = testGetProductIdPinsPage_addPin(id, randomPin());
 
-		Pin pin2 = testGetProductIdPinsPage_addPin(productId, randomPin());
+		Pin pin2 = testGetProductIdPinsPage_addPin(id, randomPin());
 
 		page = pinResource.getProductIdPinsPage(
-			productId, null, Pagination.of(1, 10), null);
+			id, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(pin1, pin2), (List<Pin>)page.getItems());
-		assertValid(page);
+		assertContains(pin1, (List<Pin>)page.getItems());
+		assertContains(pin2, (List<Pin>)page.getItems());
+		assertValid(page, testGetProductIdPinsPage_getExpectedActions(id));
 
 		pinResource.deletePin(pin1.getId());
 
 		pinResource.deletePin(pin2.getId());
 	}
 
+	protected Map<String, Map<String, String>>
+			testGetProductIdPinsPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
 	@Test
 	public void testGetProductIdPinsPageWithPagination() throws Exception {
-		Long productId = testGetProductIdPinsPage_getProductId();
+		Long id = testGetProductIdPinsPage_getId();
 
-		Pin pin1 = testGetProductIdPinsPage_addPin(productId, randomPin());
+		Page<Pin> pinPage = pinResource.getProductIdPinsPage(
+			id, null, null, null);
 
-		Pin pin2 = testGetProductIdPinsPage_addPin(productId, randomPin());
+		int totalCount = GetterUtil.getInteger(pinPage.getTotalCount());
 
-		Pin pin3 = testGetProductIdPinsPage_addPin(productId, randomPin());
+		Pin pin1 = testGetProductIdPinsPage_addPin(id, randomPin());
+
+		Pin pin2 = testGetProductIdPinsPage_addPin(id, randomPin());
+
+		Pin pin3 = testGetProductIdPinsPage_addPin(id, randomPin());
 
 		Page<Pin> page1 = pinResource.getProductIdPinsPage(
-			productId, null, Pagination.of(1, 2), null);
+			id, null, Pagination.of(1, totalCount + 2), null);
 
 		List<Pin> pins1 = (List<Pin>)page1.getItems();
 
-		Assert.assertEquals(pins1.toString(), 2, pins1.size());
+		Assert.assertEquals(pins1.toString(), totalCount + 2, pins1.size());
 
 		Page<Pin> page2 = pinResource.getProductIdPinsPage(
-			productId, null, Pagination.of(2, 2), null);
+			id, null, Pagination.of(2, totalCount + 2), null);
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<Pin> pins2 = (List<Pin>)page2.getItems();
 
 		Assert.assertEquals(pins2.toString(), 1, pins2.size());
 
 		Page<Pin> page3 = pinResource.getProductIdPinsPage(
-			productId, null, Pagination.of(1, 3), null);
+			id, null, Pagination.of(1, (int)totalCount + 3), null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(pin1, pin2, pin3), (List<Pin>)page3.getItems());
+		assertContains(pin1, (List<Pin>)page3.getItems());
+		assertContains(pin2, (List<Pin>)page3.getItems());
+		assertContains(pin3, (List<Pin>)page3.getItems());
 	}
 
 	@Test
@@ -566,9 +619,19 @@ public abstract class BasePinResourceTestCase {
 		testGetProductIdPinsPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, pin1, pin2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					pin1, entityField.getName(),
 					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetProductIdPinsPageWithSortDouble() throws Exception {
+		testGetProductIdPinsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, pin1, pin2) -> {
+				BeanTestUtil.setProperty(pin1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(pin2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -577,8 +640,8 @@ public abstract class BasePinResourceTestCase {
 		testGetProductIdPinsPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, pin1, pin2) -> {
-				BeanUtils.setProperty(pin1, entityField.getName(), 0);
-				BeanUtils.setProperty(pin2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(pin1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(pin2, entityField.getName(), 1);
 			});
 	}
 
@@ -591,27 +654,27 @@ public abstract class BasePinResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -619,12 +682,12 @@ public abstract class BasePinResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						pin2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -645,7 +708,7 @@ public abstract class BasePinResourceTestCase {
 			return;
 		}
 
-		Long productId = testGetProductIdPinsPage_getProductId();
+		Long id = testGetProductIdPinsPage_getId();
 
 		Pin pin1 = randomPin();
 		Pin pin2 = randomPin();
@@ -654,42 +717,42 @@ public abstract class BasePinResourceTestCase {
 			unsafeTriConsumer.accept(entityField, pin1, pin2);
 		}
 
-		pin1 = testGetProductIdPinsPage_addPin(productId, pin1);
+		pin1 = testGetProductIdPinsPage_addPin(id, pin1);
 
-		pin2 = testGetProductIdPinsPage_addPin(productId, pin2);
+		pin2 = testGetProductIdPinsPage_addPin(id, pin2);
+
+		Page<Pin> page = pinResource.getProductIdPinsPage(id, null, null, null);
 
 		for (EntityField entityField : entityFields) {
 			Page<Pin> ascPage = pinResource.getProductIdPinsPage(
-				productId, null, Pagination.of(1, 2),
+				id, null, Pagination.of(1, (int)page.getTotalCount() + 1),
 				entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(pin1, pin2), (List<Pin>)ascPage.getItems());
+			assertContains(pin1, (List<Pin>)ascPage.getItems());
+			assertContains(pin2, (List<Pin>)ascPage.getItems());
 
 			Page<Pin> descPage = pinResource.getProductIdPinsPage(
-				productId, null, Pagination.of(1, 2),
+				id, null, Pagination.of(1, (int)page.getTotalCount() + 1),
 				entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(pin2, pin1), (List<Pin>)descPage.getItems());
+			assertContains(pin2, (List<Pin>)descPage.getItems());
+			assertContains(pin1, (List<Pin>)descPage.getItems());
 		}
 	}
 
-	protected Pin testGetProductIdPinsPage_addPin(Long productId, Pin pin)
+	protected Pin testGetProductIdPinsPage_addPin(Long id, Pin pin)
 		throws Exception {
 
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
 
-	protected Long testGetProductIdPinsPage_getProductId() throws Exception {
+	protected Long testGetProductIdPinsPage_getId() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
 
-	protected Long testGetProductIdPinsPage_getIrrelevantProductId()
-		throws Exception {
-
+	protected Long testGetProductIdPinsPage_getIrrelevantId() throws Exception {
 		return null;
 	}
 
@@ -819,6 +882,12 @@ public abstract class BasePinResourceTestCase {
 	}
 
 	protected void assertValid(Page<Pin> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Pin> page, Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Pin> pins = page.getItems();
@@ -833,6 +902,25 @@ public abstract class BasePinResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -986,14 +1074,16 @@ public abstract class BasePinResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1010,6 +1100,10 @@ public abstract class BasePinResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1019,18 +1113,18 @@ public abstract class BasePinResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1057,19 +1151,59 @@ public abstract class BasePinResourceTestCase {
 		}
 
 		if (entityFieldName.equals("positionX")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(pin.getPositionX()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("positionY")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(pin.getPositionY()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("sequence")) {
-			sb.append("'");
-			sb.append(String.valueOf(pin.getSequence()));
-			sb.append("'");
+			Object object = pin.getSequence();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1141,6 +1275,115 @@ public abstract class BasePinResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1216,18 +1459,6 @@ public abstract class BasePinResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BasePinResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

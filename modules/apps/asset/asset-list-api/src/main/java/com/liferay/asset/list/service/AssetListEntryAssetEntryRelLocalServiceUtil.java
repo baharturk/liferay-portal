@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service;
@@ -354,19 +345,6 @@ public class AssetListEntryAssetEntryRelLocalServiceUtil {
 	}
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<AssetListEntryAssetEntryRel>
-		getAssetListEntryAssetEntryRels(
-			long assetListEntryId, long[] segmentsEntryIds,
-			long[][] assetCategoryIds, int start, int end) {
-
-		return getService().getAssetListEntryAssetEntryRels(
-			assetListEntryId, segmentsEntryIds, assetCategoryIds, start, end);
-	}
-
-	/**
 	 * Returns all the asset list entry asset entry rels matching the UUID and company.
 	 *
 	 * @param uuid the UUID of the asset list entry asset entry rels
@@ -424,29 +402,10 @@ public class AssetListEntryAssetEntryRelLocalServiceUtil {
 	}
 
 	public static int getAssetListEntryAssetEntryRelsCount(
-		long assetLIstEntryId, long segmentsEntryId, boolean visible) {
-
-		return getService().getAssetListEntryAssetEntryRelsCount(
-			assetLIstEntryId, segmentsEntryId, visible);
-	}
-
-	public static int getAssetListEntryAssetEntryRelsCount(
 		long assetListEntryId, long[] segmentsEntryIds) {
 
 		return getService().getAssetListEntryAssetEntryRelsCount(
 			assetListEntryId, segmentsEntryIds);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	public static int getAssetListEntryAssetEntryRelsCount(
-		long assetListEntryId, long[] segmentsEntryIds,
-		long[][] assetCategoryIds) {
-
-		return getService().getAssetListEntryAssetEntryRelsCount(
-			assetListEntryId, segmentsEntryIds, assetCategoryIds);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
@@ -520,6 +479,12 @@ public class AssetListEntryAssetEntryRelLocalServiceUtil {
 
 	public static AssetListEntryAssetEntryRelLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(
+		AssetListEntryAssetEntryRelLocalService service) {
+
+		_service = service;
 	}
 
 	private static volatile AssetListEntryAssetEntryRelLocalService _service;

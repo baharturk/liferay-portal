@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.collection.item.selector.web.internal;
 
 import com.liferay.fragment.collection.item.selector.FragmentCollectionItemSelectorReturnType;
 import com.liferay.fragment.contributor.FragmentCollectionContributor;
-import com.liferay.fragment.contributor.FragmentCollectionContributorTracker;
+import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.util.comparator.FragmentCollectionContributorNameComparator;
 import com.liferay.item.selector.ItemSelectorReturnType;
 import com.liferay.item.selector.ItemSelectorViewDescriptor;
@@ -25,6 +16,9 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
 import java.util.Collections;
@@ -42,12 +36,12 @@ public class FragmentCollectionContributorItemSelectorViewDescriptor
 	implements ItemSelectorViewDescriptor<FragmentCollectionContributor> {
 
 	public FragmentCollectionContributorItemSelectorViewDescriptor(
-		FragmentCollectionContributorTracker
-			fragmentCollectionContributorTracker,
+		FragmentCollectionContributorRegistry
+			fragmentCollectionContributorRegistry,
 		HttpServletRequest httpServletRequest, PortletURL portletURL) {
 
-		_fragmentCollectionContributorTracker =
-			fragmentCollectionContributorTracker;
+		_fragmentCollectionContributorRegistry =
+			fragmentCollectionContributorRegistry;
 		_httpServletRequest = httpServletRequest;
 		_portletURL = portletURL;
 	}
@@ -66,6 +60,11 @@ public class FragmentCollectionContributorItemSelectorViewDescriptor
 	}
 
 	@Override
+	public String[] getOrderByKeys() {
+		return new String[] {"name"};
+	}
+
+	@Override
 	public SearchContainer<FragmentCollectionContributor> getSearchContainer()
 		throws PortalException {
 
@@ -74,14 +73,40 @@ public class FragmentCollectionContributorItemSelectorViewDescriptor
 				_getPortletRequest(), _portletURL, null,
 				"there-are-no-items-to-display");
 
-		List<FragmentCollectionContributor> fragmentCollectionContributors =
-			_getFragmentCollectionContributors();
+		searchContainer.setOrderByCol(
+			ParamUtil.getString(_httpServletRequest, "orderByCol", "name"));
 
-		searchContainer.setResultsAndTotal(
-			() -> ListUtil.subList(
-				fragmentCollectionContributors, searchContainer.getStart(),
-				searchContainer.getEnd()),
-			fragmentCollectionContributors.size());
+		boolean orderByAsc = true;
+
+		String orderByType = ParamUtil.getString(
+			_httpServletRequest, "orderByType", "asc");
+
+		if (orderByType.equals("desc")) {
+			orderByAsc = false;
+		}
+
+		searchContainer.setOrderByType(orderByType);
+
+		List<FragmentCollectionContributor> fragmentCollectionContributors =
+			_getFragmentCollectionContributors(orderByAsc);
+
+		String keywords = ParamUtil.getString(_httpServletRequest, "keywords");
+
+		if (Validator.isNull(keywords)) {
+			searchContainer.setResultsAndTotal(fragmentCollectionContributors);
+		}
+		else {
+			searchContainer.setResultsAndTotal(
+				ListUtil.filter(
+					fragmentCollectionContributors,
+					fragmentCollectionContributor -> {
+						String lowerCaseName = StringUtil.toLowerCase(
+							fragmentCollectionContributor.getName());
+
+						return lowerCaseName.contains(
+							StringUtil.toLowerCase(keywords));
+					}));
+		}
 
 		return searchContainer;
 	}
@@ -93,18 +118,23 @@ public class FragmentCollectionContributorItemSelectorViewDescriptor
 
 	@Override
 	public boolean isShowManagementToolbar() {
-		return false;
+		return true;
+	}
+
+	@Override
+	public boolean isShowSearch() {
+		return true;
 	}
 
 	private List<FragmentCollectionContributor>
-		_getFragmentCollectionContributors() {
+		_getFragmentCollectionContributors(boolean orderByAsc) {
 
-		if (_fragmentCollectionContributorTracker == null) {
+		if (_fragmentCollectionContributorRegistry == null) {
 			return Collections.emptyList();
 		}
 
 		List<FragmentCollectionContributor> fragmentCollectionContributors =
-			_fragmentCollectionContributorTracker.
+			_fragmentCollectionContributorRegistry.
 				getFragmentCollectionContributors();
 
 		ThemeDisplay themeDisplay =
@@ -114,7 +144,7 @@ public class FragmentCollectionContributorItemSelectorViewDescriptor
 		Collections.sort(
 			fragmentCollectionContributors,
 			new FragmentCollectionContributorNameComparator(
-				themeDisplay.getLocale()));
+				themeDisplay.getLocale(), orderByAsc));
 
 		return fragmentCollectionContributors;
 	}
@@ -124,8 +154,8 @@ public class FragmentCollectionContributorItemSelectorViewDescriptor
 			JavaConstants.JAVAX_PORTLET_REQUEST);
 	}
 
-	private final FragmentCollectionContributorTracker
-		_fragmentCollectionContributorTracker;
+	private final FragmentCollectionContributorRegistry
+		_fragmentCollectionContributorRegistry;
 	private final HttpServletRequest _httpServletRequest;
 	private final PortletURL _portletURL;
 

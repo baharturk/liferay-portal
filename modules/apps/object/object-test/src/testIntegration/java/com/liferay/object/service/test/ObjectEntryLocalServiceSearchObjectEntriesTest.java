@@ -1,29 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.field.builder.AttachmentObjectFieldBuilder;
+import com.liferay.object.field.builder.ObjectFieldBuilder;
+import com.liferay.object.field.builder.TextObjectFieldBuilder;
+import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
+import com.liferay.object.model.ObjectFieldSetting;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
-import com.liferay.object.util.LocalizedMapUtil;
-import com.liferay.object.util.ObjectFieldUtil;
+import com.liferay.object.service.ObjectFieldSettingLocalService;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -31,11 +30,15 @@ import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
 import java.io.Serializable;
 
@@ -44,6 +47,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -65,11 +69,44 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 			SynchronousDestinationTestRule.INSTANCE);
 
 	@Test
+	public void testAttachment() throws Exception {
+		ObjectFieldBuilder attachmentObjectFieldBuilder =
+			new AttachmentObjectFieldBuilder();
+
+		_testAttachment(
+			attachmentObjectFieldBuilder.businessType(
+				ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT
+			).dbType(
+				ObjectFieldConstants.DB_TYPE_LONG
+			).indexed(
+				true
+			).labelMap(
+				LocalizedMapUtil.getLocalizedMap("Alpha")
+			).name(
+				"alpha"
+			).objectFieldSettings(
+				Arrays.asList(
+					_createObjectFieldSetting("acceptedFileExtensions", "txt"),
+					_createObjectFieldSetting("fileSource", "userComputer"),
+					_createObjectFieldSetting("maximumFileSize", "100"))
+			).build());
+		_testAttachment(
+			attachmentObjectFieldBuilder.indexedAsKeyword(
+				true
+			).build());
+		_testAttachment(
+			attachmentObjectFieldBuilder.indexed(
+				false
+			).build());
+	}
+
+	@Test
 	public void testBigDecimal() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"PrecisionDecimal", "BigDecimal", true, false, null, "Alpha",
-				"alpha", false));
+				ObjectFieldConstants.BUSINESS_TYPE_PRECISION_DECIMAL,
+				ObjectFieldConstants.DB_TYPE_BIG_DECIMAL, true, false, null,
+				"Alpha", "alpha", false));
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -96,8 +133,9 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	public void testBigDecimalKeyword() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"PrecisionDecimal", "BigDecimal", true, true, null, "Alpha",
-				"alpha", false));
+				ObjectFieldConstants.BUSINESS_TYPE_PRECISION_DECIMAL,
+				ObjectFieldConstants.DB_TYPE_BIG_DECIMAL, true, true, null,
+				"Alpha", "alpha", false));
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -124,8 +162,9 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	public void testBoolean() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"Boolean", "Boolean", true, false, null, "Alpha", "alpha",
-				false));
+				ObjectFieldConstants.BUSINESS_TYPE_BOOLEAN,
+				ObjectFieldConstants.DB_TYPE_BOOLEAN, true, false, null,
+				"Alpha", "alpha", false));
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -153,8 +192,9 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	public void testBooleanKeyword() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"Boolean", "Boolean", true, true, null, "Alpha", "alpha",
-				false));
+				ObjectFieldConstants.BUSINESS_TYPE_BOOLEAN,
+				ObjectFieldConstants.DB_TYPE_BOOLEAN, true, true, null, "Alpha",
+				"alpha", false));
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -179,10 +219,28 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	}
 
 	@Test
+	public void testClob() throws Exception {
+		_testCharacterDataType(
+			false, ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
+			ObjectFieldConstants.DB_TYPE_CLOB, false, false);
+		_testCharacterDataType(
+			false, ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
+			ObjectFieldConstants.DB_TYPE_CLOB, true, false);
+		_testCharacterDataType(
+			false, ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
+			ObjectFieldConstants.DB_TYPE_CLOB, true, true);
+		_testCharacterDataType(
+			true, ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
+			ObjectFieldConstants.DB_TYPE_CLOB, true, false);
+	}
+
+	@Test
 	public void testDate() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"Date", "Date", true, false, null, "Alpha", "alpha", false));
+				ObjectFieldConstants.BUSINESS_TYPE_DATE,
+				ObjectFieldConstants.DB_TYPE_DATE, true, false, null, "Alpha",
+				"alpha", false));
 
 		long date = 1632335654272L;
 
@@ -192,15 +250,15 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 			).build());
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
-				"alpha", new Date(date + (Time.HOUR * 1))
+				"alpha", new Date(date + (Time.DAY * 1))
 			).build());
 
 		_assertKeywords("[ 2020 TO 2022 ]", 0);
 		_assertKeywords("[ 2021 TO 2021 ]", 0);
 		_assertKeywords("[2020 TO 2022]", 0);
 		_assertKeywords("[2021 TO 2021]", 0);
-		_assertKeywords("[20210922183413 TO 20210922183415]", 1);
-		_assertKeywords("[20210922183413 TO 20210923183415]", 2);
+		_assertKeywords("[20210921000000 TO 20210922000000]", 1);
+		_assertKeywords("[20210921000000 TO 20210923000000]", 2);
 		_assertKeywords("09", 0);
 		_assertKeywords("1632335654272", 0);
 		_assertKeywords("18", 0);
@@ -208,14 +266,16 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 		_assertKeywords("2021-09", 0);
 		_assertKeywords("2021-09-22", 0);
 		_assertKeywords("2021-09-22 18:34:14.272", 0);
-		_assertKeywords("20210922183414", 1);
+		_assertKeywords("20210922000000", 1);
 	}
 
 	@Test
 	public void testDateKeyword() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"Date", "Date", true, true, null, "Alpha", "alpha", false));
+				ObjectFieldConstants.BUSINESS_TYPE_DATE,
+				ObjectFieldConstants.DB_TYPE_DATE, true, true, null, "Alpha",
+				"alpha", false));
 
 		long date = 1632335654272L;
 
@@ -248,8 +308,9 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	public void testDouble() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"Decimal", "Double", true, false, null, "Alpha", "alpha",
-				false));
+				ObjectFieldConstants.BUSINESS_TYPE_DECIMAL,
+				ObjectFieldConstants.DB_TYPE_DOUBLE, true, false, null, "Alpha",
+				"alpha", false));
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -277,8 +338,9 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	public void testDoubleKeyword() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"Decimal", "Double", true, true, null, "Alpha", "alpha",
-				false));
+				ObjectFieldConstants.BUSINESS_TYPE_DECIMAL,
+				ObjectFieldConstants.DB_TYPE_DOUBLE, true, true, null, "Alpha",
+				"alpha", false));
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -306,8 +368,9 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	public void testInteger() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"Integer", "Integer", true, false, null, "Alpha", "alpha",
-				false));
+				ObjectFieldConstants.BUSINESS_TYPE_INTEGER,
+				ObjectFieldConstants.DB_TYPE_INTEGER, true, false, null,
+				"Alpha", "alpha", false));
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -333,8 +396,9 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	public void testIntegerKeyword() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"Integer", "Integer", true, true, null, "Alpha", "alpha",
-				false));
+				ObjectFieldConstants.BUSINESS_TYPE_INTEGER,
+				ObjectFieldConstants.DB_TYPE_INTEGER, true, true, null, "Alpha",
+				"alpha", false));
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -360,8 +424,9 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	public void testLong() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"LongInteger", "Long", true, false, null, "Alpha", "alpha",
-				false));
+				ObjectFieldConstants.BUSINESS_TYPE_LONG_INTEGER,
+				ObjectFieldConstants.DB_TYPE_LONG, true, false, null, "Alpha",
+				"alpha", false));
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -384,8 +449,9 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	public void testLongKeyword() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"LongInteger", "Long", true, true, null, "Alpha", "alpha",
-				false));
+				ObjectFieldConstants.BUSINESS_TYPE_LONG_INTEGER,
+				ObjectFieldConstants.DB_TYPE_LONG, true, true, null, "Alpha",
+				"alpha", false));
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -408,7 +474,9 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	public void testSearchByTitleValue() throws Exception {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
-				"Text", "String", false, false, null, "Alpha", "alpha", false));
+				ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+				ObjectFieldConstants.DB_TYPE_STRING, false, false, null,
+				"Alpha", "alpha", false));
 
 		ObjectEntry objectEntry = _addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -428,94 +496,31 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 
 	@Test
 	public void testString() throws Exception {
-		_addObjectDefinition(
-			ObjectFieldUtil.createObjectField(
-				"Text", "String", true, false, null, "Alpha", "alpha", false));
-
-		_addObjectEntry(
-			HashMapBuilder.<String, Serializable>put(
-				"alpha", "The quick brown fox trusted the lazy dog"
-			).build());
-
-		_assertKeywords("fox", 1);
-		_assertKeywords("LAZY dog", 1);
-		_assertKeywords("lazy dog", 1);
-		_assertKeywords("trust", 0);
-		_assertKeywords("trusted", 1);
-	}
-
-	@Test
-	public void testStringAnalyzed() throws Exception {
-		_addObjectDefinition(
-			ObjectFieldUtil.createObjectField(
-				"Text", "String", true, false, "en_US", "Alpha", "alpha",
-				false));
-
-		_addObjectEntry(
-			HashMapBuilder.<String, Serializable>put(
-				"alpha", "The english brown fox trusted the lazy dog"
-			).build());
-
-		_assertKeywords("fox", 1);
-		_assertKeywords("LAZY dog", 1);
-		_assertKeywords("lazy dog", 1);
-		_assertKeywords("trust", 1);
-		_assertKeywords("trusted", 1);
-	}
-
-	@Test
-	public void testStringKeyword() throws Exception {
-		_addObjectDefinition(
-			ObjectFieldUtil.createObjectField(
-				"Text", "String", true, true, null, "Alpha", "alpha", false));
-
-		_addObjectEntry(
-			HashMapBuilder.<String, Serializable>put(
-				"alpha", "test45"
-			).build());
-
-		_assertKeywords("45", 0);
-		_assertKeywords("te", 1);
-		_assertKeywords("test", 1);
-		_assertKeywords("test4", 1);
-		_assertKeywords("TEST45", 1);
-		_assertKeywords("Test45", 1);
-		_assertKeywords("test45", 1);
-		_assertKeywords("test456", 0);
-	}
-
-	@Test
-	public void testStringNotIndexed() throws Exception {
-		_addObjectDefinition(
-			ObjectFieldUtil.createObjectField(
-				"Text", "String", false, false, null, "Alpha", "alpha", false));
-
-		_addObjectEntry(
-			HashMapBuilder.<String, Serializable>put(
-				"alpha", "The unsearchable brown fox jumps over the lazy dog"
-			).build());
-
-		_assertKeywords("fox", 0);
-		_assertKeywords("The", 0);
-		_assertKeywords("The unsearchable", 0);
-		_assertKeywords("unsearchable", 0);
+		_testCharacterDataType(
+			false, ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+			ObjectFieldConstants.DB_TYPE_STRING, false, false);
+		_testCharacterDataType(
+			false, ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+			ObjectFieldConstants.DB_TYPE_STRING, true, false);
+		_testCharacterDataType(
+			false, ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+			ObjectFieldConstants.DB_TYPE_STRING, true, true);
+		_testCharacterDataType(
+			true, ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+			ObjectFieldConstants.DB_TYPE_STRING, true, false);
 	}
 
 	private void _addObjectDefinition(ObjectField objectField)
 		throws Exception {
 
-		_objectDefinition =
-			_objectDefinitionLocalService.addCustomObjectDefinition(
-				TestPropsValues.getUserId(),
-				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				"A" + RandomTestUtil.randomString(), null, null,
-				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				ObjectDefinitionConstants.SCOPE_COMPANY,
-				Arrays.asList(objectField));
+		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
+			false, _objectDefinitionLocalService, Arrays.asList(objectField));
 
 		_objectDefinition.setTitleObjectFieldId(_getTitleObjectFieldId());
 
-		_objectDefinitionLocalService.updateObjectDefinition(_objectDefinition);
+		_objectDefinition =
+			_objectDefinitionLocalService.updateObjectDefinition(
+				_objectDefinition);
 
 		_objectDefinition =
 			_objectDefinitionLocalService.publishCustomObjectDefinition(
@@ -540,15 +545,124 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 		Assert.assertEquals(count, baseModelSearchResult.getLength());
 	}
 
+	private ObjectFieldSetting _createObjectFieldSetting(
+		String name, String value) {
+
+		ObjectFieldSetting objectFieldSetting =
+			_objectFieldSettingLocalService.createObjectFieldSetting(0L);
+
+		objectFieldSetting.setName(name);
+		objectFieldSetting.setValue(value);
+
+		return objectFieldSetting;
+	}
+
 	private long _getTitleObjectFieldId() throws Exception {
-		ObjectField objectField = _objectFieldLocalService.addCustomObjectField(
-			TestPropsValues.getUserId(), 0,
-			_objectDefinition.getObjectDefinitionId(), "Text", "String", false,
-			false, null, LocalizedMapUtil.getLocalizedMap("Beta"), "beta",
-			false);
+		ObjectField objectField = ObjectFieldUtil.addCustomObjectField(
+			new TextObjectFieldBuilder(
+			).userId(
+				TestPropsValues.getUserId()
+			).indexed(
+				true
+			).indexedAsKeyword(
+				true
+			).labelMap(
+				LocalizedMapUtil.getLocalizedMap("Beta")
+			).name(
+				"beta"
+			).objectDefinitionId(
+				_objectDefinition.getObjectDefinitionId()
+			).build());
 
 		return objectField.getObjectFieldId();
 	}
+
+	private void _testAttachment(ObjectField objectField) throws Exception {
+		if (_objectDefinition != null) {
+			_objectDefinitionLocalService.deleteObjectDefinition(
+				_objectDefinition);
+		}
+
+		_addObjectDefinition(objectField);
+
+		FileEntry fileEntry = TempFileEntryUtil.addTempFileEntry(
+			TestPropsValues.getGroupId(), TestPropsValues.getUserId(),
+			_objectDefinition.getPortletId(),
+			TempFileEntryUtil.getTempFileName("document.txt"),
+			FileUtil.createTempFile(RandomTestUtil.randomBytes()),
+			ContentTypes.TEXT_PLAIN);
+
+		_addObjectEntry(
+			HashMapBuilder.<String, Serializable>put(
+				"alpha", fileEntry.getFileEntryId()
+			).build());
+
+		if (objectField.isIndexed()) {
+			_assertKeywords(
+				"DOCUMENT.TX", objectField.isIndexedAsKeyword() ? 1 : 0);
+			_assertKeywords("DOCUMENT.TXT", 1);
+			_assertKeywords(
+				"document.tx", objectField.isIndexedAsKeyword() ? 1 : 0);
+			_assertKeywords("document.txt", 1);
+			_assertKeywords("ocument.txt", 0);
+		}
+		else {
+			_assertKeywords("document.txt", 0);
+		}
+	}
+
+	private void _testCharacterDataType(
+			boolean analyzed, String businessType, String dbType,
+			boolean indexed, boolean indexedAsKeyword)
+		throws Exception {
+
+		if (_objectDefinition != null) {
+			_objectDefinitionLocalService.deleteObjectDefinition(
+				_objectDefinition);
+		}
+
+		_addObjectDefinition(
+			ObjectFieldUtil.createObjectField(
+				businessType, dbType, indexed, indexedAsKeyword,
+				analyzed ? "en_US" : null, "Alpha", "alpha", false));
+
+		String text = "The quick brown fox jumps over the lazy dog";
+
+		if (Objects.equals(
+				businessType, ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT)) {
+
+			text = StringBundler.concat("<strong>", text, "</strong>");
+		}
+
+		_addObjectEntry(
+			HashMapBuilder.<String, Serializable>put(
+				"alpha", text
+			).build());
+
+		if (indexedAsKeyword) {
+			_assertKeywords("quick", 0);
+			_assertKeywords("The quick", 1);
+			_assertKeywords("THE QUICK", 1);
+			_assertKeywords("the quick", 1);
+			_assertKeywords("They", 0);
+		}
+		else if (indexed) {
+			_assertKeywords("fox", 1);
+			_assertKeywords("jump", analyzed ? 1 : 0);
+			_assertKeywords("jumps", 1);
+			_assertKeywords("LAZY dog", 1);
+			_assertKeywords("lazy dog", 1);
+			_assertKeywords("strong", 0);
+		}
+		else {
+			_assertKeywords("fox", 0);
+			_assertKeywords("LAZY dog", 0);
+			_assertKeywords("lazy dog", 0);
+		}
+	}
+
+	@Inject
+	private DLAppLocalService _dlAppLocalService;
 
 	@DeleteAfterTestRun
 	private ObjectDefinition _objectDefinition;
@@ -561,5 +675,8 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 
 	@Inject
 	private ObjectFieldLocalService _objectFieldLocalService;
+
+	@Inject
+	private ObjectFieldSettingLocalService _objectFieldSettingLocalService;
 
 }

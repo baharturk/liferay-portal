@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -27,16 +18,17 @@ import TagSelector from '../../components/TagSelector.es';
 import {
 	createQuestionInASectionQuery,
 	createQuestionInRootQuery,
-	getSectionBySectionTitleQuery,
+	getMessageBoardSectionByFriendlyUrlPathQuery,
 } from '../../utils/client.es';
 import lang from '../../utils/lang.es';
 import {
 	deleteCache,
 	getContextLink,
 	historyPushWithSlug,
-	slugToText,
 	useDebounceCallback,
 } from '../../utils/utils.es';
+
+const HEADLINE_MAX_LENGTH = 75;
 
 export default withRouter(
 	({
@@ -68,13 +60,11 @@ export default withRouter(
 		);
 
 		const [createQuestionInRoot] = useMutation(createQuestionInRootQuery);
-		const [getSectionBySectionTitle] = useManualQuery(
-			getSectionBySectionTitleQuery,
+		const [getMessageBoardSectionByFriendlyUrlPath] = useManualQuery(
+			getMessageBoardSectionByFriendlyUrlPathQuery,
 			{
 				variables: {
-					filter: `title eq '${slugToText(
-						sectionTitle
-					)}' or id eq '${slugToText(sectionTitle)}'`,
+					friendlyUrlPath: sectionTitle,
 					siteKey: context.siteKey,
 				},
 			}
@@ -87,9 +77,11 @@ export default withRouter(
 		}, [hasEnoughContent, headline, tagsLoaded]);
 
 		useEffect(() => {
-			getSectionBySectionTitle().then(({data}) => {
-				const section = data.messageBoardSections.items[0];
+			getMessageBoardSectionByFriendlyUrlPath().then(({data}) => {
+				const section = data.messageBoardSectionByFriendlyUrlPath;
+
 				setSectionId((section && section.id) || +context.rootTopicId);
+
 				if (section.parentMessageBoardSection) {
 					setSections([
 						{
@@ -115,7 +107,7 @@ export default withRouter(
 			context.rootTopicId,
 			context.siteKey,
 			sectionTitle,
-			getSectionBySectionTitle,
+			getMessageBoardSectionByFriendlyUrlPath,
 		]);
 
 		const processError = (error) => {
@@ -137,9 +129,10 @@ export default withRouter(
 		const processResponse = (error) =>
 			error ? processError(error.graphQLErrors[0]) : debounceCallback();
 
-		const createQuestion = () => {
+		const createQuestion = async () => {
 			setIsPostButtonDisable(true);
 			deleteCache();
+
 			if (
 				sectionTitle === context.rootTopicId &&
 				+context.rootTopicId === 0
@@ -169,13 +162,21 @@ export default withRouter(
 					.then(({error}) => processResponse(error))
 					.catch(processError);
 			}
+
+			setIsPostButtonDisable(false);
 		};
 
 		return (
 			<section className="c-mt-5 questions-section questions-section-new">
 				<div className="questions-container row">
 					<div className="c-mx-auto col-xl-10">
-						<h1>{Liferay.Language.get('new-question')}</h1>
+						<h1>
+							{Liferay.FeatureFlags['LPS-185892']
+								? context.newQuestionPageTitle !== ''
+									? context.newQuestionPageTitle
+									: Liferay.Language.get('ask-question')
+								: Liferay.Language.get('ask-question')}
+						</h1>
 
 						<ClayForm className="c-mt-5">
 							<ClayForm.Group>
@@ -188,7 +189,7 @@ export default withRouter(
 								</label>
 
 								<ClayInput
-									maxLength={75}
+									maxLength={HEADLINE_MAX_LENGTH}
 									onChange={(event) =>
 										setHeadline(event.target.value)
 									}
@@ -202,11 +203,15 @@ export default withRouter(
 
 								<ClayForm.FeedbackGroup>
 									<ClayForm.FeedbackItem>
-										<span className="small text-secondary">
-											{Liferay.Language.get(
-												'be-specific-and-imagine-you-are-asking-a-question-to-another-person'
-											)}
-										</span>
+										<div className="bd-highlight d-flex mb-3 text-secondary">
+											<span className="bd-highlight d-flex justify-content-start mr-auto p-2 small">
+												{Liferay.Language.get(
+													'be-specific-and-imagine-you-are-asking-a-question-to-another-person'
+												)}
+											</span>
+
+											<span className="bd-highlight p-2">{`${headline.length} / ${HEADLINE_MAX_LENGTH}`}</span>
+										</div>
 									</ClayForm.FeedbackItem>
 								</ClayForm.FeedbackGroup>
 							</ClayForm.Group>
@@ -253,6 +258,22 @@ export default withRouter(
 
 						<div className="c-mt-4 d-flex flex-column-reverse flex-sm-row">
 							<ClayButton
+								aria-label={
+									context.trustedUser
+										? Liferay.FeatureFlags['LPS-185892']
+											? context.postYourQuestionButtonText !==
+											  ''
+												? context.postYourQuestionButtonText
+												: Liferay.Language.get(
+														'post-your-question'
+												  )
+											: Liferay.Language.get(
+													'post-your-question'
+											  )
+										: Liferay.Language.get(
+												'submit-for-workflow'
+										  )
+								}
 								className="c-mt-4 c-mt-sm-0"
 								disabled={isPostButtonDisable}
 								displayType="primary"
@@ -261,9 +282,18 @@ export default withRouter(
 								}}
 							>
 								{context.trustedUser
-									? Liferay.Language.get('post-your-question')
+									? Liferay.FeatureFlags['LPS-185892']
+										? context.postYourQuestionButtonText !==
+										  ''
+											? context.postYourQuestionButtonText
+											: Liferay.Language.get(
+													'post-your-question'
+											  )
+										: Liferay.Language.get(
+												'post-your-question'
+										  )
 									: Liferay.Language.get(
-											'submit-for-publication'
+											'submit-for-workflow'
 									  )}
 							</ClayButton>
 

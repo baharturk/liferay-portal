@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.display.context;
@@ -20,11 +11,11 @@ import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeCon
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -97,54 +88,56 @@ public class MasterLayoutDisplayContext {
 					getOrderByCol(), getOrderByType()));
 		masterLayoutsSearchContainer.setOrderByType(getOrderByType());
 
-		List<LayoutPageTemplateEntry> layoutPageTemplateEntries = null;
-		int layoutPageTemplateEntriesCount = 0;
-
 		if (isSearch()) {
-			layoutPageTemplateEntries =
-				LayoutPageTemplateEntryServiceUtil.getLayoutPageTemplateEntries(
-					_themeDisplay.getScopeGroupId(), getKeywords(),
-					LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT,
-					masterLayoutsSearchContainer.getStart(),
-					masterLayoutsSearchContainer.getEnd(),
-					masterLayoutsSearchContainer.getOrderByComparator());
-			layoutPageTemplateEntriesCount =
+			masterLayoutsSearchContainer.setResultsAndTotal(
+				() ->
+					LayoutPageTemplateEntryServiceUtil.
+						getLayoutPageTemplateEntries(
+							_themeDisplay.getScopeGroupId(), getKeywords(),
+							LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT,
+							masterLayoutsSearchContainer.getStart(),
+							masterLayoutsSearchContainer.getEnd(),
+							masterLayoutsSearchContainer.
+								getOrderByComparator()),
 				LayoutPageTemplateEntryServiceUtil.
 					getLayoutPageTemplateEntriesCount(
 						_themeDisplay.getScopeGroupId(), getKeywords(),
-						LayoutPageTemplateEntryTypeConstants.
-							TYPE_MASTER_LAYOUT);
+						LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT));
 		}
 		else {
-			if (masterLayoutsSearchContainer.getStart() == 0) {
-				layoutPageTemplateEntries = new ArrayList<>();
+			List<LayoutPageTemplateEntry> layoutPageTemplateEntries =
+				new ArrayList<>();
 
+			int start = masterLayoutsSearchContainer.getStart();
+			int end = masterLayoutsSearchContainer.getEnd();
+
+			if (start == 0) {
+				end -= 1;
 				layoutPageTemplateEntries.add(_addBlankMasterLayout());
+			}
+			else {
+				start -= 1;
 			}
 
 			layoutPageTemplateEntries.addAll(
 				LayoutPageTemplateEntryServiceUtil.getLayoutPageTemplateEntries(
 					_themeDisplay.getScopeGroupId(),
-					LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT,
-					masterLayoutsSearchContainer.getStart(),
-					masterLayoutsSearchContainer.getEnd(),
-					masterLayoutsSearchContainer.getOrderByComparator()));
-			layoutPageTemplateEntriesCount =
+					LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, start,
+					end, masterLayoutsSearchContainer.getOrderByComparator()));
+
+			int layoutPageTemplateEntriesCount =
 				LayoutPageTemplateEntryServiceUtil.
 					getLayoutPageTemplateEntriesCount(
 						_themeDisplay.getScopeGroupId(),
-						LayoutPageTemplateEntryTypeConstants.
-							TYPE_MASTER_LAYOUT);
+						LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT);
 
-			if (masterLayoutsSearchContainer.getStart() == 0) {
-				layoutPageTemplateEntriesCount++;
-			}
+			masterLayoutsSearchContainer.setResultsAndTotal(
+				() -> layoutPageTemplateEntries,
+				layoutPageTemplateEntriesCount + 1);
 		}
 
-		masterLayoutsSearchContainer.setResults(layoutPageTemplateEntries);
 		masterLayoutsSearchContainer.setRowChecker(
 			new EmptyOnClickRowChecker(_renderResponse));
-		masterLayoutsSearchContainer.setTotal(layoutPageTemplateEntriesCount);
 
 		_masterLayoutsSearchContainer = masterLayoutsSearchContainer;
 

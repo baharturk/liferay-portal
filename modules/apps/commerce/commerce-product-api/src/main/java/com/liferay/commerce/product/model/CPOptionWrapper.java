@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model;
@@ -21,6 +12,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -44,6 +37,7 @@ public class CPOptionWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("CPOptionId", getCPOptionId());
@@ -54,7 +48,7 @@ public class CPOptionWrapper
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("name", getName());
 		attributes.put("description", getDescription());
-		attributes.put("DDMFormFieldTypeName", getDDMFormFieldTypeName());
+		attributes.put("commerceOptionTypeKey", getCommerceOptionTypeKey());
 		attributes.put("facetable", isFacetable());
 		attributes.put("required", isRequired());
 		attributes.put("skuContributor", isSkuContributor());
@@ -70,6 +64,12 @@ public class CPOptionWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
 		}
 
 		String uuid = (String)attributes.get("uuid");
@@ -133,11 +133,11 @@ public class CPOptionWrapper
 			setDescription(description);
 		}
 
-		String DDMFormFieldTypeName = (String)attributes.get(
-			"DDMFormFieldTypeName");
+		String commerceOptionTypeKey = (String)attributes.get(
+			"commerceOptionTypeKey");
 
-		if (DDMFormFieldTypeName != null) {
-			setDDMFormFieldTypeName(DDMFormFieldTypeName);
+		if (commerceOptionTypeKey != null) {
+			setCommerceOptionTypeKey(commerceOptionTypeKey);
 		}
 
 		Boolean facetable = (Boolean)attributes.get("facetable");
@@ -182,6 +182,16 @@ public class CPOptionWrapper
 	}
 
 	/**
+	 * Returns the commerce option type key of this cp option.
+	 *
+	 * @return the commerce option type key of this cp option
+	 */
+	@Override
+	public String getCommerceOptionTypeKey() {
+		return model.getCommerceOptionTypeKey();
+	}
+
+	/**
 	 * Returns the company ID of this cp option.
 	 *
 	 * @return the company ID of this cp option
@@ -217,13 +227,13 @@ public class CPOptionWrapper
 	}
 
 	/**
-	 * Returns the ddm form field type name of this cp option.
+	 * Returns the ct collection ID of this cp option.
 	 *
-	 * @return the ddm form field type name of this cp option
+	 * @return the ct collection ID of this cp option
 	 */
 	@Override
-	public String getDDMFormFieldTypeName() {
-		return model.getDDMFormFieldTypeName();
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
 	}
 
 	@Override
@@ -564,6 +574,16 @@ public class CPOptionWrapper
 	}
 
 	/**
+	 * Sets the commerce option type key of this cp option.
+	 *
+	 * @param commerceOptionTypeKey the commerce option type key of this cp option
+	 */
+	@Override
+	public void setCommerceOptionTypeKey(String commerceOptionTypeKey) {
+		model.setCommerceOptionTypeKey(commerceOptionTypeKey);
+	}
+
+	/**
 	 * Sets the company ID of this cp option.
 	 *
 	 * @param companyId the company ID of this cp option
@@ -594,13 +614,13 @@ public class CPOptionWrapper
 	}
 
 	/**
-	 * Sets the ddm form field type name of this cp option.
+	 * Sets the ct collection ID of this cp option.
 	 *
-	 * @param DDMFormFieldTypeName the ddm form field type name of this cp option
+	 * @param ctCollectionId the ct collection ID of this cp option
 	 */
 	@Override
-	public void setDDMFormFieldTypeName(String DDMFormFieldTypeName) {
-		model.setDDMFormFieldTypeName(DDMFormFieldTypeName);
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
 	}
 
 	/**
@@ -861,6 +881,25 @@ public class CPOptionWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CPOption, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CPOption, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

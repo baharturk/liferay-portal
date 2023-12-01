@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shop.by.diagram.service.persistence.test;
@@ -128,6 +119,8 @@ public class CSDiagramSettingPersistenceTest {
 
 		newCSDiagramSetting.setMvccVersion(RandomTestUtil.nextLong());
 
+		newCSDiagramSetting.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCSDiagramSetting.setUuid(RandomTestUtil.randomString());
 
 		newCSDiagramSetting.setCompanyId(RandomTestUtil.nextLong());
@@ -159,6 +152,9 @@ public class CSDiagramSettingPersistenceTest {
 		Assert.assertEquals(
 			existingCSDiagramSetting.getMvccVersion(),
 			newCSDiagramSetting.getMvccVersion());
+		Assert.assertEquals(
+			existingCSDiagramSetting.getCtCollectionId(),
+			newCSDiagramSetting.getCtCollectionId());
 		Assert.assertEquals(
 			existingCSDiagramSetting.getUuid(), newCSDiagramSetting.getUuid());
 		Assert.assertEquals(
@@ -245,11 +241,12 @@ public class CSDiagramSettingPersistenceTest {
 
 	protected OrderByComparator<CSDiagramSetting> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CSDiagramSetting", "mvccVersion", true, "uuid", true,
-			"CSDiagramSettingId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true,
-			"CPAttachmentFileEntryId", true, "CPDefinitionId", true, "color",
-			true, "radius", true, "type", true);
+			"CSDiagramSetting", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "CSDiagramSettingId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "CPAttachmentFileEntryId", true,
+			"CPDefinitionId", true, "color", true, "radius", true, "type",
+			true);
 	}
 
 	@Test
@@ -534,6 +531,8 @@ public class CSDiagramSettingPersistenceTest {
 		CSDiagramSetting csDiagramSetting = _persistence.create(pk);
 
 		csDiagramSetting.setMvccVersion(RandomTestUtil.nextLong());
+
+		csDiagramSetting.setCtCollectionId(RandomTestUtil.nextLong());
 
 		csDiagramSetting.setUuid(RandomTestUtil.randomString());
 

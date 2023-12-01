@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.dto.v1_0;
@@ -121,6 +112,34 @@ public class ObjectAction implements Serializable {
 	protected Boolean active;
 
 	@Schema
+	public String getConditionExpression() {
+		return conditionExpression;
+	}
+
+	public void setConditionExpression(String conditionExpression) {
+		this.conditionExpression = conditionExpression;
+	}
+
+	@JsonIgnore
+	public void setConditionExpression(
+		UnsafeSupplier<String, Exception> conditionExpressionUnsafeSupplier) {
+
+		try {
+			conditionExpression = conditionExpressionUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String conditionExpression;
+
+	@Schema
 	public Date getDateCreated() {
 		return dateCreated;
 	}
@@ -177,6 +196,92 @@ public class ObjectAction implements Serializable {
 	protected Date dateModified;
 
 	@Schema
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	@JsonIgnore
+	public void setDescription(
+		UnsafeSupplier<String, Exception> descriptionUnsafeSupplier) {
+
+		try {
+			description = descriptionUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String description;
+
+	@Schema
+	@Valid
+	public Map<String, String> getErrorMessage() {
+		return errorMessage;
+	}
+
+	public void setErrorMessage(Map<String, String> errorMessage) {
+		this.errorMessage = errorMessage;
+	}
+
+	@JsonIgnore
+	public void setErrorMessage(
+		UnsafeSupplier<Map<String, String>, Exception>
+			errorMessageUnsafeSupplier) {
+
+		try {
+			errorMessage = errorMessageUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Map<String, String> errorMessage;
+
+	@Schema
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String externalReferenceCode;
+
+	@Schema
 	public Long getId() {
 		return id;
 	}
@@ -201,6 +306,35 @@ public class ObjectAction implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
+
+	@Schema
+	@Valid
+	public Map<String, String> getLabel() {
+		return label;
+	}
+
+	public void setLabel(Map<String, String> label) {
+		this.label = label;
+	}
+
+	@JsonIgnore
+	public void setLabel(
+		UnsafeSupplier<Map<String, String>, Exception> labelUnsafeSupplier) {
+
+		try {
+			label = labelUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Map<String, String> label;
 
 	@Schema
 	public String getName() {
@@ -316,6 +450,63 @@ public class ObjectAction implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, ?> parameters;
 
+	@Schema
+	@Valid
+	public Status getStatus() {
+		return status;
+	}
+
+	public void setStatus(Status status) {
+		this.status = status;
+	}
+
+	@JsonIgnore
+	public void setStatus(
+		UnsafeSupplier<Status, Exception> statusUnsafeSupplier) {
+
+		try {
+			status = statusUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Status status;
+
+	@Schema
+	public Boolean getSystem() {
+		return system;
+	}
+
+	public void setSystem(Boolean system) {
+		this.system = system;
+	}
+
+	@JsonIgnore
+	public void setSystem(
+		UnsafeSupplier<Boolean, Exception> systemUnsafeSupplier) {
+
+		try {
+			system = systemUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean system;
+
 	@Override
 	public boolean equals(Object object) {
 		if (this == object) {
@@ -366,6 +557,20 @@ public class ObjectAction implements Serializable {
 			sb.append(active);
 		}
 
+		if (conditionExpression != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"conditionExpression\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(conditionExpression));
+
+			sb.append("\"");
+		}
+
 		if (dateCreated != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -394,6 +599,44 @@ public class ObjectAction implements Serializable {
 			sb.append("\"");
 		}
 
+		if (description != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"description\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(description));
+
+			sb.append("\"");
+		}
+
+		if (errorMessage != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"errorMessage\": ");
+
+			sb.append(_toJSON(errorMessage));
+		}
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -402,6 +645,16 @@ public class ObjectAction implements Serializable {
 			sb.append("\"id\": ");
 
 			sb.append(id);
+		}
+
+		if (label != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"label\": ");
+
+			sb.append(_toJSON(label));
 		}
 
 		if (name != null) {
@@ -454,6 +707,26 @@ public class ObjectAction implements Serializable {
 			sb.append("\"parameters\": ");
 
 			sb.append(_toJSON(parameters));
+		}
+
+		if (status != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"status\": ");
+
+			sb.append(String.valueOf(status));
+		}
+
+		if (system != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"system\": ");
+
+			sb.append(system);
 		}
 
 		sb.append("}");
@@ -550,5 +823,7 @@ public class ObjectAction implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

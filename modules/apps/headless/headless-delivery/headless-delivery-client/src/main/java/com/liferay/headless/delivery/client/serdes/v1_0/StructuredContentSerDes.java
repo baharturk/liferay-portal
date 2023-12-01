@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.serdes.v1_0;
@@ -30,7 +21,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 import javax.annotation.Generated;
 
@@ -65,7 +55,7 @@ public class StructuredContentSerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (structuredContent.getActions() != null) {
 			if (sb.length() > 1) {
@@ -364,6 +354,38 @@ public class StructuredContentSerDes {
 			sb.append(structuredContent.getNumberOfComments());
 		}
 
+		if (structuredContent.getPermissions() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"permissions\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < structuredContent.getPermissions().length;
+				 i++) {
+
+				sb.append(structuredContent.getPermissions()[i]);
+
+				if ((i + 1) < structuredContent.getPermissions().length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		if (structuredContent.getPriority() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"priority\": ");
+
+			sb.append(structuredContent.getPriority());
+		}
+
 		if (structuredContent.getRelatedContents() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -418,6 +440,16 @@ public class StructuredContentSerDes {
 			sb.append("\"siteId\": ");
 
 			sb.append(structuredContent.getSiteId());
+		}
+
+		if (structuredContent.getStructuredContentFolderId() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"structuredContentFolderId\": ");
+
+			sb.append(structuredContent.getStructuredContentFolderId());
 		}
 
 		if (structuredContent.getSubscribed() != null) {
@@ -555,7 +587,7 @@ public class StructuredContentSerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (structuredContent.getActions() == null) {
 			map.put("actions", null);
@@ -731,6 +763,23 @@ public class StructuredContentSerDes {
 				String.valueOf(structuredContent.getNumberOfComments()));
 		}
 
+		if (structuredContent.getPermissions() == null) {
+			map.put("permissions", null);
+		}
+		else {
+			map.put(
+				"permissions",
+				String.valueOf(structuredContent.getPermissions()));
+		}
+
+		if (structuredContent.getPriority() == null) {
+			map.put("priority", null);
+		}
+		else {
+			map.put(
+				"priority", String.valueOf(structuredContent.getPriority()));
+		}
+
 		if (structuredContent.getRelatedContents() == null) {
 			map.put("relatedContents", null);
 		}
@@ -754,6 +803,16 @@ public class StructuredContentSerDes {
 		}
 		else {
 			map.put("siteId", String.valueOf(structuredContent.getSiteId()));
+		}
+
+		if (structuredContent.getStructuredContentFolderId() == null) {
+			map.put("structuredContentFolderId", null);
+		}
+		else {
+			map.put(
+				"structuredContentFolderId",
+				String.valueOf(
+					structuredContent.getStructuredContentFolderId()));
 		}
 
 		if (structuredContent.getSubscribed() == null) {
@@ -866,14 +925,18 @@ public class StructuredContentSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "contentFields")) {
 				if (jsonParserFieldValue != null) {
-					structuredContent.setContentFields(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> ContentFieldSerDes.toDTO((String)object)
-						).toArray(
-							size -> new ContentField[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					ContentField[] contentFieldsArray =
+						new ContentField[jsonParserFieldValues.length];
+
+					for (int i = 0; i < contentFieldsArray.length; i++) {
+						contentFieldsArray[i] = ContentFieldSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					structuredContent.setContentFields(contentFieldsArray);
 				}
 			}
 			else if (Objects.equals(
@@ -892,14 +955,18 @@ public class StructuredContentSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "customFields")) {
 				if (jsonParserFieldValue != null) {
-					structuredContent.setCustomFields(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> CustomFieldSerDes.toDTO((String)object)
-						).toArray(
-							size -> new CustomField[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					CustomField[] customFieldsArray =
+						new CustomField[jsonParserFieldValues.length];
+
+					for (int i = 0; i < customFieldsArray.length; i++) {
+						customFieldsArray[i] = CustomFieldSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					structuredContent.setCustomFields(customFieldsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
@@ -979,34 +1046,76 @@ public class StructuredContentSerDes {
 						Integer.valueOf((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "permissions")) {
+				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					com.liferay.headless.delivery.client.permission.Permission[]
+						permissionsArray = new
+						com.liferay.headless.delivery.client.permission.
+							Permission[jsonParserFieldValues.length];
+
+					for (int i = 0; i < permissionsArray.length; i++) {
+						permissionsArray[i] =
+							com.liferay.headless.delivery.client.permission.
+								Permission.toDTO(
+									(String)jsonParserFieldValues[i]);
+					}
+
+					structuredContent.setPermissions(permissionsArray);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "priority")) {
+				if (jsonParserFieldValue != null) {
+					structuredContent.setPriority(
+						Double.valueOf((String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "relatedContents")) {
 				if (jsonParserFieldValue != null) {
-					structuredContent.setRelatedContents(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> RelatedContentSerDes.toDTO((String)object)
-						).toArray(
-							size -> new RelatedContent[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					RelatedContent[] relatedContentsArray =
+						new RelatedContent[jsonParserFieldValues.length];
+
+					for (int i = 0; i < relatedContentsArray.length; i++) {
+						relatedContentsArray[i] = RelatedContentSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					structuredContent.setRelatedContents(relatedContentsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "renderedContents")) {
 				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					RenderedContent[] renderedContentsArray =
+						new RenderedContent[jsonParserFieldValues.length];
+
+					for (int i = 0; i < renderedContentsArray.length; i++) {
+						renderedContentsArray[i] = RenderedContentSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
 					structuredContent.setRenderedContents(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> RenderedContentSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new RenderedContent[size]
-						));
+						renderedContentsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "siteId")) {
 				if (jsonParserFieldValue != null) {
 					structuredContent.setSiteId(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "structuredContentFolderId")) {
+
+				if (jsonParserFieldValue != null) {
+					structuredContent.setStructuredContentFolderId(
 						Long.valueOf((String)jsonParserFieldValue));
 				}
 			}
@@ -1020,15 +1129,22 @@ public class StructuredContentSerDes {
 						jsonParserFieldName, "taxonomyCategoryBriefs")) {
 
 				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					TaxonomyCategoryBrief[] taxonomyCategoryBriefsArray =
+						new TaxonomyCategoryBrief[jsonParserFieldValues.length];
+
+					for (int i = 0; i < taxonomyCategoryBriefsArray.length;
+						 i++) {
+
+						taxonomyCategoryBriefsArray[i] =
+							TaxonomyCategoryBriefSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
 					structuredContent.setTaxonomyCategoryBriefs(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> TaxonomyCategoryBriefSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new TaxonomyCategoryBrief[size]
-						));
+						taxonomyCategoryBriefsArray);
 				}
 			}
 			else if (Objects.equals(

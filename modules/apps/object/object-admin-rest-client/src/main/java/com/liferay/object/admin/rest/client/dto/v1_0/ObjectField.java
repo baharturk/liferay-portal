@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.client.dto.v1_0;
@@ -115,6 +106,48 @@ public class ObjectField implements Cloneable, Serializable {
 
 	protected BusinessType businessType;
 
+	public String getDefaultValue() {
+		return defaultValue;
+	}
+
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
+	}
+
+	public void setDefaultValue(
+		UnsafeSupplier<String, Exception> defaultValueUnsafeSupplier) {
+
+		try {
+			defaultValue = defaultValueUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String defaultValue;
+
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String externalReferenceCode;
+
 	public Long getId() {
 		return id;
 	}
@@ -218,6 +251,32 @@ public class ObjectField implements Cloneable, Serializable {
 
 	protected Map<String, String> label;
 
+	public String getListTypeDefinitionExternalReferenceCode() {
+		return listTypeDefinitionExternalReferenceCode;
+	}
+
+	public void setListTypeDefinitionExternalReferenceCode(
+		String listTypeDefinitionExternalReferenceCode) {
+
+		this.listTypeDefinitionExternalReferenceCode =
+			listTypeDefinitionExternalReferenceCode;
+	}
+
+	public void setListTypeDefinitionExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			listTypeDefinitionExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			listTypeDefinitionExternalReferenceCode =
+				listTypeDefinitionExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String listTypeDefinitionExternalReferenceCode;
+
 	public Long getListTypeDefinitionId() {
 		return listTypeDefinitionId;
 	}
@@ -239,6 +298,27 @@ public class ObjectField implements Cloneable, Serializable {
 
 	protected Long listTypeDefinitionId;
 
+	public Boolean getLocalized() {
+		return localized;
+	}
+
+	public void setLocalized(Boolean localized) {
+		this.localized = localized;
+	}
+
+	public void setLocalized(
+		UnsafeSupplier<Boolean, Exception> localizedUnsafeSupplier) {
+
+		try {
+			localized = localizedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean localized;
+
 	public String getName() {
 		return name;
 	}
@@ -257,6 +337,84 @@ public class ObjectField implements Cloneable, Serializable {
 	}
 
 	protected String name;
+
+	public ObjectFieldSetting[] getObjectFieldSettings() {
+		return objectFieldSettings;
+	}
+
+	public void setObjectFieldSettings(
+		ObjectFieldSetting[] objectFieldSettings) {
+
+		this.objectFieldSettings = objectFieldSettings;
+	}
+
+	public void setObjectFieldSettings(
+		UnsafeSupplier<ObjectFieldSetting[], Exception>
+			objectFieldSettingsUnsafeSupplier) {
+
+		try {
+			objectFieldSettings = objectFieldSettingsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected ObjectFieldSetting[] objectFieldSettings;
+
+	public ReadOnly getReadOnly() {
+		return readOnly;
+	}
+
+	public String getReadOnlyAsString() {
+		if (readOnly == null) {
+			return null;
+		}
+
+		return readOnly.toString();
+	}
+
+	public void setReadOnly(ReadOnly readOnly) {
+		this.readOnly = readOnly;
+	}
+
+	public void setReadOnly(
+		UnsafeSupplier<ReadOnly, Exception> readOnlyUnsafeSupplier) {
+
+		try {
+			readOnly = readOnlyUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected ReadOnly readOnly;
+
+	public String getReadOnlyConditionExpression() {
+		return readOnlyConditionExpression;
+	}
+
+	public void setReadOnlyConditionExpression(
+		String readOnlyConditionExpression) {
+
+		this.readOnlyConditionExpression = readOnlyConditionExpression;
+	}
+
+	public void setReadOnlyConditionExpression(
+		UnsafeSupplier<String, Exception>
+			readOnlyConditionExpressionUnsafeSupplier) {
+
+		try {
+			readOnlyConditionExpression =
+				readOnlyConditionExpressionUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String readOnlyConditionExpression;
 
 	public RelationshipType getRelationshipType() {
 		return relationshipType;
@@ -309,6 +467,48 @@ public class ObjectField implements Cloneable, Serializable {
 
 	protected Boolean required;
 
+	public Boolean getState() {
+		return state;
+	}
+
+	public void setState(Boolean state) {
+		this.state = state;
+	}
+
+	public void setState(
+		UnsafeSupplier<Boolean, Exception> stateUnsafeSupplier) {
+
+		try {
+			state = stateUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean state;
+
+	public Boolean getSystem() {
+		return system;
+	}
+
+	public void setSystem(Boolean system) {
+		this.system = system;
+	}
+
+	public void setSystem(
+		UnsafeSupplier<Boolean, Exception> systemUnsafeSupplier) {
+
+		try {
+			system = systemUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean system;
+
 	public Type getType() {
 		return type;
 	}
@@ -335,6 +535,27 @@ public class ObjectField implements Cloneable, Serializable {
 	}
 
 	protected Type type;
+
+	public Boolean getUnique() {
+		return unique;
+	}
+
+	public void setUnique(Boolean unique) {
+		this.unique = unique;
+	}
+
+	public void setUnique(
+		UnsafeSupplier<Boolean, Exception> uniqueUnsafeSupplier) {
+
+		try {
+			unique = uniqueUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean unique;
 
 	@Override
 	public ObjectField clone() throws CloneNotSupportedException {
@@ -369,10 +590,13 @@ public class ObjectField implements Cloneable, Serializable {
 
 	public static enum BusinessType {
 
-		BOOLEAN("Boolean"), DATE("Date"), DECIMAL("Decimal"),
-		INTEGER("Integer"), LONG_INTEGER("LongInteger"), LONG_TEXT("LongText"),
+		AGGREGATION("Aggregation"), ATTACHMENT("Attachment"),
+		AUTO_INCREMENT("AutoIncrement"), BOOLEAN("Boolean"), DATE("Date"),
+		DATE_TIME("DateTime"), DECIMAL("Decimal"), ENCRYPTED("Encrypted"),
+		FORMULA("Formula"), INTEGER("Integer"), LONG_INTEGER("LongInteger"),
+		LONG_TEXT("LongText"), MULTISELECT_PICKLIST("MultiselectPicklist"),
 		PICKLIST("Picklist"), PRECISION_DECIMAL("PrecisionDecimal"),
-		RELATIONSHIP("Relationship"), TEXT("Text");
+		RELATIONSHIP("Relationship"), RICH_TEXT("RichText"), TEXT("Text");
 
 		public static BusinessType create(String value) {
 			for (BusinessType businessType : values()) {
@@ -406,8 +630,8 @@ public class ObjectField implements Cloneable, Serializable {
 	public static enum DBType {
 
 		BIG_DECIMAL("BigDecimal"), BOOLEAN("Boolean"), CLOB("Clob"),
-		DATE("Date"), DOUBLE("Double"), INTEGER("Integer"), LONG("Long"),
-		STRING("String");
+		DATE("Date"), DATE_TIME("DateTime"), DOUBLE("Double"),
+		INTEGER("Integer"), LONG("Long"), STRING("String");
 
 		public static DBType create(String value) {
 			for (DBType dbType : values()) {
@@ -431,6 +655,39 @@ public class ObjectField implements Cloneable, Serializable {
 		}
 
 		private DBType(String value) {
+			_value = value;
+		}
+
+		private final String _value;
+
+	}
+
+	public static enum ReadOnly {
+
+		CONDITIONAL("conditional"), FALSE("false"), TRUE("true");
+
+		public static ReadOnly create(String value) {
+			for (ReadOnly readOnly : values()) {
+				if (Objects.equals(readOnly.getValue(), value) ||
+					Objects.equals(readOnly.name(), value)) {
+
+					return readOnly;
+				}
+			}
+
+			return null;
+		}
+
+		public String getValue() {
+			return _value;
+		}
+
+		@Override
+		public String toString() {
+			return _value;
+		}
+
+		private ReadOnly(String value) {
 			_value = value;
 		}
 
@@ -474,8 +731,8 @@ public class ObjectField implements Cloneable, Serializable {
 	public static enum Type {
 
 		BIG_DECIMAL("BigDecimal"), BOOLEAN("Boolean"), CLOB("Clob"),
-		DATE("Date"), DOUBLE("Double"), INTEGER("Integer"), LONG("Long"),
-		STRING("String");
+		DATE("Date"), DATE_TIME("DateTime"), DOUBLE("Double"),
+		INTEGER("Integer"), LONG("Long"), STRING("String");
 
 		public static Type create(String value) {
 			for (Type type : values()) {

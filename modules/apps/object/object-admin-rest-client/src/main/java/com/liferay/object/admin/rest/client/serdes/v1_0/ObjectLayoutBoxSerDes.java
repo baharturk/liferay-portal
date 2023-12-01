@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.client.serdes.v1_0;
@@ -23,7 +14,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 import javax.annotation.Generated;
 
@@ -120,6 +110,20 @@ public class ObjectLayoutBoxSerDes {
 			sb.append(objectLayoutBox.getPriority());
 		}
 
+		if (objectLayoutBox.getType() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"type\": ");
+
+			sb.append("\"");
+
+			sb.append(objectLayoutBox.getType());
+
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
@@ -178,6 +182,13 @@ public class ObjectLayoutBoxSerDes {
 			map.put("priority", String.valueOf(objectLayoutBox.getPriority()));
 		}
 
+		if (objectLayoutBox.getType() == null) {
+			map.put("type", null);
+		}
+		else {
+			map.put("type", String.valueOf(objectLayoutBox.getType()));
+		}
+
 		return map;
 	}
 
@@ -220,21 +231,31 @@ public class ObjectLayoutBoxSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "objectLayoutRows")) {
 				if (jsonParserFieldValue != null) {
-					objectLayoutBox.setObjectLayoutRows(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> ObjectLayoutRowSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new ObjectLayoutRow[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					ObjectLayoutRow[] objectLayoutRowsArray =
+						new ObjectLayoutRow[jsonParserFieldValues.length];
+
+					for (int i = 0; i < objectLayoutRowsArray.length; i++) {
+						objectLayoutRowsArray[i] = ObjectLayoutRowSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					objectLayoutBox.setObjectLayoutRows(objectLayoutRowsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "priority")) {
 				if (jsonParserFieldValue != null) {
 					objectLayoutBox.setPriority(
 						Integer.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				if (jsonParserFieldValue != null) {
+					objectLayoutBox.setType(
+						ObjectLayoutBox.Type.create(
+							(String)jsonParserFieldValue));
 				}
 			}
 		}

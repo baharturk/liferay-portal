@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.sort.portlet;
@@ -22,14 +13,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.web.internal.sort.constants.SortPortletKeys;
-import com.liferay.portal.search.web.internal.sort.display.context.SortDisplayBuilder;
 import com.liferay.portal.search.web.internal.sort.display.context.SortDisplayContext;
+import com.liferay.portal.search.web.internal.sort.display.context.builder.SortDisplayContextBuilder;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 
 import java.io.IOException;
-
-import java.util.Optional;
 
 import javax.portlet.Portlet;
 import javax.portlet.PortletException;
@@ -44,7 +33,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author André de Oliveira
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-sort",
@@ -62,7 +50,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.view-template=/sort/view.jsp",
 		"javax.portlet.name=" + SortPortletKeys.SORT,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,guest,power-user,user"
+		"javax.portlet.security-role-ref=administrator,guest,power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -107,27 +96,24 @@ public class SortPortlet extends MVCPortlet {
 
 		String parameterName = sortPortletPreferences.getParameterName();
 
-		Optional<String[]> parameterValuesOptional =
-			portletSharedSearchResponse.getParameterValues(
-				parameterName, renderRequest);
-
-		return _createSortDisplayBuilder(
+		return _createSortDisplayContextBuilder(
 			renderRequest, sortPortletPreferences
 		).parameterName(
 			parameterName
 		).parameterValues(
-			parameterValuesOptional.orElse(null)
+			portletSharedSearchResponse.getParameterValues(
+				parameterName, renderRequest)
 		).renderNothing(
 			_isRenderNothing(portletSharedSearchResponse)
 		).build();
 	}
 
-	private SortDisplayBuilder _createSortDisplayBuilder(
+	private SortDisplayContextBuilder _createSortDisplayContextBuilder(
 		RenderRequest renderRequest,
 		SortPortletPreferences sortPortletPreferences) {
 
 		try {
-			return new SortDisplayBuilder(
+			return new SortDisplayContextBuilder(
 				language, portal, renderRequest, sortPortletPreferences);
 		}
 		catch (ConfigurationException configurationException) {
@@ -138,10 +124,7 @@ public class SortPortlet extends MVCPortlet {
 	private boolean _isRenderNothing(
 		PortletSharedSearchResponse portletSharedSearchResponse) {
 
-		Optional<String> keywordsOptional =
-			portletSharedSearchResponse.getKeywordsOptional();
-
-		if (keywordsOptional.isPresent()) {
+		if (portletSharedSearchResponse.getKeywords() != null) {
 			return false;
 		}
 

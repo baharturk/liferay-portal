@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Do not search for comments."
+		"en_US": "hide-comments-description"
 	},
 	"elementDefinition": {
 		"category": "hide",
@@ -50,7 +50,8 @@
 		"uiConfiguration": {
 		}
 	},
+	"externalReferenceCode": "HIDE_COMMENTS",
 	"title_i18n": {
-		"en_US": "Hide Comments"
+		"en_US": "hide-comments"
 	}
 }

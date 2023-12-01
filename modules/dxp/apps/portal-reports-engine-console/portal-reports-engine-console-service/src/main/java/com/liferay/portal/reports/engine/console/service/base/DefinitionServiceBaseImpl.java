@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.service.base;
@@ -20,6 +11,8 @@ import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.BaseServiceImpl;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -28,12 +21,6 @@ import com.liferay.portal.reports.engine.console.service.DefinitionService;
 import com.liferay.portal.reports.engine.console.service.DefinitionServiceUtil;
 import com.liferay.portal.reports.engine.console.service.persistence.DefinitionFinder;
 import com.liferay.portal.reports.engine.console.service.persistence.DefinitionPersistence;
-import com.liferay.portal.reports.engine.console.service.persistence.EntryFinder;
-import com.liferay.portal.reports.engine.console.service.persistence.EntryPersistence;
-import com.liferay.portal.reports.engine.console.service.persistence.SourceFinder;
-import com.liferay.portal.reports.engine.console.service.persistence.SourcePersistence;
-
-import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -62,7 +49,7 @@ public abstract class DefinitionServiceBaseImpl
 	 */
 	@Deactivate
 	protected void deactivate() {
-		_setServiceUtilService(null);
+		DefinitionServiceUtil.setService(null);
 	}
 
 	@Override
@@ -76,7 +63,7 @@ public abstract class DefinitionServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		definitionService = (DefinitionService)aopProxy;
 
-		_setServiceUtilService(definitionService);
+		DefinitionServiceUtil.setService(definitionService);
 	}
 
 	/**
@@ -121,20 +108,6 @@ public abstract class DefinitionServiceBaseImpl
 		}
 	}
 
-	private void _setServiceUtilService(DefinitionService definitionService) {
-		try {
-			Field field = DefinitionServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, definitionService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	@Reference
 	protected
 		com.liferay.portal.reports.engine.console.service.DefinitionLocalService
@@ -149,38 +122,10 @@ public abstract class DefinitionServiceBaseImpl
 	protected DefinitionFinder definitionFinder;
 
 	@Reference
-	protected EntryPersistence entryPersistence;
-
-	@Reference
-	protected EntryFinder entryFinder;
-
-	@Reference
-	protected SourcePersistence sourcePersistence;
-
-	@Reference
-	protected SourceFinder sourceFinder;
-
-	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameService
-		classNameService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserService userService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		DefinitionServiceBaseImpl.class);
 
 }

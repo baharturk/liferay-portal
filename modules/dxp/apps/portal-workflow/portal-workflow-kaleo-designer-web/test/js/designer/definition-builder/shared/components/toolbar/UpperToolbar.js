@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -18,7 +12,7 @@ import MockDefinitionBuilderContext from '../../../../../../mock/MockDefinitionB
 
 const props = {
 	displayNames: ['English (United States)'],
-	languageIds: ['en-US'],
+	languageIds: ['en_US'],
 	title: 'New Workflow',
 	translations: {},
 	version: '0',
@@ -40,16 +34,19 @@ describe('The UpperToolbar component should', () => {
 	it('Be rendered with all buttons and title input', () => {
 		const tbarItems = container.querySelectorAll('li.tbar-item');
 
-		expect(tbarItems.length).toBe(6);
-		expect(tbarItems[0]).toHaveTextContent('en-US');
+		expect(tbarItems.length).toBe(7);
+		expect(tbarItems[0]).toHaveTextContent('en_US');
 		const inputTitle = tbarItems[1].querySelector('input#definition-title');
 
 		expect(inputTitle).toBeTruthy();
 
-		expect(tbarItems[2]).toHaveTextContent('cancel');
-		expect(tbarItems[3]).toHaveTextContent('save');
-		expect(tbarItems[4]).toHaveTextContent('publish');
-		const sourceButton = tbarItems[5].querySelector(
+		expect(tbarItems[2].children[0].children[0]).toHaveClass(
+			'lexicon-icon-info-circle-open'
+		);
+		expect(tbarItems[3]).toHaveTextContent('cancel');
+		expect(tbarItems[4]).toHaveTextContent('save');
+		expect(tbarItems[5]).toHaveTextContent('publish');
+		const sourceButton = tbarItems[6].querySelector(
 			'svg.lexicon-icon-code'
 		);
 

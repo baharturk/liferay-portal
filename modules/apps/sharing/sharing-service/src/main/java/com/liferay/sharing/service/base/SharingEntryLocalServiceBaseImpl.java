@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.service.base;
@@ -36,6 +27,8 @@ import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -53,8 +46,6 @@ import com.liferay.sharing.service.persistence.SharingEntryFinder;
 import com.liferay.sharing.service.persistence.SharingEntryPersistence;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -432,6 +423,11 @@ public abstract class SharingEntryLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement SharingEntryLocalServiceImpl#deleteSharingEntry(SharingEntry) to avoid orphaned data");
+		}
+
 		return sharingEntryLocalService.deleteSharingEntry(
 			(SharingEntry)persistedModel);
 	}
@@ -544,7 +540,7 @@ public abstract class SharingEntryLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		SharingEntryLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -559,7 +555,7 @@ public abstract class SharingEntryLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		sharingEntryLocalService = (SharingEntryLocalService)aopProxy;
 
-		_setLocalServiceUtilService(sharingEntryLocalService);
+		SharingEntryLocalServiceUtil.setService(sharingEntryLocalService);
 	}
 
 	/**
@@ -604,22 +600,6 @@ public abstract class SharingEntryLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		SharingEntryLocalService sharingEntryLocalService) {
-
-		try {
-			Field field = SharingEntryLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, sharingEntryLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	protected SharingEntryLocalService sharingEntryLocalService;
 
 	@Reference
@@ -631,5 +611,8 @@ public abstract class SharingEntryLocalServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		SharingEntryLocalServiceBaseImpl.class);
 
 }

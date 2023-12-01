@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.job.property;
 
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.Job;
+import com.liferay.jenkins.results.parser.TestSuiteJob;
 
 import java.io.File;
 
@@ -27,9 +19,17 @@ import java.util.Map;
  */
 public class JobPropertyFactory {
 
-	public static JobProperty newJobProperty(Job job, String basePropertyName) {
+	public static JobProperty newJobProperty(String basePropertyName, Job job) {
 		return newJobProperty(
 			basePropertyName, null, null, job, null, null, true);
+	}
+
+	public static JobProperty newJobProperty(
+		String basePropertyName, Job job, File testBaseDir,
+		JobProperty.Type type) {
+
+		return newJobProperty(
+			basePropertyName, null, null, job, testBaseDir, type, true);
 	}
 
 	public static JobProperty newJobProperty(
@@ -41,6 +41,15 @@ public class JobPropertyFactory {
 
 		sb.append(basePropertyName);
 		sb.append("_");
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(testSuiteName) &&
+			(job instanceof TestSuiteJob)) {
+
+			TestSuiteJob testSuiteJob = (TestSuiteJob)job;
+
+			testSuiteName = testSuiteJob.getTestSuiteName();
+		}
+
 		sb.append(testSuiteName);
 		sb.append("_");
 		sb.append(testBatchName);
@@ -82,6 +91,13 @@ public class JobPropertyFactory {
 		else if ((type == JobProperty.Type.EXCLUDE_GLOB) ||
 				 (type == JobProperty.Type.FILTER_GLOB) ||
 				 (type == JobProperty.Type.INCLUDE_GLOB)) {
+
+			if (testBatchName.equals("modules-integration-analytics-cloud") &&
+				(testBaseDir == null)) {
+
+				testBaseDir = new File(
+					"/opt/dev/projects/github/com-liferay-osb-asah-private");
+			}
 
 			jobProperty = new DefaultGlobJobProperty(
 				job, type, testBaseDir, basePropertyName, useBasePropertyName,

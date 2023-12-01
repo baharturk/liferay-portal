@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -29,10 +20,6 @@ public class CIJobSummaryReportUtil {
 			summaryDir.mkdirs();
 		}
 
-		JenkinsResultsParserUtil.write(
-			new File(summaryDir, "js/job-data.js"),
-			"data=" + job.getJSONObject());
-
 		String indexHTMLContent =
 			JenkinsResultsParserUtil.getResourceFileContent(
 				"dependencies/job/summary/index.html");
@@ -45,6 +32,9 @@ public class CIJobSummaryReportUtil {
 			"src=\"js/main.js\"",
 			JenkinsResultsParserUtil.combine(
 				"src=\"", _JOB_SUMMARY_RESOURCE_URL, "/js/main.js\""));
+		indexHTMLContent = indexHTMLContent.replace(
+			"<script src=\"js/job-data.js\"></script>",
+			"<script>\ndata=" + job.getJSONObject() + "\n</script>");
 
 		JenkinsResultsParserUtil.write(
 			new File(summaryDir, "index.html"), indexHTMLContent);
@@ -53,7 +43,7 @@ public class CIJobSummaryReportUtil {
 	private static final String _JOB_SUMMARY_RESOURCE_URL =
 		JenkinsResultsParserUtil.combine(
 			"https://cdn.jsdelivr.net/gh/liferay/liferay-portal@",
-			"011dbd665f46df51172dd579150de60ef9d732c2",
+			"02371100e889d0d140b76e285b97efb95405271e",
 			"/modules/test/jenkins-results-parser/src/main/resources/com",
 			"/liferay/jenkins/results/parser/dependencies/job/summary");
 

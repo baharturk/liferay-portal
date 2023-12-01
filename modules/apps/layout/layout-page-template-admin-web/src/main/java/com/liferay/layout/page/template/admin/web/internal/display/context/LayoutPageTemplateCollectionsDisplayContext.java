@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.display.context;
 
 import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
 import com.liferay.layout.page.template.admin.web.internal.util.LayoutPageTemplatePortletUtil;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.service.LayoutPageTemplateCollectionServiceUtil;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
@@ -25,8 +17,6 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-
-import java.util.List;
 
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
@@ -84,7 +74,7 @@ public class LayoutPageTemplateCollectionsDisplayContext {
 		SearchContainer<LayoutPageTemplateCollection> searchContainer =
 			new SearchContainer(
 				_renderRequest, _renderResponse.createRenderURL(), null,
-				"there-are-no-collections");
+				"there-are-no-page-template-sets");
 
 		searchContainer.setOrderByCol(_getOrderByCol());
 		searchContainer.setOrderByComparator(
@@ -93,38 +83,39 @@ public class LayoutPageTemplateCollectionsDisplayContext {
 					_getOrderByCol(), getOrderByType()));
 		searchContainer.setOrderByType(getOrderByType());
 
-		List<LayoutPageTemplateCollection> layoutPageTemplateCollections = null;
-		int layoutPageTemplateCollectionsCount = 0;
-
 		if (_isSearch()) {
-			layoutPageTemplateCollections =
-				LayoutPageTemplateCollectionServiceUtil.
-					getLayoutPageTemplateCollections(
-						themeDisplay.getScopeGroupId(), _getKeywords(),
-						searchContainer.getStart(), searchContainer.getEnd(),
-						searchContainer.getOrderByComparator());
-			layoutPageTemplateCollectionsCount =
+			searchContainer.setResultsAndTotal(
+				() ->
+					LayoutPageTemplateCollectionServiceUtil.
+						getLayoutPageTemplateCollections(
+							themeDisplay.getScopeGroupId(), _getKeywords(),
+							LayoutPageTemplateEntryTypeConstants.BASIC,
+							searchContainer.getStart(),
+							searchContainer.getEnd(),
+							searchContainer.getOrderByComparator()),
 				LayoutPageTemplateCollectionServiceUtil.
 					getLayoutPageTemplateCollectionsCount(
-						themeDisplay.getScopeGroupId(), _getKeywords());
+						themeDisplay.getScopeGroupId(), _getKeywords(),
+						LayoutPageTemplateEntryTypeConstants.BASIC));
 		}
 		else {
-			layoutPageTemplateCollections =
-				LayoutPageTemplateCollectionServiceUtil.
-					getLayoutPageTemplateCollections(
-						themeDisplay.getScopeGroupId(),
-						searchContainer.getStart(), searchContainer.getEnd(),
-						searchContainer.getOrderByComparator());
-			layoutPageTemplateCollectionsCount =
+			searchContainer.setResultsAndTotal(
+				() ->
+					LayoutPageTemplateCollectionServiceUtil.
+						getLayoutPageTemplateCollections(
+							themeDisplay.getScopeGroupId(),
+							LayoutPageTemplateEntryTypeConstants.BASIC,
+							searchContainer.getStart(),
+							searchContainer.getEnd(),
+							searchContainer.getOrderByComparator()),
 				LayoutPageTemplateCollectionServiceUtil.
 					getLayoutPageTemplateCollectionsCount(
-						themeDisplay.getScopeGroupId());
+						themeDisplay.getScopeGroupId(),
+						LayoutPageTemplateEntryTypeConstants.BASIC));
 		}
 
-		searchContainer.setResults(layoutPageTemplateCollections);
 		searchContainer.setRowChecker(
 			new EmptyOnClickRowChecker(_renderResponse));
-		searchContainer.setTotal(layoutPageTemplateCollectionsCount);
 
 		_searchContainer = searchContainer;
 

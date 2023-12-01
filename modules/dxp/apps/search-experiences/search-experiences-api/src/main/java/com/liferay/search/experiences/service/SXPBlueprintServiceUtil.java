@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.service;
@@ -39,7 +30,7 @@ public class SXPBlueprintServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.search.experiences.service.impl.SXPBlueprintServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static SXPBlueprint addSXPBlueprint(
-			String configurationJSON,
+			String externalReferenceCode, String configurationJSON,
 			Map<java.util.Locale, String> descriptionMap,
 			String elementInstancesJSON, String schemaVersion,
 			Map<java.util.Locale, String> titleMap,
@@ -47,14 +38,28 @@ public class SXPBlueprintServiceUtil {
 		throws PortalException {
 
 		return getService().addSXPBlueprint(
-			configurationJSON, descriptionMap, elementInstancesJSON,
-			schemaVersion, titleMap, serviceContext);
+			externalReferenceCode, configurationJSON, descriptionMap,
+			elementInstancesJSON, schemaVersion, titleMap, serviceContext);
 	}
 
 	public static SXPBlueprint deleteSXPBlueprint(long sxpBlueprintId)
 		throws PortalException {
 
 		return getService().deleteSXPBlueprint(sxpBlueprintId);
+	}
+
+	public static SXPBlueprint fetchSXPBlueprint(long sxpBlueprintId)
+		throws PortalException {
+
+		return getService().fetchSXPBlueprint(sxpBlueprintId);
+	}
+
+	public static SXPBlueprint fetchSXPBlueprintByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchSXPBlueprintByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -72,8 +77,17 @@ public class SXPBlueprintServiceUtil {
 		return getService().getSXPBlueprint(sxpBlueprintId);
 	}
 
+	public static SXPBlueprint getSXPBlueprintByExternalReferenceCode(
+			long companyId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().getSXPBlueprintByExternalReferenceCode(
+			companyId, externalReferenceCode);
+	}
+
 	public static SXPBlueprint updateSXPBlueprint(
-			long sxpBlueprintId, String configurationJSON,
+			String externalReferenceCode, long sxpBlueprintId,
+			String configurationJSON,
 			Map<java.util.Locale, String> descriptionMap,
 			String elementInstancesJSON, String schemaVersion,
 			Map<java.util.Locale, String> titleMap,
@@ -81,12 +95,17 @@ public class SXPBlueprintServiceUtil {
 		throws PortalException {
 
 		return getService().updateSXPBlueprint(
-			sxpBlueprintId, configurationJSON, descriptionMap,
-			elementInstancesJSON, schemaVersion, titleMap, serviceContext);
+			externalReferenceCode, sxpBlueprintId, configurationJSON,
+			descriptionMap, elementInstancesJSON, schemaVersion, titleMap,
+			serviceContext);
 	}
 
 	public static SXPBlueprintService getService() {
 		return _service;
+	}
+
+	public static void setService(SXPBlueprintService service) {
+		_service = service;
 	}
 
 	private static volatile SXPBlueprintService _service;

@@ -1,19 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {PortletBase, createPortletURL} from 'frontend-js-web';
-import {Config} from 'metal-state';
 
 /**
  * Handles actions to display user name field for a given locale.
@@ -33,7 +23,14 @@ class UserNameFields extends PortletBase {
 	/**
 	 * @inheritDoc
 	 */
-	created() {
+	created(props) {
+		this.baseURL = props.baseURL;
+		this.formNode = this._setElement(props.formNode);
+		this.languageIdSelectNode = this._setElement(
+			props.languageIdSelectNode
+		);
+		this.userNameFieldsNode = this._setElement(props.userNameFieldsNode);
+
 		this._handleSelectChange = this._handleSelectChange.bind(this);
 
 		this._formDataCache = {};
@@ -223,6 +220,14 @@ class UserNameFields extends PortletBase {
 		this.userNameFieldsNode.classList.remove('hide');
 	}
 
+	_setElement(selector) {
+		if (typeof selector === 'string') {
+			return this.one(selector);
+		}
+
+		return selector;
+	}
+
 	/**
 	 * Stores the current user name fields data and creates the loading
 	 * indicator
@@ -235,46 +240,5 @@ class UserNameFields extends PortletBase {
 		this._createLoadingIndicator();
 	}
 }
-
-UserNameFields.STATE = {
-
-	/**
-	 * Uri to return the user name data.
-	 * @instance
-	 * @memberof UserNameFields
-	 * @type {String}
-	 */
-	baseURL: Config.required().string().writeOnce(),
-
-	/**
-	 * Form node.
-	 * @instance
-	 * @memberof UserNameFields
-	 * @type {String}
-	 */
-	formNode: Config.required()
-		.setter((selector) => document.querySelector(selector))
-		.writeOnce(),
-
-	/**
-	 * Language id select field.
-	 * @instance
-	 * @memberof UserNameFields
-	 * @type {String}
-	 */
-	languageIdSelectNode: Config.required()
-		.setter((selector) => document.querySelector(selector))
-		.writeOnce(),
-
-	/**
-	 * HTML element containing the user name fields.
-	 * @instance
-	 * @memberof UserNameFields
-	 * @type {String}
-	 */
-	userNameFieldsNode: Config.required()
-		.setter((selector) => document.querySelector(selector))
-		.writeOnce(),
-};
 
 export default UserNameFields;

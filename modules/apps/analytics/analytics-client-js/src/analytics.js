@@ -1,18 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import uuidv4 from 'uuid/v4';
+import {v4 as uuidv4} from 'uuid';
 
 import middlewares from './middlewares/defaults';
 import defaultPlugins from './plugins/defaults';
@@ -25,10 +16,12 @@ import {
 	FLUSH_INTERVAL,
 	QUEUE_PRIORITY_DEFAULT,
 	QUEUE_PRIORITY_IDENTITY,
+	STORAGE_KEY_CHANNEL_ID,
 	STORAGE_KEY_EVENTS,
 	STORAGE_KEY_IDENTITY,
 	STORAGE_KEY_MESSAGES,
 	STORAGE_KEY_MESSAGE_IDENTITY,
+	STORAGE_KEY_PREV_EMAIL_ADDRESS_HASHED,
 	STORAGE_KEY_USER_ID,
 	TRACK_DEFAULT_OPTIONS,
 	VALIDATION_CONTEXT_VALUE_MAXIMUM_LENGTH,
@@ -36,7 +29,7 @@ import {
 import {getContexts, setContexts} from './utils/contexts';
 import {normalizeEvent} from './utils/events';
 import hash from './utils/hash';
-import {getItem, setItem} from './utils/storage';
+import {getItem, removeItem, setItem} from './utils/storage';
 import {upgradeStorage} from './utils/storage_version';
 import {isValidEvent} from './utils/validators';
 
@@ -122,10 +115,31 @@ class Analytics {
 	 */
 	static create(config = {}, middlewares = []) {
 		const self = new Analytics(config, middlewares);
+		const Liferay = window.Liferay;
 
 		ENV.Analytics = self;
 		ENV.Analytics.create = Analytics.create;
 		ENV.Analytics.dispose = Analytics.dispose;
+
+		let email = '';
+		let name = '';
+
+		if (
+			Liferay &&
+			Liferay.ThemeDisplay &&
+			Liferay.ThemeDisplay.getUserEmailAddress &&
+			!!Liferay.ThemeDisplay.getUserEmailAddress().length &&
+			Liferay.ThemeDisplay.getUserName &&
+			!!Liferay.ThemeDisplay.getUserName().length
+		) {
+			email = Liferay.ThemeDisplay.getUserEmailAddress();
+			name = Liferay.ThemeDisplay.getUserName();
+		}
+
+		self.setIdentity({
+			email,
+			name,
+		});
 
 		return self;
 	}
@@ -212,18 +226,18 @@ class Analytics {
 	track(eventId, eventProps, options = {}) {
 		const {assetType, ...otherEventProps} = eventProps || {};
 
-		if (
-			this._isTrackingDisabled() ||
-			instance._disposed ||
-			!isValidEvent({eventId, eventProps: otherEventProps})
-		) {
-			return;
-		}
-
 		// eslint-disable-next-line
 		const mergedOptions = Object.assign({}, TRACK_DEFAULT_OPTIONS, options);
 
 		const applicationId = assetType || mergedOptions.applicationId;
+
+		if (
+			this._isTrackingDisabled() ||
+			instance._disposed ||
+			!isValidEvent({applicationId, eventId, eventProps: otherEventProps})
+		) {
+			return;
+		}
 
 		const currentContextHash = this._getCurrentContextHash();
 
@@ -264,19 +278,16 @@ class Analytics {
 			return;
 		}
 
-		if (!identity.email) {
-			return console.error(
-				'Unable to send identity message due invalid email'
-			);
-		}
-
 		const hashedIdentity = {
-			emailAddressHashed: hash(identity.email.toLowerCase()),
+			emailAddressHashed: identity.email
+				? hash(identity.email.toLowerCase())
+				: '',
 		};
 
 		this.config.identity = hashedIdentity;
 
 		const userId = this._getUserId();
+
 		this._sendIdentity(hashedIdentity, userId);
 
 		return Promise.resolve(userId);
@@ -287,7 +298,10 @@ class Analytics {
 	 */
 	_disposeInternal() {
 		instance._disposed = true;
-		instance._queueFlushService.dispose();
+
+		if (instance._queueFlushService) {
+			instance._queueFlushService.dispose();
+		}
 
 		if (instance._pluginDisposers) {
 			instance._pluginDisposers
@@ -295,6 +309,7 @@ class Analytics {
 				.forEach((disposer) => disposer());
 		}
 	}
+
 	_ensureIntegrity() {
 		const userId = getItem(STORAGE_KEY_USER_ID);
 
@@ -302,6 +317,7 @@ class Analytics {
 			this._setCookie(STORAGE_KEY_USER_ID, userId);
 		}
 	}
+
 	_getCurrentContextHash() {
 		const currentContext = this._getContext();
 		const currentContextHash = hash(currentContext);
@@ -350,12 +366,26 @@ class Analytics {
 	 * @returns {Promise} A promise resolved with the stored or generated userId
 	 */
 	_getUserId() {
-		const newUserIdRequired = this._isNewUserIdRequired();
-
 		let userId = getItem(STORAGE_KEY_USER_ID);
 
-		if (newUserIdRequired) {
+		const {emailAddressHashed} = this.config.identity;
+		const previousEmailAddressHashed = getItem(
+			STORAGE_KEY_PREV_EMAIL_ADDRESS_HASHED
+		);
+
+		if (!userId) {
 			userId = this._generateUserId();
+		}
+
+		if (
+			emailAddressHashed &&
+			emailAddressHashed !== previousEmailAddressHashed
+		) {
+			if (previousEmailAddressHashed) {
+				userId = this._generateUserId();
+			}
+
+			setItem(STORAGE_KEY_PREV_EMAIL_ADDRESS_HASHED, emailAddressHashed);
 		}
 
 		return userId;
@@ -373,43 +403,9 @@ class Analytics {
 		setItem(STORAGE_KEY_USER_ID, userId);
 		this._setCookie(STORAGE_KEY_USER_ID, userId);
 
-		localStorage.removeItem(STORAGE_KEY_IDENTITY);
+		removeItem(STORAGE_KEY_IDENTITY);
 
 		return userId;
-	}
-
-	_isNewUserIdRequired() {
-		const {dataSourceId, identity} = this.config;
-
-		const storedIdentityHash = getItem(STORAGE_KEY_IDENTITY);
-		const storedUserId = getItem(STORAGE_KEY_USER_ID);
-
-		let newUserIdRequired = false;
-
-		// During logout or session expiration, identity object becomes undefined
-		// because the client object is being instantiated on every page navigation,
-		// in such cases, we force a new user ID token.
-
-		if (!storedUserId || (storedIdentityHash && !identity)) {
-			newUserIdRequired = true;
-		}
-
-		// After logout or session expiration, it is not guaranteed a new user ID
-		// is generated. The login/logout process can redirect the user to page
-		// where the analytics.js is not loaded. In such cases, we must verify
-		// the identity hashes match and generate a new user ID token otherwise.
-
-		if (
-			storedUserId &&
-			identity &&
-			storedIdentityHash &&
-			storedIdentityHash !==
-				this._getIdentityHash(dataSourceId, identity, storedUserId)
-		) {
-			newUserIdRequired = true;
-		}
-
-		return newUserIdRequired;
 	}
 
 	_isTrackingDisabled() {
@@ -428,34 +424,33 @@ class Analytics {
 	 */
 	_sendIdentity(identity, userId) {
 		const {dataSourceId} = this.config;
+		const {channelId} = this._getContext();
 
-		const newIdentityHash = this._getIdentityHash(
+		const identityHash = this._getIdentityHash(
 			dataSourceId,
 			identity,
 			userId
 		);
 		const storedIdentityHash = getItem(STORAGE_KEY_IDENTITY);
+		const storedChannelId = getItem(STORAGE_KEY_CHANNEL_ID);
 
-		let identityHash = Promise.resolve(storedIdentityHash);
-
-		if (newIdentityHash !== storedIdentityHash) {
-			const {channelId} = this._getContext();
+		if (
+			identityHash !== storedIdentityHash ||
+			channelId !== storedChannelId
+		) {
 			const {emailAddressHashed} = identity;
 
-			setItem(STORAGE_KEY_IDENTITY, newIdentityHash);
+			setItem(STORAGE_KEY_CHANNEL_ID, channelId);
+			setItem(STORAGE_KEY_IDENTITY, identityHash);
 
 			instance[STORAGE_KEY_MESSAGE_IDENTITY].addItem({
 				channelId,
 				dataSourceId,
 				emailAddressHashed,
-				id: newIdentityHash,
+				id: identityHash,
 				userId,
 			});
-
-			identityHash = newIdentityHash;
 		}
-
-		return identityHash;
 	}
 
 	/**
@@ -463,11 +458,32 @@ class Analytics {
 	 * @protected
 	 */
 	_setCookie(key, data) {
-		const expirationDate = new Date();
+		const Liferay = window.Liferay;
+		const expires = new Date();
 
-		expirationDate.setDate(expirationDate.getDate() + 365);
+		expires.setDate(expires.getDate() + 365);
 
-		document.cookie = `${key}=${data}; expires=${expirationDate.toUTCString()}; path=/; Secure`;
+		// Checks if the client is being loaded with the Liferay global
+		// variable and if there is a Cookie method because the client
+		// is Liferay Portal agnostic and may have versions that do not
+		// yet have the Cookie method.
+
+		if (Liferay?.Util?.Cookie) {
+			Liferay.Util.Cookie.set(
+				key,
+				data,
+				Liferay.Util.Cookie.TYPES.PERSONALIZATION,
+				{
+					expires,
+					secure: true,
+				}
+			);
+		}
+		else {
+			document.cookie = `${key}=${data}; expires=${expires.toUTCString()}; path=/; Secure`;
+		}
+
+		return;
 	}
 
 	/**

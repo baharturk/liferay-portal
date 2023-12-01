@@ -1,85 +1,105 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
-import ClayDropDown, {Align} from '@clayui/drop-down';
-import React, {useState} from 'react';
+import {Option, Picker} from '@clayui/core';
+import Form from '@clayui/form';
+import classNames from 'classnames';
+import {sub} from 'frontend-js-web';
+import React, {useEffect, useRef, useState} from 'react';
 
 import togglePermission from '../actions/togglePermission';
 import {useDispatch, useSelector} from '../contexts/StoreContext';
 import selectCanSwitchEditMode from '../selectors/selectCanSwitchEditMode';
 
-const EDIT_MODES = {
-	contentEditing: Liferay.Language.get('content-editing'),
-	pageDesign: Liferay.Language.get('page-design'),
-};
+const EDIT_MODES = [
+	{
+		label: Liferay.Language.get('content-editing'),
+		value: 'content-editing',
+	},
+	{label: Liferay.Language.get('page-design'), value: 'page-design'},
+];
+
+const TriggerLabel = React.forwardRef(
+	({children, className, ...otherProps}, ref) => (
+		<ClayButton
+			className={classNames('form-control-select', {
+				show: className.includes('show'),
+			})}
+			displayType="secondary"
+			ref={ref}
+			size="sm"
+			{...otherProps}
+		>
+			{children}
+		</ClayButton>
+	)
+);
 
 export default function EditModeSelector() {
 	const canSwitchEditMode = useSelector(selectCanSwitchEditMode);
 	const dispatch = useDispatch();
 
-	const [active, setActive] = useState(false);
 	const [editMode, setEditMode] = useState(
-		canSwitchEditMode ? EDIT_MODES.pageDesign : EDIT_MODES.contentEditing
+		canSwitchEditMode
+			? EDIT_MODES.find(({value}) => value === 'page-design')
+			: EDIT_MODES.find(({value}) => value === 'content-editing')
 	);
 
+	const permissions = useSelector((state) => state.permissions);
+
+	const higherUpdatePermissionRef = useRef();
+
+	useEffect(() => {
+		if (permissions.UPDATE) {
+			higherUpdatePermissionRef.current = 'UPDATE';
+		}
+		else if (permissions.UPDATE_LAYOUT_BASIC) {
+			higherUpdatePermissionRef.current = 'UPDATE_LAYOUT_BASIC';
+		}
+		else {
+			higherUpdatePermissionRef.current = 'UPDATE_LAYOUT_LIMITED';
+		}
+
+		/* eslint-disable-next-line react-hooks/exhaustive-deps */
+	}, []);
+
 	return (
-		<ClayDropDown
-			active={active}
-			alignmentPosition={Align.BottomLeft}
-			menuElementAttrs={{
-				className: 'page-editor__edit-mode-dropdown-menu',
-				containerProps: {
-					className: 'cadmin',
-				},
-			}}
-			onActiveChange={setActive}
-			trigger={
-				<ClayButton
-					className="form-control-select page-editor__edit-mode-selector text-left"
-					disabled={!canSwitchEditMode}
-					displayType="secondary"
-					small
-					type="button"
-				>
-					<span>{editMode}</span>
-				</ClayButton>
-			}
-		>
-			<ClayDropDown.ItemList>
-				<ClayDropDown.Item
-					onClick={() => {
-						setActive(false);
-						setEditMode(EDIT_MODES.pageDesign);
+		<Form.Group className="mb-0">
+			<Picker
+				UNSAFE_menuClassName="cadmin"
+				aria-label={sub(
+					Liferay.Language.get('page-edition-mode'),
+					editMode.label
+				)}
+				as={TriggerLabel}
+				className="btn-secondary"
+				defaultSelectedKey={editMode.value}
+				disabled={!canSwitchEditMode}
+				items={EDIT_MODES}
+				onSelectionChange={(key) => {
+					const selectedOption = EDIT_MODES.find(
+						({value}) => value === key
+					);
 
-						dispatch(togglePermission('UPDATE', true));
-					}}
-				>
-					{EDIT_MODES.pageDesign}
-				</ClayDropDown.Item>
+					setEditMode(selectedOption);
 
-				<ClayDropDown.Item
-					onClick={() => {
-						setActive(false);
-						setEditMode(EDIT_MODES.contentEditing);
-
-						dispatch(togglePermission('UPDATE', false));
-					}}
-				>
-					{EDIT_MODES.contentEditing}
-				</ClayDropDown.Item>
-			</ClayDropDown.ItemList>
-		</ClayDropDown>
+					dispatch(
+						togglePermission(
+							higherUpdatePermissionRef.current,
+							selectedOption.value === 'page-design'
+						)
+					);
+				}}
+			>
+				{({label, value}) => (
+					<Option key={value} textValue={label}>
+						{label}
+					</Option>
+				)}
+			</Picker>
+		</Form.Group>
 	);
 }

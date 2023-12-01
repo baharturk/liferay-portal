@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -23,33 +17,50 @@ import React, {
 	useState,
 } from 'react';
 
+import useFetchData from '../hooks/useFetchData';
+import useShouldConfirmBeforeNavigate from '../hooks/useShouldConfirmBeforeNavigate';
+import LearnMessage from '../shared/LearnMessage';
 import PageToolbar from '../shared/PageToolbar';
+import Sidebar from '../shared/Sidebar';
 import SubmitWarningModal from '../shared/SubmitWarningModal';
 import ThemeContext from '../shared/ThemeContext';
-import {DEFAULT_ERROR, SIDEBARS} from '../utils/constants';
-import {addParams, fetchData} from '../utils/fetch';
-import {INPUT_TYPES} from '../utils/inputTypes';
-import {openErrorToast, openSuccessToast} from '../utils/toasts';
+import {DEFAULT_INDEX_CONFIGURATION} from '../utils/constants';
+import {DEFAULT_ERROR} from '../utils/errorMessages';
+import addParams from '../utils/fetch/add_params';
+import fetchData, {DEFAULT_HEADERS} from '../utils/fetch/fetch_data';
+import fetchPreviewSearch from '../utils/fetch/fetch_preview_search';
+import filterAndSortClassNames from '../utils/functions/filter_and_sort_class_names';
+import getResultsError from '../utils/functions/get_results_error';
+import isDefined from '../utils/functions/is_defined';
+import formatLocaleWithUnderscores from '../utils/language/format_locale_with_underscores';
+import renameKeys from '../utils/language/rename_keys';
 import {
-	cleanUIConfiguration,
-	filterAndSortClassNames,
-	getConfigurationEntry,
-	getUIConfigurationValues,
-	isCustomJSONSXPElement,
-	isDefined,
-	parseCustomSXPElement,
-	transformToSearchContextAttributes,
-} from '../utils/utils';
+	SIDEBAR_STATE,
+	setStorageAddSXPElementSidebar,
+} from '../utils/sessionStorage';
+import cleanUIConfiguration from '../utils/sxp_element/clean_ui_configuration';
+import getUIConfigurationValues from '../utils/sxp_element/get_ui_configuration_values';
+import isCustomJSONSXPElement from '../utils/sxp_element/is_custom_json_sxp_element';
+import parseCustomSXPElement from '../utils/sxp_element/parse_custom_sxp_element';
+import replaceTemplateVariable from '../utils/sxp_element/replace_template_variable';
+import transformToSearchContextAttributes from '../utils/sxp_element/transform_to_search_context_attributes';
+import transformToSearchPreviewHits from '../utils/sxp_element/transform_to_search_preview_hits';
+import {TEST_IDS} from '../utils/testIds';
 import {
-	validateBoost,
-	validateJSON,
-	validateNumberRange,
-	validateRequired,
-} from '../utils/validation';
-import AddSXPElementSidebar from './AddSXPElementSidebar';
-import PreviewSidebar from './PreviewSidebar';
+	openErrorToast,
+	openSuccessToast,
+	setInitialSuccessToast,
+} from '../utils/toasts';
+import {INPUT_TYPES} from '../utils/types/inputTypes';
+import {SIDEBAR_TYPES} from '../utils/types/sidebarTypes';
+import validateBoost from '../utils/validation/validate_boost';
+import validateJSON from '../utils/validation/validate_json';
+import validateNumberRange from '../utils/validation/validate_number_range';
+import validateRequired from '../utils/validation/validate_required';
+import AddSXPElementSidebar from './add_sxp_element_sidebar/index';
 import ClauseContributorsSidebar from './clause_contributors_sidebar/index';
 import ConfigurationTab from './configuration_tab/index';
+import PreviewSidebar from './preview_sidebar/index';
 import QueryBuilderTab from './query_builder_tab/index';
 
 // Tabs in display order
@@ -63,42 +74,78 @@ const TABS = {
 function EditSXPBlueprintForm({
 	entityJSON,
 	initialConfiguration = {},
-	initialDescription = {},
+	initialDescription = '',
+	initialDescriptionI18n = {},
+	initialExternalReferenceCode,
 	initialSXPElementInstances = [],
-	initialTitle = {},
+	initialTitle = '',
+	initialTitleI18n = {},
 	sxpBlueprintId,
 }) {
-	const {defaultLocale, locale, namespace, redirectURL} = useContext(
-		ThemeContext
-	);
+	const {
+		featureFlagLps153813,
+		isCompanyAdmin,
+		locale,
+		redirectURL,
+	} = useContext(ThemeContext);
 
 	const formRef = useRef();
 	const sxpElementIdCounterRef = useRef(
 		initialSXPElementInstances.length || 0
 	);
 
+	const controllerRef = useRef();
+
 	const [errors, setErrors] = useState([]);
+	const [
+		isTitleAndDescriptionEdited,
+		setIsTitleAndDescriptionEdited,
+	] = useState(false);
 	const [previewInfo, setPreviewInfo] = useState(() => ({
 		loading: false,
 		results: {},
 	}));
-	const [openSidebar, setOpenSidebar] = useState(SIDEBARS.ADD_SXP_ELEMENT);
+	const [openSidebar, setOpenSidebar] = useState(
+		SIDEBAR_TYPES.ADD_SXP_ELEMENT
+	);
 	const [showSubmitWarningModal, setShowSubmitWarningModal] = useState(false);
 	const [tab, setTab] = useState('query-builder');
 
 	const [indexFields, setIndexFields] = useState(null);
-	const [keywordQueryContributors, setKeywordQueryContributors] = useState(
-		null
-	);
-	const [
-		modelPrefilterContributors,
-		setModelPrefilterContributors,
-	] = useState(null);
-	const [
-		queryPrefilterContributors,
-		setQueryPrefilterContributors,
-	] = useState(null);
-	const [searchableTypes, setSearchableTypes] = useState(null);
+	const [searchIndexes, setSearchIndexes] = useState(null);
+
+	const {
+		data: searchableTypes,
+		refetch: refetchSearchableTypes,
+	} = useFetchData({
+		resource: `/o/search-experiences-rest/v1.0/searchable-asset-names/${locale}`,
+	});
+
+	const {
+		data: keywordQueryContributors,
+		refetch: refetchKeywordQueryContributors,
+	} = useFetchData({
+		getData: (response) => filterAndSortClassNames(response?.items),
+		resource: '/o/search-experiences-rest/v1.0/keyword-query-contributors',
+	});
+
+	const {
+		data: modelPrefilterContributors,
+		refetch: refetchModelPrefilterContributors,
+	} = useFetchData({
+		getData: (response) => filterAndSortClassNames(response?.items),
+		resource:
+			'/o/search-experiences-rest/v1.0/model-prefilter-contributors',
+	});
+
+	const {
+		data: queryPrefilterContributors,
+		refetch: refetchQueryPrefilterContributors,
+	} = useFetchData({
+		getData: (response) => filterAndSortClassNames(response?.items),
+		resource:
+			'/o/search-experiences-rest/v1.0/query-prefilter-contributors',
+	});
 
 	/**
 	 * This method must go before the useFormik hook.
@@ -142,15 +189,15 @@ function EditSXPBlueprintForm({
 					{
 						body: JSON.stringify({
 							configuration,
-							description_i18n: {
-								[defaultLocale]: _getFormInput('description'),
-							},
+							description_i18n: renameKeys(
+								formik.values.description_i18n,
+								formatLocaleWithUnderscores
+							),
 							elementInstances,
-							title_i18n: {[defaultLocale]: _getFormInput('title')},
+							title_i18n: renameKeys(formik.values.title_i18n,
+								formatLocaleWithUnderscores),
 						}),
-						headers: new Headers({
-							'Content-Type': 'application/json',
-						}),
+						headers: DEFAULT_HEADERS,
 						method: 'POST',
 					}
 				).then((response) => response.json());
@@ -169,16 +216,20 @@ function EditSXPBlueprintForm({
 				{
 					body: JSON.stringify({
 						configuration,
-						description_i18n: {
-							[defaultLocale]: _getFormInput('description'),
-						},
+						description_i18n: renameKeys(
+							formik.values.description_i18n,
+							formatLocaleWithUnderscores
+						),
 						elementInstances,
-						title_i18n: {[defaultLocale]: _getFormInput('title')},
+						externalReferenceCode:
+							formik.values.externalReferenceCode,
+						title_i18n: renameKeys(
+							formik.values.title_i18n,
+							formatLocaleWithUnderscores
+						),
 					}),
-					headers: new Headers({
-						'Content-Type': 'application/json',
-					}),
-					method: 'PATCH',
+					headers: DEFAULT_HEADERS,
+					method: 'PUT',
 				}
 			).then((response) => {
 				if (!response.ok) {
@@ -198,6 +249,10 @@ function EditSXPBlueprintForm({
 				);
 			}
 			else {
+				setInitialSuccessToast(
+					Liferay.Language.get('the-blueprint-was-saved-successfully')
+				);
+
 				navigate(redirectURL);
 			}
 		}
@@ -237,7 +292,7 @@ function EditSXPBlueprintForm({
 					.fieldSets;
 
 				if (
-					fieldSets.length > 0 &&
+					!!fieldSets.length &&
 					!isCustomJSONSXPElement(uiConfigurationValues)
 				) {
 					fieldSets.map(({fields}) => {
@@ -247,9 +302,10 @@ function EditSXPBlueprintForm({
 							const configError =
 								validateRequired(
 									configValue,
-									type,
+									name,
+									typeOptions.nullable,
 									typeOptions.required,
-									typeOptions.nullable
+									type
 								) ||
 								validateBoost(configValue, type) ||
 								validateNumberRange(
@@ -269,15 +325,20 @@ function EditSXPBlueprintForm({
 					const configValue = uiConfigurationValues?.sxpElement;
 
 					const configError =
-						validateRequired(configValue, INPUT_TYPES.JSON) ||
-						validateJSON(configValue, INPUT_TYPES.JSON);
+						validateRequired(
+							configValue,
+							'',
+							false,
+							true,
+							INPUT_TYPES.JSON
+						) || validateJSON(configValue, INPUT_TYPES.JSON);
 
 					if (configError) {
 						configErrors.sxpElement = configError;
 					}
 				}
 
-				if (Object.keys(configErrors).length > 0) {
+				if (Object.keys(configErrors).length) {
 					elementInstancesArray[index] = {
 						uiConfigurationValues: configErrors,
 					};
@@ -285,7 +346,7 @@ function EditSXPBlueprintForm({
 			}
 		);
 
-		if (elementInstancesArray.length > 0) {
+		if (elementInstancesArray.length) {
 			errors.elementInstances = elementInstancesArray;
 		}
 
@@ -325,12 +386,14 @@ function EditSXPBlueprintForm({
 			),
 			applyIndexerClauses:
 				initialConfiguration.queryConfiguration?.applyIndexerClauses,
+			description_i18n: initialDescriptionI18n,
 			elementInstances: initialSXPElementInstances.map(
 				(elementInstance, index) => ({
 					...elementInstance,
 					id: index,
 				})
 			),
+			externalReferenceCode: initialExternalReferenceCode,
 			frameworkConfig: initialConfiguration.generalConfiguration || {
 				clauseContributorsExcludes: [],
 				clauseContributorsIncludes: [],
@@ -340,6 +403,9 @@ function EditSXPBlueprintForm({
 				null,
 				'\t'
 			),
+			indexConfig:
+				initialConfiguration.indexConfiguration ||
+				DEFAULT_INDEX_CONFIGURATION,
 			parameterConfig: JSON.stringify(
 				initialConfiguration.parameterConfiguration,
 				null,
@@ -350,52 +416,80 @@ function EditSXPBlueprintForm({
 				null,
 				'\t'
 			),
+			title_i18n: initialTitleI18n,
 		},
 		onSubmit: _handleFormikSubmit,
 		validate: _handleFormikValidate,
 	});
 
+	useShouldConfirmBeforeNavigate(formik.dirty && !formik.isSubmitting);
+
 	useEffect(() => {
-		fetchData(
-			`/o/search-experiences-rest/v1.0/searchable-asset-names/${locale}`,
-			{method: 'GET'},
-			(responseContent) => setSearchableTypes(responseContent.items),
-			() => setSearchableTypes([])
-		);
+		if (featureFlagLps153813 && isCompanyAdmin) {
 
-		fetchData(
-			`/o/search-experiences-rest/v1.0/field-mapping-infos`,
-			{method: 'GET'},
-			(responseContent) => setIndexFields(responseContent.items),
-			() => setIndexFields([])
-		);
+			// Example response:
+			// {
+			// 	actions: {},
+			// 	facets: [],
+			// 	items: [
+			// 		{
+			// 			external: false,
+			// 			name: 'search-tuning-rankings',
+			// 		}
+			// 	],
+			// 	lastPage: 1,
+			// 	page: 1,
+			// 	pageSize: 14,
+			// 	totalCount: 14,
+			// }
 
-		[
-			{
-				setProperty: setKeywordQueryContributors,
-				url:
-					'/o/search-experiences-rest/v1.0/keyword-query-contributors',
-			},
-			{
-				setProperty: setModelPrefilterContributors,
-				url:
-					'/o/search-experiences-rest/v1.0/model-prefilter-contributors',
-			},
-			{
-				setProperty: setQueryPrefilterContributors,
-				url:
-					'/o/search-experiences-rest/v1.0/query-prefilter-contributors',
-			},
-		].forEach(({setProperty, url}) =>
-			fetchData(
-				url,
-				{method: 'GET'},
-				(responseContent) =>
-					setProperty(filterAndSortClassNames(responseContent.items)),
-				() => setProperty([])
-			)
-		);
+			fetchData(`/o/search-experiences-rest/v1.0/search-indexes`)
+				.then((responseContent) =>
+					setSearchIndexes(responseContent?.items || [])
+				)
+				.catch(() => setSearchIndexes([]));
+		}
+		else {
+			setSearchIndexes([]);
+		}
+
+		setStorageAddSXPElementSidebar(SIDEBAR_STATE.OPEN);
 	}, []); //eslint-disable-line
+
+	/**
+	 * Refetch field mapping infos when indexConfiguration changes.
+	 */
+	useEffect(() => {
+
+		// Example response:
+		// {
+		// 	actions: {},
+		// 	facets: [],
+		// 	items: [
+		// 		{
+		// 			languageIdPosition: -1,
+		// 			name: 'ddmTemplateKey',
+		// 			type: 'keyword',
+		// 		}
+		// 	],
+		// 	lastPage: 1,
+		// 	page: 1,
+		// 	pageSize: 218,
+		// 	totalCount: 218,
+		// }
+
+		fetchData(
+			addParams('/o/search-experiences-rest/v1.0/field-mapping-infos', {
+				external: formik.values.indexConfig.external,
+				indexName: formik.values.indexConfig.indexName,
+			})
+		)
+			.then((responseContent) => setIndexFields(responseContent.items))
+			.catch(() => setIndexFields([]));
+	}, [
+		formik.values.indexConfig.external,
+		formik.values.indexConfig.indexName,
+	]);
 
 	/**
 	 * Formats the form values for the "configuration" parameter to send to
@@ -409,25 +503,37 @@ function EditSXPBlueprintForm({
 		applyIndexerClauses,
 		frameworkConfig,
 		highlightConfig,
+		indexConfig,
 		parameterConfig,
 		sortConfig,
-	}) => ({
-		advancedConfiguration: advancedConfig ? JSON.parse(advancedConfig) : {},
-		aggregationConfiguration: aggregationConfig
-			? JSON.parse(aggregationConfig)
-			: {},
-		generalConfiguration: frameworkConfig,
-		highlightConfiguration: highlightConfig
-			? JSON.parse(highlightConfig)
-			: {},
-		parameterConfiguration: parameterConfig
-			? JSON.parse(parameterConfig)
-			: {},
-		queryConfiguration: {
-			applyIndexerClauses,
-		},
-		sortConfiguration: sortConfig ? JSON.parse(sortConfig) : {},
-	});
+	}) => {
+		const configuration = {
+			advancedConfiguration: advancedConfig
+				? JSON.parse(advancedConfig)
+				: {},
+			aggregationConfiguration: aggregationConfig
+				? JSON.parse(aggregationConfig)
+				: {},
+			generalConfiguration: frameworkConfig,
+			highlightConfiguration: highlightConfig
+				? JSON.parse(highlightConfig)
+				: {},
+			parameterConfiguration: parameterConfig
+				? JSON.parse(parameterConfig)
+				: {},
+			queryConfiguration: {
+				applyIndexerClauses,
+			},
+			sortConfiguration: sortConfig ? JSON.parse(sortConfig) : {},
+		};
+
+		if (featureFlagLps153813) {
+			configuration.indexConfiguration =
+				indexConfig || DEFAULT_INDEX_CONFIGURATION;
+		}
+
+		return configuration;
+	};
 
 	const _getElementInstances = (values) =>
 		values.elementInstances.map(
@@ -438,7 +544,7 @@ function EditSXPBlueprintForm({
 				type,
 				uiConfigurationValues,
 			}) => ({
-				configurationEntry: getConfigurationEntry({
+				configurationEntry: replaceTemplateVariable({
 					sxpElement,
 					uiConfigurationValues,
 				}),
@@ -451,16 +557,6 @@ function EditSXPBlueprintForm({
 				uiConfigurationValues,
 			})
 		);
-
-	const _getFormInput = (key) => {
-		for (const pair of new FormData(formRef.current).entries()) {
-			if (pair[0].includes(`${namespace}${key}`)) {
-				return pair[1];
-			}
-		}
-
-		return '';
-	};
 
 	const _handleAddSXPElement = (sxpElement) => {
 		if (formik.touched?.elementInstances) {
@@ -491,21 +587,6 @@ function EditSXPBlueprintForm({
 		formik.setFieldValue('applyIndexerClauses', value);
 	};
 
-	const _handleChangeTab = (tab) => {
-		if (
-			tab !== 'query-builder' &&
-			openSidebar === SIDEBARS.CLAUSE_CONTRIBUTORS
-		) {
-			setOpenSidebar('');
-		}
-
-		setTab(tab);
-	};
-
-	const _handleCloseSidebar = () => {
-		setOpenSidebar('');
-	};
-
 	const _handleDeleteSXPElement = (id) => {
 		const index = formik.values.elementInstances.findIndex(
 			(item) => item.id === id
@@ -530,6 +611,17 @@ function EditSXPBlueprintForm({
 		});
 	};
 
+	const _handleExternalReferenceCodeChange = (externalReferenceCode) => {
+		formik.setFieldValue('externalReferenceCode', externalReferenceCode);
+	};
+
+	/**
+	 * Used by the preview sidebar to cancel any unexpectedly slow search.
+	 */
+	const _handleFetchPreviewCancel = () => {
+		controllerRef.current.abort();
+	};
+
 	/**
 	 * Used by the preview sidebar to perform searches.
 	 * @param {string} query The keyword search query
@@ -543,6 +635,8 @@ function EditSXPBlueprintForm({
 		page,
 		attributes
 	) => {
+		controllerRef.current = new AbortController();
+
 		setPreviewInfo((previewInfo) => ({
 			...previewInfo,
 			loading: true,
@@ -597,21 +691,57 @@ function EditSXPBlueprintForm({
 			return;
 		}
 
-		const resultsError = {
-			errors: [
-				{
-					msg: DEFAULT_ERROR,
-					severity: Liferay.Language.get('error'),
-				},
-			],
+		const parseResponseContent = (responseContent) => {
+			const exceptionKey = 'java.lang.RuntimeException';
+
+			if (
+				responseContent.searchHits?.totalHits > 0 ||
+				!responseContent.responseString?.startsWith(exceptionKey)
+			) {
+				return responseContent;
+			}
+
+			let exceptionClass;
+
+			const exceptionKeyIndex = responseContent.responseString.indexOf(
+				':',
+				exceptionKey.length + 1
+			);
+
+			if (exceptionKeyIndex !== -1) {
+				exceptionClass = responseContent.responseString.substring(
+					exceptionKey.length + 1,
+					exceptionKeyIndex
+				);
+			}
+
+			let msg;
+
+			const errorObjectIndex = responseContent.responseString.indexOf(
+				'{"error":{'
+			);
+
+			if (errorObjectIndex > 0) {
+				const errorJSONObject = JSON.parse(
+					responseContent.responseString.substring(errorObjectIndex)
+				);
+
+				msg = errorJSONObject.error.root_cause[0]?.reason;
+			}
+
+			return getResultsError({
+				exceptionClass,
+				exceptionTrace: responseContent.responseString,
+				msg,
+			});
 		};
 
-		return fetch(
-			addParams('/o/search-experiences-rest/v1.0/search', {
+		return fetchPreviewSearch(
+			{
 				page,
 				pageSize: delta,
 				query,
-			}),
+			},
 			{
 				body: JSON.stringify({
 					configuration: {
@@ -629,32 +759,35 @@ function EditSXPBlueprintForm({
 					},
 					elementInstances,
 				}),
-				headers: new Headers({
-					'Content-Type': 'application/json',
-				}),
-				method: 'POST',
+				signal: controllerRef.current.signal,
 			}
 		)
 			.then((response) => {
-				if (!response.ok) {
-					return resultsError;
-				}
-
-				return response.json();
+				return response.json().then((data) => ({
+					ok: response.ok,
+					responseContent: data,
+				}));
 			})
-			.then((responseContent) => {
+			.then(({ok, responseContent}) => {
 				setPreviewInfo({
 					loading: false,
-					results: responseContent,
+					results: parseResponseContent(
+						ok
+							? responseContent
+							: getResultsError({
+									msg: responseContent?.title,
+							  })
+					),
 				});
 			})
-			.catch(() => {
-				setTimeout(() => {
-					setPreviewInfo({
-						loading: false,
-						results: resultsError,
-					});
-				}, 100);
+			.catch((error) => {
+				setPreviewInfo({
+					loading: false,
+					results:
+						error.name === 'AbortError'
+							? previewInfo.results
+							: getResultsError({}),
+				});
 			});
 	};
 
@@ -689,6 +822,10 @@ function EditSXPBlueprintForm({
 		[formik]
 	);
 
+	const _handleSidebarClose = () => {
+		setOpenSidebar('');
+	};
+
 	const _handleSubmit = (event) => {
 		event.preventDefault();
 
@@ -703,8 +840,41 @@ function EditSXPBlueprintForm({
 		}
 	};
 
+	const _handleTabChange = (tab) => {
+		if (
+			tab !== 'query-builder' &&
+			(openSidebar === SIDEBAR_TYPES.CLAUSE_CONTRIBUTORS ||
+				openSidebar === SIDEBAR_TYPES.INDEXER_CLAUSES)
+		) {
+			setOpenSidebar('');
+		}
+
+		setTab(tab);
+	};
+
+	const _handleTitleAndDescriptionChange = ({
+		description_i18n,
+		title_i18n,
+	}) => {
+		formik.setFieldValue('description_i18n', description_i18n);
+		formik.setFieldValue('title_i18n', title_i18n);
+
+		setIsTitleAndDescriptionEdited(true);
+	};
+
 	const _handleToggleSidebar = (type) => () => {
+		if (type === SIDEBAR_TYPES.PREVIEW) {
+			setStorageAddSXPElementSidebar(SIDEBAR_STATE.CLOSED);
+		}
+
 		setOpenSidebar(openSidebar === type ? '' : type);
+	};
+
+	const _isIndexCompany = () => {
+		return (
+			formik.values.indexConfig.indexName ===
+			DEFAULT_INDEX_CONFIGURATION.indexName
+		);
 	};
 
 	const _renderTabContent = () => {
@@ -716,7 +886,9 @@ function EditSXPBlueprintForm({
 						aggregationConfig={formik.values.aggregationConfig}
 						errors={formik.errors}
 						highlightConfig={formik.values.highlightConfig}
+						indexConfig={formik.values.indexConfig}
 						parameterConfig={formik.values.parameterConfig}
+						searchIndexes={searchIndexes}
 						setFieldTouched={formik.setFieldTouched}
 						setFieldValue={formik.setFieldValue}
 						sortConfig={formik.values.sortConfig}
@@ -727,9 +899,12 @@ function EditSXPBlueprintForm({
 				return (
 					<>
 						<AddSXPElementSidebar
+							isIndexCompany={_isIndexCompany()}
 							onAddSXPElement={_handleAddSXPElement}
-							onClose={_handleCloseSidebar}
-							visible={openSidebar === SIDEBARS.ADD_SXP_ELEMENT}
+							onClose={_handleSidebarClose}
+							visible={
+								openSidebar === SIDEBAR_TYPES.ADD_SXP_ELEMENT
+							}
 						/>
 
 						<ClauseContributorsSidebar
@@ -740,30 +915,61 @@ function EditSXPBlueprintForm({
 									value: keywordQueryContributors,
 								},
 								{
-									label: 'ModelPrefilterContributor',
+									label: 'ModelPreFilterContributor',
 									value: modelPrefilterContributors,
 								},
 								{
-									label: 'QueryPrefilterContributor',
+									label: 'QueryPreFilterContributor',
 									value: queryPrefilterContributors,
 								},
 							]}
-							onClose={_handleCloseSidebar}
+							onClose={_handleSidebarClose}
+							onFetchContributors={() => {
+								refetchKeywordQueryContributors();
+								refetchModelPrefilterContributors();
+								refetchQueryPrefilterContributors();
+							}}
 							onFrameworkConfigChange={
 								_handleFrameworkConfigChange
 							}
 							visible={
-								openSidebar === SIDEBARS.CLAUSE_CONTRIBUTORS
+								openSidebar ===
+								SIDEBAR_TYPES.CLAUSE_CONTRIBUTORS
 							}
 						/>
+
+						<Sidebar
+							className="info-sidebar"
+							onClose={_handleSidebarClose}
+							title={Liferay.Language.get(
+								'search-framework-indexer-clauses'
+							)}
+							visible={
+								openSidebar === SIDEBAR_TYPES.INDEXER_CLAUSES
+							}
+						>
+							<div className="container-fluid text-secondary">
+								<span className="help-text">
+									{Liferay.Language.get(
+										'search-framework-indexer-clauses-description'
+									)}
+								</span>
+
+								<LearnMessage resourceKey="query-clause-contributors-configuration" />
+							</div>
+						</Sidebar>
 
 						<div
 							className={getCN({
 								'open-add-sxp-element':
-									openSidebar === SIDEBARS.ADD_SXP_ELEMENT,
+									openSidebar ===
+									SIDEBAR_TYPES.ADD_SXP_ELEMENT,
 								'open-clause-contributors':
 									openSidebar ===
-									SIDEBARS.CLAUSE_CONTRIBUTORS,
+									SIDEBAR_TYPES.CLAUSE_CONTRIBUTORS,
+								'open-info':
+									openSidebar ===
+									SIDEBAR_TYPES.INDEXER_CLAUSES,
 							})}
 						>
 							<QueryBuilderTab
@@ -782,6 +988,7 @@ function EditSXPBlueprintForm({
 								errors={formik.errors.elementInstances}
 								frameworkConfig={formik.values.frameworkConfig}
 								indexFields={indexFields}
+								isIndexCompany={_isIndexCompany()}
 								isSubmitting={
 									formik.isSubmitting || previewInfo.loading
 								}
@@ -791,11 +998,12 @@ function EditSXPBlueprintForm({
 								onBlur={formik.handleBlur}
 								onChange={formik.handleChange}
 								onDeleteSXPElement={_handleDeleteSXPElement}
+								onFetchSearchableTypes={refetchSearchableTypes}
 								onFrameworkConfigChange={
 									_handleFrameworkConfigChange
 								}
 								openSidebar={openSidebar}
-								searchableTypes={searchableTypes}
+								searchableTypes={searchableTypes?.items}
 								setFieldTouched={formik.setFieldTouched}
 								setFieldValue={formik.setFieldValue}
 								setOpenSidebar={setOpenSidebar}
@@ -807,13 +1015,7 @@ function EditSXPBlueprintForm({
 		}
 	};
 
-	if (
-		!indexFields ||
-		!keywordQueryContributors ||
-		!modelPrefilterContributors ||
-		!queryPrefilterContributors ||
-		!searchableTypes
-	) {
+	if (!indexFields || !searchIndexes) {
 		return null;
 	}
 
@@ -831,23 +1033,33 @@ function EditSXPBlueprintForm({
 			/>
 
 			<PageToolbar
-				initialDescription={initialDescription}
-				initialTitle={initialTitle}
+				description={initialDescription}
+				descriptionI18n={formik.values.description_i18n}
+				entityId={sxpBlueprintId}
+				externalReferenceCode={formik.values.externalReferenceCode}
 				isSubmitting={formik.isSubmitting}
 				onCancel={redirectURL}
-				onChangeTab={_handleChangeTab}
+				onChangeTab={_handleTabChange}
+				onExternalReferenceCodeChange={
+					_handleExternalReferenceCodeChange
+				}
 				onSubmit={_handleSubmit}
+				onTitleAndDescriptionChange={_handleTitleAndDescriptionChange}
 				tab={tab}
 				tabs={TABS}
+				title={initialTitle}
+				titleAndDescriptionEdited={isTitleAndDescriptionEdited}
+				titleI18n={formik.values.title_i18n}
 			>
 				<ClayToolbar.Item>
 					<ClayButton
 						borderless
 						className={getCN({
-							active: openSidebar === SIDEBARS.PREVIEW,
+							active: openSidebar === SIDEBAR_TYPES.PREVIEW,
 						})}
+						data-testid={TEST_IDS.PREVIEW_SIDEBAR_BUTTON}
 						displayType="secondary"
-						onClick={_handleToggleSidebar(SIDEBARS.PREVIEW)}
+						onClick={_handleToggleSidebar(SIDEBAR_TYPES.PREVIEW)}
 						small
 					>
 						{Liferay.Language.get('preview')}
@@ -857,19 +1069,21 @@ function EditSXPBlueprintForm({
 
 			<PreviewSidebar
 				errors={previewInfo.results.errors}
+				hits={transformToSearchPreviewHits(previewInfo.results)}
 				loading={previewInfo.loading}
-				onClose={_handleCloseSidebar}
+				onClose={_handleSidebarClose}
+				onFetchCancel={_handleFetchPreviewCancel}
 				onFetchResults={_handleFetchPreviewSearch}
 				onFocusSXPElement={_handleFocusSXPElement}
+				requestString={previewInfo.results.requestString}
 				responseString={previewInfo.results.responseString}
 				totalHits={previewInfo.results.searchHits?.totalHits}
-				visible={openSidebar === SIDEBARS.PREVIEW}
-				warnings={previewInfo.results.warnings}
+				visible={openSidebar === SIDEBAR_TYPES.PREVIEW}
 			/>
 
 			<div
 				className={getCN({
-					'open-preview': openSidebar === SIDEBARS.PREVIEW,
+					'open-preview': openSidebar === SIDEBAR_TYPES.PREVIEW,
 				})}
 			>
 				{_renderTabContent()}
@@ -881,9 +1095,12 @@ function EditSXPBlueprintForm({
 EditSXPBlueprintForm.propTypes = {
 	entityJSON: PropTypes.object,
 	initialConfiguration: PropTypes.object,
-	initialDescription: PropTypes.object,
+	initialDescription: PropTypes.string,
+	initialDescriptionI18n: PropTypes.object,
 	initialSXPElementInstances: PropTypes.arrayOf(PropTypes.object),
-	initialTitle: PropTypes.object,
+	initialTitle: PropTypes.string,
+	initialTitleI18n: PropTypes.object,
+	sxpBlueprintExternalReferenceCode: PropTypes.string,
 	sxpBlueprintId: PropTypes.string,
 };
 

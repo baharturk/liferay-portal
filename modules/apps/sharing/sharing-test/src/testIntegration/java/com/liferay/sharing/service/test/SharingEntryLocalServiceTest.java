@@ -1,29 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.portal.kernel.messaging.Destination;
-import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -52,7 +40,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -149,13 +136,12 @@ public class SharingEntryLocalServiceTest {
 	public void testAddOrUpdateSharingEntryWithEmptySharingEntryActions()
 		throws Exception {
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Group.class.getName());
 		long classPK = _group.getGroupId();
 
 		_sharingEntryLocalService.addOrUpdateSharingEntry(
-			_fromUser.getUserId(), _toUser.getUserId(), classNameId, classPK,
-			_group.getGroupId(), true, Collections.emptyList(), null,
+			_fromUser.getUserId(), _toUser.getUserId(),
+			_classNameLocalService.getClassNameId(Group.class.getName()),
+			classPK, _group.getGroupId(), true, Collections.emptyList(), null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 
@@ -266,13 +252,12 @@ public class SharingEntryLocalServiceTest {
 	public void testAddSharingEntryWithEmptySharingEntryActions()
 		throws Exception {
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Group.class.getName());
 		long classPK = _group.getGroupId();
 
 		_sharingEntryLocalService.addSharingEntry(
-			_fromUser.getUserId(), _toUser.getUserId(), classNameId, classPK,
-			_group.getGroupId(), true, Collections.emptyList(), null,
+			_fromUser.getUserId(), _toUser.getUserId(),
+			_classNameLocalService.getClassNameId(Group.class.getName()),
+			classPK, _group.getGroupId(), true, Collections.emptyList(), null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 
@@ -324,14 +309,13 @@ public class SharingEntryLocalServiceTest {
 	public void testAddSharingEntryWithoutViewSharingEntryAction()
 		throws Exception {
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Group.class.getName());
 		long classPK = _group.getGroupId();
 
 		_sharingEntryLocalService.addSharingEntry(
-			_fromUser.getUserId(), _toUser.getUserId(), classNameId, classPK,
-			_group.getGroupId(), true, Arrays.asList(SharingEntryAction.UPDATE),
-			null,
+			_fromUser.getUserId(), _toUser.getUserId(),
+			_classNameLocalService.getClassNameId(Group.class.getName()),
+			classPK, _group.getGroupId(), true,
+			Arrays.asList(SharingEntryAction.UPDATE), null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 
@@ -339,14 +323,13 @@ public class SharingEntryLocalServiceTest {
 	public void testAddSharingEntryWithSameFromUserAndToUser()
 		throws Exception {
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Group.class.getName());
 		long classPK = _group.getGroupId();
 
 		_sharingEntryLocalService.addSharingEntry(
-			_fromUser.getUserId(), _fromUser.getUserId(), classNameId, classPK,
-			_group.getGroupId(), true, Arrays.asList(SharingEntryAction.VIEW),
-			null,
+			_fromUser.getUserId(), _fromUser.getUserId(),
+			_classNameLocalService.getClassNameId(Group.class.getName()),
+			classPK, _group.getGroupId(), true,
+			Arrays.asList(SharingEntryAction.VIEW), null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 
@@ -354,13 +337,12 @@ public class SharingEntryLocalServiceTest {
 	public void testAddSharingEntryWithSharingEntryActionsContainingOneNullElement()
 		throws Exception {
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Group.class.getName());
 		long classPK = _group.getGroupId();
 
 		_sharingEntryLocalService.addSharingEntry(
-			_fromUser.getUserId(), _toUser.getUserId(), classNameId, classPK,
-			_group.getGroupId(), true,
+			_fromUser.getUserId(), _toUser.getUserId(),
+			_classNameLocalService.getClassNameId(Group.class.getName()),
+			classPK, _group.getGroupId(), true,
 			Arrays.asList(SharingEntryAction.VIEW, null), null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
@@ -369,13 +351,12 @@ public class SharingEntryLocalServiceTest {
 	public void testAddSharingEntryWithSharingEntryActionsContainingOnlyNullElement()
 		throws Exception {
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Group.class.getName());
 		long classPK = _group.getGroupId();
 
 		_sharingEntryLocalService.addSharingEntry(
-			_fromUser.getUserId(), _toUser.getUserId(), classNameId, classPK,
-			_group.getGroupId(), true,
+			_fromUser.getUserId(), _toUser.getUserId(),
+			_classNameLocalService.getClassNameId(Group.class.getName()),
+			classPK, _group.getGroupId(), true,
 			Arrays.asList(new SharingEntryAction[] {null}), null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
@@ -384,9 +365,7 @@ public class SharingEntryLocalServiceTest {
 	public void testDeleteExpiredEntries() throws Exception {
 		Group group = GroupTestUtil.addGroup();
 
-		try (DisableSchedulerDestination disableSchedulerDestination =
-				new DisableSchedulerDestination()) {
-
+		try {
 			long classNameId = _classNameLocalService.getClassNameId(
 				Group.class.getName());
 
@@ -515,12 +494,12 @@ public class SharingEntryLocalServiceTest {
 
 	@Test(expected = NoSuchEntryException.class)
 	public void testDeleteNonexistingSharingEntry() throws Exception {
-		long classNameId = _classNameLocalService.getClassNameId(
-			Group.class.getName());
 		long classPK = _group.getGroupId();
 
 		_sharingEntryLocalService.deleteSharingEntry(
-			_toUser.getUserId(), classNameId, classPK);
+			_toUser.getUserId(),
+			_classNameLocalService.getClassNameId(Group.class.getName()),
+			classPK);
 	}
 
 	@Test
@@ -1225,26 +1204,5 @@ public class SharingEntryLocalServiceTest {
 
 	@DeleteAfterTestRun
 	private User _user;
-
-	private final class DisableSchedulerDestination implements AutoCloseable {
-
-		public DisableSchedulerDestination() {
-			_destinations = ReflectionTestUtil.getFieldValue(
-				_messageBus, "_destinations");
-
-			_destination = _destinations.remove(
-				DestinationNames.SCHEDULER_DISPATCH);
-		}
-
-		@Override
-		public void close() {
-			_destinations.put(
-				DestinationNames.SCHEDULER_DISPATCH, _destination);
-		}
-
-		private final Destination _destination;
-		private final Map<String, Destination> _destinations;
-
-	}
 
 }

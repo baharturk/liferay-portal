@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io;
 
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.internal.io.util.DDMFormFieldSerializerUtil;
 import com.liferay.dynamic.data.mapping.io.DDMFormLayoutSerializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormLayoutSerializerSerializeRequest;
@@ -45,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcellus Tavares
  */
 @Component(
-	immediate = true, property = "ddm.form.layout.serializer.type=json",
+	property = "ddm.form.layout.serializer.type=json",
 	service = DDMFormLayoutSerializer.class
 )
 public class DDMFormLayoutJSONSerializer implements DDMFormLayoutSerializer {
@@ -72,7 +63,7 @@ public class DDMFormLayoutJSONSerializer implements DDMFormLayoutSerializer {
 		}
 
 		DDMFormFieldSerializerUtil.serialize(
-			ddmFormLayout.getDDMFormFields(), _ddmFormFieldTypeServicesTracker,
+			ddmFormLayout.getDDMFormFields(), _ddmFormFieldTypeServicesRegistry,
 			_jsonFactory, jsonObject);
 
 		DDMFormLayoutSerializerSerializeResponse.Builder builder =
@@ -98,18 +89,6 @@ public class DDMFormLayoutJSONSerializer implements DDMFormLayoutSerializer {
 
 		jsonObject.put(
 			"rules", DDMFormRuleJSONSerializer.serialize(ddmFormRules));
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMFormFieldTypeServicesTracker(
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker) {
-
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJSONFactory(JSONFactory jsonFactory) {
-		_jsonFactory = jsonFactory;
 	}
 
 	protected JSONObject toJSONObject(DDMFormLayoutColumn ddmFormLayoutColumn) {
@@ -222,7 +201,10 @@ public class DDMFormLayoutJSONSerializer implements DDMFormLayoutSerializer {
 		pageJSONObject.put("title", LocalizedValueUtil.toJSONObject(title));
 	}
 
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
+	@Reference
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
+
+	@Reference
 	private JSONFactory _jsonFactory;
 
 }

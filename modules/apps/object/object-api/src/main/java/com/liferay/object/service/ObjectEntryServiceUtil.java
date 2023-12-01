@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
@@ -19,6 +10,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 
 import java.io.Serializable;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -61,6 +53,14 @@ public class ObjectEntryServiceUtil {
 			serviceContext);
 	}
 
+	public static void checkModelResourcePermission(
+			long objectDefinitionId, long objectEntryId, String actionId)
+		throws PortalException {
+
+		getService().checkModelResourcePermission(
+			objectDefinitionId, objectEntryId, actionId);
+	}
+
 	public static ObjectEntry deleteObjectEntry(long objectEntryId)
 		throws PortalException {
 
@@ -75,10 +75,46 @@ public class ObjectEntryServiceUtil {
 			externalReferenceCode, companyId, groupId);
 	}
 
+	public static ObjectEntry fetchManyToOneObjectEntry(
+			long groupId, long objectRelationshipId, long primaryKey)
+		throws PortalException {
+
+		return getService().fetchManyToOneObjectEntry(
+			groupId, objectRelationshipId, primaryKey);
+	}
+
 	public static ObjectEntry fetchObjectEntry(long objectEntryId)
 		throws PortalException {
 
 		return getService().fetchObjectEntry(objectEntryId);
+	}
+
+	public static List<ObjectEntry> getManyToManyObjectEntries(
+			long groupId, long objectRelationshipId, long primaryKey,
+			boolean related, boolean reverse, String search, int start, int end)
+		throws PortalException {
+
+		return getService().getManyToManyObjectEntries(
+			groupId, objectRelationshipId, primaryKey, related, reverse, search,
+			start, end);
+	}
+
+	public static int getManyToManyObjectEntriesCount(
+			long groupId, long objectRelationshipId, long primaryKey,
+			boolean related, boolean reverse, String search)
+		throws PortalException {
+
+		return getService().getManyToManyObjectEntriesCount(
+			groupId, objectRelationshipId, primaryKey, related, reverse,
+			search);
+	}
+
+	public static com.liferay.portal.kernel.security.permission.resource.
+		ModelResourcePermission<ObjectEntry> getModelResourcePermission(
+				long objectDefinitionId)
+			throws PortalException {
+
+		return getService().getModelResourcePermission(objectDefinitionId);
 	}
 
 	public static ObjectEntry getObjectEntry(long objectEntryId)
@@ -95,6 +131,25 @@ public class ObjectEntryServiceUtil {
 			externalReferenceCode, companyId, groupId);
 	}
 
+	public static List<ObjectEntry> getOneToManyObjectEntries(
+			long groupId, long objectRelationshipId, long primaryKey,
+			boolean related, String search, int start, int end)
+		throws PortalException {
+
+		return getService().getOneToManyObjectEntries(
+			groupId, objectRelationshipId, primaryKey, related, search, start,
+			end);
+	}
+
+	public static int getOneToManyObjectEntriesCount(
+			long groupId, long objectRelationshipId, long primaryKey,
+			boolean related, String search)
+		throws PortalException {
+
+		return getService().getOneToManyObjectEntriesCount(
+			groupId, objectRelationshipId, primaryKey, related, search);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -105,10 +160,35 @@ public class ObjectEntryServiceUtil {
 	}
 
 	public static boolean hasModelResourcePermission(
+			long objectDefinitionId, long objectEntryId, String actionId)
+		throws PortalException {
+
+		return getService().hasModelResourcePermission(
+			objectDefinitionId, objectEntryId, actionId);
+	}
+
+	public static boolean hasModelResourcePermission(
 			ObjectEntry objectEntry, String actionId)
 		throws PortalException {
 
 		return getService().hasModelResourcePermission(objectEntry, actionId);
+	}
+
+	public static boolean hasModelResourcePermission(
+			com.liferay.portal.kernel.model.User user, long objectEntryId,
+			String actionId)
+		throws PortalException {
+
+		return getService().hasModelResourcePermission(
+			user, objectEntryId, actionId);
+	}
+
+	public static boolean hasPortletResourcePermission(
+			long groupId, long objectDefinitionId, String actionId)
+		throws PortalException {
+
+		return getService().hasPortletResourcePermission(
+			groupId, objectDefinitionId, actionId);
 	}
 
 	public static ObjectEntry updateObjectEntry(
@@ -122,6 +202,10 @@ public class ObjectEntryServiceUtil {
 
 	public static ObjectEntryService getService() {
 		return _service;
+	}
+
+	public static void setService(ObjectEntryService service) {
+		_service = service;
 	}
 
 	private static volatile ObjectEntryService _service;

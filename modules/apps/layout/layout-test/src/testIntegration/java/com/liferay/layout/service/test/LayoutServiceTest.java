@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.service.test;
@@ -72,7 +63,7 @@ public class LayoutServiceTest {
 
 	@Test
 	public void testFetchLayout() throws Exception {
-		Layout newLayout = LayoutTestUtil.addLayout(_group);
+		Layout newLayout = LayoutTestUtil.addTypePortletLayout(_group);
 
 		Layout layout = _layoutService.fetchLayout(
 			0L, newLayout.isPrivateLayout(), newLayout.getLayoutId());
@@ -101,7 +92,7 @@ public class LayoutServiceTest {
 
 	@Test(expected = PrincipalException.MustHavePermission.class)
 	public void testFetchLayoutWithoutPermissions() throws Exception {
-		Layout newLayout = LayoutTestUtil.addLayout(_group, true);
+		Layout newLayout = LayoutTestUtil.addTypePortletLayout(_group, true);
 
 		PermissionChecker originalPermissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
@@ -127,13 +118,13 @@ public class LayoutServiceTest {
 
 	@Test
 	public void testUpdateFriendlyURLMap() throws Exception {
-		Layout layout = LayoutTestUtil.addLayout(_group);
+		Layout layout = LayoutTestUtil.addTypePortletLayout(_group);
 
 		long userId = layout.getUserId();
 
 		layout.setUserId(-1);
 
-		LayoutLocalServiceUtil.updateLayout(layout);
+		layout = LayoutLocalServiceUtil.updateLayout(layout);
 
 		Map<Locale, String> friendlyURLMap = layout.getFriendlyURLMap();
 
@@ -151,12 +142,12 @@ public class LayoutServiceTest {
 			layout.getTitleMap(), layout.getDescriptionMap(),
 			layout.getKeywordsMap(), layout.getRobotsMap(), layout.getType(),
 			layout.isHidden(), friendlyURLMap, layout.getIconImage(), null, 0,
-			0, serviceContext);
+			0, 0, serviceContext);
 	}
 
 	@Test
 	public void testUpdateLookAndFeel() throws Exception {
-		Layout layout = LayoutTestUtil.addLayout(_group);
+		Layout layout = LayoutTestUtil.addTypePortletLayout(_group);
 
 		layout = LayoutLocalServiceUtil.updateLookAndFeel(
 			_group.getGroupId(), false, layout.getLayoutId(),
@@ -178,7 +169,7 @@ public class LayoutServiceTest {
 
 		Layout layout = layoutPrototype.getLayout();
 
-		LayoutLocalServiceUtil.updateLayout(layout);
+		layout = LayoutLocalServiceUtil.updateLayout(layout);
 
 		ServiceContext serviceContext = new ServiceContext();
 
@@ -190,7 +181,7 @@ public class LayoutServiceTest {
 			layout.getTitleMap(), layout.getDescriptionMap(),
 			layout.getKeywordsMap(), layout.getRobotsMap(), layout.getType(),
 			layout.isHidden(), layout.getFriendlyURLMap(),
-			layout.getIconImage(), null, 0, 0, serviceContext);
+			layout.getIconImage(), null, 0, 0, 0, serviceContext);
 
 		Layout updatedLayout = LayoutLocalServiceUtil.getLayout(
 			layout.getPlid());

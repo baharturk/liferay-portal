@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.shipment.resource.v1_0.test;
@@ -42,10 +33,12 @@ import java.util.Collection;
 import java.util.List;
 
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
  * @author Andrea Sbarra
+ * @author Alessio Antonio Rendina
  */
 @RunWith(Arquillian.class)
 public class ShipmentResourceTest extends BaseShipmentResourceTestCase {
@@ -80,6 +73,26 @@ public class ShipmentResourceTest extends BaseShipmentResourceTestCase {
 	}
 
 	@Override
+	@Test
+	public void testDeleteShipmentByExternalReferenceCode() throws Exception {
+	}
+
+	@Override
+	@Test
+	public void testGetShipmentByExternalReferenceCode() throws Exception {
+	}
+
+	@Override
+	@Test
+	public void testPatchShipmentByExternalReferenceCode() throws Exception {
+	}
+
+	@Override
+	@Test
+	public void testPutShipmentByExternalReferenceCode() throws Exception {
+	}
+
+	@Override
 	protected String[] getAdditionalAssertFieldNames() {
 		return new String[] {
 			"accountId", "shippingAddressId", "shippingMethodId",
@@ -100,6 +113,7 @@ public class ShipmentResourceTest extends BaseShipmentResourceTestCase {
 				carrier = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				createDate = RandomTestUtil.nextDate();
 				expectedDate = RandomTestUtil.nextDate();
+				externalReferenceCode = RandomTestUtil.randomString();
 				modifiedDate = RandomTestUtil.nextDate();
 				orderId = _commerceOrder.getCommerceOrderId();
 				shippingAddressId = _commerceOrder.getShippingAddressId();
@@ -115,36 +129,84 @@ public class ShipmentResourceTest extends BaseShipmentResourceTestCase {
 
 	@Override
 	protected Shipment testDeleteShipment_addShipment() throws Exception {
-		return _addShipment();
+		return _addShipment(null);
+	}
+
+	@Override
+	protected Shipment testDeleteShipmentByExternalReferenceCode_addShipment()
+		throws Exception {
+
+		return _addShipment(null);
 	}
 
 	@Override
 	protected Shipment testGetShipment_addShipment() throws Exception {
-		return _addShipment();
+		return _addShipment(null);
+	}
+
+	@Override
+	protected Shipment testGetShipmentByExternalReferenceCode_addShipment()
+		throws Exception {
+
+		return _addShipment(null);
 	}
 
 	@Override
 	protected Shipment testGetShipmentsPage_addShipment(Shipment shipment)
 		throws Exception {
 
-		return _addShipment();
+		return _addShipment(shipment.getExternalReferenceCode());
 	}
 
 	@Override
 	protected Shipment testGraphQLShipment_addShipment() throws Exception {
-		return _addShipment();
+		return _addShipment(null);
 	}
 
 	@Override
 	protected Shipment testPatchShipment_addShipment() throws Exception {
-		return _addShipment();
+		return _addShipment(null);
+	}
+
+	@Override
+	protected Shipment testPatchShipmentByExternalReferenceCode_addShipment()
+		throws Exception {
+
+		return _addShipment(null);
 	}
 
 	@Override
 	protected Shipment testPostShipment_addShipment(Shipment shipment)
 		throws Exception {
 
-		return _addShipment();
+		return _addShipment(shipment.getExternalReferenceCode());
+	}
+
+	@Override
+	protected Shipment
+			testPostShipmentByExternalReferenceCodeStatusDelivered_addShipment(
+				Shipment shipment)
+		throws Exception {
+
+		return _addShipment(shipment.getExternalReferenceCode());
+	}
+
+	@Override
+	protected Shipment
+			testPostShipmentByExternalReferenceCodeStatusFinishProcessing_addShipment(
+				Shipment shipment)
+		throws Exception {
+
+		return _addShipment(shipment.getExternalReferenceCode());
+	}
+
+	@Override
+	protected Shipment
+			testPostShipmentByExternalReferenceCodeStatusShipped_addShipment(
+				Shipment shipment)
+		throws Exception {
+
+		return _addShipment(shipment.getExternalReferenceCode());
 	}
 
 	@Override
@@ -152,7 +214,7 @@ public class ShipmentResourceTest extends BaseShipmentResourceTestCase {
 			Shipment shipment)
 		throws Exception {
 
-		return _addShipment();
+		return _addShipment(shipment.getExternalReferenceCode());
 	}
 
 	@Override
@@ -160,7 +222,7 @@ public class ShipmentResourceTest extends BaseShipmentResourceTestCase {
 			Shipment shipment)
 		throws Exception {
 
-		return _addShipment();
+		return _addShipment(shipment.getExternalReferenceCode());
 	}
 
 	@Override
@@ -168,13 +230,26 @@ public class ShipmentResourceTest extends BaseShipmentResourceTestCase {
 			Shipment shipment)
 		throws Exception {
 
-		return _addShipment();
+		return _addShipment(shipment.getExternalReferenceCode());
 	}
 
-	private Shipment _addShipment() throws Exception {
+	@Override
+	protected Shipment testPutShipmentByExternalReferenceCode_addShipment()
+		throws Exception {
+
+		return _addShipment(null);
+	}
+
+	private Shipment _addShipment(String externalReferenceCode)
+		throws Exception {
+
 		_commerceShipment =
 			CommerceShipmentLocalServiceUtil.addCommerceShipment(
-				_commerceOrder.getCommerceOrderId(), _serviceContext);
+				externalReferenceCode, _commerceOrder.getGroupId(),
+				_commerceOrder.getCommerceAccountId(),
+				_commerceOrder.getShippingAddressId(),
+				_commerceOrder.getCommerceShippingMethodId(),
+				_commerceOrder.getShippingOptionName(), _serviceContext);
 
 		_commerceShipments.add(_commerceShipment);
 
@@ -190,6 +265,8 @@ public class ShipmentResourceTest extends BaseShipmentResourceTestCase {
 				carrier = commerceShipment.getCarrier();
 				createDate = commerceShipment.getCreateDate();
 				expectedDate = commerceShipment.getExpectedDate();
+				externalReferenceCode =
+					commerceShipment.getExternalReferenceCode();
 				id = commerceShipment.getCommerceShipmentId();
 				modifiedDate = commerceShipment.getModifiedDate();
 				shippingAddressId = commerceShipment.getCommerceAddressId();

@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.checkout.web.internal.display.context;
 
+import com.liferay.account.model.AccountEntry;
+import com.liferay.commerce.configuration.CommerceOrderCheckoutConfiguration;
 import com.liferay.commerce.constants.CommerceCheckoutWebKeys;
+import com.liferay.commerce.constants.CommerceConstants;
+import com.liferay.commerce.constants.CommerceOrderActionKeys;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
@@ -22,6 +17,9 @@ import com.liferay.commerce.currency.model.CommerceMoney;
 import com.liferay.commerce.discount.CommerceDiscountValue;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
+import com.liferay.commerce.model.CommerceShippingEngine;
+import com.liferay.commerce.model.CommerceShippingMethod;
+import com.liferay.commerce.model.CommerceShippingOption;
 import com.liferay.commerce.order.CommerceOrderHttpHelper;
 import com.liferay.commerce.order.CommerceOrderValidatorRegistry;
 import com.liferay.commerce.order.CommerceOrderValidatorResult;
@@ -34,20 +32,32 @@ import com.liferay.commerce.price.CommerceProductPriceCalculation;
 import com.liferay.commerce.price.CommerceProductPriceImpl;
 import com.liferay.commerce.price.CommerceProductPriceRequest;
 import com.liferay.commerce.product.constants.CPConstants;
+import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.option.CommerceOptionValue;
 import com.liferay.commerce.product.option.CommerceOptionValueHelper;
+import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.product.util.CPInstanceHelper;
-import com.liferay.commerce.util.CommerceBigDecimalUtil;
+import com.liferay.commerce.term.model.CommerceTermEntry;
+import com.liferay.commerce.term.service.CommerceTermEntryLocalService;
+import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
+import com.liferay.commerce.util.CommerceShippingEngineRegistry;
 import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.repository.model.FileVersion;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
 import java.math.BigDecimal;
@@ -69,26 +79,38 @@ public class OrderSummaryCheckoutStepDisplayContext {
 	public OrderSummaryCheckoutStepDisplayContext(
 		CommerceChannelLocalService commerceChannelLocalService,
 		CommerceOrderHttpHelper commerceOrderHttpHelper,
+		CommerceOrderItemQuantityFormatter commerceOrderItemQuantityFormatter,
 		CommerceOrderPriceCalculation commerceOrderPriceCalculation,
 		CommerceOrderValidatorRegistry commerceOrderValidatorRegistry,
+		CommerceOptionValueHelper commerceOptionValueHelper,
 		CommercePaymentEngine commercePaymentEngine,
 		CommerceProductPriceCalculation commerceProductPriceCalculation,
-		CommerceOptionValueHelper commerceOptionValueHelper,
+		CommerceShippingEngineRegistry commerceShippingEngineRegistry,
+		CommerceTermEntryLocalService commerceTermEntryLocalService,
 		CPInstanceHelper cpInstanceHelper,
+		CPInstanceUnitOfMeasureLocalService cpInstanceUnitOfMeasureLocalService,
 		HttpServletRequest httpServletRequest,
-		PercentageFormatter percentageFormatter, Portal portal) {
+		PercentageFormatter percentageFormatter, Portal portal,
+		PortletResourcePermission portletResourcePermission) {
 
 		_commerceChannelLocalService = commerceChannelLocalService;
 		_commerceOrderHttpHelper = commerceOrderHttpHelper;
+		_commerceOrderItemQuantityFormatter =
+			commerceOrderItemQuantityFormatter;
 		_commerceOrderPriceCalculation = commerceOrderPriceCalculation;
 		_commerceOrderValidatorRegistry = commerceOrderValidatorRegistry;
+		_commerceOptionValueHelper = commerceOptionValueHelper;
 		_commercePaymentEngine = commercePaymentEngine;
 		_commerceProductPriceCalculation = commerceProductPriceCalculation;
-		_commerceOptionValueHelper = commerceOptionValueHelper;
+		_commerceShippingEngineRegistry = commerceShippingEngineRegistry;
+		_commerceTermEntryLocalService = commerceTermEntryLocalService;
 		_cpInstanceHelper = cpInstanceHelper;
+		_cpInstanceUnitOfMeasureLocalService =
+			cpInstanceUnitOfMeasureLocalService;
 		_httpServletRequest = httpServletRequest;
 		_percentageFormatter = percentageFormatter;
 		_portal = portal;
+		_portletResourcePermission = portletResourcePermission;
 
 		_commerceContext = (CommerceContext)httpServletRequest.getAttribute(
 			CommerceWebKeys.COMMERCE_CONTEXT);
@@ -97,12 +119,44 @@ public class OrderSummaryCheckoutStepDisplayContext {
 	}
 
 	public CommerceOrder getCommerceOrder() {
-		return _commerceOrder;
+		if (_commerceOrder != null) {
+			return _commerceOrder;
+		}
+
+		return (CommerceOrder)_httpServletRequest.getAttribute(
+			CommerceCheckoutWebKeys.COMMERCE_ORDER);
+	}
+
+	public String getCommerceOrderItemFormattedQuantity(
+			CommerceOrderItem commerceOrderItem)
+		throws PortalException {
+
+		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure = null;
+
+		String unitOfMeasureKey = commerceOrderItem.getUnitOfMeasureKey();
+
+		if (Validator.isNotNull(unitOfMeasureKey)) {
+			cpInstanceUnitOfMeasure =
+				_cpInstanceUnitOfMeasureLocalService.
+					fetchCPInstanceUnitOfMeasure(
+						commerceOrderItem.getCPInstanceId(), unitOfMeasureKey);
+		}
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return _commerceOrderItemQuantityFormatter.format(
+			commerceOrderItem, cpInstanceUnitOfMeasure,
+			themeDisplay.getLocale());
 	}
 
 	public int getCommerceOrderItemsQuantity() throws PortalException {
-		return _commerceOrderHttpHelper.getCommerceOrderItemsQuantity(
-			_httpServletRequest);
+		BigDecimal quantity =
+			_commerceOrderHttpHelper.getCommerceOrderItemsQuantity(
+				_httpServletRequest);
+
+		return quantity.intValue();
 	}
 
 	public CommerceOrderPrice getCommerceOrderPrice() throws PortalException {
@@ -120,7 +174,7 @@ public class OrderSummaryCheckoutStepDisplayContext {
 	}
 
 	public Map<Long, List<CommerceOrderValidatorResult>>
-			getCommerceOrderValidatorResults()
+			getCommerceOrderValidatorResultsMap()
 		throws PortalException {
 
 		ThemeDisplay themeDisplay =
@@ -152,6 +206,14 @@ public class OrderSummaryCheckoutStepDisplayContext {
 		return _getCommerceProductPrice(commerceOrderItem, _commerceContext);
 	}
 
+	public String getCPInstanceCDNURL(CommerceOrderItem commerceOrderItem)
+		throws Exception {
+
+		return _cpInstanceHelper.getCPInstanceCDNURL(
+			CommerceUtil.getCommerceAccountId(_commerceContext),
+			commerceOrderItem.getCPInstanceId());
+	}
+
 	public FileVersion getCPInstanceImageFileVersion(
 			CommerceOrderItem commerceOrderItem)
 		throws Exception {
@@ -160,6 +222,18 @@ public class OrderSummaryCheckoutStepDisplayContext {
 			CommerceUtil.getCommerceAccountId(_commerceContext),
 			_portal.getCompanyId(_httpServletRequest),
 			commerceOrderItem.getCPInstanceId());
+	}
+
+	public String getDeliveryTermEntryName(Locale locale) {
+		CommerceTermEntry commerceTermEntry =
+			_commerceTermEntryLocalService.fetchCommerceTermEntry(
+				_commerceOrder.getDeliveryCommerceTermEntryId());
+
+		if (commerceTermEntry == null) {
+			return StringPool.BLANK;
+		}
+
+		return commerceTermEntry.getLabel(LanguageUtil.getLanguageId(locale));
 	}
 
 	public List<KeyValuePair> getKeyValuePairs(
@@ -188,6 +262,99 @@ public class OrderSummaryCheckoutStepDisplayContext {
 
 		return _commercePaymentEngine.getPaymentMethodName(
 			paymentMethodKey, locale);
+	}
+
+	public String getPaymentTermEntryName(Locale locale) {
+		CommerceTermEntry commerceTermEntry =
+			_commerceTermEntryLocalService.fetchCommerceTermEntry(
+				_commerceOrder.getPaymentCommerceTermEntryId());
+
+		if (commerceTermEntry == null) {
+			return StringPool.BLANK;
+		}
+
+		return commerceTermEntry.getLabel(LanguageUtil.getLanguageId(locale));
+	}
+
+	public String getShippingOptionName(String shippingOptionKey, Locale locale)
+		throws PortalException {
+
+		CommerceOrder commerceOrder = getCommerceOrder();
+
+		if (shippingOptionKey.isEmpty() || (locale == null) ||
+			(commerceOrder == null) ||
+			Validator.isNull(commerceOrder.getShippingOptionName())) {
+
+			return StringPool.BLANK;
+		}
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		CommerceShippingMethod commerceShippingMethod =
+			commerceOrder.getCommerceShippingMethod();
+
+		CommerceShippingEngine commerceShippingEngine =
+			_commerceShippingEngineRegistry.getCommerceShippingEngine(
+				commerceShippingMethod.getEngineKey());
+
+		CommerceContext commerceContext =
+			(CommerceContext)_httpServletRequest.getAttribute(
+				CommerceWebKeys.COMMERCE_CONTEXT);
+
+		List<CommerceShippingOption> commerceShippingOptions =
+			commerceShippingEngine.getCommerceShippingOptions(
+				commerceContext, commerceOrder, themeDisplay.getLocale());
+
+		for (CommerceShippingOption commerceShippingOption :
+				commerceShippingOptions) {
+
+			String commerceShippingOptionKey = commerceShippingOption.getKey();
+
+			if (commerceShippingOptionKey.equals(
+					commerceOrder.getShippingOptionName())) {
+
+				return commerceShippingOption.getName();
+			}
+		}
+
+		return StringPool.BLANK;
+	}
+
+	public boolean hasViewBillingAddressPermission(
+			PermissionChecker permissionChecker, AccountEntry accountEntry)
+		throws PortalException {
+
+		if (accountEntry.isGuestAccount() || accountEntry.isPersonalAccount() ||
+			_portletResourcePermission.contains(
+				permissionChecker, accountEntry.getAccountEntryGroup(),
+				CommerceOrderActionKeys.VIEW_BILLING_ADDRESS)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isCheckoutRequestedDeliveryDateEnabled()
+		throws PortalException {
+
+		CommerceOrder commerceOrder = getCommerceOrder();
+
+		CommerceChannel commerceChannel =
+			_commerceChannelLocalService.getCommerceChannelByOrderGroupId(
+				commerceOrder.getGroupId());
+
+		CommerceOrderCheckoutConfiguration commerceOrderCheckoutConfiguration =
+			ConfigurationProviderUtil.getConfiguration(
+				CommerceOrderCheckoutConfiguration.class,
+				new GroupServiceSettingsLocator(
+					commerceChannel.getGroupId(),
+					CommerceConstants.SERVICE_NAME_COMMERCE_ORDER));
+
+		return commerceOrderCheckoutConfiguration.
+			checkoutRequestedDeliveryDateEnabled();
 	}
 
 	private CommerceProductPrice _getCommerceProductPrice(
@@ -223,15 +390,17 @@ public class OrderSummaryCheckoutStepDisplayContext {
 		CommerceProductPriceRequest commerceProductPriceRequest =
 			new CommerceProductPriceRequest();
 
+		commerceProductPriceRequest.setCalculateTax(true);
+		commerceProductPriceRequest.setCommerceContext(commerceContext);
+		commerceProductPriceRequest.setCommerceOptionValues(
+			cpDefinitionCommerceOptionValues);
 		commerceProductPriceRequest.setCpInstanceId(
 			commerceOrderItem.getCPInstanceId());
 		commerceProductPriceRequest.setQuantity(
 			commerceOrderItem.getQuantity());
 		commerceProductPriceRequest.setSecure(false);
-		commerceProductPriceRequest.setCommerceContext(commerceContext);
-		commerceProductPriceRequest.setCommerceOptionValues(
-			cpDefinitionCommerceOptionValues);
-		commerceProductPriceRequest.setCalculateTax(true);
+		commerceProductPriceRequest.setUnitOfMeasureKey(
+			commerceOrderItem.getUnitOfMeasureKey());
 
 		return _commerceProductPriceCalculation.getCommerceProductPrice(
 			commerceProductPriceRequest);
@@ -251,19 +420,32 @@ public class OrderSummaryCheckoutStepDisplayContext {
 		BigDecimal promoPrice = commerceOrderItem.getPromoPrice();
 
 		if ((promoPrice != null) &&
-			CommerceBigDecimalUtil.gt(promoPrice, BigDecimal.ZERO) &&
-			CommerceBigDecimalUtil.lte(promoPrice, activePrice)) {
+			BigDecimalUtil.gt(promoPrice, BigDecimal.ZERO) &&
+			BigDecimalUtil.lte(promoPrice, activePrice)) {
 
 			activePrice = promoPrice;
 			activePriceWithTaxAmount =
 				commerceOrderItem.getPromoPriceWithTaxAmount();
 		}
 
+		BigDecimal quantity = commerceOrderItem.getQuantity();
+
+		BigDecimal unitOfMeasureIncrementalOrderQuantity =
+			commerceOrderItem.getUnitOfMeasureIncrementalOrderQuantity();
+
+		if (unitOfMeasureIncrementalOrderQuantity == null) {
+			unitOfMeasureIncrementalOrderQuantity = BigDecimal.ONE;
+		}
+
 		commerceProductPriceImpl.setFinalPrice(
 			commerceOrderItem.getFinalPriceMoney());
 		commerceProductPriceImpl.setFinalPriceWithTaxAmount(
 			commerceOrderItem.getFinalPriceWithTaxAmountMoney());
-		commerceProductPriceImpl.setQuantity(commerceOrderItem.getQuantity());
+		commerceProductPriceImpl.setQuantity(quantity);
+		commerceProductPriceImpl.setUnitOfMeasureIncrementalOrderQuantity(
+			unitOfMeasureIncrementalOrderQuantity);
+		commerceProductPriceImpl.setUnitOfMeasureKey(
+			commerceOrderItem.getUnitOfMeasureKey());
 		commerceProductPriceImpl.setUnitPrice(
 			commerceOrderItem.getUnitPriceMoney());
 		commerceProductPriceImpl.setUnitPriceWithTaxAmount(
@@ -275,14 +457,16 @@ public class OrderSummaryCheckoutStepDisplayContext {
 
 		BigDecimal discountAmount = commerceOrderItem.getDiscountAmount();
 
-		if ((discountAmount == null) ||
-			CommerceBigDecimalUtil.isZero(discountAmount)) {
-
+		if ((discountAmount == null) || BigDecimalUtil.isZero(discountAmount)) {
 			return commerceProductPriceImpl;
 		}
 
-		activePrice = activePrice.multiply(
-			BigDecimal.valueOf(commerceOrderItem.getQuantity()));
+		BigDecimal baseQuantity = quantity.divide(
+			unitOfMeasureIncrementalOrderQuantity,
+			unitOfMeasureIncrementalOrderQuantity.scale(),
+			RoundingMode.HALF_UP);
+
+		activePrice = activePrice.multiply(baseQuantity);
 
 		BigDecimal discountedAmount = activePrice.subtract(discountAmount);
 
@@ -310,7 +494,7 @@ public class OrderSummaryCheckoutStepDisplayContext {
 			commerceDiscountValue);
 
 		activePriceWithTaxAmount = activePriceWithTaxAmount.multiply(
-			BigDecimal.valueOf(commerceOrderItem.getQuantity()));
+			baseQuantity);
 
 		CommerceMoney discountWithTaxAmountCommerceMoney =
 			commerceOrderItem.getDiscountWithTaxAmountMoney();
@@ -366,15 +550,23 @@ public class OrderSummaryCheckoutStepDisplayContext {
 	private final CommerceOptionValueHelper _commerceOptionValueHelper;
 	private final CommerceOrder _commerceOrder;
 	private final CommerceOrderHttpHelper _commerceOrderHttpHelper;
+	private final CommerceOrderItemQuantityFormatter
+		_commerceOrderItemQuantityFormatter;
 	private final CommerceOrderPriceCalculation _commerceOrderPriceCalculation;
 	private final CommerceOrderValidatorRegistry
 		_commerceOrderValidatorRegistry;
 	private final CommercePaymentEngine _commercePaymentEngine;
 	private final CommerceProductPriceCalculation
 		_commerceProductPriceCalculation;
+	private final CommerceShippingEngineRegistry
+		_commerceShippingEngineRegistry;
+	private final CommerceTermEntryLocalService _commerceTermEntryLocalService;
 	private final CPInstanceHelper _cpInstanceHelper;
+	private final CPInstanceUnitOfMeasureLocalService
+		_cpInstanceUnitOfMeasureLocalService;
 	private final HttpServletRequest _httpServletRequest;
 	private final PercentageFormatter _percentageFormatter;
 	private final Portal _portal;
+	private final PortletResourcePermission _portletResourcePermission;
 
 }

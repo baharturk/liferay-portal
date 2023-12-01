@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.address.content.web.internal.portlet.action;
 
-import com.liferay.commerce.account.model.CommerceAccount;
+import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.constants.CommercePortletKeys;
 import com.liferay.commerce.exception.CommerceAddressCityException;
 import com.liferay.commerce.exception.CommerceAddressCountryException;
@@ -42,7 +33,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_ADDRESS_CONTENT,
 		"mvc.command.name=/commerce_address_content/edit_commerce_address"
@@ -136,7 +126,7 @@ public class EditCommerceAddressMVCActionCommand extends BaseMVCActionCommand {
 				actionRequest, "commerceAccountId");
 
 			_commerceAddressService.addCommerceAddress(
-				CommerceAccount.class.getName(), commerceAccountId, name,
+				AccountEntry.class.getName(), commerceAccountId, name,
 				description, street1, street2, street3, city, zip, regionId,
 				countryId, phoneNumber, defaultBilling, defaultShipping,
 				serviceContext);

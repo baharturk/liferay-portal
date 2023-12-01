@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -48,7 +39,6 @@ import com.liferay.portal.model.impl.WebsiteModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -182,7 +172,7 @@ public class WebsitePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<Website>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Website website : list) {
@@ -562,7 +552,8 @@ public class WebsitePersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -719,7 +710,7 @@ public class WebsitePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<Website>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Website website : list) {
@@ -1131,7 +1122,8 @@ public class WebsitePersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1287,7 +1279,7 @@ public class WebsitePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<Website>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Website website : list) {
@@ -1643,7 +1635,8 @@ public class WebsitePersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1775,7 +1768,7 @@ public class WebsitePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<Website>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Website website : list) {
@@ -2130,7 +2123,8 @@ public class WebsitePersistenceImpl
 
 		Object[] finderArgs = new Object[] {userId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2272,7 +2266,7 @@ public class WebsitePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<Website>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Website website : list) {
@@ -2660,7 +2654,8 @@ public class WebsitePersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId, classNameId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -2817,7 +2812,7 @@ public class WebsitePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<Website>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Website website : list) {
@@ -3229,7 +3224,8 @@ public class WebsitePersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId, classNameId, classPK};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -3403,7 +3399,7 @@ public class WebsitePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<Website>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Website website : list) {
@@ -3843,7 +3839,8 @@ public class WebsitePersistenceImpl
 			companyId, classNameId, classPK, primary
 		};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(5);
@@ -4318,7 +4315,7 @@ public class WebsitePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<Website>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -4388,7 +4385,7 @@ public class WebsitePersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -4601,28 +4598,13 @@ public class WebsitePersistenceImpl
 			new String[] {"companyId", "classNameId", "classPK", "primary_"},
 			false);
 
-		_setWebsiteUtilPersistence(this);
+		WebsiteUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setWebsiteUtilPersistence(null);
+		WebsiteUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(WebsiteImpl.class.getName());
-	}
-
-	private void _setWebsiteUtilPersistence(
-		WebsitePersistence websitePersistence) {
-
-		try {
-			Field field = WebsiteUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, websitePersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_WEBSITE =

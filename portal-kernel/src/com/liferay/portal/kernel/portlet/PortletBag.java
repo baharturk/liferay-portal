@@ -1,28 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.portlet;
 
-import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.expando.kernel.model.CustomAttributesDisplay;
 import com.liferay.exportimport.kernel.lar.PortletDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.portal.kernel.notifications.UserNotificationDefinition;
 import com.liferay.portal.kernel.notifications.UserNotificationHandler;
-import com.liferay.portal.kernel.poller.PollerProcessor;
 import com.liferay.portal.kernel.pop.MessageListener;
-import com.liferay.portal.kernel.scheduler.messaging.SchedulerEventMessageListener;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.OpenSearch;
 import com.liferay.portal.kernel.security.permission.propagator.PermissionPropagator;
@@ -56,8 +44,6 @@ public interface PortletBag extends Cloneable {
 
 	public void destroy();
 
-	public List<AssetRendererFactory<?>> getAssetRendererFactoryInstances();
-
 	public List<ConfigurationAction> getConfigurationActionInstances();
 
 	public List<ControlPanelEntry> getControlPanelEntryInstances();
@@ -72,9 +58,10 @@ public interface PortletBag extends Cloneable {
 
 	public List<PermissionPropagator> getPermissionPropagatorInstances();
 
-	public List<PollerProcessor> getPollerProcessorInstances();
-
 	public List<MessageListener> getPopMessageListenerInstances();
+
+	public List<PortletConfigurationListener>
+		getPortletConfigurationListenerInstances();
 
 	public List<PortletDataHandler> getPortletDataHandlerInstances();
 
@@ -89,9 +76,6 @@ public interface PortletBag extends Cloneable {
 	public ResourceBundle getResourceBundle(Locale locale);
 
 	public String getResourceBundleBaseName();
-
-	public List<SchedulerEventMessageListener>
-		getSchedulerEventMessageListeners();
 
 	public ServletContext getServletContext();
 

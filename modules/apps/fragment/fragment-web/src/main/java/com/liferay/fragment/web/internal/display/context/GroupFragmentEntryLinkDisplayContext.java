@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.web.internal.display.context;
@@ -17,10 +8,12 @@ package com.liferay.fragment.web.internal.display.context;
 import com.liferay.fragment.constants.FragmentActionKeys;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.model.FragmentEntry;
-import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.model.FragmentEntryLinkTable;
 import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
 import com.liferay.fragment.service.FragmentEntryLocalServiceUtil;
 import com.liferay.fragment.web.internal.security.permission.resource.FragmentPermission;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -35,10 +28,10 @@ import com.liferay.portal.kernel.util.comparator.GroupNameComparator;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
@@ -88,7 +81,7 @@ public class GroupFragmentEntryLinkDisplayContext {
 	}
 
 	public long getFragmentGroupUsageCount(Group group) {
-		Map<Group, Long> groupFragmentEntryUsages =
+		Map<Group, Integer> groupFragmentEntryUsages =
 			_getGroupFragmentEntryUsages();
 
 		return groupFragmentEntryUsages.get(group);
@@ -142,6 +135,27 @@ public class GroupFragmentEntryLinkDisplayContext {
 
 		groupsSearchContainer.setId("groups" + getFragmentCollectionId());
 
+		boolean orderByAsc = false;
+
+		if (Objects.equals(getOrderByType(), "asc")) {
+			orderByAsc = true;
+		}
+
+		groupsSearchContainer.setOrderByCol(getOrderByCol());
+		groupsSearchContainer.setOrderByComparator(
+			new GroupNameComparator(orderByAsc));
+		groupsSearchContainer.setOrderByType(getOrderByType());
+
+		Map<Group, Integer> groupFragmentEntryUsages =
+			_getGroupFragmentEntryUsages();
+
+		List<Group> groups = new ArrayList<>(groupFragmentEntryUsages.keySet());
+
+		Collections.sort(groups, groupsSearchContainer.getOrderByComparator());
+
+		groupsSearchContainer.setResultsAndTotal(
+			() -> groups, groupFragmentEntryUsages.size());
+
 		if (FragmentPermission.contains(
 				themeDisplay.getPermissionChecker(),
 				themeDisplay.getScopeGroupId(),
@@ -151,49 +165,39 @@ public class GroupFragmentEntryLinkDisplayContext {
 				new EmptyOnClickRowChecker(_renderResponse));
 		}
 
-		boolean orderByAsc = false;
-
-		if (getOrderByType().equals("asc")) {
-			orderByAsc = true;
-		}
-
-		groupsSearchContainer.setOrderByCol(getOrderByCol());
-		groupsSearchContainer.setOrderByComparator(
-			new GroupNameComparator(orderByAsc));
-		groupsSearchContainer.setOrderByType(getOrderByType());
-
-		Map<Group, Long> groupFragmentEntryUsages =
-			_getGroupFragmentEntryUsages();
-
-		List<Group> groups = new ArrayList<>(groupFragmentEntryUsages.keySet());
-
-		Collections.sort(groups, groupsSearchContainer.getOrderByComparator());
-
-		groupsSearchContainer.setResults(groups);
-
-		groupsSearchContainer.setTotal(groupFragmentEntryUsages.size());
-
 		_searchContainer = groupsSearchContainer;
 
 		return _searchContainer;
 	}
 
-	private Map<Group, Long> _getGroupFragmentEntryUsages() {
+	private Map<Group, Integer> _getGroupFragmentEntryUsages() {
 		if (_groupFragmentEntryUsages != null) {
 			return _groupFragmentEntryUsages;
 		}
 
-		List<FragmentEntryLink> fragmentEntryLinks =
-			FragmentEntryLinkLocalServiceUtil.
-				getFragmentEntryLinksByFragmentEntryId(getFragmentEntryId());
+		Map<Group, Integer> groupFragmentEntryUsages = new HashMap<>();
 
-		Stream<FragmentEntryLink> stream = fragmentEntryLinks.stream();
+		DSLQuery dslQuery = DSLQueryFactoryUtil.selectDistinct(
+			FragmentEntryLinkTable.INSTANCE.groupId
+		).from(
+			FragmentEntryLinkTable.INSTANCE
+		).where(
+			FragmentEntryLinkTable.INSTANCE.fragmentEntryId.eq(
+				getFragmentEntryId())
+		);
 
-		_groupFragmentEntryUsages = stream.collect(
-			Collectors.groupingBy(
-				fragmentEntryLink -> GroupLocalServiceUtil.fetchGroup(
-					fragmentEntryLink.getGroupId()),
-				Collectors.counting()));
+		List<Long> groupIds = FragmentEntryLinkLocalServiceUtil.dslQuery(
+			dslQuery);
+
+		for (long groupId : groupIds) {
+			groupFragmentEntryUsages.put(
+				GroupLocalServiceUtil.fetchGroup(groupId),
+				FragmentEntryLinkLocalServiceUtil.
+					getLayoutFragmentEntryLinksCountByFragmentEntryId(
+						groupId, getFragmentEntryId()));
+		}
+
+		_groupFragmentEntryUsages = groupFragmentEntryUsages;
 
 		return _groupFragmentEntryUsages;
 	}
@@ -201,7 +205,7 @@ public class GroupFragmentEntryLinkDisplayContext {
 	private Long _fragmentCollectionId;
 	private FragmentEntry _fragmentEntry;
 	private Long _fragmentEntryId;
-	private Map<Group, Long> _groupFragmentEntryUsages;
+	private Map<Group, Integer> _groupFragmentEntryUsages;
 	private String _orderByCol;
 	private String _orderByType;
 	private String _redirect;

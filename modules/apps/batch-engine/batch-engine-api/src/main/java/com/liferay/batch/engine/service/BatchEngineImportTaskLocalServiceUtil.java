@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.service;
@@ -64,16 +55,36 @@ public class BatchEngineImportTaskLocalServiceUtil {
 	}
 
 	public static BatchEngineImportTask addBatchEngineImportTask(
-		long companyId, long userId, long batchSize, String callbackURL,
-		String className, byte[] content, String contentType,
-		String executeStatus, Map<String, String> fieldNameMappingMap,
-		String operation, Map<String, Serializable> parameters,
-		String taskItemDelegateName) {
+			String externalReferenceCode, long companyId, long userId,
+			long batchSize, String callbackURL, String className,
+			byte[] content, String contentType, String executeStatus,
+			Map<String, String> fieldNameMappingMap, int importStrategy,
+			String operation, Map<String, Serializable> parameters,
+			String taskItemDelegateName)
+		throws PortalException {
 
 		return getService().addBatchEngineImportTask(
-			companyId, userId, batchSize, callbackURL, className, content,
-			contentType, executeStatus, fieldNameMappingMap, operation,
-			parameters, taskItemDelegateName);
+			externalReferenceCode, companyId, userId, batchSize, callbackURL,
+			className, content, contentType, executeStatus, fieldNameMappingMap,
+			importStrategy, operation, parameters, taskItemDelegateName);
+	}
+
+	public static BatchEngineImportTask addBatchEngineImportTask(
+			String externalReferenceCode, long companyId, long userId,
+			long batchSize, String callbackURL, String className,
+			byte[] content, String contentType, String executeStatus,
+			Map<String, String> fieldNameMappingMap, int importStrategy,
+			String operation, Map<String, Serializable> parameters,
+			String taskItemDelegateName,
+			com.liferay.batch.engine.BatchEngineTaskItemDelegate<?>
+				batchEngineTaskItemDelegate)
+		throws PortalException {
+
+		return getService().addBatchEngineImportTask(
+			externalReferenceCode, companyId, userId, batchSize, callbackURL,
+			className, content, contentType, executeStatus, fieldNameMappingMap,
+			importStrategy, operation, parameters, taskItemDelegateName,
+			batchEngineTaskItemDelegate);
 	}
 
 	/**
@@ -235,6 +246,14 @@ public class BatchEngineImportTaskLocalServiceUtil {
 		return getService().fetchBatchEngineImportTask(batchEngineImportTaskId);
 	}
 
+	public static BatchEngineImportTask
+		fetchBatchEngineImportTaskByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return getService().fetchBatchEngineImportTaskByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the batch engine import task with the matching UUID and company.
 	 *
@@ -268,6 +287,15 @@ public class BatchEngineImportTaskLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getBatchEngineImportTask(batchEngineImportTaskId);
+	}
+
+	public static BatchEngineImportTask
+			getBatchEngineImportTaskByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getBatchEngineImportTaskByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -401,6 +429,10 @@ public class BatchEngineImportTaskLocalServiceUtil {
 
 	public static BatchEngineImportTaskLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(BatchEngineImportTaskLocalService service) {
+		_service = service;
 	}
 
 	private static volatile BatchEngineImportTaskLocalService _service;

@@ -1,24 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.custom.facet.display.context;
 
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.web.internal.custom.facet.configuration.CustomFacetPortletInstanceConfiguration;
+import com.liferay.portal.search.web.internal.facet.display.context.BucketDisplayContext;
+import com.liferay.portal.search.web.internal.facet.display.context.FacetDisplayContext;
 
 import java.util.List;
 
@@ -27,7 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * @author Wade Cao
  */
-public class CustomFacetDisplayContext {
+public class CustomFacetDisplayContext implements FacetDisplayContext {
 
 	public CustomFacetDisplayContext(HttpServletRequest httpServletRequest)
 		throws ConfigurationException {
@@ -38,11 +31,13 @@ public class CustomFacetDisplayContext {
 
 		_themeDisplay = themeDisplay;
 
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
 		_customFacetPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				CustomFacetPortletInstanceConfiguration.class);
+			ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				CustomFacetPortletInstanceConfiguration.class, themeDisplay);
+	}
+
+	public List<BucketDisplayContext> getBucketDisplayContexts() {
+		return _bucketDisplayContexts;
 	}
 
 	public CustomFacetPortletInstanceConfiguration
@@ -86,16 +81,18 @@ public class CustomFacetDisplayContext {
 		return _parameterValues;
 	}
 
-	public List<CustomFacetTermDisplayContext> getTermDisplayContexts() {
-		return _customFacetTermDisplayContexts;
-	}
-
 	public boolean isNothingSelected() {
 		return _nothingSelected;
 	}
 
 	public boolean isRenderNothing() {
 		return _renderNothing;
+	}
+
+	public void setBucketDisplayContexts(
+		List<BucketDisplayContext> bucketDisplayContexts) {
+
+		_bucketDisplayContexts = bucketDisplayContexts;
 	}
 
 	public void setDisplayCaption(String displayCaption) {
@@ -128,15 +125,9 @@ public class CustomFacetDisplayContext {
 		_renderNothing = renderNothing;
 	}
 
-	public void setTermDisplayContexts(
-		List<CustomFacetTermDisplayContext> customFacetTermDisplayContexts) {
-
-		_customFacetTermDisplayContexts = customFacetTermDisplayContexts;
-	}
-
+	private List<BucketDisplayContext> _bucketDisplayContexts;
 	private final CustomFacetPortletInstanceConfiguration
 		_customFacetPortletInstanceConfiguration;
-	private List<CustomFacetTermDisplayContext> _customFacetTermDisplayContexts;
 	private String _displayCaption;
 	private long _displayStyleGroupId;
 	private boolean _nothingSelected;

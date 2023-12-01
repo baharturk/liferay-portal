@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.internal.resource.v1_0;
@@ -24,24 +15,22 @@ import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.service.CProductLocalService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductGroup;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductGroupProduct;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter.ProductGroupDTOConverter;
 import com.liferay.headless.commerce.admin.catalog.internal.odata.entity.v1_0.ProductGroupEntityModel;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.ProductGroupProductUtil;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.ProductGroupResource;
 import com.liferay.headless.commerce.core.util.ExpandoUtil;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
 import com.liferay.headless.commerce.core.util.ServiceContextHelper;
-import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
 import java.util.Map;
@@ -57,12 +46,11 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Riccardo Alberti
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/product-group.properties",
 	scope = ServiceScope.PROTOTYPE, service = ProductGroupResource.class
 )
-public class ProductGroupResourceImpl
-	extends BaseProductGroupResourceImpl implements EntityModelResource {
+@CTAware
+public class ProductGroupResourceImpl extends BaseProductGroupResourceImpl {
 
 	@Override
 	public void deleteProductGroup(Long id) throws Exception {
@@ -129,15 +117,8 @@ public class ProductGroupResourceImpl
 			CommercePricingClass.class.getName(), search, pagination,
 			queryConfig -> queryConfig.setSelectedFieldNames(
 				Field.ENTRY_CLASS_PK),
-			new UnsafeConsumer() {
-
-				public void accept(Object object) throws Exception {
-					SearchContext searchContext = (SearchContext)object;
-
-					searchContext.setCompanyId(contextCompany.getCompanyId());
-				}
-
-			},
+			searchContext -> searchContext.setCompanyId(
+				contextCompany.getCompanyId()),
 			sorts,
 			document -> _toProductGroup(
 				GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK))));
@@ -234,9 +215,9 @@ public class ProductGroupResourceImpl
 					cProduct =
 						_cProductLocalService.
 							fetchCProductByExternalReferenceCode(
-								contextCompany.getCompanyId(),
 								productGroupProduct.
-									getProductExternalReferenceCode());
+									getProductExternalReferenceCode(),
+								contextCompany.getCompanyId());
 				}
 
 				if (cProduct == null) {
@@ -311,8 +292,11 @@ public class ProductGroupResourceImpl
 	@Reference
 	private CProductLocalService _cProductLocalService;
 
-	@Reference
-	private ProductGroupDTOConverter _productGroupDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter.ProductGroupDTOConverter)"
+	)
+	private DTOConverter<CommercePricingClass, ProductGroup>
+		_productGroupDTOConverter;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

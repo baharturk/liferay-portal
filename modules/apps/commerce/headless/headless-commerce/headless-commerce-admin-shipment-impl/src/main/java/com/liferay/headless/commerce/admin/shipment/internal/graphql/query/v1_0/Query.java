@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.shipment.internal.graphql.query.v1_0;
@@ -104,7 +95,25 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipment(shipmentId: ___){accountId, actions, carrier, createDate, expectedDate, id, modifiedDate, orderId, shipmentItems, shippingAddress, shippingAddressId, shippingDate, shippingMethodId, shippingOptionName, status, trackingNumber, userName}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentByExternalReferenceCode(externalReferenceCode: ___){accountId, actions, carrier, createDate, customFields, expectedDate, externalReferenceCode, id, modifiedDate, orderId, shipmentItems, shippingAddress, shippingAddressId, shippingDate, shippingMethodId, shippingOptionName, status, trackingNumber, trackingURL, userName}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(description = "Retrive information of the given Shipment.")
+	public Shipment shipmentByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_shipmentResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			shipmentResource ->
+				shipmentResource.getShipmentByExternalReferenceCode(
+					externalReferenceCode));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipment(shipmentId: ___){accountId, actions, carrier, createDate, customFields, expectedDate, externalReferenceCode, id, modifiedDate, orderId, shipmentItems, shippingAddress, shippingAddressId, shippingDate, shippingMethodId, shippingOptionName, status, trackingNumber, trackingURL, userName}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
 	public Shipment shipment(@GraphQLName("shipmentId") Long shipmentId)
@@ -119,7 +128,25 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentItem(shipmentItemId: ___){actions, createDate, id, modifiedDate, orderItemId, quantity, shipmentId, userName, warehouseId}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentByExternalReferenceCodeItem(externalReferenceCode: ___){actions, createDate, externalReferenceCode, id, modifiedDate, orderItemId, quantity, shipmentExternalReferenceCode, shipmentId, unitOfMeasureKey, userName, validateInventory, warehouseId}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public ShipmentItem shipmentByExternalReferenceCodeItem(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_shipmentItemResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			shipmentItemResource ->
+				shipmentItemResource.getShipmentByExternalReferenceCodeItem(
+					externalReferenceCode));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentItem(shipmentItemId: ___){actions, createDate, externalReferenceCode, id, modifiedDate, orderItemId, quantity, shipmentExternalReferenceCode, shipmentId, unitOfMeasureKey, userName, validateInventory, warehouseId}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
 	public ShipmentItem shipmentItem(
@@ -131,6 +158,27 @@ public class Query {
 			this::_populateResourceContext,
 			shipmentItemResource -> shipmentItemResource.getShipmentItem(
 				shipmentItemId));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentByExternalReferenceCodeItems(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public ShipmentItemPage shipmentByExternalReferenceCodeItems(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("pageSize") int pageSize,
+			@GraphQLName("page") int page)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_shipmentItemResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			shipmentItemResource -> new ShipmentItemPage(
+				shipmentItemResource.
+					getShipmentByExternalReferenceCodeItemsPage(
+						externalReferenceCode, Pagination.of(page, pageSize))));
 	}
 
 	/**
@@ -156,6 +204,25 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentByExternalReferenceCodeShippingAddress(externalReferenceCode: ___){city, countryISOCode, description, externalReferenceCode, id, latitude, longitude, name, phoneNumber, regionISOCode, street1, street2, street3, zip}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public ShippingAddress shipmentByExternalReferenceCodeShippingAddress(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_shippingAddressResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			shippingAddressResource ->
+				shippingAddressResource.
+					getShipmentByExternalReferenceCodeShippingAddress(
+						externalReferenceCode));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {shipmentShippingAddress(shipmentId: ___){city, countryISOCode, description, externalReferenceCode, id, latitude, longitude, name, phoneNumber, regionISOCode, street1, street2, street3, zip}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
@@ -168,6 +235,85 @@ public class Query {
 			this::_populateResourceContext,
 			shippingAddressResource ->
 				shippingAddressResource.getShipmentShippingAddress(shipmentId));
+	}
+
+	@GraphQLTypeExtension(Shipment.class)
+	public class GetShipmentByExternalReferenceCodeItemTypeExtension {
+
+		public GetShipmentByExternalReferenceCodeItemTypeExtension(
+			Shipment shipment) {
+
+			_shipment = shipment;
+		}
+
+		@GraphQLField
+		public ShipmentItem byExternalReferenceCodeItem() throws Exception {
+			return _applyComponentServiceObjects(
+				_shipmentItemResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				shipmentItemResource ->
+					shipmentItemResource.getShipmentByExternalReferenceCodeItem(
+						_shipment.getExternalReferenceCode()));
+		}
+
+		private Shipment _shipment;
+
+	}
+
+	@GraphQLTypeExtension(Shipment.class)
+	public class GetShipmentByExternalReferenceCodeItemsPageTypeExtension {
+
+		public GetShipmentByExternalReferenceCodeItemsPageTypeExtension(
+			Shipment shipment) {
+
+			_shipment = shipment;
+		}
+
+		@GraphQLField
+		public ShipmentItemPage byExternalReferenceCodeItems(
+				@GraphQLName("pageSize") int pageSize,
+				@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_shipmentItemResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				shipmentItemResource -> new ShipmentItemPage(
+					shipmentItemResource.
+						getShipmentByExternalReferenceCodeItemsPage(
+							_shipment.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Shipment _shipment;
+
+	}
+
+	@GraphQLTypeExtension(Shipment.class)
+	public class
+		GetShipmentByExternalReferenceCodeShippingAddressTypeExtension {
+
+		public GetShipmentByExternalReferenceCodeShippingAddressTypeExtension(
+			Shipment shipment) {
+
+			_shipment = shipment;
+		}
+
+		@GraphQLField
+		public ShippingAddress byExternalReferenceCodeShippingAddress()
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_shippingAddressResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				shippingAddressResource ->
+					shippingAddressResource.
+						getShipmentByExternalReferenceCodeShippingAddress(
+							_shipment.getExternalReferenceCode()));
+		}
+
+		private Shipment _shipment;
+
 	}
 
 	@GraphQLTypeExtension(ShipmentItem.class)
@@ -184,6 +330,31 @@ public class Query {
 				Query.this::_populateResourceContext,
 				shipmentResource -> shipmentResource.getShipment(
 					_shipmentItem.getShipmentId()));
+		}
+
+		private ShipmentItem _shipmentItem;
+
+	}
+
+	@GraphQLTypeExtension(ShipmentItem.class)
+	public class GetShipmentByExternalReferenceCodeTypeExtension {
+
+		public GetShipmentByExternalReferenceCodeTypeExtension(
+			ShipmentItem shipmentItem) {
+
+			_shipmentItem = shipmentItem;
+		}
+
+		@GraphQLField(
+			description = "Retrive information of the given Shipment."
+		)
+		public Shipment shipmentByExternalReferenceCode() throws Exception {
+			return _applyComponentServiceObjects(
+				_shipmentResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				shipmentResource ->
+					shipmentResource.getShipmentByExternalReferenceCode(
+						_shipmentItem.getExternalReferenceCode()));
 		}
 
 		private ShipmentItem _shipmentItem;
@@ -229,7 +400,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<Shipment> items;
@@ -262,7 +433,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<ShipmentItem> items;
@@ -295,7 +466,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<ShippingAddress> items;

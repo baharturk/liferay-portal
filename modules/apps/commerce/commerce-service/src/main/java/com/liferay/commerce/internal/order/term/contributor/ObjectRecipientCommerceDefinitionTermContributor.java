@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.order.term.contributor;
@@ -23,7 +14,6 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
@@ -55,10 +45,10 @@ public class ObjectRecipientCommerceDefinitionTermContributor
 		_userLocalService = userLocalService;
 
 		List<ObjectField> objectFields =
-			_objectFieldLocalService.getObjectFields(_objectDefinitionId);
+			objectFieldLocalService.getObjectFields(objectDefinitionId);
 
 		for (ObjectField objectField : objectFields) {
-			_languageKeys.put(
+			_objectFieldIds.put(
 				StringBundler.concat(
 					"[%",
 					StringUtil.toUpperCase(
@@ -72,11 +62,11 @@ public class ObjectRecipientCommerceDefinitionTermContributor
 	public String getFilledTerm(String term, Object object, Locale locale)
 		throws PortalException {
 
-		ObjectEntry objectEntry = null;
-
-		if (object instanceof ObjectEntry) {
-			objectEntry = (ObjectEntry)object;
+		if (!(object instanceof ObjectEntry)) {
+			return term;
 		}
+
+		ObjectEntry objectEntry = (ObjectEntry)object;
 
 		if (term.equals("[%OBJECT_ENTRY_CREATOR%]")) {
 			return String.valueOf(objectEntry.getUserId());
@@ -89,11 +79,10 @@ public class ObjectRecipientCommerceDefinitionTermContributor
 		if (term.startsWith("[%USER_GROUP_")) {
 			String[] termParts = term.split("_");
 
-			UserGroup userGroup = _userGroupLocalService.getUserGroup(
-				objectEntry.getCompanyId(),
-				StringUtil.removeChars(termParts[2], '%', ']'));
-
-			return _getUserIds(userGroup);
+			return _getUserIds(
+				_userGroupLocalService.getUserGroup(
+					objectEntry.getCompanyId(),
+					StringUtil.removeChars(termParts[2], '%', ']')));
 		}
 
 		ObjectField objectField = _objectFieldLocalService.fetchObjectField(
@@ -127,7 +116,7 @@ public class ObjectRecipientCommerceDefinitionTermContributor
 			return LanguageUtil.get(locale, "user-group-name");
 		}
 
-		long objectFieldId = _languageKeys.get(term);
+		long objectFieldId = _objectFieldIds.get(term);
 
 		ObjectField objectField = _objectFieldLocalService.fetchObjectField(
 			objectFieldId);
@@ -137,17 +126,17 @@ public class ObjectRecipientCommerceDefinitionTermContributor
 
 	@Override
 	public List<String> getTerms() {
-		return new ArrayList<>(_languageKeys.keySet());
+		return new ArrayList<>(_objectFieldIds.keySet());
 	}
 
 	private String _getUserIds(UserGroup userGroup) throws PortalException {
-		StringBundler sb = new StringBundler();
-
-		List<User> users = _userLocalService.getUserGroupUsers(
+		long[] userIds = _userGroupLocalService.getUserPrimaryKeys(
 			userGroup.getUserGroupId());
 
-		for (User user : users) {
-			sb.append(user.getUserId());
+		StringBundler sb = new StringBundler();
+
+		for (long userId : userIds) {
+			sb.append(userId);
 			sb.append(",");
 		}
 
@@ -157,14 +146,14 @@ public class ObjectRecipientCommerceDefinitionTermContributor
 	private static final Log _log = LogFactoryUtil.getLog(
 		ObjectRecipientCommerceDefinitionTermContributor.class);
 
-	private final Map<String, Long> _languageKeys = HashMapBuilder.put(
+	private final long _objectDefinitionId;
+	private final Map<String, Long> _objectFieldIds = HashMapBuilder.put(
 		"[%OBJECT_ENTRY_CREATOR%]", 0L
 	).put(
 		"[%OBJECT_ENTRY_ID%]", 0L
 	).put(
 		"[%USER_GROUP_NAME%]", 0L
 	).build();
-	private final long _objectDefinitionId;
 	private final ObjectFieldLocalService _objectFieldLocalService;
 	private final UserGroupLocalService _userGroupLocalService;
 	private final UserLocalService _userLocalService;

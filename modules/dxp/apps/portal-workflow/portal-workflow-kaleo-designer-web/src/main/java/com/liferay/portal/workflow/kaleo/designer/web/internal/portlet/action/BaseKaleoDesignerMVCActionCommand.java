@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.action;
@@ -33,11 +24,10 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.workflow.WorkflowDefinitionManager;
 import com.liferay.portal.kernel.workflow.WorkflowException;
-import com.liferay.portal.workflow.kaleo.designer.web.internal.util.KaleoDesignerUtil;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalService;
+import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
 
 import java.util.Locale;
 import java.util.Map;
@@ -87,12 +77,12 @@ public abstract class BaseKaleoDesignerMVCActionCommand
 			return false;
 		}
 		catch (PortletException portletException) {
-			_log.error(portletException, portletException);
+			_log.error(portletException);
 
 			throw portletException;
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw new PortletException(exception);
 		}
@@ -158,7 +148,8 @@ public abstract class BaseKaleoDesignerMVCActionCommand
 		LiferayPortletURL portletURL = PortletURLFactoryUtil.create(
 			actionRequest, themeDisplay.getPpid(), PortletRequest.RENDER_PHASE);
 
-		portletURL.setParameter("mvcPath", KaleoDesignerUtil.getEditJspPath());
+		portletURL.setParameter(
+			"mvcPath", "/designer/edit_workflow_definition.jsp");
 
 		String redirect = ParamUtil.getString(actionRequest, "redirect");
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -278,6 +269,18 @@ public class LayoutServiceUtil {
 			groupId, folderName, fileName, inputStream, mimeType);
 	}
 
+	public static Layout copyLayout(
+			long groupId, boolean privateLayout,
+			Map<java.util.Locale, String> localeNamesMap, boolean hidden,
+			boolean system, boolean copyPermissions, long sourcePlid,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().copyLayout(
+			groupId, privateLayout, localeNamesMap, hidden, system,
+			copyPermissions, sourcePlid, serviceContext);
+	}
+
 	/**
 	 * Deletes the layout with the primary key, also deleting the layout's child
 	 * layouts, and associated resources.
@@ -481,6 +484,15 @@ public class LayoutServiceUtil {
 	}
 
 	public static List<Layout> getLayouts(
+			long groupId, boolean privateLayout, long parentLayoutId, int start,
+			int end)
+		throws PortalException {
+
+		return getService().getLayouts(
+			groupId, privateLayout, parentLayoutId, start, end);
+	}
+
+	public static List<Layout> getLayouts(
 			long groupId, boolean privateLayout, String type)
 		throws PortalException {
 
@@ -633,7 +645,7 @@ public class LayoutServiceUtil {
 	 DestinationNames#LAYOUTS_LOCAL_PUBLISHER}). See {@link
 	 DestinationNames}.
 	 * @param cronText the cron text. See {@link
-	 com.liferay.portal.kernel.cal.RecurrenceSerializer #toCronText}
+	 com.liferay.portal.kernel.scheduler.CronTextUtil#getCronText}
 	 * @param schedulerStartDate the scheduler start date
 	 * @param schedulerEndDate the scheduler end date
 	 * @param description the scheduler description
@@ -675,7 +687,7 @@ public class LayoutServiceUtil {
 	 DestinationNames#LAYOUTS_LOCAL_PUBLISHER}). See {@link
 	 DestinationNames}.
 	 * @param cronText the cron text. See {@link
-	 com.liferay.portal.kernel.cal.RecurrenceSerializer #toCronText}
+	 com.liferay.portal.kernel.scheduler.CronTextUtil#getCronText}
 	 * @param schedulerStartDate the scheduler start date
 	 * @param schedulerEndDate the scheduler end date
 	 * @param description the scheduler description
@@ -783,8 +795,9 @@ public class LayoutServiceUtil {
 	 String)}.
 	 * @param hasIconImage if the layout has a custom icon image
 	 * @param iconBytes the byte array of the layout's new icon image
-	 * @param masterLayoutPlid the primary key of the master layout
 	 * @param styleBookEntryId the primary key of the style book entry
+	 * @param faviconFileEntryId the file entry ID of the layout's new favicon
+	 * @param masterLayoutPlid the primary key of the master layout
 	 * @param serviceContext the service context to be applied. Can set the
 	 modification date and expando bridge attributes for the layout.
 	 * @return the updated layout
@@ -798,15 +811,16 @@ public class LayoutServiceUtil {
 			Map<java.util.Locale, String> keywordsMap,
 			Map<java.util.Locale, String> robotsMap, String type,
 			boolean hidden, Map<java.util.Locale, String> friendlyURLMap,
-			boolean hasIconImage, byte[] iconBytes, long masterLayoutPlid,
-			long styleBookEntryId, ServiceContext serviceContext)
+			boolean hasIconImage, byte[] iconBytes, long styleBookEntryId,
+			long faviconFileEntryId, long masterLayoutPlid,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateLayout(
 			groupId, privateLayout, layoutId, parentLayoutId, localeNamesMap,
 			localeTitlesMap, descriptionMap, keywordsMap, robotsMap, type,
-			hidden, friendlyURLMap, hasIconImage, iconBytes, masterLayoutPlid,
-			styleBookEntryId, serviceContext);
+			hidden, friendlyURLMap, hasIconImage, iconBytes, styleBookEntryId,
+			faviconFileEntryId, masterLayoutPlid, serviceContext);
 	}
 
 	/**
@@ -1006,6 +1020,10 @@ public class LayoutServiceUtil {
 
 	public static LayoutService getService() {
 		return _service;
+	}
+
+	public static void setService(LayoutService service) {
+		_service = service;
 	}
 
 	private static volatile LayoutService _service;

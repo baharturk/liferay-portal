@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.permission;
@@ -29,7 +20,6 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.VirtualLayout;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.security.permission.BaseModelPermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.UserBag;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
@@ -40,16 +30,13 @@ import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.LayoutPermission;
-import com.liferay.portal.kernel.service.permission.LayoutPrototypePermissionUtil;
 import com.liferay.portal.kernel.service.permission.LayoutSetPrototypePermissionUtil;
 import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
-import com.liferay.portal.kernel.service.permission.UserGroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
 import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.workflow.permission.WorkflowPermissionUtil;
 import com.liferay.portal.util.LayoutTypeControllerTracker;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.sites.kernel.util.SitesUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -64,8 +51,7 @@ import java.util.Objects;
 @OSGiBeanProperties(
 	property = "model.class.name=com.liferay.portal.kernel.model.Layout"
 )
-public class LayoutPermissionImpl
-	implements BaseModelPermissionChecker, LayoutPermission {
+public class LayoutPermissionImpl implements LayoutPermission {
 
 	@Override
 	public void check(
@@ -120,12 +106,47 @@ public class LayoutPermissionImpl
 	}
 
 	@Override
-	public void checkBaseModel(
-			PermissionChecker permissionChecker, long groupId, long primaryKey,
-			String actionId)
+	public void checkLayoutRestrictedUpdatePermission(
+			PermissionChecker permissionChecker, Layout layout)
 		throws PortalException {
 
-		check(permissionChecker, primaryKey, actionId);
+		if (!containsLayoutRestrictedUpdatePermission(
+				permissionChecker, layout)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, Layout.class.getName(), layout.getPlid(),
+				ActionKeys.UPDATE);
+		}
+	}
+
+	@Override
+	public void checkLayoutRestrictedUpdatePermission(
+			PermissionChecker permissionChecker, long plid)
+		throws PortalException {
+
+		checkLayoutRestrictedUpdatePermission(
+			permissionChecker, LayoutLocalServiceUtil.getLayout(plid));
+	}
+
+	@Override
+	public void checkLayoutUpdatePermission(
+			PermissionChecker permissionChecker, Layout layout)
+		throws PortalException {
+
+		if (!containsLayoutUpdatePermission(permissionChecker, layout)) {
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, Layout.class.getName(), layout.getPlid(),
+				ActionKeys.UPDATE);
+		}
+	}
+
+	@Override
+	public void checkLayoutUpdatePermission(
+			PermissionChecker permissionChecker, long plid)
+		throws PortalException {
+
+		checkLayoutUpdatePermission(
+			permissionChecker, LayoutLocalServiceUtil.getLayout(plid));
 	}
 
 	@Override
@@ -167,10 +188,10 @@ public class LayoutPermissionImpl
 			boolean privateLayout, long layoutId, String actionId)
 		throws PortalException {
 
-		Layout layout = LayoutLocalServiceUtil.getLayout(
-			groupId, privateLayout, layoutId);
-
-		return contains(permissionChecker, layout, actionId);
+		return contains(
+			permissionChecker,
+			LayoutLocalServiceUtil.getLayout(groupId, privateLayout, layoutId),
+			actionId);
 	}
 
 	@Override
@@ -181,6 +202,60 @@ public class LayoutPermissionImpl
 		return contains(
 			permissionChecker, LayoutLocalServiceUtil.getLayout(plid),
 			actionId);
+	}
+
+	@Override
+	public boolean containsLayoutRestrictedUpdatePermission(
+			PermissionChecker permissionChecker, Layout layout)
+		throws PortalException {
+
+		if (contains(permissionChecker, layout, ActionKeys.UPDATE) ||
+			contains(
+				permissionChecker, layout, ActionKeys.UPDATE_LAYOUT_BASIC) ||
+			contains(
+				permissionChecker, layout, ActionKeys.UPDATE_LAYOUT_LIMITED)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean containsLayoutRestrictedUpdatePermission(
+			PermissionChecker permissionChecker, long plid)
+		throws PortalException {
+
+		return containsLayoutRestrictedUpdatePermission(
+			permissionChecker, LayoutLocalServiceUtil.getLayout(plid));
+	}
+
+	@Override
+	public boolean containsLayoutUpdatePermission(
+			PermissionChecker permissionChecker, Layout layout)
+		throws PortalException {
+
+		if (contains(permissionChecker, layout, ActionKeys.UPDATE) ||
+			contains(
+				permissionChecker, layout, ActionKeys.UPDATE_LAYOUT_BASIC) ||
+			contains(
+				permissionChecker, layout, ActionKeys.UPDATE_LAYOUT_CONTENT) ||
+			contains(
+				permissionChecker, layout, ActionKeys.UPDATE_LAYOUT_LIMITED)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean containsLayoutUpdatePermission(
+			PermissionChecker permissionChecker, long plid)
+		throws PortalException {
+
+		return containsLayoutUpdatePermission(
+			permissionChecker, LayoutLocalServiceUtil.getLayout(plid));
 	}
 
 	@Override
@@ -209,7 +284,9 @@ public class LayoutPermissionImpl
 		}
 
 		if (actionId.equals(ActionKeys.ADD_LAYOUT)) {
-			if (!SitesUtil.isLayoutSortable(layout)) {
+			if ((layout instanceof VirtualLayout) ||
+				!layout.isLayoutSortable()) {
+
 				return false;
 			}
 
@@ -221,7 +298,8 @@ public class LayoutPermissionImpl
 		}
 
 		if (actionId.equals(ActionKeys.DELETE) &&
-			!SitesUtil.isLayoutDeleteable(layout)) {
+			((layout instanceof VirtualLayout) ||
+			 !layout.isLayoutDeleteable())) {
 
 			return false;
 		}
@@ -297,7 +375,7 @@ public class LayoutPermissionImpl
 
 		User user = permissionChecker.getUser();
 
-		if (!user.isDefaultUser() && !group.isUser()) {
+		if (!user.isGuestUser() && !group.isUser()) {
 
 			// This is new way of doing an ownership check without having to
 			// have a userId field on the model. When the instance model was
@@ -354,7 +432,8 @@ public class LayoutPermissionImpl
 
 		if ((ActionKeys.CUSTOMIZE.equals(actionId) ||
 			 ActionKeys.UPDATE.equals(actionId)) &&
-			!SitesUtil.isLayoutUpdateable(layout)) {
+			((layout instanceof VirtualLayout) ||
+			 !layout.isLayoutUpdateable())) {
 
 			return true;
 		}
@@ -596,8 +675,6 @@ public class LayoutPermissionImpl
 				if (count >= 0) {
 					return true;
 				}
-
-				return false;
 			}
 			catch (PortalException | RuntimeException exception) {
 				throw exception;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.internal.dto.v1_0.converter;
@@ -31,7 +22,8 @@ import com.liferay.headless.admin.user.internal.dto.v1_0.util.EmailAddressUtil;
 import com.liferay.headless.admin.user.internal.dto.v1_0.util.PhoneUtil;
 import com.liferay.headless.admin.user.internal.dto.v1_0.util.PostalAddressUtil;
 import com.liferay.headless.admin.user.internal.dto.v1_0.util.WebUrlUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.ListType;
 import com.liferay.portal.kernel.model.OrgLabor;
@@ -52,15 +44,13 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
+import java.util.HashMap;
 import java.util.Locale;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -69,8 +59,12 @@ import org.osgi.service.component.annotations.Reference;
  * @author Javier Gamarra
  */
 @Component(
-	property = "dto.class.name=com.liferay.portal.kernel.model.Organization",
-	service = {DTOConverter.class, OrganizationResourceDTOConverter.class}
+	property = {
+		"application.name=Liferay.Headless.Admin.User",
+		"dto.class.name=com.liferay.portal.kernel.model.Organization",
+		"version=v1.0"
+	},
+	service = DTOConverter.class
 )
 public class OrganizationResourceDTOConverter
 	implements DTOConverter
@@ -87,8 +81,8 @@ public class OrganizationResourceDTOConverter
 		throws Exception {
 
 		com.liferay.portal.kernel.model.Organization organization =
-			_organizationLocalService.fetchOrganizationByReferenceCode(
-				CompanyThreadLocal.getCompanyId(), externalReferenceCode);
+			_organizationLocalService.fetchOrganizationByExternalReferenceCode(
+				externalReferenceCode, CompanyThreadLocal.getCompanyId());
 
 		if (organization == null) {
 			organization = _organizationService.getOrganization(
@@ -124,6 +118,7 @@ public class OrganizationResourceDTOConverter
 					dtoConverterContext.getLocale());
 				dateCreated = organization.getCreateDate();
 				dateModified = organization.getModifiedDate();
+				externalReferenceCode = organization.getExternalReferenceCode();
 				id = String.valueOf(organization.getOrganizationId());
 				keywords = ListUtil.toArray(
 					_assetTagLocalService.getTags(
@@ -152,19 +147,22 @@ public class OrganizationResourceDTOConverter
 									return null;
 								}
 
-								Set<Locale> locales =
-									LanguageUtil.getCompanyAvailableLocales(
-										organization.getCompanyId());
-
-								Stream<Locale> localesStream = locales.stream();
+								Map<String, String> countryNames =
+									new HashMap<>();
 
 								Country country = _countryService.getCountry(
 									organization.getCountryId());
 
-								return localesStream.collect(
-									Collectors.toMap(
-										LocaleUtil::toBCP47LanguageId,
-										country::getName));
+								for (Locale locale :
+										_language.getCompanyAvailableLocales(
+											organization.getCompanyId())) {
+
+									countryNames.put(
+										LocaleUtil.toBCP47LanguageId(locale),
+										country.getName());
+								}
+
+								return countryNames;
 							});
 						setAddressRegion(
 							() -> {
@@ -182,7 +180,7 @@ public class OrganizationResourceDTOConverter
 				name = organization.getName();
 				numberOfAccounts =
 					_accountEntryOrganizationRelLocalService.
-						getAccountEntryOrganizationRelsByOrganizationIdCount(
+						getAccountEntryOrganizationRelsCountByOrganizationId(
 							organization.getOrganizationId());
 				numberOfOrganizations =
 					_organizationService.getOrganizationsCount(
@@ -226,6 +224,7 @@ public class OrganizationResourceDTOConverter
 						organization.getOrganizationId()),
 					OrganizationResourceDTOConverter.this::_toService,
 					Service.class);
+				treePath = organization.getTreePath();
 
 				setImage(
 					() -> {
@@ -272,7 +271,7 @@ public class OrganizationResourceDTOConverter
 	}
 
 	private Service _toService(OrgLabor orgLabor) throws Exception {
-		ListType listType = orgLabor.getType();
+		ListType listType = orgLabor.getListType();
 
 		return new Service() {
 			{
@@ -316,6 +315,9 @@ public class OrganizationResourceDTOConverter
 
 	@Reference
 	private EmailAddressService _emailAddressService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private OrganizationLocalService _organizationLocalService;

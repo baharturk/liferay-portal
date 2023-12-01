@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -20,6 +11,8 @@ import './DefaultPage.scss';
 import DefaultPageHeader from './DefaultPageHeader';
 
 const DefaultPage: React.FC<IProps> = ({
+	dataEngineModule,
+	displayChartAsTable,
 	formDescription,
 	formReportDataURL,
 	formTitle,
@@ -34,53 +27,64 @@ const DefaultPage: React.FC<IProps> = ({
 		const portalPopup = document.querySelector('.portal-popup');
 		portalPopup?.classList.add('lfr-ddm__default-page-background');
 
-		return () =>
+		return () => {
 			portalPopup?.classList.remove('lfr-ddm__default-page-background');
+		};
 	}, []);
 
 	return (
-		<div className="container-fluid container-fluid-max-xl lfr-ddm__default-page">
-			<DefaultPageHeader
-				description={formDescription}
-				title={formTitle}
-			/>
-
-			{showReport ? (
-				<PartialResults
-					hasDescription={!!formDescription}
-					onShow={() => setShowReport(false)}
-					reportDataURL={formReportDataURL as string}
+		<>
+			<div className="container-fluid container-fluid-max-xl lfr-ddm__default-page">
+				<DefaultPageHeader
+					description={formDescription}
+					onClickBack={
+						showReport ? () => setShowReport(false) : undefined
+					}
+					title={formTitle}
 				/>
-			) : (
-				<div className="lfr-ddm__default-page-container">
-					<h2 className="lfr-ddm__default-page-title">{pageTitle}</h2>
 
-					<p className="lfr-ddm__default-page-description">
-						{pageDescription}
-					</p>
+				{showReport ? (
+					<PartialResults
+						dataEngineModule={dataEngineModule}
+						displayChartAsTable={displayChartAsTable}
+						reportDataURL={formReportDataURL as string}
+					/>
+				) : (
+					<div className="lfr-ddm__default-page-container">
+						<div className="lfr-ddm__default-page-title">
+							{pageTitle}
+						</div>
 
-					<div className="lfr-ddm__default-page-buttons">
-						{showSubmitAgainButton && (
-							<ClayButton
-								displayType="secondary"
-								onClick={() => window.location.reload()}
-							>
-								{Liferay.Language.get('submit-again')}
-							</ClayButton>
-						)}
+						<p className="lfr-ddm__default-page-description">
+							{pageDescription}
+						</p>
 
-						{showPartialResultsToRespondents && formReportDataURL && (
-							<ClayButton
-								displayType="secondary"
-								onClick={() => setShowReport(true)}
-							>
-								{Liferay.Language.get('see-partial-results')}
-							</ClayButton>
-						)}
+						<div className="lfr-ddm__default-page-buttons">
+							{showSubmitAgainButton && (
+								<ClayButton
+									displayType="secondary"
+									onClick={() => window.location.reload()}
+								>
+									{Liferay.Language.get('submit-again')}
+								</ClayButton>
+							)}
+
+							{showPartialResultsToRespondents &&
+								formReportDataURL && (
+									<ClayButton
+										displayType="secondary"
+										onClick={() => setShowReport(true)}
+									>
+										{Liferay.Language.get(
+											'preview-existing-submissions'
+										)}
+									</ClayButton>
+								)}
+						</div>
 					</div>
-				</div>
-			)}
-		</div>
+				)}
+			</div>
+		</>
 	);
 };
 
@@ -89,6 +93,8 @@ DefaultPage.displayName = 'DefaultPage';
 export default DefaultPage;
 
 interface IProps {
+	dataEngineModule: string;
+	displayChartAsTable: boolean;
 	formDescription?: string;
 	formReportDataURL?: string;
 	formTitle: string;

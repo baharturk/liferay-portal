@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.permission.test;
@@ -21,6 +12,7 @@ import com.liferay.portal.kernel.exception.NoSuchResourcePermissionException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.ResourceAction;
@@ -34,10 +26,12 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.TeamLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.persistence.PortletPersistence;
@@ -51,6 +45,7 @@ import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
@@ -143,7 +138,7 @@ public class PermissionCheckerTest {
 		TeamLocalServiceUtil.addUserTeam(_user.getUserId(), team.getTeamId());
 
 		JournalFolder journalFolder = JournalFolderLocalServiceUtil.addFolder(
-			_user.getUserId(), _group.getGroupId(), 0,
+			null, _user.getUserId(), _group.getGroupId(), 0,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			ServiceContextTestUtil.getServiceContext());
 
@@ -239,6 +234,58 @@ public class PermissionCheckerTest {
 				ResourceConstants.SCOPE_INDIVIDUAL,
 				journalFolder.getFolderId());
 		}
+	}
+
+	@Test
+	public void testGetGuestUserRoleIdsDoesNotIncludeGuestGroupRole()
+		throws Exception {
+
+		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
+			_userLocalService.getGuestUser(TestPropsValues.getCompanyId()));
+
+		_role = RoleTestUtil.addRole(
+			RandomTestUtil.randomString(), RoleConstants.TYPE_REGULAR);
+
+		Group guestGroup = _groupLocalService.getGroup(
+			TestPropsValues.getCompanyId(), GroupConstants.GUEST);
+
+		_groupLocalService.addRoleGroup(_role.getRoleId(), guestGroup);
+
+		Role guestRole = _roleLocalService.getRole(
+			TestPropsValues.getCompanyId(), RoleConstants.GUEST);
+
+		Assert.assertArrayEquals(
+			new long[] {guestRole.getRoleId()},
+			permissionChecker.getGuestUserRoleIds());
+	}
+
+	@Test
+	public void testGetRoleIds() throws Exception {
+		_user = UserTestUtil.addUser();
+
+		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
+			_user);
+
+		permissionChecker.getRoleIds(
+			_user.getUserId(), GroupConstants.DEFAULT_LIVE_GROUP_ID);
+
+		_role = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+
+		_userLocalService.addRoleUser(_role.getRoleId(), _user);
+
+		Assert.assertTrue(
+			ArrayUtil.contains(
+				permissionChecker.getRoleIds(
+					_user.getUserId(), GroupConstants.DEFAULT_LIVE_GROUP_ID),
+				_role.getRoleId()));
+
+		_userLocalService.deleteRoleUser(_role.getRoleId(), _user);
+
+		Assert.assertFalse(
+			ArrayUtil.contains(
+				permissionChecker.getRoleIds(
+					_user.getUserId(), GroupConstants.DEFAULT_LIVE_GROUP_ID),
+				_role.getRoleId()));
 	}
 
 	@Test
@@ -736,7 +783,7 @@ public class PermissionCheckerTest {
 			_user);
 
 		JournalFolder journalFolder = JournalFolderLocalServiceUtil.addFolder(
-			_user.getUserId(), _group.getGroupId(), 0,
+			null, _user.getUserId(), _group.getGroupId(), 0,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			ServiceContextTestUtil.getServiceContext());
 
@@ -1229,6 +1276,9 @@ public class PermissionCheckerTest {
 	@DeleteAfterTestRun
 	private Group _group;
 
+	@Inject
+	private GroupLocalService _groupLocalService;
+
 	@DeleteAfterTestRun
 	private final List<Group> _groups = new ArrayList<>();
 
@@ -1252,6 +1302,9 @@ public class PermissionCheckerTest {
 
 	@DeleteAfterTestRun
 	private Role _role;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
 
 	@DeleteAfterTestRun
 	private User _user;

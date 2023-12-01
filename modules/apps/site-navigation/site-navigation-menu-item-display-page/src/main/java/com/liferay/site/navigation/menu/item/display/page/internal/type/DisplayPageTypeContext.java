@@ -1,34 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.menu.item.display.page.internal.type;
 
 import com.liferay.info.item.InfoItemClassDetails;
 import com.liferay.info.item.InfoItemReference;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemDetailsProvider;
 import com.liferay.info.item.provider.InfoItemFormVariationsProvider;
+import com.liferay.info.permission.provider.InfoPermissionProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageInfoItemFieldValuesProvider;
-import com.liferay.layout.display.page.LayoutDisplayPageInfoItemFieldValuesProviderTracker;
+import com.liferay.layout.display.page.LayoutDisplayPageInfoItemFieldValuesProviderRegistry;
 import com.liferay.layout.display.page.LayoutDisplayPageMultiSelectionProvider;
-import com.liferay.layout.display.page.LayoutDisplayPageMultiSelectionProviderTracker;
+import com.liferay.layout.display.page.LayoutDisplayPageMultiSelectionProviderRegistry;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
-import com.liferay.layout.display.page.LayoutDisplayPageProviderTracker;
+import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 
 import java.util.Locale;
-import java.util.Optional;
 
 /**
  * @author Lourdes Fernández Besada
@@ -36,20 +29,20 @@ import java.util.Optional;
 public class DisplayPageTypeContext {
 
 	public DisplayPageTypeContext(
-		String className, InfoItemServiceTracker infoItemServiceTracker,
-		LayoutDisplayPageInfoItemFieldValuesProviderTracker
-			layoutDisplayPageInfoItemFieldValuesProviderTracker,
-		LayoutDisplayPageMultiSelectionProviderTracker
-			layoutDisplayPageMultiSelectionProviderTracker,
-		LayoutDisplayPageProviderTracker layoutDisplayPageProviderTracker) {
+		String className, InfoItemServiceRegistry infoItemServiceRegistry,
+		LayoutDisplayPageInfoItemFieldValuesProviderRegistry
+			layoutDisplayPageInfoItemFieldValuesProviderRegistry,
+		LayoutDisplayPageMultiSelectionProviderRegistry
+			layoutDisplayPageMultiSelectionProviderRegistry,
+		LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry) {
 
 		_className = className;
-		_infoItemServiceTracker = infoItemServiceTracker;
-		_layoutDisplayPageInfoItemFieldValuesProviderTracker =
-			layoutDisplayPageInfoItemFieldValuesProviderTracker;
-		_layoutDisplayPageMultiSelectionProviderTracker =
-			layoutDisplayPageMultiSelectionProviderTracker;
-		_layoutDisplayPageProviderTracker = layoutDisplayPageProviderTracker;
+		_infoItemServiceRegistry = infoItemServiceRegistry;
+		_layoutDisplayPageInfoItemFieldValuesProviderRegistry =
+			layoutDisplayPageInfoItemFieldValuesProviderRegistry;
+		_layoutDisplayPageMultiSelectionProviderRegistry =
+			layoutDisplayPageMultiSelectionProviderRegistry;
+		_layoutDisplayPageProviderRegistry = layoutDisplayPageProviderRegistry;
 	}
 
 	public String getClassName() {
@@ -58,7 +51,7 @@ public class DisplayPageTypeContext {
 
 	public InfoItemClassDetails getInfoItemClassDetails() {
 		InfoItemDetailsProvider<?> infoItemDetailsProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
+			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemDetailsProvider.class, _className);
 
 		if (infoItemDetailsProvider == null) {
@@ -71,7 +64,7 @@ public class DisplayPageTypeContext {
 	public InfoItemFormVariationsProvider<?>
 		getInfoItemFormVariationsProvider() {
 
-		return _infoItemServiceTracker.getFirstInfoItemService(
+		return _infoItemServiceRegistry.getFirstInfoItemService(
 			InfoItemFormVariationsProvider.class, _className);
 	}
 
@@ -79,26 +72,24 @@ public class DisplayPageTypeContext {
 		InfoItemClassDetails infoItemClassDetails = getInfoItemClassDetails();
 
 		if (infoItemClassDetails == null) {
-			return null;
+			return StringPool.BLANK;
 		}
 
 		return infoItemClassDetails.getLabel(locale);
 	}
 
-	public Optional<LayoutDisplayPageInfoItemFieldValuesProvider<?>>
-		getLayoutDisplayPageInfoItemFieldValuesProviderOptional() {
+	public LayoutDisplayPageInfoItemFieldValuesProvider<?>
+		getLayoutDisplayPageInfoItemFieldValuesProvider() {
 
-		return Optional.ofNullable(
-			_layoutDisplayPageInfoItemFieldValuesProviderTracker.
-				getLayoutDisplayPageInfoItemFieldValuesProvider(_className));
+		return _layoutDisplayPageInfoItemFieldValuesProviderRegistry.
+			getLayoutDisplayPageInfoItemFieldValuesProvider(_className);
 	}
 
-	public Optional<LayoutDisplayPageMultiSelectionProvider<?>>
-		getLayoutDisplayPageMultiSelectionProviderOptional() {
+	public LayoutDisplayPageMultiSelectionProvider<?>
+		getLayoutDisplayPageMultiSelectionProvider() {
 
-		return Optional.ofNullable(
-			_layoutDisplayPageMultiSelectionProviderTracker.
-				getLayoutDisplayPageMultiSelectionProvider(_className));
+		return _layoutDisplayPageMultiSelectionProviderRegistry.
+			getLayoutDisplayPageMultiSelectionProvider(_className);
 	}
 
 	public LayoutDisplayPageObjectProvider<?>
@@ -116,17 +107,46 @@ public class DisplayPageTypeContext {
 	}
 
 	public LayoutDisplayPageProvider<?> getLayoutDisplayPageProvider() {
-		return _layoutDisplayPageProviderTracker.
+		return _layoutDisplayPageProviderRegistry.
 			getLayoutDisplayPageProviderByClassName(_className);
 	}
 
+	public boolean isAvailable() {
+		InfoItemClassDetails infoItemClassDetails = getInfoItemClassDetails();
+
+		if (infoItemClassDetails == null) {
+			return false;
+		}
+
+		InfoItemDetailsProvider<?> infoItemDetailsProvider =
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemDetailsProvider.class, _className);
+
+		if (infoItemDetailsProvider == null) {
+			return false;
+		}
+
+		InfoPermissionProvider infoPermissionProvider =
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoPermissionProvider.class, _className);
+
+		if ((infoPermissionProvider != null) &&
+			!infoPermissionProvider.hasViewPermission(
+				PermissionThreadLocal.getPermissionChecker())) {
+
+			return false;
+		}
+
+		return true;
+	}
+
 	private final String _className;
-	private final InfoItemServiceTracker _infoItemServiceTracker;
-	private final LayoutDisplayPageInfoItemFieldValuesProviderTracker
-		_layoutDisplayPageInfoItemFieldValuesProviderTracker;
-	private final LayoutDisplayPageMultiSelectionProviderTracker
-		_layoutDisplayPageMultiSelectionProviderTracker;
-	private final LayoutDisplayPageProviderTracker
-		_layoutDisplayPageProviderTracker;
+	private final InfoItemServiceRegistry _infoItemServiceRegistry;
+	private final LayoutDisplayPageInfoItemFieldValuesProviderRegistry
+		_layoutDisplayPageInfoItemFieldValuesProviderRegistry;
+	private final LayoutDisplayPageMultiSelectionProviderRegistry
+		_layoutDisplayPageMultiSelectionProviderRegistry;
+	private final LayoutDisplayPageProviderRegistry
+		_layoutDisplayPageProviderRegistry;
 
 }

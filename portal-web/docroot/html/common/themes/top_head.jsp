@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,41 +11,53 @@
 
 <liferay-util:dynamic-include key="/html/common/themes/top_head.jsp#pre" />
 
-<link href="<%= themeDisplay.getPathThemeImages() %>/<%= PropsValues.THEME_SHORTCUT_ICON %>" rel="icon" />
+<link href="<%= themeDisplay.getFaviconURL() %>" rel="apple-touch-icon" />
+<link href="<%= themeDisplay.getFaviconURL() %>" rel="icon" />
 
 <%-- Portal CSS --%>
 
-<link class="lfr-css-file" data-senna-track="temporary" href="<%= HtmlUtil.escapeAttribute(PortalUtil.getStaticResourceURL(request, themeDisplay.getPathThemeCss() + "/clay.css")) %>" id="liferayAUICSS" rel="stylesheet" type="text/css" />
+<link class="lfr-css-file" data-senna-track="temporary" href="<%= HtmlUtil.escapeAttribute(themeDisplay.getClayCSSURL()) %>" id="liferayAUICSS" rel="stylesheet" type="text/css" />
 
 <%
-List<Portlet> portlets = null;
+PortletTreeSet portletTreeSet = null;
 
 if (layoutTypePortlet != null) {
-	portlets = layoutTypePortlet.getAllPortlets();
+	portletTreeSet = new PortletTreeSet(layoutTypePortlet.getAllPortlets());
 }
 
 if (layout != null) {
 	String ppid = ParamUtil.getString(request, "p_p_id");
 
-	if ((layout.isTypeEmbedded() || layout.isTypePortlet()) && (themeDisplay.isStateMaximized() || themeDisplay.isStatePopUp() || (layout.isSystem() && Objects.equals(layout.getFriendlyURL(), PropsValues.CONTROL_PANEL_LAYOUT_FRIENDLY_URL)))) {
+	if (layout.isTypeAssetDisplay() || layout.isTypeContent()) {
+		List<com.liferay.portal.kernel.model.PortletPreferences> portletPreferencesList = PortletPreferencesLocalServiceUtil.getPortletPreferences(PortletKeys.PREFS_OWNER_ID_DEFAULT, PortletKeys.PREFS_OWNER_TYPE_LAYOUT, layout.getPlid());
+
+		for (com.liferay.portal.kernel.model.PortletPreferences portletPreferences : portletPreferencesList) {
+			Portlet portlet = PortletLocalServiceUtil.getPortletById(company.getCompanyId(), portletPreferences.getPortletId());
+
+			if ((portlet == null) || !portlet.isActive() || portlet.isUndeployedPortlet()) {
+				continue;
+			}
+
+			portletTreeSet.add(portlet);
+		}
+	}
+	else if ((layout.isTypeEmbedded() || layout.isTypePortlet()) && (themeDisplay.isStateMaximized() || themeDisplay.isStatePopUp() || (layout.isSystem() && Objects.equals(layout.getFriendlyURL(), PropsValues.CONTROL_PANEL_LAYOUT_FRIENDLY_URL)))) {
 		if (Validator.isNotNull(ppid)) {
 			Portlet portlet = PortletLocalServiceUtil.getPortletById(company.getCompanyId(), ppid);
 
-			if ((portlet != null) && !portlets.contains(portlet)) {
-				portlets.add(portlet);
+			if ((portlet != null) && !portletTreeSet.contains(portlet)) {
+				portletTreeSet.add(portlet);
 			}
 		}
 	}
 	else if (layout.isTypeControlPanel() || layout.isTypePanel()) {
-		portlets = new ArrayList<Portlet>();
-
-		portlets.addAll(layout.getEmbeddedPortlets());
+		portletTreeSet = new PortletTreeSet(layout.getEmbeddedPortlets());
 
 		if (Validator.isNotNull(ppid)) {
 			Portlet portlet = PortletLocalServiceUtil.getPortletById(company.getCompanyId(), ppid);
 
-			if ((portlet != null) && !portlets.contains(portlet)) {
-				portlets.add(portlet);
+			if ((portlet != null) && !portletTreeSet.contains(portlet)) {
+				portletTreeSet.add(portlet);
 			}
 		}
 	}
@@ -64,12 +67,12 @@ if (layout != null) {
 	if (Validator.isNotNull(portletResource)) {
 		Portlet portlet = PortletLocalServiceUtil.getPortletById(company.getCompanyId(), portletResource);
 
-		if ((portlet != null) && !portlets.contains(portlet)) {
-			portlets.add(portlet);
+		if ((portlet != null) && !portletTreeSet.contains(portlet)) {
+			portletTreeSet.add(portlet);
 		}
 	}
 
-	Iterator<Portlet> portletsIterator = portlets.iterator();
+	Iterator<Portlet> portletsIterator = portletTreeSet.iterator();
 
 	LayoutTypeAccessPolicy layoutTypeAccessPolicy = LayoutTypeAccessPolicyTracker.getLayoutTypeAccessPolicy(layout);
 
@@ -84,7 +87,7 @@ if (layout != null) {
 		}
 	}
 
-	request.setAttribute(WebKeys.LAYOUT_PORTLETS, portlets);
+	request.setAttribute(WebKeys.LAYOUT_PORTLETS, portletTreeSet);
 }
 %>
 
@@ -136,7 +139,7 @@ com.liferay.petra.string.StringBundler pageTopSB = OutputTag.getDataSB(request, 
 <%
 boolean portletHubRequired = false;
 
-for (Portlet portlet : portlets) {
+for (Portlet portlet : portletTreeSet) {
 	for (PortletDependency portletDependency : portlet.getPortletDependencies()) {
 		if (Objects.equals(portletDependency.getName(), "PortletHub") && Objects.equals(portletDependency.getScope(), "javax.portlet")) {
 			portletHubRequired = true;
@@ -163,7 +166,7 @@ for (Portlet portlet : portlets) {
 
 <%-- Theme CSS --%>
 
-<link class="lfr-css-file" data-senna-track="temporary" href="<%= HtmlUtil.escapeAttribute(PortalUtil.getStaticResourceURL(request, themeDisplay.getPathThemeCss() + "/main.css")) %>" id="liferayThemeCSS" rel="stylesheet" type="text/css" />
+<link class="lfr-css-file" data-senna-track="temporary" href="<%= HtmlUtil.escapeAttribute(themeDisplay.getMainCSSURL()) %>" id="liferayThemeCSS" rel="stylesheet" type="text/css" />
 
 <%-- User Inputted Layout CSS --%>
 
@@ -175,14 +178,14 @@ for (Portlet portlet : portlets) {
 
 <%-- User Inputted Portlet CSS --%>
 
-<c:if test="<%= portlets != null %>">
+<c:if test="<%= portletTreeSet != null %>">
 	<style data-senna-track="temporary" type="text/css">
 
 		<%
-		for (Portlet portlet : portlets) {
-			PortletPreferences portletSetup = themeDisplay.getStrictLayoutPortletSetup(layout, portlet.getPortletId());
+		for (Portlet portlet : portletTreeSet) {
+			PortletPreferences portletPreferences = themeDisplay.getStrictLayoutPortletSetup(layout, portlet.getPortletId());
 
-			String portletSetupCss = portletSetup.getValue("portletSetupCss", StringPool.BLANK);
+			String portletSetupCss = portletPreferences.getValue("portletSetupCss", StringPool.BLANK);
 		%>
 
 			<c:if test="<%= Validator.isNotNull(portletSetupCss) %>">

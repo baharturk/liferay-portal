@@ -79,18 +79,6 @@ components:
                     example: Account Name
                     type: string
             type: object
-        AccountGroup:
-            properties:
-                id:
-                    example: 30130
-                    format: int64
-                    minimum: 0
-                    readOnly: true
-                    type: integer
-                name:
-                    example: AccountGroup Name
-                    type: string
-            type: object
         Category:
             properties:
                 id:
@@ -218,6 +206,11 @@ components:
                     format: bigdecimal
                     minimum: 0
                     type: number
+                modifiedDate:
+                    example: 2017-07-21
+                    format: date
+                    readOnly: true
+                    type: string
                 neverExpire:
                     example: true
                     type: boolean
@@ -301,15 +294,15 @@ components:
                     example: 30324
                     format: int64
                     minimum: 0
+                    readOnly: true
                     type: integer
             required:
                 - accountId
-                - discountId
             type: object
         DiscountAccountGroup:
             properties:
                 accountGroup:
-                    $ref: "#/components/schemas/AccountGroup"
+                    $ref: "#/components/schemas/PricingAccountGroup"
                     readOnly: true
                 accountGroupExternalReferenceCode:
                     example: "PAB-34098-789-N"
@@ -339,10 +332,10 @@ components:
                     example: 30324
                     format: int64
                     minimum: 0
+                    readOnly: true
                     type: integer
             required:
                 - accountGroupId
-                - discountId
             type: object
         DiscountCategory:
             properties:
@@ -377,10 +370,10 @@ components:
                     example: 30324
                     format: int64
                     minimum: 0
+                    readOnly: true
                     type: integer
             required:
                 - categoryId
-                - discountId
             type: object
         DiscountChannel:
             properties:
@@ -415,10 +408,10 @@ components:
                     example: 30324
                     format: int64
                     minimum: 0
+                    readOnly: true
                     type: integer
             required:
                 - channelId
-                - discountId
             type: object
         DiscountOrderType:
             properties:
@@ -436,6 +429,7 @@ components:
                     example: 30130
                     format: int64
                     minimum: 0
+                    readOnly: true
                     type: integer
                 discountOrderTypeId:
                     example: 30643
@@ -461,7 +455,6 @@ components:
                     type: integer
             required:
                 - orderTypeId
-                - discountId
             type: object
         DiscountProduct:
             properties:
@@ -479,6 +472,7 @@ components:
                     example: 30324
                     format: int64
                     minimum: 0
+                    readOnly: true
                     type: integer
                 discountProductId:
                     example: 30643
@@ -498,7 +492,6 @@ components:
                     minimum: 0
                     type: integer
             required:
-                - discountId
                 - productId
             type: object
         DiscountProductGroup:
@@ -517,6 +510,7 @@ components:
                     example: 30324
                     format: int64
                     minimum: 0
+                    readOnly: true
                     type: integer
                 discountProductGroupId:
                     example: 30643
@@ -536,7 +530,6 @@ components:
                     minimum: 0
                     type: integer
             required:
-                - discountId
                 - productGroupId
             type: object
         DiscountRule:
@@ -587,6 +580,7 @@ components:
                     example: 30324
                     format: int64
                     minimum: 0
+                    readOnly: true
                     type: integer
                 discountSkuId:
                     example: 30643
@@ -618,8 +612,10 @@ components:
                     format: int64
                     minimum: 0
                     type: integer
+                unitOfMeasureKey:
+                    example: m
+                    type: string
             required:
-                - discountId
                 - skuId
             type: object
         Error:
@@ -748,9 +744,16 @@ components:
                     format: int64
                     minimum: 0
                     type: integer
+                priceOnApplication:
+                    example: true
+                    type: boolean
                 product:
                     $ref: "#/components/schemas/Product"
                     readOnly: true
+                quantity:
+                    example: 10.1
+                    format: bigdecimal
+                    type: number
                 sku:
                     $ref: "#/components/schemas/Sku"
                     readOnly: true
@@ -766,6 +769,9 @@ components:
                     items:
                         $ref: "#/components/schemas/TierPrice"
                     type: array
+                unitOfMeasureKey:
+                    example: m
+                    type: string
             required:
                 - price
                 - priceListId
@@ -877,8 +883,7 @@ components:
                     example: price-list, promotion, contract
                     type: string
                 workflowStatusInfo:
-                    allOf:
-                        - $ref: "#/components/schemas/Status"
+                    $ref: "#/components/schemas/Status"
                     readOnly: true
             required:
                 - catalogId
@@ -932,7 +937,7 @@ components:
         PriceListAccountGroup:
             properties:
                 accountGroup:
-                    $ref: "#/components/schemas/AccountGroup"
+                    $ref: "#/components/schemas/PricingAccountGroup"
                     readOnly: true
                 accountGroupExternalReferenceCode:
                     example: DAB-34098-789-N
@@ -1282,6 +1287,18 @@ components:
                 - priceModifierId
                 - productGroupId
             type: object
+        PricingAccountGroup:
+            properties:
+                id:
+                    example: 30130
+                    format: int64
+                    minimum: 0
+                    readOnly: true
+                    type: integer
+                name:
+                    example: PricingAccountGroup Name
+                    type: string
+            type: object
         Product:
             properties:
                 id:
@@ -1419,10 +1436,10 @@ components:
                     minimum: 0
                     type: integer
                 minimumQuantity:
-                    example: 5
-                    format: int32
+                    example: 10.1
+                    format: bigdecimal
                     minimum: 0
-                    type: integer
+                    type: number
                 neverExpire:
                     example: true
                     type: boolean
@@ -1438,6 +1455,9 @@ components:
                     minimum: 0
                     type: integer
                 priceFormatted:
+                    type: string
+                unitOfMeasureKey:
+                    example: m
                     type: string
             required:
                 - minimumQuantity
@@ -1467,7 +1487,7 @@ info:
         name: Commerce Team
     description:
         "Liferay Commerce Admin Pricing API. A Java client JAR is available for use with the group ID 'com.liferay',
-        artifact ID 'com.liferay.headless.commerce.admin.pricing.client', and version '4.0.11'."
+        artifact ID 'com.liferay.headless.commerce.admin.pricing.client', and version '4.0.30'."
     license:
         name: "Apache 2.0"
         url: "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -1532,10 +1552,10 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/AccountGroup"
+                                $ref: "#/components/schemas/PricingAccountGroup"
                         application/xml:
                             schema:
-                                $ref: "#/components/schemas/AccountGroup"
+                                $ref: "#/components/schemas/PricingAccountGroup"
                     description:
                         Successful operation
                 400:
@@ -1577,7 +1597,7 @@ paths:
                 - OAuth2:
                       - HeadlessCommerceAdminPricing.read
             summary: Gets account group associated to the pricing object.
-            tags: ["AccountGroup"]
+            tags: ["PricingAccountGroup"]
     /discount-accounts/{discountAccountId}:
         delete:
             operationId: deleteDiscountAccount
@@ -6869,10 +6889,10 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: "#/components/schemas/AccountGroup"
+                                $ref: "#/components/schemas/PricingAccountGroup"
                         application/xml:
                             schema:
-                                $ref: "#/components/schemas/AccountGroup"
+                                $ref: "#/components/schemas/PricingAccountGroup"
                     description:
                         Successful operation
                 400:
@@ -6914,7 +6934,7 @@ paths:
                 - OAuth2:
                       - HeadlessCommerceAdminPricing.read
             summary: Gets account group associated to the pricing object.
-            tags: ["AccountGroup"]
+            tags: ["PricingAccountGroup"]
     /price-list-accounts/{priceListAccountId}:
         delete:
             operationId: deletePriceListAccount
@@ -7603,6 +7623,11 @@ paths:
                       type: string
                   style: simple
                 - in: query
+                  name: filter
+                  required: false
+                  schema:
+                      type: string
+                - in: query
                   explode: true
                   name: page
                   required: false
@@ -7616,6 +7641,16 @@ paths:
                   schema:
                       type: integer
                   style: form
+                - in: query
+                  name: search
+                  required: false
+                  schema:
+                      type: string
+                - in: query
+                  name: sort
+                  required: false
+                  schema:
+                      type: string
             responses:
                 200:
                     content:

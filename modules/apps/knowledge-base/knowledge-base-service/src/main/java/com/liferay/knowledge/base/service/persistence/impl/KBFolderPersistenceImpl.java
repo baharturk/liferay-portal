@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.service.persistence.impl;
 
+import com.liferay.knowledge.base.exception.DuplicateKBFolderExternalReferenceCodeException;
 import com.liferay.knowledge.base.exception.NoSuchFolderException;
 import com.liferay.knowledge.base.model.KBFolder;
 import com.liferay.knowledge.base.model.KBFolderTable;
@@ -23,6 +15,7 @@ import com.liferay.knowledge.base.service.persistence.KBFolderPersistence;
 import com.liferay.knowledge.base.service.persistence.KBFolderUtil;
 import com.liferay.knowledge.base.service.persistence.impl.constants.KBPersistenceConstants;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
@@ -39,7 +32,7 @@ import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -53,12 +46,15 @@ import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -81,7 +77,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {KBFolderPersistence.class, BasePersistence.class})
+@Component(service = KBFolderPersistence.class)
 public class KBFolderPersistenceImpl
 	extends BasePersistenceImpl<KBFolder> implements KBFolderPersistence {
 
@@ -176,27 +172,30 @@ public class KBFolderPersistenceImpl
 
 		uuid = Objects.toString(uuid, "");
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindByUuid;
 				finderArgs = new Object[] {uuid};
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindByUuid;
 			finderArgs = new Object[] {uuid, start, end, orderByComparator};
 		}
 
 		List<KBFolder> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<KBFolder>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (KBFolder kbFolder : list) {
@@ -261,7 +260,7 @@ public class KBFolderPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -572,11 +571,21 @@ public class KBFolderPersistenceImpl
 	public int countByUuid(String uuid) {
 		uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = _finderPathCountByUuid;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
-		Object[] finderArgs = new Object[] {uuid};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByUuid;
+
+			finderArgs = new Object[] {uuid};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -611,7 +620,9 @@ public class KBFolderPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -706,8 +717,11 @@ public class KBFolderPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
 		if (result instanceof KBFolder) {
 			KBFolder kbFolder = (KBFolder)result;
@@ -717,6 +731,14 @@ public class KBFolderPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						KBFolder.class, kbFolder.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -757,7 +779,7 @@ public class KBFolderPersistenceImpl
 				List<KBFolder> list = query.list();
 
 				if (list.isEmpty()) {
-					if (useFinderCache) {
+					if (useFinderCache && productionMode) {
 						finderCache.putResult(
 							_finderPathFetchByUUID_G, finderArgs, list);
 					}
@@ -813,11 +835,21 @@ public class KBFolderPersistenceImpl
 	public int countByUUID_G(String uuid, long groupId) {
 		uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = _finderPathCountByUUID_G;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
-		Object[] finderArgs = new Object[] {uuid, groupId};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByUUID_G;
+
+			finderArgs = new Object[] {uuid, groupId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -856,7 +888,9 @@ public class KBFolderPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -960,18 +994,21 @@ public class KBFolderPersistenceImpl
 
 		uuid = Objects.toString(uuid, "");
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindByUuid_C;
 				finderArgs = new Object[] {uuid, companyId};
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindByUuid_C;
 			finderArgs = new Object[] {
 				uuid, companyId, start, end, orderByComparator
@@ -980,9 +1017,9 @@ public class KBFolderPersistenceImpl
 
 		List<KBFolder> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<KBFolder>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (KBFolder kbFolder : list) {
@@ -1053,7 +1090,7 @@ public class KBFolderPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -1390,11 +1427,21 @@ public class KBFolderPersistenceImpl
 	public int countByUuid_C(String uuid, long companyId) {
 		uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = _finderPathCountByUuid_C;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
-		Object[] finderArgs = new Object[] {uuid, companyId};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByUuid_C;
+
+			finderArgs = new Object[] {uuid, companyId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1433,7 +1480,9 @@ public class KBFolderPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -1528,18 +1577,21 @@ public class KBFolderPersistenceImpl
 		long companyId, int start, int end,
 		OrderByComparator<KBFolder> orderByComparator, boolean useFinderCache) {
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindByCompanyId;
 				finderArgs = new Object[] {companyId};
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindByCompanyId;
 			finderArgs = new Object[] {
 				companyId, start, end, orderByComparator
@@ -1548,9 +1600,9 @@ public class KBFolderPersistenceImpl
 
 		List<KBFolder> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<KBFolder>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (KBFolder kbFolder : list) {
@@ -1604,7 +1656,7 @@ public class KBFolderPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -1903,11 +1955,21 @@ public class KBFolderPersistenceImpl
 	 */
 	@Override
 	public int countByCompanyId(long companyId) {
-		FinderPath finderPath = _finderPathCountByCompanyId;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
-		Object[] finderArgs = new Object[] {companyId};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByCompanyId;
+
+			finderArgs = new Object[] {companyId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1931,7 +1993,9 @@ public class KBFolderPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -2028,18 +2092,21 @@ public class KBFolderPersistenceImpl
 		long groupId, long parentKBFolderId, int start, int end,
 		OrderByComparator<KBFolder> orderByComparator, boolean useFinderCache) {
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindByG_P;
 				finderArgs = new Object[] {groupId, parentKBFolderId};
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindByG_P;
 			finderArgs = new Object[] {
 				groupId, parentKBFolderId, start, end, orderByComparator
@@ -2048,9 +2115,9 @@ public class KBFolderPersistenceImpl
 
 		List<KBFolder> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<KBFolder>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (KBFolder kbFolder : list) {
@@ -2110,7 +2177,7 @@ public class KBFolderPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -2774,11 +2841,21 @@ public class KBFolderPersistenceImpl
 	 */
 	@Override
 	public int countByG_P(long groupId, long parentKBFolderId) {
-		FinderPath finderPath = _finderPathCountByG_P;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
-		Object[] finderArgs = new Object[] {groupId, parentKBFolderId};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByG_P;
+
+			finderArgs = new Object[] {groupId, parentKBFolderId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -2806,7 +2883,9 @@ public class KBFolderPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -2963,8 +3042,12 @@ public class KBFolderPersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByG_P_N, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByG_P_N, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
 		if (result instanceof KBFolder) {
 			KBFolder kbFolder = (KBFolder)result;
@@ -2975,6 +3058,14 @@ public class KBFolderPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						KBFolder.class, kbFolder.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -3019,7 +3110,7 @@ public class KBFolderPersistenceImpl
 				List<KBFolder> list = query.list();
 
 				if (list.isEmpty()) {
-					if (useFinderCache) {
+					if (useFinderCache && productionMode) {
 						finderCache.putResult(
 							_finderPathFetchByG_P_N, finderArgs, list);
 					}
@@ -3029,7 +3120,7 @@ public class KBFolderPersistenceImpl
 						Collections.sort(list, Collections.reverseOrder());
 
 						if (_log.isWarnEnabled()) {
-							if (!useFinderCache) {
+							if (!productionMode || !useFinderCache) {
 								finderArgs = new Object[] {
 									groupId, parentKBFolderId, name
 								};
@@ -3095,11 +3186,21 @@ public class KBFolderPersistenceImpl
 	public int countByG_P_N(long groupId, long parentKBFolderId, String name) {
 		name = Objects.toString(name, "");
 
-		FinderPath finderPath = _finderPathCountByG_P_N;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
-		Object[] finderArgs = new Object[] {groupId, parentKBFolderId, name};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByG_P_N;
+
+			finderArgs = new Object[] {groupId, parentKBFolderId, name};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -3142,7 +3243,9 @@ public class KBFolderPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -3253,8 +3356,11 @@ public class KBFolderPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByG_P_UT, finderArgs);
+				_finderPathFetchByG_P_UT, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
 		if (result instanceof KBFolder) {
 			KBFolder kbFolder = (KBFolder)result;
@@ -3265,6 +3371,14 @@ public class KBFolderPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						KBFolder.class, kbFolder.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -3309,7 +3423,7 @@ public class KBFolderPersistenceImpl
 				List<KBFolder> list = query.list();
 
 				if (list.isEmpty()) {
-					if (useFinderCache) {
+					if (useFinderCache && productionMode) {
 						finderCache.putResult(
 							_finderPathFetchByG_P_UT, finderArgs, list);
 					}
@@ -3319,7 +3433,7 @@ public class KBFolderPersistenceImpl
 						Collections.sort(list, Collections.reverseOrder());
 
 						if (_log.isWarnEnabled()) {
-							if (!useFinderCache) {
+							if (!productionMode || !useFinderCache) {
 								finderArgs = new Object[] {
 									groupId, parentKBFolderId, urlTitle
 								};
@@ -3387,13 +3501,21 @@ public class KBFolderPersistenceImpl
 
 		urlTitle = Objects.toString(urlTitle, "");
 
-		FinderPath finderPath = _finderPathCountByG_P_UT;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
-		Object[] finderArgs = new Object[] {
-			groupId, parentKBFolderId, urlTitle
-		};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByG_P_UT;
+
+			finderArgs = new Object[] {groupId, parentKBFolderId, urlTitle};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -3436,7 +3558,9 @@ public class KBFolderPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -3461,112 +3585,160 @@ public class KBFolderPersistenceImpl
 	private static final String _FINDER_COLUMN_G_P_UT_URLTITLE_3 =
 		"(kbFolder.urlTitle IS NULL OR kbFolder.urlTitle = '')";
 
-	private FinderPath _finderPathFetchByG_ERC;
-	private FinderPath _finderPathCountByG_ERC;
+	private FinderPath _finderPathWithPaginationFindByG_P_S;
+	private FinderPath _finderPathWithoutPaginationFindByG_P_S;
+	private FinderPath _finderPathCountByG_P_S;
 
 	/**
-	 * Returns the kb folder where groupId = &#63; and externalReferenceCode = &#63; or throws a <code>NoSuchFolderException</code> if it could not be found.
+	 * Returns all the kb folders where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
 	 *
 	 * @param groupId the group ID
-	 * @param externalReferenceCode the external reference code
-	 * @return the matching kb folder
-	 * @throws NoSuchFolderException if a matching kb folder could not be found
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @return the matching kb folders
 	 */
 	@Override
-	public KBFolder findByG_ERC(long groupId, String externalReferenceCode)
-		throws NoSuchFolderException {
+	public List<KBFolder> findByG_P_S(
+		long groupId, long parentKBFolderId, int status) {
 
-		KBFolder kbFolder = fetchByG_ERC(groupId, externalReferenceCode);
-
-		if (kbFolder == null) {
-			StringBundler sb = new StringBundler(6);
-
-			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-			sb.append("groupId=");
-			sb.append(groupId);
-
-			sb.append(", externalReferenceCode=");
-			sb.append(externalReferenceCode);
-
-			sb.append("}");
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(sb.toString());
-			}
-
-			throw new NoSuchFolderException(sb.toString());
-		}
-
-		return kbFolder;
+		return findByG_P_S(
+			groupId, parentKBFolderId, status, QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS, null);
 	}
 
 	/**
-	 * Returns the kb folder where groupId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns a range of all the kb folders where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>KBFolderModelImpl</code>.
+	 * </p>
 	 *
 	 * @param groupId the group ID
-	 * @param externalReferenceCode the external reference code
-	 * @return the matching kb folder, or <code>null</code> if a matching kb folder could not be found
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param start the lower bound of the range of kb folders
+	 * @param end the upper bound of the range of kb folders (not inclusive)
+	 * @return the range of matching kb folders
 	 */
 	@Override
-	public KBFolder fetchByG_ERC(long groupId, String externalReferenceCode) {
-		return fetchByG_ERC(groupId, externalReferenceCode, true);
+	public List<KBFolder> findByG_P_S(
+		long groupId, long parentKBFolderId, int status, int start, int end) {
+
+		return findByG_P_S(groupId, parentKBFolderId, status, start, end, null);
 	}
 
 	/**
-	 * Returns the kb folder where groupId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns an ordered range of all the kb folders where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>KBFolderModelImpl</code>.
+	 * </p>
 	 *
 	 * @param groupId the group ID
-	 * @param externalReferenceCode the external reference code
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param start the lower bound of the range of kb folders
+	 * @param end the upper bound of the range of kb folders (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching kb folders
+	 */
+	@Override
+	public List<KBFolder> findByG_P_S(
+		long groupId, long parentKBFolderId, int status, int start, int end,
+		OrderByComparator<KBFolder> orderByComparator) {
+
+		return findByG_P_S(
+			groupId, parentKBFolderId, status, start, end, orderByComparator,
+			true);
+	}
+
+	/**
+	 * Returns an ordered range of all the kb folders where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>KBFolderModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param start the lower bound of the range of kb folders
+	 * @param end the upper bound of the range of kb folders (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching kb folder, or <code>null</code> if a matching kb folder could not be found
+	 * @return the ordered range of matching kb folders
 	 */
 	@Override
-	public KBFolder fetchByG_ERC(
-		long groupId, String externalReferenceCode, boolean useFinderCache) {
+	public List<KBFolder> findByG_P_S(
+		long groupId, long parentKBFolderId, int status, int start, int end,
+		OrderByComparator<KBFolder> orderByComparator, boolean useFinderCache) {
 
-		externalReferenceCode = Objects.toString(externalReferenceCode, "");
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
+		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
-		if (useFinderCache) {
-			finderArgs = new Object[] {groupId, externalReferenceCode};
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			(orderByComparator == null)) {
+
+			if (useFinderCache && productionMode) {
+				finderPath = _finderPathWithoutPaginationFindByG_P_S;
+				finderArgs = new Object[] {groupId, parentKBFolderId, status};
+			}
+		}
+		else if (useFinderCache && productionMode) {
+			finderPath = _finderPathWithPaginationFindByG_P_S;
+			finderArgs = new Object[] {
+				groupId, parentKBFolderId, status, start, end, orderByComparator
+			};
 		}
 
-		Object result = null;
+		List<KBFolder> list = null;
 
-		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByG_ERC, finderArgs);
-		}
+		if (useFinderCache && productionMode) {
+			list = (List<KBFolder>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-		if (result instanceof KBFolder) {
-			KBFolder kbFolder = (KBFolder)result;
+			if ((list != null) && !list.isEmpty()) {
+				for (KBFolder kbFolder : list) {
+					if ((groupId != kbFolder.getGroupId()) ||
+						(parentKBFolderId != kbFolder.getParentKBFolderId()) ||
+						(status != kbFolder.getStatus())) {
 
-			if ((groupId != kbFolder.getGroupId()) ||
-				!Objects.equals(
-					externalReferenceCode,
-					kbFolder.getExternalReferenceCode())) {
+						list = null;
 
-				result = null;
+						break;
+					}
+				}
 			}
 		}
 
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
+		if (list == null) {
+			StringBundler sb = null;
+
+			if (orderByComparator != null) {
+				sb = new StringBundler(
+					5 + (orderByComparator.getOrderByFields().length * 2));
+			}
+			else {
+				sb = new StringBundler(5);
+			}
 
 			sb.append(_SQL_SELECT_KBFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_ERC_GROUPID_2);
+			sb.append(_FINDER_COLUMN_G_P_S_GROUPID_2);
 
-			boolean bindExternalReferenceCode = false;
+			sb.append(_FINDER_COLUMN_G_P_S_PARENTKBFOLDERID_2);
 
-			if (externalReferenceCode.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_ERC_EXTERNALREFERENCECODE_3);
+			sb.append(_FINDER_COLUMN_G_P_S_STATUS_2);
+
+			if (orderByComparator != null) {
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
 			}
 			else {
-				bindExternalReferenceCode = true;
-
-				sb.append(_FINDER_COLUMN_G_ERC_EXTERNALREFERENCECODE_2);
+				sb.append(KBFolderModelImpl.ORDER_BY_JPQL);
 			}
 
 			String sql = sb.toString();
@@ -3582,36 +3754,992 @@ public class KBFolderPersistenceImpl
 
 				queryPos.add(groupId);
 
+				queryPos.add(parentKBFolderId);
+
+				queryPos.add(status);
+
+				list = (List<KBFolder>)QueryUtil.list(
+					query, getDialect(), start, end);
+
+				cacheResult(list);
+
+				if (useFinderCache && productionMode) {
+					finderCache.putResult(finderPath, finderArgs, list);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return list;
+	}
+
+	/**
+	 * Returns the first kb folder in the ordered set where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching kb folder
+	 * @throws NoSuchFolderException if a matching kb folder could not be found
+	 */
+	@Override
+	public KBFolder findByG_P_S_First(
+			long groupId, long parentKBFolderId, int status,
+			OrderByComparator<KBFolder> orderByComparator)
+		throws NoSuchFolderException {
+
+		KBFolder kbFolder = fetchByG_P_S_First(
+			groupId, parentKBFolderId, status, orderByComparator);
+
+		if (kbFolder != null) {
+			return kbFolder;
+		}
+
+		StringBundler sb = new StringBundler(8);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("groupId=");
+		sb.append(groupId);
+
+		sb.append(", parentKBFolderId=");
+		sb.append(parentKBFolderId);
+
+		sb.append(", status=");
+		sb.append(status);
+
+		sb.append("}");
+
+		throw new NoSuchFolderException(sb.toString());
+	}
+
+	/**
+	 * Returns the first kb folder in the ordered set where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching kb folder, or <code>null</code> if a matching kb folder could not be found
+	 */
+	@Override
+	public KBFolder fetchByG_P_S_First(
+		long groupId, long parentKBFolderId, int status,
+		OrderByComparator<KBFolder> orderByComparator) {
+
+		List<KBFolder> list = findByG_P_S(
+			groupId, parentKBFolderId, status, 0, 1, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last kb folder in the ordered set where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching kb folder
+	 * @throws NoSuchFolderException if a matching kb folder could not be found
+	 */
+	@Override
+	public KBFolder findByG_P_S_Last(
+			long groupId, long parentKBFolderId, int status,
+			OrderByComparator<KBFolder> orderByComparator)
+		throws NoSuchFolderException {
+
+		KBFolder kbFolder = fetchByG_P_S_Last(
+			groupId, parentKBFolderId, status, orderByComparator);
+
+		if (kbFolder != null) {
+			return kbFolder;
+		}
+
+		StringBundler sb = new StringBundler(8);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("groupId=");
+		sb.append(groupId);
+
+		sb.append(", parentKBFolderId=");
+		sb.append(parentKBFolderId);
+
+		sb.append(", status=");
+		sb.append(status);
+
+		sb.append("}");
+
+		throw new NoSuchFolderException(sb.toString());
+	}
+
+	/**
+	 * Returns the last kb folder in the ordered set where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching kb folder, or <code>null</code> if a matching kb folder could not be found
+	 */
+	@Override
+	public KBFolder fetchByG_P_S_Last(
+		long groupId, long parentKBFolderId, int status,
+		OrderByComparator<KBFolder> orderByComparator) {
+
+		int count = countByG_P_S(groupId, parentKBFolderId, status);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<KBFolder> list = findByG_P_S(
+			groupId, parentKBFolderId, status, count - 1, count,
+			orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the kb folders before and after the current kb folder in the ordered set where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * @param kbFolderId the primary key of the current kb folder
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next kb folder
+	 * @throws NoSuchFolderException if a kb folder with the primary key could not be found
+	 */
+	@Override
+	public KBFolder[] findByG_P_S_PrevAndNext(
+			long kbFolderId, long groupId, long parentKBFolderId, int status,
+			OrderByComparator<KBFolder> orderByComparator)
+		throws NoSuchFolderException {
+
+		KBFolder kbFolder = findByPrimaryKey(kbFolderId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			KBFolder[] array = new KBFolderImpl[3];
+
+			array[0] = getByG_P_S_PrevAndNext(
+				session, kbFolder, groupId, parentKBFolderId, status,
+				orderByComparator, true);
+
+			array[1] = kbFolder;
+
+			array[2] = getByG_P_S_PrevAndNext(
+				session, kbFolder, groupId, parentKBFolderId, status,
+				orderByComparator, false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected KBFolder getByG_P_S_PrevAndNext(
+		Session session, KBFolder kbFolder, long groupId, long parentKBFolderId,
+		int status, OrderByComparator<KBFolder> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				6 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(5);
+		}
+
+		sb.append(_SQL_SELECT_KBFOLDER_WHERE);
+
+		sb.append(_FINDER_COLUMN_G_P_S_GROUPID_2);
+
+		sb.append(_FINDER_COLUMN_G_P_S_PARENTKBFOLDERID_2);
+
+		sb.append(_FINDER_COLUMN_G_P_S_STATUS_2);
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			sb.append(KBFolderModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Query query = session.createQuery(sql);
+
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+
+		QueryPos queryPos = QueryPos.getInstance(query);
+
+		queryPos.add(groupId);
+
+		queryPos.add(parentKBFolderId);
+
+		queryPos.add(status);
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(kbFolder)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<KBFolder> list = query.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Returns all the kb folders that the user has permission to view where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @return the matching kb folders that the user has permission to view
+	 */
+	@Override
+	public List<KBFolder> filterFindByG_P_S(
+		long groupId, long parentKBFolderId, int status) {
+
+		return filterFindByG_P_S(
+			groupId, parentKBFolderId, status, QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the kb folders that the user has permission to view where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>KBFolderModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param start the lower bound of the range of kb folders
+	 * @param end the upper bound of the range of kb folders (not inclusive)
+	 * @return the range of matching kb folders that the user has permission to view
+	 */
+	@Override
+	public List<KBFolder> filterFindByG_P_S(
+		long groupId, long parentKBFolderId, int status, int start, int end) {
+
+		return filterFindByG_P_S(
+			groupId, parentKBFolderId, status, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the kb folders that the user has permissions to view where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>KBFolderModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param start the lower bound of the range of kb folders
+	 * @param end the upper bound of the range of kb folders (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching kb folders that the user has permission to view
+	 */
+	@Override
+	public List<KBFolder> filterFindByG_P_S(
+		long groupId, long parentKBFolderId, int status, int start, int end,
+		OrderByComparator<KBFolder> orderByComparator) {
+
+		if (!InlineSQLHelperUtil.isEnabled(groupId)) {
+			return findByG_P_S(
+				groupId, parentKBFolderId, status, start, end,
+				orderByComparator);
+		}
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				5 + (orderByComparator.getOrderByFields().length * 2));
+		}
+		else {
+			sb = new StringBundler(6);
+		}
+
+		if (getDB().isSupportsInlineDistinct()) {
+			sb.append(_FILTER_SQL_SELECT_KBFOLDER_WHERE);
+		}
+		else {
+			sb.append(_FILTER_SQL_SELECT_KBFOLDER_NO_INLINE_DISTINCT_WHERE_1);
+		}
+
+		sb.append(_FINDER_COLUMN_G_P_S_GROUPID_2);
+
+		sb.append(_FINDER_COLUMN_G_P_S_PARENTKBFOLDERID_2);
+
+		sb.append(_FINDER_COLUMN_G_P_S_STATUS_2);
+
+		if (!getDB().isSupportsInlineDistinct()) {
+			sb.append(_FILTER_SQL_SELECT_KBFOLDER_NO_INLINE_DISTINCT_WHERE_2);
+		}
+
+		if (orderByComparator != null) {
+			if (getDB().isSupportsInlineDistinct()) {
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator, true);
+			}
+			else {
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_TABLE, orderByComparator, true);
+			}
+		}
+		else {
+			if (getDB().isSupportsInlineDistinct()) {
+				sb.append(KBFolderModelImpl.ORDER_BY_JPQL);
+			}
+			else {
+				sb.append(KBFolderModelImpl.ORDER_BY_SQL);
+			}
+		}
+
+		String sql = InlineSQLHelperUtil.replacePermissionCheck(
+			sb.toString(), KBFolder.class.getName(),
+			_FILTER_ENTITY_TABLE_FILTER_PK_COLUMN, groupId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
+
+			if (getDB().isSupportsInlineDistinct()) {
+				sqlQuery.addEntity(_FILTER_ENTITY_ALIAS, KBFolderImpl.class);
+			}
+			else {
+				sqlQuery.addEntity(_FILTER_ENTITY_TABLE, KBFolderImpl.class);
+			}
+
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
+
+			queryPos.add(groupId);
+
+			queryPos.add(parentKBFolderId);
+
+			queryPos.add(status);
+
+			return (List<KBFolder>)QueryUtil.list(
+				sqlQuery, getDialect(), start, end);
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	/**
+	 * Returns the kb folders before and after the current kb folder in the ordered set of kb folders that the user has permission to view where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * @param kbFolderId the primary key of the current kb folder
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next kb folder
+	 * @throws NoSuchFolderException if a kb folder with the primary key could not be found
+	 */
+	@Override
+	public KBFolder[] filterFindByG_P_S_PrevAndNext(
+			long kbFolderId, long groupId, long parentKBFolderId, int status,
+			OrderByComparator<KBFolder> orderByComparator)
+		throws NoSuchFolderException {
+
+		if (!InlineSQLHelperUtil.isEnabled(groupId)) {
+			return findByG_P_S_PrevAndNext(
+				kbFolderId, groupId, parentKBFolderId, status,
+				orderByComparator);
+		}
+
+		KBFolder kbFolder = findByPrimaryKey(kbFolderId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			KBFolder[] array = new KBFolderImpl[3];
+
+			array[0] = filterGetByG_P_S_PrevAndNext(
+				session, kbFolder, groupId, parentKBFolderId, status,
+				orderByComparator, true);
+
+			array[1] = kbFolder;
+
+			array[2] = filterGetByG_P_S_PrevAndNext(
+				session, kbFolder, groupId, parentKBFolderId, status,
+				orderByComparator, false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected KBFolder filterGetByG_P_S_PrevAndNext(
+		Session session, KBFolder kbFolder, long groupId, long parentKBFolderId,
+		int status, OrderByComparator<KBFolder> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				7 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(6);
+		}
+
+		if (getDB().isSupportsInlineDistinct()) {
+			sb.append(_FILTER_SQL_SELECT_KBFOLDER_WHERE);
+		}
+		else {
+			sb.append(_FILTER_SQL_SELECT_KBFOLDER_NO_INLINE_DISTINCT_WHERE_1);
+		}
+
+		sb.append(_FINDER_COLUMN_G_P_S_GROUPID_2);
+
+		sb.append(_FINDER_COLUMN_G_P_S_PARENTKBFOLDERID_2);
+
+		sb.append(_FINDER_COLUMN_G_P_S_STATUS_2);
+
+		if (!getDB().isSupportsInlineDistinct()) {
+			sb.append(_FILTER_SQL_SELECT_KBFOLDER_NO_INLINE_DISTINCT_WHERE_2);
+		}
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				if (getDB().isSupportsInlineDistinct()) {
+					sb.append(
+						getColumnName(
+							_ORDER_BY_ENTITY_ALIAS, orderByConditionFields[i],
+							true));
+				}
+				else {
+					sb.append(
+						getColumnName(
+							_ORDER_BY_ENTITY_TABLE, orderByConditionFields[i],
+							true));
+				}
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				if (getDB().isSupportsInlineDistinct()) {
+					sb.append(
+						getColumnName(
+							_ORDER_BY_ENTITY_ALIAS, orderByFields[i], true));
+				}
+				else {
+					sb.append(
+						getColumnName(
+							_ORDER_BY_ENTITY_TABLE, orderByFields[i], true));
+				}
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			if (getDB().isSupportsInlineDistinct()) {
+				sb.append(KBFolderModelImpl.ORDER_BY_JPQL);
+			}
+			else {
+				sb.append(KBFolderModelImpl.ORDER_BY_SQL);
+			}
+		}
+
+		String sql = InlineSQLHelperUtil.replacePermissionCheck(
+			sb.toString(), KBFolder.class.getName(),
+			_FILTER_ENTITY_TABLE_FILTER_PK_COLUMN, groupId);
+
+		SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
+
+		sqlQuery.setFirstResult(0);
+		sqlQuery.setMaxResults(2);
+
+		if (getDB().isSupportsInlineDistinct()) {
+			sqlQuery.addEntity(_FILTER_ENTITY_ALIAS, KBFolderImpl.class);
+		}
+		else {
+			sqlQuery.addEntity(_FILTER_ENTITY_TABLE, KBFolderImpl.class);
+		}
+
+		QueryPos queryPos = QueryPos.getInstance(sqlQuery);
+
+		queryPos.add(groupId);
+
+		queryPos.add(parentKBFolderId);
+
+		queryPos.add(status);
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(kbFolder)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<KBFolder> list = sqlQuery.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Removes all the kb folders where groupId = &#63; and parentKBFolderId = &#63; and status = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 */
+	@Override
+	public void removeByG_P_S(long groupId, long parentKBFolderId, int status) {
+		for (KBFolder kbFolder :
+				findByG_P_S(
+					groupId, parentKBFolderId, status, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, null)) {
+
+			remove(kbFolder);
+		}
+	}
+
+	/**
+	 * Returns the number of kb folders where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @return the number of matching kb folders
+	 */
+	@Override
+	public int countByG_P_S(long groupId, long parentKBFolderId, int status) {
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
+
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByG_P_S;
+
+			finderArgs = new Object[] {groupId, parentKBFolderId, status};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
+
+		if (count == null) {
+			StringBundler sb = new StringBundler(4);
+
+			sb.append(_SQL_COUNT_KBFOLDER_WHERE);
+
+			sb.append(_FINDER_COLUMN_G_P_S_GROUPID_2);
+
+			sb.append(_FINDER_COLUMN_G_P_S_PARENTKBFOLDERID_2);
+
+			sb.append(_FINDER_COLUMN_G_P_S_STATUS_2);
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(groupId);
+
+				queryPos.add(parentKBFolderId);
+
+				queryPos.add(status);
+
+				count = (Long)query.uniqueResult();
+
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return count.intValue();
+	}
+
+	/**
+	 * Returns the number of kb folders that the user has permission to view where groupId = &#63; and parentKBFolderId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param parentKBFolderId the parent kb folder ID
+	 * @param status the status
+	 * @return the number of matching kb folders that the user has permission to view
+	 */
+	@Override
+	public int filterCountByG_P_S(
+		long groupId, long parentKBFolderId, int status) {
+
+		if (!InlineSQLHelperUtil.isEnabled(groupId)) {
+			return countByG_P_S(groupId, parentKBFolderId, status);
+		}
+
+		StringBundler sb = new StringBundler(4);
+
+		sb.append(_FILTER_SQL_COUNT_KBFOLDER_WHERE);
+
+		sb.append(_FINDER_COLUMN_G_P_S_GROUPID_2);
+
+		sb.append(_FINDER_COLUMN_G_P_S_PARENTKBFOLDERID_2);
+
+		sb.append(_FINDER_COLUMN_G_P_S_STATUS_2);
+
+		String sql = InlineSQLHelperUtil.replacePermissionCheck(
+			sb.toString(), KBFolder.class.getName(),
+			_FILTER_ENTITY_TABLE_FILTER_PK_COLUMN, groupId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
+
+			sqlQuery.addScalar(
+				COUNT_COLUMN_NAME, com.liferay.portal.kernel.dao.orm.Type.LONG);
+
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
+
+			queryPos.add(groupId);
+
+			queryPos.add(parentKBFolderId);
+
+			queryPos.add(status);
+
+			Long count = (Long)sqlQuery.uniqueResult();
+
+			return count.intValue();
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	private static final String _FINDER_COLUMN_G_P_S_GROUPID_2 =
+		"kbFolder.groupId = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_P_S_PARENTKBFOLDERID_2 =
+		"kbFolder.parentKBFolderId = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_P_S_STATUS_2 =
+		"kbFolder.status = ?";
+
+	private FinderPath _finderPathFetchByERC_G;
+	private FinderPath _finderPathCountByERC_G;
+
+	/**
+	 * Returns the kb folder where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchFolderException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching kb folder
+	 * @throws NoSuchFolderException if a matching kb folder could not be found
+	 */
+	@Override
+	public KBFolder findByERC_G(String externalReferenceCode, long groupId)
+		throws NoSuchFolderException {
+
+		KBFolder kbFolder = fetchByERC_G(externalReferenceCode, groupId);
+
+		if (kbFolder == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("externalReferenceCode=");
+			sb.append(externalReferenceCode);
+
+			sb.append(", groupId=");
+			sb.append(groupId);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchFolderException(sb.toString());
+		}
+
+		return kbFolder;
+	}
+
+	/**
+	 * Returns the kb folder where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching kb folder, or <code>null</code> if a matching kb folder could not be found
+	 */
+	@Override
+	public KBFolder fetchByERC_G(String externalReferenceCode, long groupId) {
+		return fetchByERC_G(externalReferenceCode, groupId, true);
+	}
+
+	/**
+	 * Returns the kb folder where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching kb folder, or <code>null</code> if a matching kb folder could not be found
+	 */
+	@Override
+	public KBFolder fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache) {
+
+		externalReferenceCode = Objects.toString(externalReferenceCode, "");
+
+		Object[] finderArgs = null;
+
+		if (useFinderCache) {
+			finderArgs = new Object[] {externalReferenceCode, groupId};
+		}
+
+		Object result = null;
+
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByERC_G, finderArgs, this);
+		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
+
+		if (result instanceof KBFolder) {
+			KBFolder kbFolder = (KBFolder)result;
+
+			if (!Objects.equals(
+					externalReferenceCode,
+					kbFolder.getExternalReferenceCode()) ||
+				(groupId != kbFolder.getGroupId())) {
+
+				result = null;
+			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						KBFolder.class, kbFolder.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
+		}
+
+		if (result == null) {
+			StringBundler sb = new StringBundler(4);
+
+			sb.append(_SQL_SELECT_KBFOLDER_WHERE);
+
+			boolean bindExternalReferenceCode = false;
+
+			if (externalReferenceCode.isEmpty()) {
+				sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3);
+			}
+			else {
+				bindExternalReferenceCode = true;
+
+				sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2);
+			}
+
+			sb.append(_FINDER_COLUMN_ERC_G_GROUPID_2);
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
 				if (bindExternalReferenceCode) {
 					queryPos.add(externalReferenceCode);
 				}
 
+				queryPos.add(groupId);
+
 				List<KBFolder> list = query.list();
 
 				if (list.isEmpty()) {
-					if (useFinderCache) {
+					if (useFinderCache && productionMode) {
 						finderCache.putResult(
-							_finderPathFetchByG_ERC, finderArgs, list);
+							_finderPathFetchByERC_G, finderArgs, list);
 					}
 				}
 				else {
-					if (list.size() > 1) {
-						Collections.sort(list, Collections.reverseOrder());
-
-						if (_log.isWarnEnabled()) {
-							if (!useFinderCache) {
-								finderArgs = new Object[] {
-									groupId, externalReferenceCode
-								};
-							}
-
-							_log.warn(
-								"KBFolderPersistenceImpl.fetchByG_ERC(long, String, boolean) with parameters (" +
-									StringUtil.merge(finderArgs) +
-										") yields a result set with more than 1 result. This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.");
-						}
-					}
-
 					KBFolder kbFolder = list.get(0);
 
 					result = kbFolder;
@@ -3636,55 +4764,65 @@ public class KBFolderPersistenceImpl
 	}
 
 	/**
-	 * Removes the kb folder where groupId = &#63; and externalReferenceCode = &#63; from the database.
+	 * Removes the kb folder where externalReferenceCode = &#63; and groupId = &#63; from the database.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @return the kb folder that was removed
 	 */
 	@Override
-	public KBFolder removeByG_ERC(long groupId, String externalReferenceCode)
+	public KBFolder removeByERC_G(String externalReferenceCode, long groupId)
 		throws NoSuchFolderException {
 
-		KBFolder kbFolder = findByG_ERC(groupId, externalReferenceCode);
+		KBFolder kbFolder = findByERC_G(externalReferenceCode, groupId);
 
 		return remove(kbFolder);
 	}
 
 	/**
-	 * Returns the number of kb folders where groupId = &#63; and externalReferenceCode = &#63;.
+	 * Returns the number of kb folders where externalReferenceCode = &#63; and groupId = &#63;.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @return the number of matching kb folders
 	 */
 	@Override
-	public int countByG_ERC(long groupId, String externalReferenceCode) {
+	public int countByERC_G(String externalReferenceCode, long groupId) {
 		externalReferenceCode = Objects.toString(externalReferenceCode, "");
 
-		FinderPath finderPath = _finderPathCountByG_ERC;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
 
-		Object[] finderArgs = new Object[] {groupId, externalReferenceCode};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByERC_G;
+
+			finderArgs = new Object[] {externalReferenceCode, groupId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
 
 			sb.append(_SQL_COUNT_KBFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_ERC_GROUPID_2);
-
 			boolean bindExternalReferenceCode = false;
 
 			if (externalReferenceCode.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_ERC_EXTERNALREFERENCECODE_3);
+				sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3);
 			}
 			else {
 				bindExternalReferenceCode = true;
 
-				sb.append(_FINDER_COLUMN_G_ERC_EXTERNALREFERENCECODE_2);
+				sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2);
 			}
+
+			sb.append(_FINDER_COLUMN_ERC_G_GROUPID_2);
 
 			String sql = sb.toString();
 
@@ -3697,15 +4835,17 @@ public class KBFolderPersistenceImpl
 
 				QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
-
 				if (bindExternalReferenceCode) {
 					queryPos.add(externalReferenceCode);
 				}
 
+				queryPos.add(groupId);
+
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -3718,14 +4858,14 @@ public class KBFolderPersistenceImpl
 		return count.intValue();
 	}
 
-	private static final String _FINDER_COLUMN_G_ERC_GROUPID_2 =
-		"kbFolder.groupId = ? AND ";
+	private static final String _FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2 =
+		"kbFolder.externalReferenceCode = ? AND ";
 
-	private static final String _FINDER_COLUMN_G_ERC_EXTERNALREFERENCECODE_2 =
-		"kbFolder.externalReferenceCode = ?";
+	private static final String _FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3 =
+		"(kbFolder.externalReferenceCode IS NULL OR kbFolder.externalReferenceCode = '') AND ";
 
-	private static final String _FINDER_COLUMN_G_ERC_EXTERNALREFERENCECODE_3 =
-		"(kbFolder.externalReferenceCode IS NULL OR kbFolder.externalReferenceCode = '')";
+	private static final String _FINDER_COLUMN_ERC_G_GROUPID_2 =
+		"kbFolder.groupId = ?";
 
 	public KBFolderPersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
@@ -3749,6 +4889,10 @@ public class KBFolderPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(KBFolder kbFolder) {
+		if (kbFolder.getCtCollectionId() != 0) {
+			return;
+		}
+
 		entityCache.putResult(
 			KBFolderImpl.class, kbFolder.getPrimaryKey(), kbFolder);
 
@@ -3773,9 +4917,9 @@ public class KBFolderPersistenceImpl
 			kbFolder);
 
 		finderCache.putResult(
-			_finderPathFetchByG_ERC,
+			_finderPathFetchByERC_G,
 			new Object[] {
-				kbFolder.getGroupId(), kbFolder.getExternalReferenceCode()
+				kbFolder.getExternalReferenceCode(), kbFolder.getGroupId()
 			},
 			kbFolder);
 	}
@@ -3797,6 +4941,10 @@ public class KBFolderPersistenceImpl
 		}
 
 		for (KBFolder kbFolder : kbFolders) {
+			if (kbFolder.getCtCollectionId() != 0) {
+				continue;
+			}
+
 			if (entityCache.getResult(
 					KBFolderImpl.class, kbFolder.getPrimaryKey()) == null) {
 
@@ -3877,12 +5025,12 @@ public class KBFolderPersistenceImpl
 			_finderPathFetchByG_P_UT, args, kbFolderModelImpl);
 
 		args = new Object[] {
-			kbFolderModelImpl.getGroupId(),
-			kbFolderModelImpl.getExternalReferenceCode()
+			kbFolderModelImpl.getExternalReferenceCode(),
+			kbFolderModelImpl.getGroupId()
 		};
 
-		finderCache.putResult(_finderPathCountByG_ERC, args, Long.valueOf(1));
-		finderCache.putResult(_finderPathFetchByG_ERC, args, kbFolderModelImpl);
+		finderCache.putResult(_finderPathCountByERC_G, args, Long.valueOf(1));
+		finderCache.putResult(_finderPathFetchByERC_G, args, kbFolderModelImpl);
 	}
 
 	/**
@@ -3972,7 +5120,7 @@ public class KBFolderPersistenceImpl
 					KBFolderImpl.class, kbFolder.getPrimaryKeyObj());
 			}
 
-			if (kbFolder != null) {
+			if ((kbFolder != null) && ctPersistenceHelper.isRemove(kbFolder)) {
 				session.delete(kbFolder);
 			}
 		}
@@ -4018,6 +5166,33 @@ public class KBFolderPersistenceImpl
 			kbFolder.setUuid(uuid);
 		}
 
+		if (Validator.isNull(kbFolder.getExternalReferenceCode())) {
+			kbFolder.setExternalReferenceCode(kbFolder.getUuid());
+		}
+		else {
+			KBFolder ercKBFolder = fetchByERC_G(
+				kbFolder.getExternalReferenceCode(), kbFolder.getGroupId());
+
+			if (isNew) {
+				if (ercKBFolder != null) {
+					throw new DuplicateKBFolderExternalReferenceCodeException(
+						"Duplicate kb folder with external reference code " +
+							kbFolder.getExternalReferenceCode() +
+								" and group " + kbFolder.getGroupId());
+				}
+			}
+			else {
+				if ((ercKBFolder != null) &&
+					(kbFolder.getKbFolderId() != ercKBFolder.getKbFolderId())) {
+
+					throw new DuplicateKBFolderExternalReferenceCodeException(
+						"Duplicate kb folder with external reference code " +
+							kbFolder.getExternalReferenceCode() +
+								" and group " + kbFolder.getGroupId());
+				}
+			}
+		}
+
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -4046,7 +5221,12 @@ public class KBFolderPersistenceImpl
 		try {
 			session = openSession();
 
-			if (isNew) {
+			if (ctPersistenceHelper.isInsert(kbFolder)) {
+				if (!isNew) {
+					session.evict(
+						KBFolderImpl.class, kbFolder.getPrimaryKeyObj());
+				}
+
 				session.save(kbFolder);
 			}
 			else {
@@ -4058,6 +5238,16 @@ public class KBFolderPersistenceImpl
 		}
 		finally {
 			closeSession(session);
+		}
+
+		if (kbFolder.getCtCollectionId() != 0) {
+			if (isNew) {
+				kbFolder.setNew(false);
+			}
+
+			kbFolder.resetOriginalValues();
+
+			return kbFolder;
 		}
 
 		entityCache.putResult(
@@ -4116,12 +5306,137 @@ public class KBFolderPersistenceImpl
 	/**
 	 * Returns the kb folder with the primary key or returns <code>null</code> if it could not be found.
 	 *
+	 * @param primaryKey the primary key of the kb folder
+	 * @return the kb folder, or <code>null</code> if a kb folder with the primary key could not be found
+	 */
+	@Override
+	public KBFolder fetchByPrimaryKey(Serializable primaryKey) {
+		if (ctPersistenceHelper.isProductionMode(KBFolder.class, primaryKey)) {
+			return super.fetchByPrimaryKey(primaryKey);
+		}
+
+		KBFolder kbFolder = null;
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			kbFolder = (KBFolder)session.get(KBFolderImpl.class, primaryKey);
+
+			if (kbFolder != null) {
+				cacheResult(kbFolder);
+			}
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+
+		return kbFolder;
+	}
+
+	/**
+	 * Returns the kb folder with the primary key or returns <code>null</code> if it could not be found.
+	 *
 	 * @param kbFolderId the primary key of the kb folder
 	 * @return the kb folder, or <code>null</code> if a kb folder with the primary key could not be found
 	 */
 	@Override
 	public KBFolder fetchByPrimaryKey(long kbFolderId) {
 		return fetchByPrimaryKey((Serializable)kbFolderId);
+	}
+
+	@Override
+	public Map<Serializable, KBFolder> fetchByPrimaryKeys(
+		Set<Serializable> primaryKeys) {
+
+		if (ctPersistenceHelper.isProductionMode(KBFolder.class)) {
+			return super.fetchByPrimaryKeys(primaryKeys);
+		}
+
+		if (primaryKeys.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		Map<Serializable, KBFolder> map = new HashMap<Serializable, KBFolder>();
+
+		if (primaryKeys.size() == 1) {
+			Iterator<Serializable> iterator = primaryKeys.iterator();
+
+			Serializable primaryKey = iterator.next();
+
+			KBFolder kbFolder = fetchByPrimaryKey(primaryKey);
+
+			if (kbFolder != null) {
+				map.put(primaryKey, kbFolder);
+			}
+
+			return map;
+		}
+
+		if ((databaseInMaxParameters > 0) &&
+			(primaryKeys.size() > databaseInMaxParameters)) {
+
+			Iterator<Serializable> iterator = primaryKeys.iterator();
+
+			while (iterator.hasNext()) {
+				Set<Serializable> page = new HashSet<>();
+
+				for (int i = 0;
+					 (i < databaseInMaxParameters) && iterator.hasNext(); i++) {
+
+					page.add(iterator.next());
+				}
+
+				map.putAll(fetchByPrimaryKeys(page));
+			}
+
+			return map;
+		}
+
+		StringBundler sb = new StringBundler((primaryKeys.size() * 2) + 1);
+
+		sb.append(getSelectSQL());
+		sb.append(" WHERE ");
+		sb.append(getPKDBName());
+		sb.append(" IN (");
+
+		for (Serializable primaryKey : primaryKeys) {
+			sb.append((long)primaryKey);
+
+			sb.append(",");
+		}
+
+		sb.setIndex(sb.index() - 1);
+
+		sb.append(")");
+
+		String sql = sb.toString();
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			Query query = session.createQuery(sql);
+
+			for (KBFolder kbFolder : (List<KBFolder>)query.list()) {
+				map.put(kbFolder.getPrimaryKeyObj(), kbFolder);
+
+				cacheResult(kbFolder);
+			}
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+
+		return map;
 	}
 
 	/**
@@ -4187,27 +5502,30 @@ public class KBFolderPersistenceImpl
 		int start, int end, OrderByComparator<KBFolder> orderByComparator,
 		boolean useFinderCache) {
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindAll;
 				finderArgs = FINDER_ARGS_EMPTY;
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindAll;
 			finderArgs = new Object[] {start, end, orderByComparator};
 		}
 
 		List<KBFolder> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<KBFolder>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -4243,7 +5561,7 @@ public class KBFolderPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -4276,8 +5594,15 @@ public class KBFolderPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			KBFolder.class);
+
+		Long count = null;
+
+		if (productionMode) {
+			count = (Long)finderCache.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
+		}
 
 		if (count == null) {
 			Session session = null;
@@ -4289,8 +5614,10 @@ public class KBFolderPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(
-					_finderPathCountAll, FINDER_ARGS_EMPTY, count);
+				if (productionMode) {
+					finderCache.putResult(
+						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -4324,8 +5651,79 @@ public class KBFolderPersistenceImpl
 	}
 
 	@Override
-	protected Map<String, Integer> getTableColumnsMap() {
+	public Set<String> getCTColumnNames(
+		CTColumnResolutionType ctColumnResolutionType) {
+
+		return _ctColumnNamesMap.getOrDefault(
+			ctColumnResolutionType, Collections.emptySet());
+	}
+
+	@Override
+	public List<String> getMappingTableNames() {
+		return _mappingTableNames;
+	}
+
+	@Override
+	public Map<String, Integer> getTableColumnsMap() {
 		return KBFolderModelImpl.TABLE_COLUMNS_MAP;
+	}
+
+	@Override
+	public String getTableName() {
+		return "KBFolder";
+	}
+
+	@Override
+	public List<String[]> getUniqueIndexColumnNames() {
+		return _uniqueIndexColumnNames;
+	}
+
+	private static final Map<CTColumnResolutionType, Set<String>>
+		_ctColumnNamesMap = new EnumMap<CTColumnResolutionType, Set<String>>(
+			CTColumnResolutionType.class);
+	private static final List<String> _mappingTableNames =
+		new ArrayList<String>();
+	private static final List<String[]> _uniqueIndexColumnNames =
+		new ArrayList<String[]>();
+
+	static {
+		Set<String> ctControlColumnNames = new HashSet<String>();
+		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctStrictColumnNames = new HashSet<String>();
+
+		ctControlColumnNames.add("mvccVersion");
+		ctControlColumnNames.add("ctCollectionId");
+		ctStrictColumnNames.add("uuid_");
+		ctStrictColumnNames.add("externalReferenceCode");
+		ctStrictColumnNames.add("groupId");
+		ctStrictColumnNames.add("companyId");
+		ctStrictColumnNames.add("userId");
+		ctStrictColumnNames.add("userName");
+		ctStrictColumnNames.add("createDate");
+		ctIgnoreColumnNames.add("modifiedDate");
+		ctStrictColumnNames.add("parentKBFolderId");
+		ctStrictColumnNames.add("name");
+		ctStrictColumnNames.add("urlTitle");
+		ctStrictColumnNames.add("description");
+		ctStrictColumnNames.add("lastPublishDate");
+		ctStrictColumnNames.add("status");
+		ctStrictColumnNames.add("statusByUserId");
+		ctStrictColumnNames.add("statusByUserName");
+		ctStrictColumnNames.add("statusDate");
+
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.CONTROL, ctControlColumnNames);
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.PK, Collections.singleton("kbFolderId"));
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.STRICT, ctStrictColumnNames);
+
+		_uniqueIndexColumnNames.add(new String[] {"uuid_", "groupId"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"externalReferenceCode", "groupId"});
 	}
 
 	/**
@@ -4464,39 +5862,49 @@ public class KBFolderPersistenceImpl
 			},
 			new String[] {"groupId", "parentKBFolderId", "urlTitle"}, false);
 
-		_finderPathFetchByG_ERC = new FinderPath(
-			FINDER_CLASS_NAME_ENTITY, "fetchByG_ERC",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"groupId", "externalReferenceCode"}, true);
+		_finderPathWithPaginationFindByG_P_S = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_P_S",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Integer.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), OrderByComparator.class.getName()
+			},
+			new String[] {"groupId", "parentKBFolderId", "status"}, true);
 
-		_finderPathCountByG_ERC = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_ERC",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"groupId", "externalReferenceCode"}, false);
+		_finderPathWithoutPaginationFindByG_P_S = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByG_P_S",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Integer.class.getName()
+			},
+			new String[] {"groupId", "parentKBFolderId", "status"}, true);
 
-		_setKBFolderUtilPersistence(this);
+		_finderPathCountByG_P_S = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_P_S",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Integer.class.getName()
+			},
+			new String[] {"groupId", "parentKBFolderId", "status"}, false);
+
+		_finderPathFetchByERC_G = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByERC_G",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "groupId"}, true);
+
+		_finderPathCountByERC_G = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByERC_G",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "groupId"}, false);
+
+		KBFolderUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setKBFolderUtilPersistence(null);
+		KBFolderUtil.setPersistence(null);
 
 		entityCache.removeCache(KBFolderImpl.class.getName());
-	}
-
-	private void _setKBFolderUtilPersistence(
-		KBFolderPersistence kbFolderPersistence) {
-
-		try {
-			Field field = KBFolderUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, kbFolderPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -4524,6 +5932,9 @@ public class KBFolderPersistenceImpl
 	public void setSessionFactory(SessionFactory sessionFactory) {
 		super.setSessionFactory(sessionFactory);
 	}
+
+	@Reference
+	protected CTPersistenceHelper ctPersistenceHelper;
 
 	@Reference
 	protected EntityCache entityCache;
@@ -4584,8 +5995,5 @@ public class KBFolderPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private KBFolderModelArgumentsResolver _kbFolderModelArgumentsResolver;
 
 }

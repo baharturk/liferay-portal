@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 /**
@@ -22,14 +13,14 @@
 AUI.add(
 	'liferay-store',
 	(A) => {
-		var Lang = A.Lang;
+		const Lang = A.Lang;
 
-		var isObject = Lang.isObject;
+		const isObject = Lang.isObject;
 
-		var TOKEN_SERIALIZE = 'serialize://';
+		const TOKEN_SERIALIZE = 'serialize://';
 
-		var Store = function (key, value) {
-			var method;
+		const Store = function (key, value) {
+			let method;
 
 			if (Lang.isFunction(value)) {
 				method = 'get';
@@ -56,9 +47,9 @@ AUI.add(
 
 		A.mix(Store, {
 			_getValues(cmd, key, callback) {
-				var instance = this;
+				const instance = this;
 
-				var config = {
+				const config = {
 					callback,
 					data: {
 						cmd,
@@ -75,12 +66,6 @@ AUI.add(
 
 			_ioRequest(config) {
 				config.data.p_auth = Liferay.authToken;
-
-				var doAsUserIdEncoded = themeDisplay.getDoAsUserIdEncoded();
-
-				if (doAsUserIdEncoded) {
-					config.data.doAsUserId = doAsUserIdEncoded;
-				}
 
 				const body = new URLSearchParams();
 
@@ -132,7 +117,7 @@ AUI.add(
 			},
 
 			_setValues(data) {
-				var instance = this;
+				const instance = this;
 
 				instance._ioRequest({
 					data,
@@ -140,21 +125,21 @@ AUI.add(
 			},
 
 			get(key, callback) {
-				var instance = this;
+				const instance = this;
 
 				instance._getValues('get', key, callback);
 			},
 
 			getAll(keys, callback) {
-				var instance = this;
+				const instance = this;
 
 				instance._getValues('getAll', keys, callback);
 			},
 
 			set(key, value) {
-				var instance = this;
+				const instance = this;
 
-				var object = {};
+				const object = {};
 
 				if (isObject(value)) {
 					value = TOKEN_SERIALIZE + JSON.stringify(value);
@@ -166,7 +151,7 @@ AUI.add(
 			},
 
 			setAll(object) {
-				var instance = this;
+				const instance = this;
 
 				instance._setValues(object);
 			},

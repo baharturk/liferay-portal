@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.web.internal.portlet.action;
@@ -21,7 +12,6 @@ import com.liferay.commerce.exception.CommerceOrderItemRequestedDeliveryDateExce
 import com.liferay.commerce.exception.CommerceOrderValidatorException;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
-import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -52,7 +42,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Di Giorgi
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER,
 		"mvc.command.name=/commerce_order/edit_commerce_order_item"
@@ -138,6 +127,9 @@ public class EditCommerceOrderItemMVCActionCommand
 		long commerceOrderId = ParamUtil.getLong(
 			actionRequest, "commerceOrderId");
 
+		String unitOfMeasureKey = ParamUtil.getString(
+			actionRequest, "unitOfMeasureKey");
+
 		CommerceContext commerceContext =
 			(CommerceContext)actionRequest.getAttribute(
 				CommerceWebKeys.COMMERCE_CONTEXT);
@@ -150,7 +142,8 @@ public class EditCommerceOrderItemMVCActionCommand
 
 		for (long cpInstanceId : cpInstanceIds) {
 			_commerceOrderItemService.addCommerceOrderItem(
-				commerceOrderId, cpInstanceId, null, 1, 0, commerceContext,
+				commerceOrderId, cpInstanceId, null, BigDecimal.ONE, 0,
+				BigDecimal.ZERO, unitOfMeasureKey, commerceContext,
 				serviceContext);
 		}
 	}
@@ -197,13 +190,14 @@ public class EditCommerceOrderItemMVCActionCommand
 		BigDecimal decimalQuantity = (BigDecimal)ParamUtil.getNumber(
 			actionRequest, "decimalQuantity");
 
+		ServiceContext serviceContext = ServiceContextFactory.getInstance(
+			CommerceOrderItem.class.getName(), actionRequest);
+
+		serviceContext.setAttribute("validateOrder", Boolean.FALSE);
+
 		commerceOrderItem = _commerceOrderItemService.updateCommerceOrderItem(
-			commerceOrderItemId, cpMeasurementUnitId,
-			decimalQuantity.intValue(),
-			(CommerceContext)actionRequest.getAttribute(
-				CommerceWebKeys.COMMERCE_CONTEXT),
-			ServiceContextFactory.getInstance(
-				CommerceOrderItem.class.getName(), actionRequest));
+			commerceOrderItemId, cpMeasurementUnitId, decimalQuantity,
+			serviceContext);
 
 		if (!commerceOrder.isOpen()) {
 			BigDecimal price = (BigDecimal)ParamUtil.getNumber(
@@ -255,9 +249,6 @@ public class EditCommerceOrderItemMVCActionCommand
 
 	@Reference
 	private CommerceOrderItemService _commerceOrderItemService;
-
-	@Reference
-	private CPInstanceService _cpInstanceService;
 
 	private class CommerceOrderItemCallable implements Callable<Object> {
 

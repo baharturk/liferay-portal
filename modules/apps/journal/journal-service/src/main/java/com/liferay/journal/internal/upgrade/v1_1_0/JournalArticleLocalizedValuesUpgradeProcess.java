@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.upgrade.v1_1_0;
@@ -17,7 +8,6 @@ package com.liferay.journal.internal.upgrade.v1_1_0;
 import com.liferay.counter.kernel.service.CounterLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
@@ -29,7 +19,6 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import java.util.HashMap;
@@ -71,22 +60,22 @@ public class JournalArticleLocalizedValuesUpgradeProcess
 
 	private void _dropDescriptionColumn() throws Exception {
 		try {
-			runSQL("alter table JournalArticle drop column description");
+			alterTableDropColumn("JournalArticle", "description");
 		}
 		catch (SQLException sqlException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(sqlException, sqlException);
+				_log.debug(sqlException);
 			}
 		}
 	}
 
 	private void _dropTitleColumn() throws Exception {
 		try {
-			runSQL("alter table JournalArticle drop column title");
+			alterTableDropColumn("JournalArticle", "title");
 		}
 		catch (SQLException sqlException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(sqlException, sqlException);
+				_log.debug(sqlException);
 			}
 		}
 	}
@@ -190,32 +179,27 @@ public class JournalArticleLocalizedValuesUpgradeProcess
 	}
 
 	private void _updateJournalArticleDefaultLanguageId() throws Exception {
-		if (!hasColumn("JournalArticle", "defaultLanguageId")) {
-			runSQL(
-				"alter table JournalArticle add defaultLanguageId " +
-					"VARCHAR(75) null");
-		}
+		alterTableAddColumn(
+			"JournalArticle", "defaultLanguageId", "VARCHAR(75) null");
 
 		_updateDefaultLanguage("title", false);
 		_updateDefaultLanguage("content", true);
 	}
 
 	private void _updateJournalArticleLocalizedFields() throws Exception {
-		String sql =
-			"insert into JournalArticleLocalization(articleLocalizationId, " +
-				"companyId, articlePK, title, description, languageId) " +
-					"values(?, ?, ?, ?, ?, ?)";
-
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			processConcurrently(
 				"select id_, companyId, title, description, " +
 					"defaultLanguageId from JournalArticle",
+				"insert into JournalArticleLocalization (" +
+					"articleLocalizationId, companyId, articlePK, title, " +
+						"description, languageId) values (?, ?, ?, ?, ?, ?)",
 				resultSet -> new Object[] {
 					resultSet.getLong(1), resultSet.getLong(2),
 					resultSet.getString(3), resultSet.getString(4),
 					resultSet.getString(5)
 				},
-				values -> {
+				(values, preparedStatement) -> {
 					long id = (Long)values[0];
 					long companyId = (Long)values[1];
 
@@ -233,63 +217,43 @@ public class JournalArticleLocalizedValuesUpgradeProcess
 					locales.addAll(titleMap.keySet());
 					locales.addAll(descriptionMap.keySet());
 
-					try (PreparedStatement updatePreparedStatement =
-							AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-								connection, sql)) {
+					for (Locale locale : locales) {
+						String localizedTitle = titleMap.get(locale);
+						String localizedDescription = descriptionMap.get(
+							locale);
 
-						for (Locale locale : locales) {
-							String localizedTitle = titleMap.get(locale);
-							String localizedDescription = descriptionMap.get(
-								locale);
+						if ((localizedTitle != null) &&
+							(localizedTitle.length() > _MAX_LENGTH_TITLE)) {
 
-							if ((localizedTitle != null) &&
-								(localizedTitle.length() > _MAX_LENGTH_TITLE)) {
+							localizedTitle = StringUtil.shorten(
+								localizedTitle, _MAX_LENGTH_TITLE);
 
-								localizedTitle = StringUtil.shorten(
-									localizedTitle, _MAX_LENGTH_TITLE);
+							_log(id, "title");
+						}
 
-								_log(id, "title");
+						if (localizedDescription != null) {
+							String safeLocalizedDescription = _truncate(
+								localizedDescription, _MAX_LENGTH_DESCRIPTION);
+
+							if (localizedDescription !=
+									safeLocalizedDescription) {
+
+								_log(id, "description");
 							}
 
-							if (localizedDescription != null) {
-								String safeLocalizedDescription = _truncate(
-									localizedDescription,
-									_MAX_LENGTH_DESCRIPTION);
-
-								if (localizedDescription !=
-										safeLocalizedDescription) {
-
-									_log(id, "description");
-								}
-
-								localizedDescription = safeLocalizedDescription;
-							}
-
-							updatePreparedStatement.setLong(
-								1, _counterLocalService.increment());
-							updatePreparedStatement.setLong(2, companyId);
-							updatePreparedStatement.setLong(3, id);
-							updatePreparedStatement.setString(
-								4, localizedTitle);
-							updatePreparedStatement.setString(
-								5, localizedDescription);
-							updatePreparedStatement.setString(
-								6, LocaleUtil.toLanguageId(locale));
-
-							updatePreparedStatement.addBatch();
+							localizedDescription = safeLocalizedDescription;
 						}
 
-						try {
-							updatePreparedStatement.executeBatch();
-						}
-						catch (Exception exception) {
-							_log.error(
-								"Unable to update localized fields for " +
-									"article " + id,
-								exception);
+						preparedStatement.setLong(
+							1, _counterLocalService.increment());
+						preparedStatement.setLong(2, companyId);
+						preparedStatement.setLong(3, id);
+						preparedStatement.setString(4, localizedTitle);
+						preparedStatement.setString(5, localizedDescription);
+						preparedStatement.setString(
+							6, LocaleUtil.toLanguageId(locale));
 
-							throw exception;
-						}
+						preparedStatement.addBatch();
 					}
 				},
 				"Unable to update journal article localized fields");
@@ -297,9 +261,7 @@ public class JournalArticleLocalizedValuesUpgradeProcess
 	}
 
 	private void _upgradeSchema() throws Exception {
-		if (hasTable("JournalArticleLocalization")) {
-			runSQL("drop table JournalArticleLocalization");
-		}
+		dropTable("JournalArticleLocalization");
 
 		String template = StringUtil.read(
 			JournalArticleLocalizedValuesUpgradeProcess.class.
@@ -310,7 +272,7 @@ public class JournalArticleLocalizedValuesUpgradeProcess
 
 	private static final int _MAX_LENGTH_DESCRIPTION = 4000;
 
-	private static final int _MAX_LENGTH_TITLE = 400;
+	private static final int _MAX_LENGTH_TITLE = 800;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		JournalArticleLocalizedValuesUpgradeProcess.class);

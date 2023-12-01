@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.web.internal.portlet.action;
@@ -28,7 +19,7 @@ import com.liferay.commerce.wish.list.util.CommerceWishListHttpHelper;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
@@ -54,7 +45,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Di Giorgi
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"javax.portlet.name=" + CommerceWishListPortletKeys.COMMERCE_WISH_LIST_CONTENT,
 		"mvc.command.name=/commerce_wish_list_content/add_commerce_wish_list_item"
@@ -74,8 +64,8 @@ public class AddCommerceWishListItemMVCActionCommand
 		long cpDefinitionId = ParamUtil.getLong(
 			actionRequest, "cpDefinitionId");
 		long cpInstanceId = ParamUtil.getLong(actionRequest, "cpInstanceId");
-		String ddmFormValues = ParamUtil.getString(
-			actionRequest, "ddmFormValues");
+		String formFieldValues = ParamUtil.getString(
+			actionRequest, "formFieldValues");
 
 		HttpServletRequest httpServletRequest = _portal.getHttpServletRequest(
 			actionRequest);
@@ -101,8 +91,8 @@ public class AddCommerceWishListItemMVCActionCommand
 
 			if (commerceWishList == null) {
 				commerceWishList = _commerceWishListService.addCommerceWishList(
-					LanguageUtil.get(serviceContext.getLocale(), "default"),
-					true, serviceContext);
+					_language.get(serviceContext.getLocale(), "default"), true,
+					serviceContext);
 			}
 
 			CommerceWishListItem commerceWishListItem =
@@ -111,23 +101,21 @@ public class AddCommerceWishListItemMVCActionCommand
 						(CommerceContext)httpServletRequest.getAttribute(
 							CommerceWebKeys.COMMERCE_CONTEXT)),
 					commerceWishList.getCommerceWishListId(), cpDefinitionId,
-					cpInstanceUuid, ddmFormValues, serviceContext);
-
-			int commerceWishListItemsCount =
-				_commerceWishListItemService.getCommerceWishListItemsCount(
-					commerceWishList.getCommerceWishListId());
+					cpInstanceUuid, formFieldValues, serviceContext);
 
 			jsonObject.put(
 				"commerceWishListItemId",
 				commerceWishListItem.getCommerceWishListItemId()
 			).put(
-				"commerceWishListItemsCount", commerceWishListItemsCount
+				"commerceWishListItemsCount",
+				_commerceWishListItemService.getCommerceWishListItemsCount(
+					commerceWishList.getCommerceWishListId())
 			).put(
 				"success", true
 			);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			jsonObject.put(
 				"error", exception.getMessage()
@@ -169,6 +157,9 @@ public class AddCommerceWishListItemMVCActionCommand
 
 	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

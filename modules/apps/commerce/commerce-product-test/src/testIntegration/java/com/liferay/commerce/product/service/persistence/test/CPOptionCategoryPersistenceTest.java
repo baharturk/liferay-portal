@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
@@ -127,6 +118,8 @@ public class CPOptionCategoryPersistenceTest {
 
 		newCPOptionCategory.setMvccVersion(RandomTestUtil.nextLong());
 
+		newCPOptionCategory.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCPOptionCategory.setUuid(RandomTestUtil.randomString());
 
 		newCPOptionCategory.setCompanyId(RandomTestUtil.nextLong());
@@ -157,6 +150,9 @@ public class CPOptionCategoryPersistenceTest {
 		Assert.assertEquals(
 			existingCPOptionCategory.getMvccVersion(),
 			newCPOptionCategory.getMvccVersion());
+		Assert.assertEquals(
+			existingCPOptionCategory.getCtCollectionId(),
+			newCPOptionCategory.getCtCollectionId());
 		Assert.assertEquals(
 			existingCPOptionCategory.getUuid(), newCPOptionCategory.getUuid());
 		Assert.assertEquals(
@@ -253,11 +249,11 @@ public class CPOptionCategoryPersistenceTest {
 
 	protected OrderByComparator<CPOptionCategory> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CPOptionCategory", "mvccVersion", true, "uuid", true,
-			"CPOptionCategoryId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true, "title",
-			true, "description", true, "priority", true, "key", true,
-			"lastPublishDate", true);
+			"CPOptionCategory", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "CPOptionCategoryId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "title", true, "description", true,
+			"priority", true, "key", true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -547,6 +543,8 @@ public class CPOptionCategoryPersistenceTest {
 		CPOptionCategory cpOptionCategory = _persistence.create(pk);
 
 		cpOptionCategory.setMvccVersion(RandomTestUtil.nextLong());
+
+		cpOptionCategory.setCtCollectionId(RandomTestUtil.nextLong());
 
 		cpOptionCategory.setUuid(RandomTestUtil.randomString());
 

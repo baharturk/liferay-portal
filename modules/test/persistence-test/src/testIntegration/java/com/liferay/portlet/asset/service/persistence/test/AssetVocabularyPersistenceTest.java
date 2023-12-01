@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.exception.DuplicateAssetVocabularyExternalReferenceCodeException;
 import com.liferay.asset.kernel.exception.NoSuchVocabularyException;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
@@ -212,6 +204,28 @@ public class AssetVocabularyPersistenceTest {
 			Time.getShortTimestamp(newAssetVocabulary.getLastPublishDate()));
 	}
 
+	@Test(
+		expected = DuplicateAssetVocabularyExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		AssetVocabulary assetVocabulary = addAssetVocabulary();
+
+		AssetVocabulary newAssetVocabulary = addAssetVocabulary();
+
+		newAssetVocabulary.setGroupId(assetVocabulary.getGroupId());
+
+		newAssetVocabulary = _persistence.update(newAssetVocabulary);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newAssetVocabulary);
+
+		newAssetVocabulary.setExternalReferenceCode(
+			assetVocabulary.getExternalReferenceCode());
+
+		_persistence.update(newAssetVocabulary);
+	}
+
 	@Test
 	public void testCountByUuid() throws Exception {
 		_persistence.countByUuid("");
@@ -292,12 +306,12 @@ public class AssetVocabularyPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_ERC() throws Exception {
-		_persistence.countByG_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
 
-		_persistence.countByG_ERC(0L, "null");
+		_persistence.countByERC_G("null", 0L);
 
-		_persistence.countByG_ERC(0L, (String)null);
+		_persistence.countByERC_G((String)null, 0L);
 	}
 
 	@Test
@@ -627,15 +641,15 @@ public class AssetVocabularyPersistenceTest {
 				new Class<?>[] {String.class}, "name"));
 
 		Assert.assertEquals(
-			Long.valueOf(assetVocabulary.getGroupId()),
-			ReflectionTestUtil.<Long>invoke(
-				assetVocabulary, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "groupId"));
-		Assert.assertEquals(
 			assetVocabulary.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				assetVocabulary, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(assetVocabulary.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				assetVocabulary, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected AssetVocabulary addAssetVocabulary() throws Exception {

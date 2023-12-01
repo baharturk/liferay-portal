@@ -6,15 +6,14 @@
 
 		<meta content="initial-scale=1.0, width=device-width" name="viewport" />
 
-		<link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700&display=swap" rel="stylesheet">
-		<script type="text/javascript" src="${javascript_folder}/standalone/SpeedwellSlider.js" defer></script>
+		<script ${nonceAttribute} type="text/javascript" src="${javascript_folder}/standalone/SpeedwellSlider.js" defer></script>
 		<@liferay_util["include"] page=top_head_include />
 	</head>
 
 	<body class="speedwell ${css_class}" id="content">
 		<@liferay.control_menu />
 
-		<div id="wrapper">
+		<div class="position-relative" id="wrapper">
 			<div class="liferay-top">
 				<@liferay_ui["quick-access"] contentId="#main-content" />
 				<@liferay_util["include"] page=body_top_include />
@@ -65,11 +64,10 @@
 			</div>
 		</div>
 
-		<script src="${javascript_folder}/intersection-observer.js" type="text/javascript"></script>
-		<script src="${javascript_folder}/features/accessibility.js" type="text/javascript"></script>
-		<script src="${javascript_folder}/features/scrollHandler.js" type="text/javascript"></script>
-		<script src="${javascript_folder}/features/topbar.js" type="text/javascript"></script>
-		<script src="${javascript_folder}/features/categoryMenu.js" type="text/javascript"></script>
-		<script src="${javascript_folder}/features/mobile.js" type="text/javascript"></script>
+		<script ${nonceAttribute} src="${javascript_folder}/features/accessibility.js" type="text/javascript"></script>
+		<script ${nonceAttribute} src="${javascript_folder}/features/scrollHandler.js" type="text/javascript"></script>
+		<script ${nonceAttribute} src="${javascript_folder}/features/topbar.js" type="text/javascript"></script>
+		<script ${nonceAttribute} src="${javascript_folder}/features/categoryMenu.js" type="text/javascript"></script>
+		<script ${nonceAttribute} src="${javascript_folder}/features/mobile.js" type="text/javascript"></script>
 	</body>
 </html>

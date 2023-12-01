@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.values.factory.internal;
@@ -31,7 +22,7 @@ import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -61,7 +52,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marcellus Tavares
  */
-@Component(immediate = true, service = DDMFormValuesFactory.class)
+@Component(service = DDMFormValuesFactory.class)
 public class DDMFormValuesFactoryImpl implements DDMFormValuesFactory {
 
 	@Override
@@ -108,29 +99,32 @@ public class DDMFormValuesFactoryImpl implements DDMFormValuesFactory {
 			return;
 		}
 
+		Set<String> checkedDDMFormFieldNames = new HashSet<>();
+
 		_checkDDMFormFieldParameterNames(
-			ddmForm.getDDMFormFields(), StringPool.BLANK,
-			ddmFormFieldParameterNames);
+			checkedDDMFormFieldNames, ddmForm.getDDMFormFields(),
+			StringPool.BLANK, ddmFormFieldParameterNames);
 	}
 
 	private void _checkDDMFormFieldParameterNames(
-		List<DDMFormField> ddmFormFields,
+		Set<String> checkedDDMFormFieldNames, List<DDMFormField> ddmFormFields,
 		String parentDDMFormFieldParameterName,
 		Set<String> ddmFormFieldParameterNames) {
 
 		for (DDMFormField ddmFormField : ddmFormFields) {
+			if (checkedDDMFormFieldNames.contains(ddmFormField.getName())) {
+				continue;
+			}
+
 			Set<String> filteredDDMFormFieldParameterNames =
 				_filterDDMFormFieldParameterNames(
 					ddmFormField, ddmFormFieldParameterNames);
 
-			String ddmFormFieldParameterPrefix =
-				_getDDMFormFieldParameterPrefix(
-					ddmFormField, parentDDMFormFieldParameterName);
-
 			boolean containsDefaultDDMFormFieldParameterName =
 				_containsDefaultDDMFormFieldParameterName(
 					filteredDDMFormFieldParameterNames,
-					ddmFormFieldParameterPrefix);
+					_getDDMFormFieldParameterPrefix(
+						ddmFormField, parentDDMFormFieldParameterName));
 
 			if (!containsDefaultDDMFormFieldParameterName) {
 				String defaultDDMFormFieldParameterName =
@@ -141,6 +135,7 @@ public class DDMFormValuesFactoryImpl implements DDMFormValuesFactory {
 					defaultDDMFormFieldParameterName);
 
 				_checkDDMFormFieldParameterNames(
+					checkedDDMFormFieldNames,
 					ddmFormField.getNestedDDMFormFields(), StringPool.BLANK,
 					ddmFormFieldParameterNames);
 			}
@@ -149,10 +144,13 @@ public class DDMFormValuesFactoryImpl implements DDMFormValuesFactory {
 					filteredDDMFormFieldParameterNames) {
 
 				_checkDDMFormFieldParameterNames(
+					checkedDDMFormFieldNames,
 					ddmFormField.getNestedDDMFormFields(),
 					filteredDDMFormFieldParameterName,
 					ddmFormFieldParameterNames);
 			}
+
+			checkedDDMFormFieldNames.add(ddmFormField.getName());
 		}
 	}
 
@@ -195,6 +193,10 @@ public class DDMFormValuesFactoryImpl implements DDMFormValuesFactory {
 					DDM_FORM_FIELD_INSTANCE_ID_INDEX]);
 
 		DDMFormField ddmFormField = ddmFormFieldsMap.get(fieldName);
+
+		if (ddmFormField == null) {
+			return ddmFormFieldValue;
+		}
 
 		ddmFormFieldValue.setFieldReference(ddmFormField.getFieldReference());
 
@@ -417,7 +419,7 @@ public class DDMFormValuesFactoryImpl implements DDMFormValuesFactory {
 		}
 
 		Locale httpServletRequestLocale = LocaleUtil.fromLanguageId(
-			LanguageUtil.getLanguageId(httpServletRequest));
+			_language.getLanguageId(httpServletRequest));
 
 		if (availableLocales.contains(httpServletRequestLocale)) {
 			return httpServletRequestLocale;
@@ -544,7 +546,7 @@ public class DDMFormValuesFactoryImpl implements DDMFormValuesFactory {
 		else {
 			long groupId = ParamUtil.getLong(httpServletRequest, "groupId");
 
-			Set<Locale> siteAvailableLocales = LanguageUtil.getAvailableLocales(
+			Set<Locale> siteAvailableLocales = _language.getAvailableLocales(
 				groupId);
 
 			String[] siteAvailableLocaleStrings = LocaleUtil.toLanguageIds(
@@ -575,6 +577,9 @@ public class DDMFormValuesFactoryImpl implements DDMFormValuesFactory {
 	private final DDMFormFieldValueRequestParameterRetriever
 		_defaultDDMFormFieldValueRequestParameterRetriever =
 			new DefaultDDMFormFieldValueRequestParameterRetriever();
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

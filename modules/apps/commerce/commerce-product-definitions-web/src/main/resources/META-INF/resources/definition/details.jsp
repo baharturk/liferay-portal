@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -91,9 +82,7 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 					</c:otherwise>
 				</c:choose>
 
-				<aui:input autoFocus="<%= true %>" defaultLanguageId="<%= defaultLanguageId %>" label="name" localized="<%= true %>" name="nameMapAsXML" type="text">
-					<aui:validator name="required" />
-				</aui:input>
+				<aui:input defaultLanguageId="<%= defaultLanguageId %>" label="name" localized="<%= true %>" name="nameMapAsXML" required="<%= true %>" type="text" />
 
 				<aui:input defaultLanguageId="<%= defaultLanguageId %>" label="short-description" localized="<%= true %>" name="shortDescriptionMapAsXML" resizable="<%= true %>" type="textarea" />
 
@@ -129,7 +118,7 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 						defaultLanguageId="<%= defaultLanguageId %>"
 						inputAddon="<%= StringUtil.shorten(friendlyURLBase, 40) %>"
 						name="urlTitleMapAsXML"
-						xml="<%= HttpUtil.decodeURL(cpDefinitionsDisplayContext.getUrlTitleMapAsXML()) %>"
+						xml="<%= HttpComponentsUtil.decodeURL(cpDefinitionsDisplayContext.getUrlTitleMapAsXML()) %>"
 					/>
 				</div>
 
@@ -228,9 +217,9 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 								method: 'POST',
 							}
 						).then(() => {
-							Liferay.fire(events.UPDATE_DATASET_DISPLAY, {
+							Liferay.fire(events.FDS_UPDATE_DISPLAY, {
 								id:
-									'<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_DEFINITION_SPECIFICATIONS %>',
+									'<%= CommerceProductFDSNames.PRODUCT_DEFINITION_SPECIFICATIONS %>',
 							});
 							return null;
 						});
@@ -282,8 +271,8 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 						itemSelectedMessage:
 							'<%= LanguageUtil.get(request, "specification-selected") %>',
 						itemsKey: 'id',
-						linkedDatasetsId: [
-							'<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_DEFINITION_SPECIFICATIONS %>',
+						linkedDataSetsId: [
+							'<%= CommerceProductFDSNames.PRODUCT_DEFINITION_SPECIFICATIONS %>',
 						],
 						multiSelectableEntries: true,
 						itemsKey: 'id',
@@ -300,7 +289,7 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 								fieldName: 'key',
 							},
 						],
-						spritemap: '<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg',
+						spritemap: '<%= themeDisplay.getPathThemeSpritemap() %>',
 						titleLabel:
 							'<%= LanguageUtil.get(request, "add-existing-specification") %>',
 					});
@@ -312,19 +301,16 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 					bodyClasses="p-0"
 					title='<%= LanguageUtil.get(request, "specifications") %>'
 				>
-					<clay:data-set-display
+					<frontend-data-set:classic-display
 						contextParams='<%=
 							HashMapBuilder.<String, String>put(
 								"cpDefinitionId", String.valueOf(cpDefinitionId)
 							).build()
 						%>'
-						dataProviderKey="<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_DEFINITION_SPECIFICATIONS %>"
+						dataProviderKey="<%= CommerceProductFDSNames.PRODUCT_DEFINITION_SPECIFICATIONS %>"
 						formName="fm"
-						id="<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_DEFINITION_SPECIFICATIONS %>"
+						id="<%= CommerceProductFDSNames.PRODUCT_DEFINITION_SPECIFICATIONS %>"
 						itemsPerPage="<%= 10 %>"
-						namespace="<%= liferayPortletResponse.getNamespace() %>"
-						pageNumber="<%= 1 %>"
-						portletURL="<%= currentURLObj %>"
 						selectedItemsKey="cpdefinitionSpecificationOptionValueId"
 						showManagementBar="<%= false %>"
 					/>
@@ -335,7 +321,9 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 </aui:form>
 
 <c:if test="<%= cpDefinition == null %>">
-	<aui:script require="commerce-frontend-js/utilities/debounce as debounce, commerce-frontend-js/utilities/slugify as slugify">
+	<aui:script require="frontend-js-web/index as frontendJsWeb, commerce-frontend-js/utilities/slugify as slugify">
+		var {debounce} = frontendJsWeb;
+
 		var form = document.getElementById('<portlet:namespace />fm');
 
 		var nameInput = form.querySelector('#<portlet:namespace />nameMapAsXML');
@@ -351,7 +339,7 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 			urlTitleInputLocalized.updateInputLanguage(slug);
 		};
 
-		nameInput.addEventListener('input', debounce.default(handleOnNameInput, 200));
+		nameInput.addEventListener('input', debounce(handleOnNameInput, 200));
 	</aui:script>
 
 	<aui:script>

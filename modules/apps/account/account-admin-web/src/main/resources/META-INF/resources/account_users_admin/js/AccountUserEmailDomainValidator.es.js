@@ -1,21 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {PortletBase} from 'frontend-js-web';
-import {Config} from 'metal-state';
+import {PortletBase, openWindow, sub} from 'frontend-js-web';
 
 class AccountUserEmailDomainValidator extends PortletBase {
+	created(props) {
+		this.accountEntryNames = props.accountEntryNames;
+		this.blockedDomains = props.blockedDomains;
+		this.validDomains = props.validDomains;
+		this.viewValidDomainsURL = props.viewValidDomainsURL;
+	}
 	attached() {
 		const form = this.getForm_(this.ns('fm'));
 
@@ -93,13 +89,13 @@ class AccountUserEmailDomainValidator extends PortletBase {
 		return {
 			body(val, field) {
 				const emailDomain = val.substr(val.indexOf('@') + 1);
-				var errorMessage;
-				var hasError = false;
+				let errorMessage;
+				let hasError = false;
 
 				if (!!blockedDomains && blockedDomains.includes(emailDomain)) {
 					hasError = true;
 
-					errorMessage = Liferay.Util.sub(
+					errorMessage = sub(
 						Liferay.Language.get('x-is-a-blocked-domain'),
 						emailDomain
 					);
@@ -110,7 +106,7 @@ class AccountUserEmailDomainValidator extends PortletBase {
 				) {
 					hasError = true;
 
-					errorMessage = Liferay.Util.sub(
+					errorMessage = sub(
 						Liferay.Language.get(
 							'x-is-not-a-valid-domain-for-the-following-accounts-x'
 						),
@@ -160,7 +156,7 @@ class AccountUserEmailDomainValidator extends PortletBase {
 	}
 
 	openDialog_(url) {
-		Liferay.Util.openWindow({
+		openWindow({
 			dialog: {
 				destroyOnHide: true,
 				height: 400,
@@ -200,7 +196,7 @@ class AccountUserEmailDomainValidator extends PortletBase {
 				return;
 			}
 
-			var fieldContainer = formValidator.findFieldContainer(field);
+			const fieldContainer = formValidator.findFieldContainer(field);
 
 			if (fieldContainer) {
 				fieldContainer.removeClass('has-warning');
@@ -216,12 +212,5 @@ class AccountUserEmailDomainValidator extends PortletBase {
 		);
 	}
 }
-
-AccountUserEmailDomainValidator.STATE = {
-	accountEntryNames: Config.string,
-	blockedDomains: Config.string,
-	validDomains: Config.string,
-	viewValidDomainsURL: Config.string,
-};
 
 export default AccountUserEmailDomainValidator;

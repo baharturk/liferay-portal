@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.mapper;
@@ -24,7 +15,7 @@ import com.liferay.headless.delivery.dto.v1_0.Mapping;
 import com.liferay.headless.delivery.internal.dto.v1_0.mapper.util.FragmentMappedValueUtil;
 import com.liferay.info.field.InfoFieldValue;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
 import com.liferay.layout.responsive.ViewportSize;
@@ -113,12 +104,13 @@ public abstract class BaseStyledLayoutStructureItemMapper
 		}
 
 		InfoItemFieldValuesProvider<Object> infoItemFieldValuesProvider =
-			infoItemServiceTracker.getFirstInfoItemService(
+			infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFieldValuesProvider.class, className);
 
 		InfoItemObjectProvider<Object> infoItemObjectProvider =
-			infoItemServiceTracker.getFirstInfoItemService(
-				InfoItemObjectProvider.class, className);
+			infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemObjectProvider.class, className,
+				ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
 		if ((infoItemFieldValuesProvider == null) ||
 			(infoItemObjectProvider == null)) {
@@ -263,7 +255,7 @@ public abstract class BaseStyledLayoutStructureItemMapper
 	}
 
 	@Reference
-	protected InfoItemServiceTracker infoItemServiceTracker;
+	protected InfoItemServiceRegistry infoItemServiceRegistry;
 
 	@Reference
 	protected Portal portal;
@@ -343,10 +335,26 @@ public abstract class BaseStyledLayoutStructureItemMapper
 
 		return new FragmentViewport() {
 			{
-				setId(viewportSize.getViewportSizeId());
+				id = viewportSize.getViewportSizeId();
+
 				setFragmentViewportStyle(
 					() -> new FragmentViewportStyle() {
 						{
+							backgroundColor = styleJSONObject.getString(
+								"backgroundColor", null);
+							borderColor = styleJSONObject.getString(
+								"borderColor", null);
+							borderRadius = styleJSONObject.getString(
+								"borderRadius", null);
+							borderWidth = styleJSONObject.getString(
+								"borderWidth", null);
+							fontFamily = styleJSONObject.getString(
+								"fontFamily", null);
+							fontSize = styleJSONObject.getString(
+								"fontSize", null);
+							fontWeight = styleJSONObject.getString(
+								"fontWeight", null);
+							height = styleJSONObject.getString("height", null);
 							marginBottom = styleJSONObject.getString(
 								"marginBottom", null);
 							marginLeft = styleJSONObject.getString(
@@ -355,6 +363,18 @@ public abstract class BaseStyledLayoutStructureItemMapper
 								"marginRight", null);
 							marginTop = styleJSONObject.getString(
 								"marginTop", null);
+							maxHeight = styleJSONObject.getString(
+								"maxHeight", null);
+							maxWidth = styleJSONObject.getString(
+								"maxWidth", null);
+							minHeight = styleJSONObject.getString(
+								"minHeight", null);
+							minWidth = styleJSONObject.getString(
+								"minWidth", null);
+							opacity = styleJSONObject.getString(
+								"opacity", null);
+							overflow = styleJSONObject.getString(
+								"overflow", null);
 							paddingBottom = styleJSONObject.getString(
 								"paddingBottom", null);
 							paddingLeft = styleJSONObject.getString(
@@ -363,8 +383,12 @@ public abstract class BaseStyledLayoutStructureItemMapper
 								"paddingRight", null);
 							paddingTop = styleJSONObject.getString(
 								"paddingTop", null);
+							shadow = styleJSONObject.getString("shadow", null);
 							textAlign = styleJSONObject.getString(
 								"textAlign", null);
+							textColor = styleJSONObject.getString(
+								"textColor", null);
+							width = styleJSONObject.getString("width", null);
 
 							setHidden(
 								() -> {

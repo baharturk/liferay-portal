@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -297,19 +288,6 @@ public class PortletWrapper
 	}
 
 	/**
-	 * Returns the asset type instances of the portlet.
-	 *
-	 * @return the asset type instances of the portlet
-	 */
-	@Override
-	public java.util.List
-		<com.liferay.asset.kernel.model.AssetRendererFactory<?>>
-			getAssetRendererFactoryInstances() {
-
-		return model.getAssetRendererFactoryInstances();
-	}
-
-	/**
 	 * Returns the names of the parameters that will be automatically propagated
 	 * through the portlet.
 	 *
@@ -589,6 +567,11 @@ public class PortletWrapper
 	@Override
 	public String getFriendlyURLMapping() {
 		return model.getFriendlyURLMapping();
+	}
+
+	@Override
+	public String getFriendlyURLMapping(boolean lookUpFriendlyURLMapper) {
+		return model.getFriendlyURLMapping(lookUpFriendlyURLMapper);
 	}
 
 	/**
@@ -934,28 +917,6 @@ public class PortletWrapper
 	}
 
 	/**
-	 * Returns the name of the poller processor class of the portlet.
-	 *
-	 * @return the name of the poller processor class of the portlet
-	 */
-	@Override
-	public String getPollerProcessorClass() {
-		return model.getPollerProcessorClass();
-	}
-
-	/**
-	 * Returns the poller processor instance of the portlet.
-	 *
-	 * @return the poller processor instance of the portlet
-	 */
-	@Override
-	public com.liferay.portal.kernel.poller.PollerProcessor
-		getPollerProcessorInstance() {
-
-		return model.getPollerProcessorInstance();
-	}
-
-	/**
 	 * Returns the name of the POP message listener class of the portlet.
 	 *
 	 * @return the name of the POP message listener class of the portlet
@@ -1007,6 +968,18 @@ public class PortletWrapper
 	@Override
 	public String getPortletClass() {
 		return model.getPortletClass();
+	}
+
+	@Override
+	public String getPortletConfigurationListenerClass() {
+		return model.getPortletConfigurationListenerClass();
+	}
+
+	@Override
+	public com.liferay.portal.kernel.portlet.PortletConfigurationListener
+		getPortletConfigurationListenerInstance() {
+
+		return model.getPortletConfigurationListenerInstance();
 	}
 
 	/**
@@ -2982,17 +2955,6 @@ public class PortletWrapper
 	}
 
 	/**
-	 * Sets the name of the poller processor class of the portlet.
-	 *
-	 * @param pollerProcessorClass the name of the poller processor class of the
-	 portlet
-	 */
-	@Override
-	public void setPollerProcessorClass(String pollerProcessorClass) {
-		model.setPollerProcessorClass(pollerProcessorClass);
-	}
-
-	/**
 	 * Sets the name of the POP message listener class of the portlet.
 	 *
 	 * @param popMessageListenerClass the name of the POP message listener class
@@ -3033,6 +2995,14 @@ public class PortletWrapper
 	@Override
 	public void setPortletClass(String portletClass) {
 		model.setPortletClass(portletClass);
+	}
+
+	@Override
+	public void setPortletConfigurationListenerClass(
+		String portletConfigurationListenerClass) {
+
+		model.setPortletConfigurationListenerClass(
+			portletConfigurationListenerClass);
 	}
 
 	/**
@@ -3706,6 +3676,11 @@ public class PortletWrapper
 	@Override
 	public void setXmlRpcMethodClass(String xmlRpcMethodClass) {
 		model.setXmlRpcMethodClass(xmlRpcMethodClass);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

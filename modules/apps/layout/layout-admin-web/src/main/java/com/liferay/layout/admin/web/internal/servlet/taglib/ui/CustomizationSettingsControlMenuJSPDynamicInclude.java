@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.servlet.taglib.ui;
@@ -46,6 +37,11 @@ public class CustomizationSettingsControlMenuJSPDynamicInclude
 	public static final String CUSTOMIZATION_SETTINGS_LAYOUT_UPDATE_PERMISSION =
 		"CUSTOMIZATION_SETTINGS_LAYOUT_UPDATE_PERMISSION";
 
+	@Override
+	public ServletContext getServletContext() {
+		return _servletContext;
+	}
+
 	public boolean hasUpdateLayoutPermission(ThemeDisplay themeDisplay)
 		throws PortalException {
 
@@ -80,7 +76,7 @@ public class CustomizationSettingsControlMenuJSPDynamicInclude
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -117,15 +113,6 @@ public class CustomizationSettingsControlMenuJSPDynamicInclude
 	@Override
 	protected Log getLog() {
 		return _log;
-	}
-
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.admin.web)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
 	}
 
 	private boolean _isCustomizableLayout(ThemeDisplay themeDisplay)
@@ -188,5 +175,8 @@ public class CustomizationSettingsControlMenuJSPDynamicInclude
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CustomizationSettingsControlMenuJSPDynamicInclude.class);
+
+	@Reference(target = "(osgi.web.symbolicname=com.liferay.layout.admin.web)")
+	private ServletContext _servletContext;
 
 }

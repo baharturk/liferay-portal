@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.persistence.impl;
@@ -40,7 +31,6 @@ import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -56,7 +46,6 @@ import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -88,7 +77,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {DDMTemplatePersistence.class, BasePersistence.class})
+@Component(service = DDMTemplatePersistence.class)
 public class DDMTemplatePersistenceImpl
 	extends BasePersistenceImpl<DDMTemplate> implements DDMTemplatePersistence {
 
@@ -207,7 +196,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -596,7 +585,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {uuid};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -719,21 +708,21 @@ public class DDMTemplatePersistenceImpl
 
 		uuid = Objects.toString(uuid, "");
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMTemplate.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {uuid, groupId};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			DDMTemplate.class);
 
 		if (result instanceof DDMTemplate) {
 			DDMTemplate ddmTemplate = (DDMTemplate)result;
@@ -743,6 +732,14 @@ public class DDMTemplatePersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						DDMTemplate.class, ddmTemplate.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -852,7 +849,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {uuid, groupId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1024,7 +1021,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -1446,7 +1443,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {uuid, companyId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1607,7 +1604,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -2302,7 +2299,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {groupId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2490,7 +2487,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -2857,7 +2854,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {classPK};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3004,7 +3001,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -3399,7 +3396,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {templateKey};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3554,7 +3551,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -3943,7 +3940,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {type};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -4101,7 +4098,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -4494,7 +4491,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {language};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -4609,21 +4606,21 @@ public class DDMTemplatePersistenceImpl
 	public DDMTemplate fetchBySmallImageId(
 		long smallImageId, boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMTemplate.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {smallImageId};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchBySmallImageId, finderArgs);
+				_finderPathFetchBySmallImageId, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			DDMTemplate.class);
 
 		if (result instanceof DDMTemplate) {
 			DDMTemplate ddmTemplate = (DDMTemplate)result;
@@ -4631,6 +4628,14 @@ public class DDMTemplatePersistenceImpl
 			if (smallImageId != ddmTemplate.getSmallImageId()) {
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						DDMTemplate.class, ddmTemplate.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -4736,7 +4741,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {smallImageId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -4885,7 +4890,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -5627,7 +5632,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {groupId, classNameId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -5837,7 +5842,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -6754,7 +6759,7 @@ public class DDMTemplatePersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMTemplateModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param classPK the class pk
 	 * @param start the lower bound of the range of ddm templates
 	 * @param end the upper bound of the range of ddm templates (not inclusive)
@@ -6803,7 +6808,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				_finderPathWithPaginationFindByG_CPK, finderArgs);
+				_finderPathWithPaginationFindByG_CPK, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -6924,7 +6929,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {groupId, classPK};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -6995,7 +7000,7 @@ public class DDMTemplatePersistenceImpl
 			finderArgs = new Object[] {StringUtil.merge(groupIds), classPK};
 
 			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByG_CPK, finderArgs);
+				_finderPathWithPaginationCountByG_CPK, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -7303,7 +7308,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -8277,7 +8282,7 @@ public class DDMTemplatePersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMTemplateModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param classNameId the class name ID
 	 * @param classPK the class pk
 	 * @param start the lower bound of the range of ddm templates
@@ -8330,7 +8335,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				_finderPathWithPaginationFindByG_C_C, finderArgs);
+				_finderPathWithPaginationFindByG_C_C, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -8458,7 +8463,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {groupId, classNameId, classPK};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -8536,7 +8541,7 @@ public class DDMTemplatePersistenceImpl
 			};
 
 			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByG_C_C, finderArgs);
+				_finderPathWithPaginationCountByG_C_C, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -8828,20 +8833,21 @@ public class DDMTemplatePersistenceImpl
 
 		templateKey = Objects.toString(templateKey, "");
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMTemplate.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {groupId, classNameId, templateKey};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(_finderPathFetchByG_C_T, finderArgs);
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByG_C_T, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			DDMTemplate.class);
 
 		if (result instanceof DDMTemplate) {
 			DDMTemplate ddmTemplate = (DDMTemplate)result;
@@ -8852,6 +8858,14 @@ public class DDMTemplatePersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						DDMTemplate.class, ddmTemplate.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -8971,7 +8985,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {groupId, classNameId, templateKey};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -9157,7 +9171,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -9603,7 +9617,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {classNameId, classPK, type};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -9797,7 +9811,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -10671,7 +10685,7 @@ public class DDMTemplatePersistenceImpl
 
 			finderArgs = new Object[] {groupId, classNameId, classPK, type};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -10964,7 +10978,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DDMTemplate ddmTemplate : list) {
@@ -11927,7 +11941,7 @@ public class DDMTemplatePersistenceImpl
 				groupId, classNameId, classPK, type, mode
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -12548,7 +12562,9 @@ public class DDMTemplatePersistenceImpl
 	 */
 	@Override
 	public DDMTemplate fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(DDMTemplate.class)) {
+		if (ctPersistenceHelper.isProductionMode(
+				DDMTemplate.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -12764,7 +12780,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<DDMTemplate>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -12840,7 +12856,7 @@ public class DDMTemplatePersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -13317,30 +13333,14 @@ public class DDMTemplatePersistenceImpl
 			},
 			false);
 
-		_setDDMTemplateUtilPersistence(this);
+		DDMTemplateUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setDDMTemplateUtilPersistence(null);
+		DDMTemplateUtil.setPersistence(null);
 
 		entityCache.removeCache(DDMTemplateImpl.class.getName());
-	}
-
-	private void _setDDMTemplateUtilPersistence(
-		DDMTemplatePersistence ddmTemplatePersistence) {
-
-		try {
-			Field field = DDMTemplateUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, ddmTemplatePersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -13431,9 +13431,5 @@ public class DDMTemplatePersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private DDMTemplateModelArgumentsResolver
-		_ddmTemplateModelArgumentsResolver;
 
 }

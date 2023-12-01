@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -50,9 +41,8 @@ long commercePriceModifierId = commercePriceListDisplayContext.getCommercePriceM
 						categoryData
 					)
 						.then(() => {
-							Liferay.fire(events.UPDATE_DATASET_DISPLAY, {
-								id:
-									'<%= CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PRICE_MODIFIER_CATEGORIES %>',
+							Liferay.fire(events.FDS_UPDATE_DISPLAY, {
+								id: '<%= CommercePricingFDSNames.PRICE_MODIFIER_CATEGORIES %>',
 							});
 						})
 						.catch((error) => {
@@ -73,8 +63,8 @@ long commercePriceModifierId = commercePriceListDisplayContext.getCommercePriceM
 						'<%= LanguageUtil.get(request, "category-selected") %>',
 					itemsKey: 'id',
 					itemCreation: false,
-					linkedDatasetsId: [
-						'<%= CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PRICE_MODIFIER_CATEGORIES %>',
+					linkedDataSetsId: [
+						'<%= CommercePricingFDSNames.PRICE_MODIFIER_CATEGORIES %>',
 					],
 					onItemSelected: selectItem,
 					pageSize: 10,
@@ -85,7 +75,7 @@ long commercePriceModifierId = commercePriceListDisplayContext.getCommercePriceM
 							fieldName: ['name'],
 						},
 					],
-					spritemap: '<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg',
+					spritemap: '<%= themeDisplay.getPathThemeSpritemap() %>',
 					titleLabel: '<%= LanguageUtil.get(request, "add-existing-category") %>',
 				});
 			</aui:script>
@@ -96,15 +86,12 @@ long commercePriceModifierId = commercePriceListDisplayContext.getCommercePriceM
 				bodyClasses="p-0"
 				title='<%= LanguageUtil.get(request, "categories") %>'
 			>
-				<clay:headless-data-set-display
-					apiURL="<%= commercePriceListDisplayContext.getPriceModifierCategoriesApiUrl() %>"
-					clayDataSetActionDropdownItems="<%= commercePriceListDisplayContext.getPriceModifierCategoryClayDataSetActionDropdownItems() %>"
+				<frontend-data-set:headless-display
+					apiURL="<%= commercePriceListDisplayContext.getPriceModifierCategoriesAPIURL() %>"
+					fdsActionDropdownItems="<%= commercePriceListDisplayContext.getPriceModifierCategoryFDSActionDropdownItems() %>"
 					formName="fm"
-					id="<%= CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PRICE_MODIFIER_CATEGORIES %>"
+					id="<%= CommercePricingFDSNames.PRICE_MODIFIER_CATEGORIES %>"
 					itemsPerPage="<%= 10 %>"
-					namespace="<%= liferayPortletResponse.getNamespace() %>"
-					pageNumber="<%= 1 %>"
-					portletURL="<%= currentURLObj %>"
 				/>
 			</commerce-ui:panel>
 		</div>

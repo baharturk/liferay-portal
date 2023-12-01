@@ -1,40 +1,39 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.internal.resource.v1_0;
 
+import com.liferay.list.type.service.ListTypeDefinitionLocalService;
 import com.liferay.object.admin.rest.dto.v1_0.ObjectDefinition;
 import com.liferay.object.admin.rest.dto.v1_0.ObjectRelationship;
+import com.liferay.object.admin.rest.internal.dto.v1_0.converter.constants.DTOConverterConstants;
+import com.liferay.object.admin.rest.internal.dto.v1_0.util.ObjectFieldUtil;
 import com.liferay.object.admin.rest.internal.odata.entity.v1_0.ObjectRelationshipEntityModel;
 import com.liferay.object.admin.rest.resource.v1_0.ObjectRelationshipResource;
+import com.liferay.object.model.ObjectField;
 import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.object.service.ObjectFieldSettingLocalService;
+import com.liferay.object.service.ObjectFilterLocalService;
 import com.liferay.object.service.ObjectRelationshipService;
-import com.liferay.object.util.LocalizedMapUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
+import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
-import com.liferay.portal.vulcan.fields.NestedFieldSupport;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.resource.EntityModelResource;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
-
-import java.util.Collections;
 
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -48,12 +47,11 @@ import org.osgi.service.component.annotations.ServiceScope;
  */
 @Component(
 	properties = "OSGI-INF/liferay/rest/v1_0/object-relationship.properties",
-	scope = ServiceScope.PROTOTYPE,
-	service = {NestedFieldSupport.class, ObjectRelationshipResource.class}
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = ObjectRelationshipResource.class
 )
 public class ObjectRelationshipResourceImpl
-	extends BaseObjectRelationshipResourceImpl
-	implements EntityModelResource, NestedFieldSupport {
+	extends BaseObjectRelationshipResourceImpl {
 
 	@Override
 	public void deleteObjectRelationship(Long objectRelationshipId)
@@ -68,17 +66,53 @@ public class ObjectRelationshipResourceImpl
 		return _entityModel;
 	}
 
+	@Override
+	public Page<ObjectRelationship>
+			getObjectDefinitionByExternalReferenceCodeObjectRelationshipsPage(
+				String externalReferenceCode, String search, Filter filter,
+				Pagination pagination, Sort[] sorts)
+		throws Exception {
+
+		com.liferay.object.model.ObjectDefinition objectDefinition =
+			_objectDefinitionLocalService.
+				getObjectDefinitionByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		return getObjectDefinitionObjectRelationshipsPage(
+			objectDefinition.getObjectDefinitionId(), search, filter,
+			pagination, sorts);
+	}
+
 	@NestedField(
 		parentClass = ObjectDefinition.class, value = "objectRelationships"
 	)
 	@Override
 	public Page<ObjectRelationship> getObjectDefinitionObjectRelationshipsPage(
 			Long objectDefinitionId, String search, Filter filter,
-			Pagination pagination)
+			Pagination pagination, Sort[] sorts)
 		throws Exception {
 
 		return SearchUtil.search(
-			Collections.emptyMap(),
+			HashMapBuilder.put(
+				"createBatch",
+				addAction(
+					ActionKeys.UPDATE,
+					"postObjectDefinitionObjectRelationshipBatch",
+					com.liferay.object.model.ObjectDefinition.class.getName(),
+					objectDefinitionId)
+			).put(
+				"deleteBatch",
+				addAction(
+					ActionKeys.DELETE, "deleteObjectRelationshipBatch",
+					com.liferay.object.model.ObjectDefinition.class.getName(),
+					null)
+			).put(
+				"updateBatch",
+				addAction(
+					ActionKeys.UPDATE, "putObjectRelationshipBatch",
+					com.liferay.object.model.ObjectDefinition.class.getName(),
+					null)
+			).build(),
 			booleanQuery -> {
 			},
 			filter, com.liferay.object.model.ObjectRelationship.class.getName(),
@@ -91,7 +125,7 @@ public class ObjectRelationshipResourceImpl
 					"objectDefinitionId", objectDefinitionId);
 				searchContext.setCompanyId(contextCompany.getCompanyId());
 			},
-			null,
+			sorts,
 			document -> _toObjectRelationship(
 				_objectRelationshipService.getObjectRelationship(
 					GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK)))));
@@ -107,17 +141,89 @@ public class ObjectRelationshipResourceImpl
 	}
 
 	@Override
+	public ObjectRelationship
+			postObjectDefinitionByExternalReferenceCodeObjectRelationship(
+				String externalReferenceCode,
+				ObjectRelationship objectRelationship)
+		throws Exception {
+
+		com.liferay.object.model.ObjectDefinition objectDefinition1 =
+			_objectDefinitionLocalService.
+				getObjectDefinitionByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		com.liferay.object.model.ObjectDefinition objectDefinition2 =
+			_getObjectDefinition2(
+				objectDefinition1.getObjectFolderId(), objectRelationship);
+
+		objectRelationship.setParameterObjectFieldId(
+			() -> {
+				if (Validator.isNull(
+						objectRelationship.getParameterObjectFieldName())) {
+
+					return 0L;
+				}
+
+				ObjectField objectField =
+					_objectFieldLocalService.getObjectField(
+						objectDefinition2.getObjectDefinitionId(),
+						objectRelationship.getParameterObjectFieldName());
+
+				return objectField.getObjectFieldId();
+			});
+
+		return _toObjectRelationship(
+			_objectRelationshipService.addObjectRelationship(
+				objectRelationship.getExternalReferenceCode(),
+				objectDefinition1.getObjectDefinitionId(),
+				objectDefinition2.getObjectDefinitionId(),
+				objectRelationship.getParameterObjectFieldId(),
+				objectRelationship.getDeletionTypeAsString(),
+				LocalizedMapUtil.getLocalizedMap(objectRelationship.getLabel()),
+				objectRelationship.getName(),
+				GetterUtil.getBoolean(objectRelationship.getSystem()),
+				objectRelationship.getTypeAsString(), null));
+	}
+
+	@Override
 	public ObjectRelationship postObjectDefinitionObjectRelationship(
 			Long objectDefinitionId, ObjectRelationship objectRelationship)
 		throws Exception {
 
+		long objectDefinitionId2 = GetterUtil.getLong(
+			objectRelationship.getObjectDefinitionId2());
+
+		if ((objectDefinitionId2 == 0) &&
+			(objectRelationship.getObjectDefinitionExternalReferenceCode2() !=
+				null)) {
+
+			com.liferay.object.model.ObjectDefinition objectDefinition1 =
+				_objectDefinitionLocalService.getObjectDefinition(
+					objectDefinitionId);
+
+			com.liferay.object.model.ObjectDefinition objectDefinition2 =
+				_getObjectDefinition2(
+					objectDefinition1.getObjectFolderId(), objectRelationship);
+
+			objectDefinitionId2 = objectDefinition2.getObjectDefinitionId();
+		}
+
 		return _toObjectRelationship(
 			_objectRelationshipService.addObjectRelationship(
-				objectDefinitionId, objectRelationship.getObjectDefinitionId2(),
+				objectRelationship.getExternalReferenceCode(),
+				objectDefinitionId, objectDefinitionId2,
+				GetterUtil.getLong(
+					objectRelationship.getParameterObjectFieldId()),
 				objectRelationship.getDeletionTypeAsString(),
 				LocalizedMapUtil.getLocalizedMap(objectRelationship.getLabel()),
 				objectRelationship.getName(),
-				objectRelationship.getTypeAsString()));
+				GetterUtil.getBoolean(objectRelationship.getSystem()),
+				objectRelationship.getTypeAsString(),
+				ObjectFieldUtil.toObjectField(
+					false, _listTypeDefinitionLocalService,
+					objectRelationship.getObjectField(),
+					_objectFieldLocalService, _objectFieldSettingLocalService,
+					_objectFilterLocalService)));
 	}
 
 	@Override
@@ -125,33 +231,108 @@ public class ObjectRelationshipResourceImpl
 			Long objectRelationshipId, ObjectRelationship objectRelationship)
 		throws Exception {
 
+		if (Validator.isNotNull(objectRelationship.getEdge()) &&
+			!FeatureFlagManagerUtil.isEnabled("LPS-187142")) {
+
+			throw new UnsupportedOperationException();
+		}
+
+		if (Validator.isNotNull(
+				objectRelationship.getParameterObjectFieldName())) {
+
+			objectRelationship.setParameterObjectFieldId(
+				() -> {
+					com.liferay.object.model.ObjectDefinition objectDefinition =
+						_objectDefinitionLocalService.
+							getObjectDefinitionByExternalReferenceCode(
+								objectRelationship.
+									getObjectDefinitionExternalReferenceCode2(),
+								contextCompany.getCompanyId());
+
+					ObjectField objectField =
+						_objectFieldLocalService.getObjectField(
+							objectDefinition.getObjectDefinitionId(),
+							objectRelationship.getParameterObjectFieldName());
+
+					return objectField.getObjectFieldId();
+				});
+		}
+
 		return _toObjectRelationship(
 			_objectRelationshipService.updateObjectRelationship(
+				objectRelationship.getExternalReferenceCode(),
 				objectRelationshipId,
+				GetterUtil.getLong(
+					objectRelationship.getParameterObjectFieldId()),
 				objectRelationship.getDeletionTypeAsString(),
-				LocalizedMapUtil.getLocalizedMap(
-					objectRelationship.getLabel())));
+				GetterUtil.getBoolean(objectRelationship.getEdge()),
+				LocalizedMapUtil.getLocalizedMap(objectRelationship.getLabel()),
+				ObjectFieldUtil.toObjectField(
+					false, _listTypeDefinitionLocalService,
+					objectRelationship.getObjectField(),
+					_objectFieldLocalService, _objectFieldSettingLocalService,
+					_objectFilterLocalService)));
+	}
+
+	@Override
+	public ObjectRelationship putObjectRelationshipByExternalReferenceCode(
+			String externalReferenceCode, ObjectRelationship objectRelationship)
+		throws Exception {
+
+		com.liferay.object.model.ObjectRelationship
+			serviceBuilderObjectRelationship =
+				_objectRelationshipService.
+					fetchObjectRelationshipByExternalReferenceCode(
+						externalReferenceCode, contextCompany.getCompanyId(),
+						objectRelationship.getObjectDefinitionId1());
+
+		objectRelationship.setExternalReferenceCode(externalReferenceCode);
+
+		if (serviceBuilderObjectRelationship != null) {
+			return putObjectRelationship(
+				serviceBuilderObjectRelationship.getObjectRelationshipId(),
+				objectRelationship);
+		}
+
+		return postObjectDefinitionObjectRelationship(
+			objectRelationship.getObjectDefinitionId1(), objectRelationship);
+	}
+
+	private com.liferay.object.model.ObjectDefinition _getObjectDefinition2(
+			long objectFolderId, ObjectRelationship objectRelationship)
+		throws Exception {
+
+		com.liferay.object.model.ObjectDefinition objectDefinition =
+			_objectDefinitionLocalService.
+				fetchObjectDefinitionByExternalReferenceCode(
+					objectRelationship.
+						getObjectDefinitionExternalReferenceCode2(),
+					contextCompany.getCompanyId());
+
+		if (objectDefinition != null) {
+			return objectDefinition;
+		}
+
+		return _objectDefinitionLocalService.addObjectDefinition(
+			objectRelationship.getObjectDefinitionExternalReferenceCode2(),
+			contextUser.getUserId(), objectFolderId,
+			GetterUtil.get(
+				objectRelationship.getObjectDefinitionModifiable2(), true),
+			GetterUtil.get(
+				objectRelationship.getObjectDefinitionSystem2(), false));
 	}
 
 	private ObjectRelationship _toObjectRelationship(
 			com.liferay.object.model.ObjectRelationship objectRelationship)
 		throws Exception {
 
-		com.liferay.object.model.ObjectDefinition objectDefinition1 =
-			_objectDefinitionLocalService.getObjectDefinition(
-				objectRelationship.getObjectDefinitionId1());
-		com.liferay.object.model.ObjectDefinition objectDefinition2 =
-			_objectDefinitionLocalService.getObjectDefinition(
-				objectRelationship.getObjectDefinitionId2());
-
-		return new ObjectRelationship() {
-			{
-				actions = HashMapBuilder.put(
+		return _objectRelationshipDTOConverter.toDTO(
+			new DefaultDTOConverterContext(
+				false,
+				HashMapBuilder.put(
 					"delete",
 					() -> {
-						if (objectDefinition1.isApproved() ||
-							objectRelationship.isReverse()) {
-
+						if (objectRelationship.isSystem()) {
 							return null;
 						}
 
@@ -161,29 +342,34 @@ public class ObjectRelationshipResourceImpl
 								getName(),
 							objectRelationship.getObjectDefinitionId1());
 					}
-				).build();
-				deletionType = ObjectRelationship.DeletionType.create(
-					objectRelationship.getDeletionType());
-				id = objectRelationship.getObjectRelationshipId();
-				label = LocalizedMapUtil.getLanguageIdMap(
-					objectRelationship.getLabelMap());
-				name = objectRelationship.getName();
-				objectDefinitionId1 =
-					objectRelationship.getObjectDefinitionId1();
-				objectDefinitionId2 =
-					objectRelationship.getObjectDefinitionId2();
-				objectDefinitionName2 = objectDefinition2.getShortName();
-				type = ObjectRelationship.Type.create(
-					objectRelationship.getType());
-			}
-		};
+				).build(),
+				null, null, contextAcceptLanguage.getPreferredLocale(), null,
+				null),
+			objectRelationship);
 	}
 
 	private static final EntityModel _entityModel =
 		new ObjectRelationshipEntityModel();
 
 	@Reference
+	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;
+
+	@Reference
 	private ObjectDefinitionLocalService _objectDefinitionLocalService;
+
+	@Reference
+	private ObjectFieldLocalService _objectFieldLocalService;
+
+	@Reference
+	private ObjectFieldSettingLocalService _objectFieldSettingLocalService;
+
+	@Reference
+	private ObjectFilterLocalService _objectFilterLocalService;
+
+	@Reference(target = DTOConverterConstants.OBJECT_RELATIONSHIP_DTO_CONVERTER)
+	private DTOConverter
+		<com.liferay.object.model.ObjectRelationship, ObjectRelationship>
+			_objectRelationshipDTOConverter;
 
 	@Reference
 	private ObjectRelationshipService _objectRelationshipService;

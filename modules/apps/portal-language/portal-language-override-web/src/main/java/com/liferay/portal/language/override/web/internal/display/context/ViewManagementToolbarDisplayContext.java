@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.language.override.web.internal.display.context;
@@ -18,13 +9,13 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.display.context.SearchCon
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemList;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.language.override.web.internal.display.LanguageItemDisplay;
 
 import java.util.List;
@@ -85,8 +76,15 @@ public class ViewManagementToolbarDisplayContext
 
 	@Override
 	public List<LabelItem> getFilterLabelItems() {
-		return LabelItemListBuilder.add(
-			() -> Objects.equals(getNavigation(), "override"),
+		LabelItemList labelItems = new LabelItemList();
+
+		String navigation = getNavigation();
+
+		if (Objects.equals(navigation, "all")) {
+			return labelItems;
+		}
+
+		labelItems.add(
 			labelItem -> {
 				labelItem.putData(
 					"removeLabelURL",
@@ -97,19 +95,15 @@ public class ViewManagementToolbarDisplayContext
 					).buildString());
 				labelItem.setDismissible(true);
 				labelItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "override"));
-			}
-		).build();
+					LanguageUtil.get(httpServletRequest, navigation));
+			});
+
+		return labelItems;
 	}
 
 	@Override
 	public String getSearchActionURL() {
 		return String.valueOf(searchContainer.getIteratorURL());
-	}
-
-	@Override
-	public Boolean isDisabled() {
-		return false;
 	}
 
 	@Override
@@ -133,8 +127,13 @@ public class ViewManagementToolbarDisplayContext
 	}
 
 	@Override
+	protected String getFilterNavigationDropdownItemsLabel() {
+		return LanguageUtil.get(httpServletRequest, "filter-by-override");
+	}
+
+	@Override
 	protected String[] getNavigationKeys() {
-		return new String[] {"override"};
+		return new String[] {"any-language", "selected-language"};
 	}
 
 	private final String _displayStyle;

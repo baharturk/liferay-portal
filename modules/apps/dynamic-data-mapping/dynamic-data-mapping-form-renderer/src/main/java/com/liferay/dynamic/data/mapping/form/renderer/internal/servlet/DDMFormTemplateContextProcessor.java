@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.renderer.internal.servlet;
@@ -33,7 +24,6 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.Validator;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -112,8 +102,6 @@ public class DDMFormTemplateContextProcessor {
 			jsonObject.getString("numericInputMask"), ddmFormField);
 		_setDDMFormFieldOptions(
 			jsonObject.getJSONArray("options"), ddmFormField);
-		_setDDMFormFieldPredefinedValue(
-			jsonObject.getString("predefinedValue"), ddmFormField);
 		_setDDMFormFieldPlaceholder(
 			jsonObject.getString("placeholder"), ddmFormField);
 		_setDDMFormFieldProperty(
@@ -243,10 +231,7 @@ public class DDMFormTemplateContextProcessor {
 		List<DDMFormRule> ddmFormRules = new ArrayList<>();
 
 		for (int i = 0; i < jsonArray.length(); i++) {
-			DDMFormRule ddmFormRule = _getDDMFormRule(
-				jsonArray.getJSONObject(i));
-
-			ddmFormRules.add(ddmFormRule);
+			ddmFormRules.add(_getDDMFormRule(jsonArray.getJSONObject(i)));
 		}
 
 		return ddmFormRules;
@@ -396,18 +381,6 @@ public class DDMFormTemplateContextProcessor {
 		ddmFormField.setProperty(
 			"placeholder",
 			_getLocalizedValue(GetterUtil.getString(placeholder)));
-	}
-
-	private void _setDDMFormFieldPredefinedValue(
-		String predefinedValue, DDMFormField ddmFormField) {
-
-		if (Validator.isNull(predefinedValue)) {
-			return;
-		}
-
-		ddmFormField.setProperty(
-			"predefinedValue",
-			_getLocalizedValue(GetterUtil.getString(predefinedValue)));
 	}
 
 	private void _setDDMFormFieldProperty(
@@ -627,10 +600,8 @@ public class DDMFormTemplateContextProcessor {
 	}
 
 	private void _setDDMFormRules() {
-		List<DDMFormRule> ddmFormRules = _getDDMFormRules(
-			_jsonObject.getJSONArray("rules"));
-
-		_ddmForm.setDDMFormRules(ddmFormRules);
+		_ddmForm.setDDMFormRules(
+			_getDDMFormRules(_jsonObject.getJSONArray("rules")));
 	}
 
 	private void _setDDMFormValuesAvailableLocales() {

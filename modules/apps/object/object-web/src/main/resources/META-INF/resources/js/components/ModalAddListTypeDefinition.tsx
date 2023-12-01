@@ -1,28 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
 import ClayForm from '@clayui/form';
 import ClayModal, {ClayModalProvider, useModal} from '@clayui/modal';
+import {Observer} from '@clayui/modal/lib/types';
+import {
+	API,
+	FormError,
+	Input,
+	REQUIRED_MSG,
+	useForm,
+} from '@liferay/object-js-components-web';
 import React, {useEffect, useState} from 'react';
 
-import useForm from '../hooks/useForm';
-import Input from './form/Input';
-import {TName} from './layout/types';
-
-const defaultLanguageId = Liferay.ThemeDisplay.getDefaultLanguageId();
+import {defaultLanguageId} from '../utils/constants';
 
 const ModalAddListTypeDefinition: React.FC<IProps> = ({
 	apiURL,
@@ -34,46 +29,29 @@ const ModalAddListTypeDefinition: React.FC<IProps> = ({
 	};
 	const [error, setError] = useState<string>('');
 
-	const onSubmit = async ({name_i18n}: TInitialValues) => {
-		const response = await Liferay.Util.fetch(apiURL, {
-			body: JSON.stringify({
-				name_i18n,
-			}),
-			headers: new Headers({
-				'Accept': 'application/json',
-				'Content-Type': 'application/json',
-			}),
-			method: 'POST',
-		});
+	const onSubmit = async (values: TInitialValues) => {
+		try {
+			await API.save({item: values, method: 'POST', url: apiURL});
 
-		if (response.status === 401) {
-			window.location.reload();
-		}
-		else if (response.ok) {
 			onClose();
-
 			window.location.reload();
 		}
-		else {
-			const {
-				title = Liferay.Language.get('an-error-occurred'),
-			} = await response.json();
-
-			setError(title);
+		catch (error) {
+			setError((error as Error).message);
 		}
 	};
 
 	const validate = (values: TInitialValues) => {
-		const errors: any = {};
+		const errors: FormError<TInitialValues> = {};
 
 		if (!values.name_i18n[defaultLanguageId]) {
-			errors.name_i18n = Liferay.Language.get('required');
+			errors.name_i18n = REQUIRED_MSG;
 		}
 
 		return errors;
 	};
 
-	const {errors, handleChange, handleSubmit, values} = useForm({
+	const {errors, handleSubmit, setValues, values} = useForm({
 		initialValues,
 		onSubmit,
 		validate,
@@ -96,16 +74,13 @@ const ModalAddListTypeDefinition: React.FC<IProps> = ({
 						id="listTypeDefinitionName"
 						label={Liferay.Language.get('name')}
 						name="name_i18n"
-						onChange={({target: {value}}: any) => {
-							handleChange({
-								target: {
-									name: 'name_i18n',
-									value: {
-										[defaultLanguageId]: value,
-									},
+						onChange={({target: {value}}) =>
+							setValues({
+								name_i18n: {
+									[defaultLanguageId]: value,
 								},
-							} as any);
-						}}
+							})
+						}
 						required
 						value={values.name_i18n[defaultLanguageId]}
 					/>
@@ -134,12 +109,12 @@ const ModalAddListTypeDefinition: React.FC<IProps> = ({
 
 interface IProps extends React.HTMLAttributes<HTMLElement> {
 	apiURL: string;
-	observer: any;
+	observer: Observer;
 	onClose: () => void;
 }
 
 type TInitialValues = {
-	name_i18n: TName;
+	name_i18n: LocalizedValue<string>;
 };
 
 const ModalWithProvider: React.FC<IProps> = ({apiURL}) => {

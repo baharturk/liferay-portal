@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.service.test;
@@ -184,13 +175,12 @@ public class SharingEntryServiceTest {
 		_registerSharingPermissionChecker(
 			SharingEntryAction.UPDATE, SharingEntryAction.VIEW);
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Group.class.getName());
 		long classPK = _group.getGroupId();
 
 		_sharingEntryService.addOrUpdateSharingEntry(
-			_toUser.getUserId(), classNameId, classPK, _group.getGroupId(),
-			true, Collections.emptyList(), null,
+			_toUser.getUserId(),
+			_classNameLocalService.getClassNameId(Group.class.getName()),
+			classPK, _group.getGroupId(), true, Collections.emptyList(), null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 
@@ -375,13 +365,12 @@ public class SharingEntryServiceTest {
 
 		_registerSharingPermissionChecker(SharingEntryAction.VIEW);
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Group.class.getName());
 		long classPK = _group.getGroupId();
 
 		_sharingEntryService.addSharingEntry(
-			_toUser.getUserId(), classNameId, classPK, _group.getGroupId(),
-			true,
+			_toUser.getUserId(),
+			_classNameLocalService.getClassNameId(Group.class.getName()),
+			classPK, _group.getGroupId(), true,
 			Arrays.asList(SharingEntryAction.UPDATE, SharingEntryAction.VIEW),
 			null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
@@ -393,13 +382,13 @@ public class SharingEntryServiceTest {
 
 		_registerSharingPermissionChecker(SharingEntryAction.VIEW);
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Group.class.getName());
 		long classPK = _group.getGroupId();
 
 		_sharingEntryService.addSharingEntry(
-			_toUser.getUserId(), classNameId, classPK, _group.getGroupId(),
-			true, Collections.singletonList(SharingEntryAction.UPDATE), null,
+			_toUser.getUserId(),
+			_classNameLocalService.getClassNameId(Group.class.getName()),
+			classPK, _group.getGroupId(), true,
+			Collections.singletonList(SharingEntryAction.UPDATE), null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 

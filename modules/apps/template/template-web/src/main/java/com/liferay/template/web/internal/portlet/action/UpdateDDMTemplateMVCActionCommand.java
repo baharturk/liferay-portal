@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.web.internal.portlet.action;
@@ -17,15 +8,16 @@ package com.liferay.template.web.internal.portlet.action;
 import com.liferay.dynamic.data.mapping.constants.DDMTemplateConstants;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -47,7 +39,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Lourdes Fernández Besada
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + TemplatePortletKeys.TEMPLATE,
 		"mvc.command.name=/template/update_ddm_template"
@@ -68,13 +59,12 @@ public class UpdateDDMTemplateMVCActionCommand extends BaseMVCActionCommand {
 			uploadPortletRequest, "ddmTemplateId");
 
 		long classPK = ParamUtil.getLong(uploadPortletRequest, "classPK");
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			uploadPortletRequest, "name");
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(
-				uploadPortletRequest, "description");
-		String script = ParamUtil.getString(
-			uploadPortletRequest, "scriptContent");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			uploadPortletRequest, "description");
+		String script = FileUtil.read(
+			uploadPortletRequest.getFile("scriptContent"));
 		boolean cacheable = ParamUtil.getBoolean(
 			uploadPortletRequest, "cacheable");
 
@@ -146,6 +136,9 @@ public class UpdateDDMTemplateMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private DDMTemplateService _ddmTemplateService;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

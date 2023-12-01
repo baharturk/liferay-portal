@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.cart.internal.graphql.mutation.v1_0;
@@ -21,12 +12,16 @@ import com.liferay.headless.commerce.delivery.cart.dto.v1_0.CouponCode;
 import com.liferay.headless.commerce.delivery.cart.resource.v1_0.CartCommentResource;
 import com.liferay.headless.commerce.delivery.cart.resource.v1_0.CartItemResource;
 import com.liferay.headless.commerce.delivery.cart.resource.v1_0.CartResource;
+import com.liferay.headless.commerce.delivery.cart.resource.v1_0.PaymentMethodResource;
+import com.liferay.headless.commerce.delivery.cart.resource.v1_0.ShippingMethodResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTaskResource;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResource;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 
@@ -71,6 +66,22 @@ public class Mutation {
 
 		_cartItemResourceComponentServiceObjects =
 			cartItemResourceComponentServiceObjects;
+	}
+
+	public static void setPaymentMethodResourceComponentServiceObjects(
+		ComponentServiceObjects<PaymentMethodResource>
+			paymentMethodResourceComponentServiceObjects) {
+
+		_paymentMethodResourceComponentServiceObjects =
+			paymentMethodResourceComponentServiceObjects;
+	}
+
+	public static void setShippingMethodResourceComponentServiceObjects(
+		ComponentServiceObjects<ShippingMethodResource>
+			shippingMethodResourceComponentServiceObjects) {
+
+		_shippingMethodResourceComponentServiceObjects =
+			shippingMethodResourceComponentServiceObjects;
 	}
 
 	@GraphQLField
@@ -167,15 +178,17 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public Response deleteCartComment(
+	public boolean deleteCartComment(
 			@GraphQLName("cartCommentId") Long cartCommentId)
 		throws Exception {
 
-		return _applyComponentServiceObjects(
+		_applyVoidComponentServiceObjects(
 			_cartCommentResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			cartCommentResource -> cartCommentResource.deleteCartComment(
 				cartCommentId));
+
+		return true;
 	}
 
 	@GraphQLField
@@ -320,6 +333,38 @@ public class Mutation {
 				cartId, cartItem));
 	}
 
+	@GraphQLField
+	public Response createCartPaymentMethodsPageExportBatch(
+			@GraphQLName("cartId") Long cartId,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_paymentMethodResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			paymentMethodResource ->
+				paymentMethodResource.postCartPaymentMethodsPageExportBatch(
+					cartId, callbackURL, contentType, fieldNames));
+	}
+
+	@GraphQLField
+	public Response createCartShippingMethodsPageExportBatch(
+			@GraphQLName("cartId") Long cartId,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_shippingMethodResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			shippingMethodResource ->
+				shippingMethodResource.postCartShippingMethodsPageExportBatch(
+					cartId, callbackURL, contentType, fieldNames));
+	}
+
 	private <T, R, E1 extends Throwable, E2 extends Throwable> R
 			_applyComponentServiceObjects(
 				ComponentServiceObjects<T> componentServiceObjects,
@@ -369,6 +414,12 @@ public class Mutation {
 		cartResource.setContextUser(_user);
 		cartResource.setGroupLocalService(_groupLocalService);
 		cartResource.setRoleLocalService(_roleLocalService);
+
+		cartResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		cartResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
 	}
 
 	private void _populateResourceContext(
@@ -383,6 +434,12 @@ public class Mutation {
 		cartCommentResource.setContextUser(_user);
 		cartCommentResource.setGroupLocalService(_groupLocalService);
 		cartCommentResource.setRoleLocalService(_roleLocalService);
+
+		cartCommentResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		cartCommentResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
 	}
 
 	private void _populateResourceContext(CartItemResource cartItemResource)
@@ -396,6 +453,55 @@ public class Mutation {
 		cartItemResource.setContextUser(_user);
 		cartItemResource.setGroupLocalService(_groupLocalService);
 		cartItemResource.setRoleLocalService(_roleLocalService);
+
+		cartItemResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		cartItemResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
+	}
+
+	private void _populateResourceContext(
+			PaymentMethodResource paymentMethodResource)
+		throws Exception {
+
+		paymentMethodResource.setContextAcceptLanguage(_acceptLanguage);
+		paymentMethodResource.setContextCompany(_company);
+		paymentMethodResource.setContextHttpServletRequest(_httpServletRequest);
+		paymentMethodResource.setContextHttpServletResponse(
+			_httpServletResponse);
+		paymentMethodResource.setContextUriInfo(_uriInfo);
+		paymentMethodResource.setContextUser(_user);
+		paymentMethodResource.setGroupLocalService(_groupLocalService);
+		paymentMethodResource.setRoleLocalService(_roleLocalService);
+
+		paymentMethodResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		paymentMethodResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
+	}
+
+	private void _populateResourceContext(
+			ShippingMethodResource shippingMethodResource)
+		throws Exception {
+
+		shippingMethodResource.setContextAcceptLanguage(_acceptLanguage);
+		shippingMethodResource.setContextCompany(_company);
+		shippingMethodResource.setContextHttpServletRequest(
+			_httpServletRequest);
+		shippingMethodResource.setContextHttpServletResponse(
+			_httpServletResponse);
+		shippingMethodResource.setContextUriInfo(_uriInfo);
+		shippingMethodResource.setContextUser(_user);
+		shippingMethodResource.setGroupLocalService(_groupLocalService);
+		shippingMethodResource.setRoleLocalService(_roleLocalService);
+
+		shippingMethodResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		shippingMethodResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
 	}
 
 	private static ComponentServiceObjects<CartResource>
@@ -404,6 +510,10 @@ public class Mutation {
 		_cartCommentResourceComponentServiceObjects;
 	private static ComponentServiceObjects<CartItemResource>
 		_cartItemResourceComponentServiceObjects;
+	private static ComponentServiceObjects<PaymentMethodResource>
+		_paymentMethodResourceComponentServiceObjects;
+	private static ComponentServiceObjects<ShippingMethodResource>
+		_shippingMethodResourceComponentServiceObjects;
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
@@ -414,5 +524,9 @@ public class Mutation {
 	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
+	private VulcanBatchEngineExportTaskResource
+		_vulcanBatchEngineExportTaskResource;
+	private VulcanBatchEngineImportTaskResource
+		_vulcanBatchEngineImportTaskResource;
 
 }

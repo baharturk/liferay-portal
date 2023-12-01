@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.frontend.taglib.servlet.taglib;
 
 import com.liferay.frontend.taglib.servlet.taglib.ScreenNavigationEntry;
 import com.liferay.frontend.taglib.servlet.taglib.util.JSPRenderer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -25,6 +16,7 @@ import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.OrganizationService;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -84,6 +76,9 @@ public class OrganizationScreenNavigationEntry
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse)
 		throws IOException {
+
+		httpServletRequest.setAttribute(
+			ItemSelector.class.getName(), _itemSelector);
 
 		OrganizationScreenNavigationDisplayContext
 			organizationScreenNavigationDisplayContext =
@@ -151,7 +146,7 @@ public class OrganizationScreenNavigationEntry
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -177,8 +172,8 @@ public class OrganizationScreenNavigationEntry
 		public OrganizationScreenNavigationEntry build() {
 			return new OrganizationScreenNavigationEntry(
 				_jspRenderer, _organizationService, _entryKey, _categoryKey,
-				_jspPath, _mvcActionCommandName, _showControls, _showTitle,
-				_visibleBiFunction);
+				_itemSelector, _jspPath, _mvcActionCommandName, _showControls,
+				_showTitle, _visibleBiFunction);
 		}
 
 		public Builder categoryKey(String categoryKey) {
@@ -189,6 +184,12 @@ public class OrganizationScreenNavigationEntry
 
 		public Builder entryKey(String entryKey) {
 			_entryKey = entryKey;
+
+			return this;
+		}
+
+		public Builder itemSelector(ItemSelector itemSelector) {
+			_itemSelector = itemSelector;
 
 			return this;
 		}
@@ -244,6 +245,7 @@ public class OrganizationScreenNavigationEntry
 
 		private String _categoryKey;
 		private String _entryKey;
+		private ItemSelector _itemSelector;
 		private String _jspPath;
 		private JSPRenderer _jspRenderer;
 		private String _mvcActionCommandName;
@@ -264,14 +266,16 @@ public class OrganizationScreenNavigationEntry
 
 	private OrganizationScreenNavigationEntry(
 		JSPRenderer jspRenderer, OrganizationService organizationService,
-		String entryKey, String categoryKey, String jspPath,
-		String mvcActionCommandName, boolean showControls, boolean showTitle,
+		String entryKey, String categoryKey, ItemSelector itemSelector,
+		String jspPath, String mvcActionCommandName, boolean showControls,
+		boolean showTitle,
 		BiFunction<User, Organization, Boolean> visibleBiFunction) {
 
 		_jspRenderer = jspRenderer;
 		_organizationService = organizationService;
 		_entryKey = entryKey;
 		_categoryKey = categoryKey;
+		_itemSelector = itemSelector;
 		_jspPath = jspPath;
 		_mvcActionCommandName = mvcActionCommandName;
 		_showControls = showControls;
@@ -284,6 +288,7 @@ public class OrganizationScreenNavigationEntry
 
 	private final String _categoryKey;
 	private final String _entryKey;
+	private final ItemSelector _itemSelector;
 	private final String _jspPath;
 	private final JSPRenderer _jspRenderer;
 	private final String _mvcActionCommandName;

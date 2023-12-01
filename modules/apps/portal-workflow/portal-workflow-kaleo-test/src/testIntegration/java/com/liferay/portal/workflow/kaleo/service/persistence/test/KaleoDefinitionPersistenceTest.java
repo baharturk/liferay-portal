@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.persistence.test;
@@ -127,6 +118,8 @@ public class KaleoDefinitionPersistenceTest {
 
 		newKaleoDefinition.setMvccVersion(RandomTestUtil.nextLong());
 
+		newKaleoDefinition.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newKaleoDefinition.setGroupId(RandomTestUtil.nextLong());
 
 		newKaleoDefinition.setCompanyId(RandomTestUtil.nextLong());
@@ -161,6 +154,9 @@ public class KaleoDefinitionPersistenceTest {
 		Assert.assertEquals(
 			existingKaleoDefinition.getMvccVersion(),
 			newKaleoDefinition.getMvccVersion());
+		Assert.assertEquals(
+			existingKaleoDefinition.getCtCollectionId(),
+			newKaleoDefinition.getCtCollectionId());
 		Assert.assertEquals(
 			existingKaleoDefinition.getKaleoDefinitionId(),
 			newKaleoDefinition.getKaleoDefinitionId());
@@ -291,11 +287,11 @@ public class KaleoDefinitionPersistenceTest {
 
 	protected OrderByComparator<KaleoDefinition> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"KaleoDefinition", "mvccVersion", true, "kaleoDefinitionId", true,
-			"groupId", true, "companyId", true, "userId", true, "userName",
-			true, "createDate", true, "modifiedDate", true, "name", true,
-			"title", true, "description", true, "scope", true, "version", true,
-			"active", true);
+			"KaleoDefinition", "mvccVersion", true, "ctCollectionId", true,
+			"kaleoDefinitionId", true, "groupId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "name", true, "title", true, "description",
+			true, "scope", true, "version", true, "active", true);
 	}
 
 	@Test
@@ -615,6 +611,8 @@ public class KaleoDefinitionPersistenceTest {
 		KaleoDefinition kaleoDefinition = _persistence.create(pk);
 
 		kaleoDefinition.setMvccVersion(RandomTestUtil.nextLong());
+
+		kaleoDefinition.setCtCollectionId(RandomTestUtil.nextLong());
 
 		kaleoDefinition.setGroupId(RandomTestUtil.nextLong());
 

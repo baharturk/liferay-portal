@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.resource.v1_0;
 
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.ProductOption;
+import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
@@ -22,7 +14,10 @@ import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParserProvider;
+import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTaskResource;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResource;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
@@ -52,11 +47,7 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface ProductOptionResource {
 
-	public static Builder builder() {
-		return FactoryHolder.factory.create();
-	}
-
-	public Page<ProductOption> getChannelProductOptionsPage(
+	public Page<ProductOption> getChannelProductProductOptionsPage(
 			Long channelId, Long productId, Pagination pagination)
 		throws Exception;
 
@@ -97,6 +88,16 @@ public interface ProductOptionResource {
 
 	public void setRoleLocalService(RoleLocalService roleLocalService);
 
+	public void setSortParserProvider(SortParserProvider sortParserProvider);
+
+	public void setVulcanBatchEngineExportTaskResource(
+		VulcanBatchEngineExportTaskResource
+			vulcanBatchEngineExportTaskResource);
+
+	public void setVulcanBatchEngineImportTaskResource(
+		VulcanBatchEngineImportTaskResource
+			vulcanBatchEngineImportTaskResource);
+
 	public default Filter toFilter(String filterString) {
 		return toFilter(
 			filterString, Collections.<String, List<String>>emptyMap());
@@ -108,10 +109,8 @@ public interface ProductOptionResource {
 		return null;
 	}
 
-	public static class FactoryHolder {
-
-		public static volatile Factory factory;
-
+	public default Sort[] toSorts(String sortsString) {
+		return new Sort[0];
 	}
 
 	@ProviderType
@@ -128,6 +127,8 @@ public interface ProductOptionResource {
 			HttpServletResponse httpServletResponse);
 
 		public Builder preferredLocale(Locale preferredLocale);
+
+		public Builder uriInfo(UriInfo uriInfo);
 
 		public Builder user(com.liferay.portal.kernel.model.User user);
 

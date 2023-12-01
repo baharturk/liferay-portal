@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.search.web.internal.display.context;
@@ -23,20 +14,22 @@ import com.liferay.commerce.product.content.render.list.CPContentListRendererReg
 import com.liferay.commerce.product.content.render.list.entry.CPContentListEntryRenderer;
 import com.liferay.commerce.product.content.render.list.entry.CPContentListEntryRendererRegistry;
 import com.liferay.commerce.product.content.search.web.internal.configuration.CPSearchResultsPortletInstanceConfiguration;
+import com.liferay.commerce.product.content.search.web.internal.constants.CPSearchResultsConstants;
 import com.liferay.commerce.product.data.source.CPDataSourceResult;
 import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
 import com.liferay.commerce.product.type.CPType;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
+import com.liferay.commerce.product.type.CPTypeRegistry;
 import com.liferay.commerce.product.util.CPDefinitionHelper;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.search.Document;
-import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -65,7 +58,7 @@ public class CPSearchResultsDisplayContext {
 				cpContentListEntryRendererRegistry,
 			CPContentListRendererRegistry cpContentListRendererRegistry,
 			CPDefinitionHelper cpDefinitionHelper,
-			CPTypeServicesTracker cpTypeServicesTracker,
+			CPTypeRegistry cpTypeRegistry,
 			HttpServletRequest httpServletRequest,
 			PortletSharedSearchResponse portletSharedSearchResponse)
 		throws ConfigurationException {
@@ -74,17 +67,16 @@ public class CPSearchResultsDisplayContext {
 			cpContentListEntryRendererRegistry;
 		_cpContentListRendererRegistry = cpContentListRendererRegistry;
 		_cpDefinitionHelper = cpDefinitionHelper;
-		_cpTypeServicesTracker = cpTypeServicesTracker;
+		_cpTypeRegistry = cpTypeRegistry;
 		_httpServletRequest = httpServletRequest;
 		_portletSharedSearchResponse = portletSharedSearchResponse;
 
 		_cpRequestHelper = new CPRequestHelper(httpServletRequest);
 
-		PortletDisplay portletDisplay = _cpRequestHelper.getPortletDisplay();
-
 		_cpSearchResultsPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				CPSearchResultsPortletInstanceConfiguration.class);
+			ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				CPSearchResultsPortletInstanceConfiguration.class,
+				_cpRequestHelper.getThemeDisplay());
 	}
 
 	public Map<String, String> getCPContentListEntryRendererKeys() {
@@ -180,7 +172,7 @@ public class CPSearchResultsDisplayContext {
 	}
 
 	public List<CPType> getCPTypes() {
-		return _cpTypeServicesTracker.getCPTypes();
+		return _cpTypeRegistry.getCPTypes();
 	}
 
 	public String getDisplayStyle() {
@@ -206,6 +198,24 @@ public class CPSearchResultsDisplayContext {
 		return _displayStyleGroupId;
 	}
 
+	public String getNames() {
+		StringBundler sb = new StringBundler();
+
+		List<CPType> cpTypes = getCPTypes();
+
+		for (int i = 0; i < cpTypes.size(); i++) {
+			CPType cpType = cpTypes.get(i);
+
+			sb.append(cpType.getLabel(_cpRequestHelper.getLocale()));
+
+			if ((i + 1) < cpTypes.size()) {
+				sb.append(",");
+			}
+		}
+
+		return sb.toString();
+	}
+
 	public String getOrderByCol() {
 		HttpServletRequest originalHttpServletRequest =
 			PortalUtil.getOriginalServletRequest(_httpServletRequest);
@@ -213,12 +223,20 @@ public class CPSearchResultsDisplayContext {
 		String portletId = ParamUtil.getString(
 			originalHttpServletRequest, "p_p_id");
 
-		return ParamUtil.getString(
+		String orderByCol = ParamUtil.getString(
 			originalHttpServletRequest,
 			StringBundler.concat(
 				StringPool.UNDERLINE, portletId, StringPool.UNDERLINE,
 				SearchContainer.DEFAULT_ORDER_BY_COL_PARAM),
-			"relevance");
+			CPSearchResultsConstants.SORT_OPTION_DEFAULT);
+
+		if (ArrayUtil.contains(
+				CPSearchResultsConstants.SORT_OPTIONS, orderByCol)) {
+
+			return orderByCol;
+		}
+
+		return CPSearchResultsConstants.SORT_OPTION_DEFAULT;
 	}
 
 	public int getPaginationDelta() {
@@ -326,7 +344,7 @@ public class CPSearchResultsDisplayContext {
 	}
 
 	private String _getURLString() {
-		return HttpUtil.removeParameter(
+		return HttpComponentsUtil.removeParameter(
 			PortalUtil.getCurrentURL(_cpRequestHelper.getRequest()), "start");
 	}
 
@@ -337,7 +355,7 @@ public class CPSearchResultsDisplayContext {
 	private final CPRequestHelper _cpRequestHelper;
 	private final CPSearchResultsPortletInstanceConfiguration
 		_cpSearchResultsPortletInstanceConfiguration;
-	private final CPTypeServicesTracker _cpTypeServicesTracker;
+	private final CPTypeRegistry _cpTypeRegistry;
 	private long _displayStyleGroupId;
 	private final HttpServletRequest _httpServletRequest;
 	private final PortletSharedSearchResponse _portletSharedSearchResponse;

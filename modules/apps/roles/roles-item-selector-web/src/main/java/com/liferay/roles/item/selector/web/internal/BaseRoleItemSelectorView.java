@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.roles.item.selector.web.internal;
@@ -25,14 +16,13 @@ import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.RoleService;
 import com.liferay.portal.kernel.util.JavaConstants;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portlet.rolesadmin.search.RoleSearch;
-import com.liferay.portlet.rolesadmin.search.RoleSearchTerms;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
+import com.liferay.roles.admin.search.RoleSearch;
+import com.liferay.roles.admin.search.RoleSearchTerms;
 import com.liferay.roles.item.selector.web.internal.constants.RoleItemSelectorViewConstants;
 import com.liferay.roles.item.selector.web.internal.display.context.RoleItemSelectorViewDisplayContext;
 import com.liferay.roles.item.selector.web.internal.search.RoleItemSelectorChecker;
-import com.liferay.users.admin.kernel.util.UsersAdmin;
 
 import java.io.IOException;
 
@@ -77,6 +67,11 @@ public abstract class BaseRoleItemSelectorView<T extends ItemSelectorCriterion>
 			PortletURL portletURL, String itemSelectedEventName, boolean search)
 		throws IOException, ServletException {
 
+		ServletContext servletContext = getServletContext();
+
+		RequestDispatcher requestDispatcher =
+			servletContext.getRequestDispatcher("/role_item_selector.jsp");
+
 		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)servletRequest;
 
@@ -101,11 +96,6 @@ public abstract class BaseRoleItemSelectorView<T extends ItemSelectorCriterion>
 				ROLE_ITEM_SELECTOR_VIEW_DISPLAY_CONTEXT,
 			roleItemSelectorViewDisplayContext);
 
-		ServletContext servletContext = getServletContext();
-
-		RequestDispatcher requestDispatcher =
-			servletContext.getRequestDispatcher("/role_item_selector.jsp");
-
 		requestDispatcher.include(servletRequest, servletResponse);
 	}
 
@@ -127,9 +117,6 @@ public abstract class BaseRoleItemSelectorView<T extends ItemSelectorCriterion>
 	)
 	protected ServletContext servletContext;
 
-	@Reference
-	protected UsersAdmin usersAdmin;
-
 	private SearchContainer<Role> _getSearchContainer(
 		RenderRequest renderRequest, RenderResponse renderResponse,
 		long[] checkedRoleIds, String[] excludedRoleNames, int type) {
@@ -141,36 +128,30 @@ public abstract class BaseRoleItemSelectorView<T extends ItemSelectorCriterion>
 			renderRequest, currentURL);
 
 		searchContainer.setEmptyResultsMessage("no-roles-were-found");
-
-		OrderByComparator<Role> orderByComparator =
-			usersAdmin.getRoleOrderByComparator(
+		searchContainer.setOrderByComparator(
+			UsersAdminUtil.getRoleOrderByComparator(
 				searchContainer.getOrderByCol(),
-				searchContainer.getOrderByType());
-
-		searchContainer.setOrderByComparator(orderByComparator);
-
-		searchContainer.setRowChecker(
-			new RoleItemSelectorChecker(
-				renderResponse, checkedRoleIds, excludedRoleNames));
+				searchContainer.getOrderByType()));
 
 		RoleSearchTerms searchTerms =
 			(RoleSearchTerms)searchContainer.getSearchTerms();
 
 		searchTerms.setType(type);
 
-		List<Role> results = roleService.search(
-			CompanyThreadLocal.getCompanyId(), searchTerms.getKeywords(),
-			searchTerms.getTypesObj(), new LinkedHashMap<String, Object>(),
-			searchContainer.getStart(), searchContainer.getEnd(),
-			searchContainer.getOrderByComparator());
+		searchContainer.setResultsAndTotal(
+			() -> roleService.search(
+				CompanyThreadLocal.getCompanyId(), searchTerms.getKeywords(),
+				searchTerms.getTypesObj(), new LinkedHashMap<String, Object>(),
+				searchContainer.getStart(), searchContainer.getEnd(),
+				searchContainer.getOrderByComparator()),
+			roleService.searchCount(
+				CompanyThreadLocal.getCompanyId(), searchTerms.getKeywords(),
+				searchTerms.getTypesObj(),
+				new LinkedHashMap<String, Object>()));
 
-		int total = roleService.searchCount(
-			CompanyThreadLocal.getCompanyId(), searchTerms.getKeywords(),
-			searchTerms.getTypesObj(), new LinkedHashMap<String, Object>());
-
-		searchContainer.setTotal(total);
-
-		searchContainer.setResults(results);
+		searchContainer.setRowChecker(
+			new RoleItemSelectorChecker(
+				renderResponse, checkedRoleIds, excludedRoleNames));
 
 		return searchContainer;
 	}

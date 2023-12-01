@@ -1,19 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayForm from '@clayui/form';
-import ClayIcon from '@clayui/icon';
 import ClayLabel from '@clayui/label';
 import ClayModal from '@clayui/modal';
 import ClayProgressBar from '@clayui/progress-bar';
@@ -33,17 +23,17 @@ const ExportModalBody = ({errorMessage, percentage, readyToDownload}) => {
 			'your-file-has-been-generated-and-is-ready-to-download'
 		);
 		labelType = 'success';
-		label = Liferay.Language.get('created');
+		label = Liferay.Language.get('completed');
 	}
 	else if (errorMessage) {
-		title = Liferay.Language.get('error');
+		title = errorMessage;
 		labelType = 'danger';
-		label = Liferay.Language.get('error');
+		label = Liferay.Language.get('failed');
 	}
 	else {
 		title = Liferay.Language.get('export-file-is-being-created');
 		labelType = 'warning';
-		label = Liferay.Language.get('being-created');
+		label = Liferay.Language.get('running');
 	}
 
 	return (
@@ -51,49 +41,17 @@ const ExportModalBody = ({errorMessage, percentage, readyToDownload}) => {
 			<ClayForm.Group
 				className={classnames({'has-error': !!errorMessage})}
 			>
-				<div>
-					{title}
+				<ClayForm.FeedbackGroup>
+					<ClayForm.FeedbackItem>{title}</ClayForm.FeedbackItem>
 
-					<div className="align-items-start d-flex pb-2 pt-2">
-						<ClayIcon
-							className="mr-2 mt-1"
-							symbol="document-default"
-						/>
+					<ClayForm.FeedbackItem>
+						{EXPORT_FILE_NAME}
+					</ClayForm.FeedbackItem>
 
-						<div className="d-flex flex-column">
-							<span>{EXPORT_FILE_NAME}</span>
+					<ClayLabel displayType={labelType}>{label}</ClayLabel>
+				</ClayForm.FeedbackGroup>
 
-							<ClayLabel displayType={labelType}>
-								{label}
-							</ClayLabel>
-						</div>
-					</div>
-				</div>
-
-				<div
-					className="progress-container"
-					data-percentage={readyToDownload ? 100 : percentage}
-					data-title={
-						readyToDownload
-							? Liferay.Language.get('completed')
-							: Liferay.Language.get('in-progress')
-					}
-				>
-					<ClayProgressBar
-						value={readyToDownload ? 100 : percentage}
-						warn={!!errorMessage}
-					/>
-				</div>
-
-				{errorMessage && (
-					<ClayForm.FeedbackGroup>
-						<ClayForm.FeedbackItem>
-							<ClayForm.FeedbackIndicator symbol="exclamation-full" />
-
-							{errorMessage}
-						</ClayForm.FeedbackItem>
-					</ClayForm.FeedbackGroup>
-				)}
+				<ClayProgressBar value={percentage} warn={!!errorMessage} />
 			</ClayForm.Group>
 		</ClayModal.Body>
 	);

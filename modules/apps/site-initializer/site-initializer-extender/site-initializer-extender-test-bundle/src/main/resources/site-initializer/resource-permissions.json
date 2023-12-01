@@ -1,9 +1,0 @@
-[
-	{
-		"actionId": "VIEW_PRICE",
-		"primKey": "0",
-		"resourceName": "com.liferay.commerce.product",
-		"roleName": "Test Role 1",
-		"scope": "3"
-	}
-]

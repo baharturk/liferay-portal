@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.workflow.client.serdes.v1_0;
@@ -26,7 +17,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
 import javax.annotation.Generated;
 
@@ -61,7 +51,17 @@ public class WorkflowTaskSerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
+
+		if (workflowTask.getActions() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"actions\": ");
+
+			sb.append(_toJSON(workflowTask.getActions()));
+		}
 
 		if (workflowTask.getAssigneePerson() != null) {
 			if (sb.length() > 1) {
@@ -279,7 +279,14 @@ public class WorkflowTaskSerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
+
+		if (workflowTask.getActions() == null) {
+			map.put("actions", null);
+		}
+		else {
+			map.put("actions", String.valueOf(workflowTask.getActions()));
+		}
 
 		if (workflowTask.getAssigneePerson() == null) {
 			map.put("assigneePerson", null);
@@ -429,7 +436,14 @@ public class WorkflowTaskSerDes {
 			WorkflowTask workflowTask, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "assigneePerson")) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				if (jsonParserFieldValue != null) {
+					workflowTask.setActions(
+						(Map)WorkflowTaskSerDes.toMap(
+							(String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "assigneePerson")) {
 				if (jsonParserFieldValue != null) {
 					workflowTask.setAssigneePerson(
 						CreatorSerDes.toDTO((String)jsonParserFieldValue));
@@ -437,14 +451,18 @@ public class WorkflowTaskSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "assigneeRoles")) {
 				if (jsonParserFieldValue != null) {
-					workflowTask.setAssigneeRoles(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> RoleSerDes.toDTO((String)object)
-						).toArray(
-							size -> new Role[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					Role[] assigneeRolesArray =
+						new Role[jsonParserFieldValues.length];
+
+					for (int i = 0; i < assigneeRolesArray.length; i++) {
+						assigneeRolesArray[i] = RoleSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					workflowTask.setAssigneeRoles(assigneeRolesArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "completed")) {

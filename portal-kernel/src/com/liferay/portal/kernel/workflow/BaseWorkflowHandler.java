@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.workflow;
@@ -24,10 +15,10 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalServiceUtil;
 import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalServiceUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 
 import java.io.Serializable;
@@ -93,8 +84,9 @@ public abstract class BaseWorkflowHandler<T> implements WorkflowHandler<T> {
 		throws PortalException {
 
 		try {
-			PortletURL portletURL = PortletURLFactoryUtil.create(
-				serviceContext.getRequest(), PortletKeys.MY_WORKFLOW_TASK,
+			PortletURL portletURL = PortalUtil.getControlPanelPortletURL(
+				serviceContext.getRequest(), serviceContext.getScopeGroup(),
+				PortletKeys.MY_WORKFLOW_TASK, 0, 0,
 				PortletRequest.RENDER_PHASE);
 
 			portletURL.setParameter("mvcPath", "/edit_workflow_task.jsp");
@@ -124,7 +116,7 @@ public abstract class BaseWorkflowHandler<T> implements WorkflowHandler<T> {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -142,7 +134,7 @@ public abstract class BaseWorkflowHandler<T> implements WorkflowHandler<T> {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -164,24 +156,11 @@ public abstract class BaseWorkflowHandler<T> implements WorkflowHandler<T> {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
 		return null;
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #getNotificationLink(long, ServiceContext)}}
-	 */
-	@Deprecated
-	@Override
-	public String getURLEditWorkflowTask(
-			long workflowTaskId, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getNotificationLink(workflowTaskId, serviceContext);
 	}
 
 	@Override
@@ -199,7 +178,7 @@ public abstract class BaseWorkflowHandler<T> implements WorkflowHandler<T> {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -223,7 +202,7 @@ public abstract class BaseWorkflowHandler<T> implements WorkflowHandler<T> {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -258,7 +237,7 @@ public abstract class BaseWorkflowHandler<T> implements WorkflowHandler<T> {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 

@@ -1,36 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import updateItemConfig from '../../actions/updateItemConfig';
 import LayoutService from '../../services/LayoutService';
+import {setIn} from '../../utils/setIn';
 
 function undoAction({action, store}) {
-	const {config, itemId} = action;
+	const {config, itemId, pageContents} = action;
 	const {layoutData} = store;
 
-	const item = layoutData.items[itemId];
-
-	const nextLayoutData = {
-		...layoutData,
-		items: {
-			...layoutData.items,
-			[itemId]: {
-				...item,
-				config,
-			},
-		},
-	};
+	const nextLayoutData = setIn(
+		layoutData,
+		['items', itemId, 'config'],
+		config
+	);
 
 	return (dispatch) => {
 		return LayoutService.updateLayoutData({
@@ -38,13 +23,20 @@ function undoAction({action, store}) {
 			onNetworkStatus: dispatch,
 			segmentsExperienceId: store.segmentsExperienceId,
 		}).then(() => {
-			dispatch(updateItemConfig({itemId, layoutData: nextLayoutData}));
+			dispatch(
+				updateItemConfig({
+					itemId,
+					layoutData: nextLayoutData,
+					overridePreviousConfig: true,
+					pageContents,
+				})
+			);
 		});
 	};
 }
 
 function getDerivedStateForUndo({action, state}) {
-	const {itemId} = action;
+	const {itemId, pageContents} = action;
 	const {layoutData} = state;
 
 	const item = layoutData.items[itemId];
@@ -52,6 +44,7 @@ function getDerivedStateForUndo({action, state}) {
 	return {
 		config: item.config,
 		itemId,
+		pageContents,
 	};
 }
 

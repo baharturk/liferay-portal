@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.persistence.impl;
@@ -53,7 +44,6 @@ import com.liferay.portal.tools.service.builder.test.service.persistence.LVEntry
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -188,7 +178,8 @@ public class LVEntryPersistenceImpl
 		List<LVEntry> list = null;
 
 		if (useFinderCache) {
-			list = (List<LVEntry>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<LVEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntry lvEntry : list) {
@@ -568,7 +559,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -723,7 +714,8 @@ public class LVEntryPersistenceImpl
 		List<LVEntry> list = null;
 
 		if (useFinderCache) {
-			list = (List<LVEntry>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<LVEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntry lvEntry : list) {
@@ -1132,7 +1124,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, head};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1295,7 +1287,8 @@ public class LVEntryPersistenceImpl
 		List<LVEntry> list = null;
 
 		if (useFinderCache) {
-			list = (List<LVEntry>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<LVEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntry lvEntry : list) {
@@ -1705,7 +1698,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, groupId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1848,7 +1841,7 @@ public class LVEntryPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G_Head, finderArgs);
+				_finderPathFetchByUUID_G_Head, finderArgs, this);
 		}
 
 		if (result instanceof LVEntry) {
@@ -1966,7 +1959,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, groupId, head};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -2137,7 +2130,8 @@ public class LVEntryPersistenceImpl
 		List<LVEntry> list = null;
 
 		if (useFinderCache) {
-			list = (List<LVEntry>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<LVEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntry lvEntry : list) {
@@ -2549,7 +2543,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -2719,7 +2713,8 @@ public class LVEntryPersistenceImpl
 		List<LVEntry> list = null;
 
 		if (useFinderCache) {
-			list = (List<LVEntry>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<LVEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntry lvEntry : list) {
@@ -3156,7 +3151,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId, head};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -3317,7 +3312,8 @@ public class LVEntryPersistenceImpl
 		List<LVEntry> list = null;
 
 		if (useFinderCache) {
-			list = (List<LVEntry>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<LVEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntry lvEntry : list) {
@@ -3706,7 +3702,7 @@ public class LVEntryPersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LVEntryModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param start the lower bound of the range of lv entries
 	 * @param end the upper bound of the range of lv entries (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -3748,7 +3744,7 @@ public class LVEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<LVEntry>)finderCache.getResult(
-				_finderPathWithPaginationFindByGroupId, finderArgs);
+				_finderPathWithPaginationFindByGroupId, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntry lvEntry : list) {
@@ -3888,7 +3884,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -3943,7 +3939,7 @@ public class LVEntryPersistenceImpl
 		Object[] finderArgs = new Object[] {StringUtil.merge(groupIds)};
 
 		Long count = (Long)finderCache.getResult(
-			_finderPathWithPaginationCountByGroupId, finderArgs);
+			_finderPathWithPaginationCountByGroupId, finderArgs, this);
 
 		if (count == null) {
 			try {
@@ -4127,7 +4123,8 @@ public class LVEntryPersistenceImpl
 		List<LVEntry> list = null;
 
 		if (useFinderCache) {
-			list = (List<LVEntry>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<LVEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntry lvEntry : list) {
@@ -4550,7 +4547,7 @@ public class LVEntryPersistenceImpl
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LVEntryModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param head the head
 	 * @param start the lower bound of the range of lv entries
 	 * @param end the upper bound of the range of lv entries (not inclusive)
@@ -4594,7 +4591,7 @@ public class LVEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<LVEntry>)finderCache.getResult(
-				_finderPathWithPaginationFindByGroupId_Head, finderArgs);
+				_finderPathWithPaginationFindByGroupId_Head, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntry lvEntry : list) {
@@ -4748,7 +4745,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, head};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -4808,7 +4805,7 @@ public class LVEntryPersistenceImpl
 		Object[] finderArgs = new Object[] {StringUtil.merge(groupIds), head};
 
 		Long count = (Long)finderCache.getResult(
-			_finderPathWithPaginationCountByGroupId_Head, finderArgs);
+			_finderPathWithPaginationCountByGroupId_Head, finderArgs, this);
 
 		if (count == null) {
 			try {
@@ -5007,7 +5004,8 @@ public class LVEntryPersistenceImpl
 		List<LVEntry> list = null;
 
 		if (useFinderCache) {
-			list = (List<LVEntry>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<LVEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LVEntry lvEntry : list) {
@@ -5421,7 +5419,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, uniqueGroupKey};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -5568,7 +5566,7 @@ public class LVEntryPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByG_UGK_Head, finderArgs);
+				_finderPathFetchByG_UGK_Head, finderArgs, this);
 		}
 
 		if (result instanceof LVEntry) {
@@ -5689,7 +5687,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, uniqueGroupKey, head};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -5821,7 +5819,7 @@ public class LVEntryPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByHeadId, finderArgs);
+				_finderPathFetchByHeadId, finderArgs, this);
 		}
 
 		if (result instanceof LVEntry) {
@@ -5909,7 +5907,7 @@ public class LVEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {headId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -6391,7 +6389,8 @@ public class LVEntryPersistenceImpl
 		List<LVEntry> list = null;
 
 		if (useFinderCache) {
-			list = (List<LVEntry>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<LVEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -6461,7 +6460,7 @@ public class LVEntryPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -6609,17 +6608,18 @@ public class LVEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the lv entry
 	 * @param bigDecimalEntryPK the primary key of the big decimal entry
+	 * @return <code>true</code> if an association between the lv entry and the big decimal entry was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addBigDecimalEntry(long pk, long bigDecimalEntryPK) {
+	public boolean addBigDecimalEntry(long pk, long bigDecimalEntryPK) {
 		LVEntry lvEntry = fetchByPrimaryKey(pk);
 
 		if (lvEntry == null) {
-			lvEntryToBigDecimalEntryTableMapper.addTableMapping(
+			return lvEntryToBigDecimalEntryTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, bigDecimalEntryPK);
 		}
 		else {
-			lvEntryToBigDecimalEntryTableMapper.addTableMapping(
+			return lvEntryToBigDecimalEntryTableMapper.addTableMapping(
 				lvEntry.getCompanyId(), pk, bigDecimalEntryPK);
 		}
 	}
@@ -6629,9 +6629,10 @@ public class LVEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the lv entry
 	 * @param bigDecimalEntry the big decimal entry
+	 * @return <code>true</code> if an association between the lv entry and the big decimal entry was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addBigDecimalEntry(
+	public boolean addBigDecimalEntry(
 		long pk,
 		com.liferay.portal.tools.service.builder.test.model.BigDecimalEntry
 			bigDecimalEntry) {
@@ -6639,12 +6640,12 @@ public class LVEntryPersistenceImpl
 		LVEntry lvEntry = fetchByPrimaryKey(pk);
 
 		if (lvEntry == null) {
-			lvEntryToBigDecimalEntryTableMapper.addTableMapping(
+			return lvEntryToBigDecimalEntryTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk,
 				bigDecimalEntry.getPrimaryKey());
 		}
 		else {
-			lvEntryToBigDecimalEntryTableMapper.addTableMapping(
+			return lvEntryToBigDecimalEntryTableMapper.addTableMapping(
 				lvEntry.getCompanyId(), pk, bigDecimalEntry.getPrimaryKey());
 		}
 	}
@@ -6654,9 +6655,10 @@ public class LVEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the lv entry
 	 * @param bigDecimalEntryPKs the primary keys of the big decimal entries
+	 * @return <code>true</code> if at least one association between the lv entry and the big decimal entries was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addBigDecimalEntries(long pk, long[] bigDecimalEntryPKs) {
+	public boolean addBigDecimalEntries(long pk, long[] bigDecimalEntryPKs) {
 		long companyId = 0;
 
 		LVEntry lvEntry = fetchByPrimaryKey(pk);
@@ -6668,8 +6670,14 @@ public class LVEntryPersistenceImpl
 			companyId = lvEntry.getCompanyId();
 		}
 
-		lvEntryToBigDecimalEntryTableMapper.addTableMappings(
+		long[] addedKeys = lvEntryToBigDecimalEntryTableMapper.addTableMappings(
 			companyId, pk, bigDecimalEntryPKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -6677,15 +6685,16 @@ public class LVEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the lv entry
 	 * @param bigDecimalEntries the big decimal entries
+	 * @return <code>true</code> if at least one association between the lv entry and the big decimal entries was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addBigDecimalEntries(
+	public boolean addBigDecimalEntries(
 		long pk,
 		List
 			<com.liferay.portal.tools.service.builder.test.model.
 				BigDecimalEntry> bigDecimalEntries) {
 
-		addBigDecimalEntries(
+		return addBigDecimalEntries(
 			pk,
 			ListUtil.toLongArray(
 				bigDecimalEntries,
@@ -7088,30 +7097,15 @@ public class LVEntryPersistenceImpl
 			new String[] {Long.class.getName()}, new String[] {"headId"},
 			false);
 
-		_setLVEntryUtilPersistence(this);
+		LVEntryUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setLVEntryUtilPersistence(null);
+		LVEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(LVEntryImpl.class.getName());
 
 		TableMapperFactory.removeTableMapper("BigDecimalEntries_LVEntries");
-	}
-
-	private void _setLVEntryUtilPersistence(
-		LVEntryPersistence lvEntryPersistence) {
-
-		try {
-			Field field = LVEntryUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, lvEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@ServiceReference(type = EntityCache.class)

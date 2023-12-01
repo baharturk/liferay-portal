@@ -1,25 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.file.install.deploy.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
+import com.liferay.portal.kernel.module.util.BundleUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PropsValues;
@@ -57,13 +48,11 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
-import org.osgi.service.cm.ManagedService;
 
 /**
  * @author Matthew Tambara
@@ -90,24 +79,24 @@ public class FileInstallDeployTest {
 			_CONFIGURATION_PID.concat(".config"));
 
 		try {
-			_updateConfiguration(
-				() -> {
-					String content = StringBundler.concat(
-						_TEST_KEY, StringPool.EQUAL, StringPool.QUOTE,
-						_TEST_VALUE_1, StringPool.QUOTE);
+			Configuration configuration =
+				ConfigurationTestUtil.updateConfiguration(
+					_CONFIGURATION_PID,
+					() -> {
+						String content1 = StringBundler.concat(
+							_TEST_KEY, StringPool.EQUAL, StringPool.QUOTE,
+							_TEST_VALUE_1, StringPool.QUOTE);
 
-					Files.write(path, content.getBytes());
-				});
-
-			Configuration configuration = _configurationAdmin.getConfiguration(
-				_CONFIGURATION_PID, StringPool.QUESTION);
+						Files.write(path, content1.getBytes());
+					});
 
 			Dictionary<String, Object> properties =
 				configuration.getProperties();
 
 			Assert.assertEquals(_TEST_VALUE_1, properties.get(_TEST_KEY));
 
-			_updateConfiguration(
+			configuration = ConfigurationTestUtil.updateConfiguration(
+				_CONFIGURATION_PID,
 				() -> {
 					String content = StringBundler.concat(
 						_TEST_KEY, StringPool.EQUAL, StringPool.QUOTE,
@@ -120,19 +109,14 @@ public class FileInstallDeployTest {
 					file.setLastModified(file.lastModified() + 1000);
 				});
 
-			configuration = _configurationAdmin.getConfiguration(
-				_CONFIGURATION_PID, StringPool.QUESTION);
-
 			properties = configuration.getProperties();
 
 			Assert.assertEquals(_TEST_VALUE_2, properties.get(_TEST_KEY));
 
-			_updateConfiguration(() -> Files.delete(path));
+			configuration = ConfigurationTestUtil.updateConfiguration(
+				_CONFIGURATION_PID, () -> Files.delete(path));
 
-			configuration = _configurationAdmin.getConfiguration(
-				_CONFIGURATION_PID, StringPool.QUESTION);
-
-			Assert.assertNull(configuration.getProperties());
+			Assert.assertNull(configuration);
 		}
 		finally {
 			Files.deleteIfExists(path);
@@ -151,16 +135,15 @@ public class FileInstallDeployTest {
 		System.setProperty(systemTestPropertyKey, _TEST_VALUE_1);
 
 		try {
-			_updateConfiguration(
-				() -> {
-					String content = StringBundler.concat(
-						_TEST_KEY, "=\"${", systemTestPropertyKey, "}\"");
+			Configuration configuration =
+				ConfigurationTestUtil.updateConfiguration(
+					_CONFIGURATION_PID,
+					() -> {
+						String content = StringBundler.concat(
+							_TEST_KEY, "=\"${", systemTestPropertyKey, "}\"");
 
-					Files.write(path, content.getBytes());
-				});
-
-			Configuration configuration = _configurationAdmin.getConfiguration(
-				_CONFIGURATION_PID, StringPool.QUESTION);
+						Files.write(path, content.getBytes());
+					});
 
 			Dictionary<String, Object> properties =
 				configuration.getProperties();
@@ -231,7 +214,8 @@ public class FileInstallDeployTest {
 
 			installCountDownLatch.await();
 
-			bundle = _getBundle(_TEST_JAR_SYMBOLIC_NAME);
+			bundle = BundleUtil.getBundle(
+				_bundleContext, _TEST_JAR_SYMBOLIC_NAME);
 
 			Assert.assertNotNull(bundle);
 
@@ -325,7 +309,8 @@ public class FileInstallDeployTest {
 
 			installCountDownLatch.await();
 
-			Bundle bundle = _getBundle(_TEST_JAR_SYMBOLIC_NAME);
+			Bundle bundle = BundleUtil.getBundle(
+				_bundleContext, _TEST_JAR_SYMBOLIC_NAME);
 
 			Assert.assertEquals(Bundle.ACTIVE, bundle.getState());
 
@@ -339,7 +324,8 @@ public class FileInstallDeployTest {
 
 			fragmentInstallCountDownLatch.await();
 
-			Bundle fragmentBundle = _getBundle(testFragmentSymbolicName);
+			Bundle fragmentBundle = BundleUtil.getBundle(
+				_bundleContext, testFragmentSymbolicName);
 
 			Assert.assertEquals(Bundle.RESOLVED, fragmentBundle.getState());
 
@@ -427,7 +413,8 @@ public class FileInstallDeployTest {
 
 			installCountDownLatch.await();
 
-			Bundle bundle = _getBundle(_TEST_JAR_SYMBOLIC_NAME);
+			Bundle bundle = BundleUtil.getBundle(
+				_bundleContext, _TEST_JAR_SYMBOLIC_NAME);
 
 			Assert.assertEquals(Bundle.ACTIVE, bundle.getState());
 
@@ -448,8 +435,8 @@ public class FileInstallDeployTest {
 
 			optionalProviderInstallCountDownLatch.await();
 
-			Bundle optionalProviderBundle = _getBundle(
-				testOptionalProviderSymbolicName);
+			Bundle optionalProviderBundle = BundleUtil.getBundle(
+				_bundleContext, testOptionalProviderSymbolicName);
 
 			Assert.assertEquals(
 				Bundle.ACTIVE, optionalProviderBundle.getState());
@@ -478,16 +465,6 @@ public class FileInstallDeployTest {
 
 			_uninstall(testOptionalProviderSymbolicName, optionalProviderPath);
 		}
-	}
-
-	private Bundle _getBundle(String symbolicName) {
-		for (Bundle currentBundle : _bundleContext.getBundles()) {
-			if (Objects.equals(currentBundle.getSymbolicName(), symbolicName)) {
-				return currentBundle;
-			}
-		}
-
-		return null;
 	}
 
 	private void _uninstall(String symbolicName, Path path) throws Exception {
@@ -525,28 +502,6 @@ public class FileInstallDeployTest {
 		}
 		finally {
 			_bundleContext.removeBundleListener(bundleListener);
-		}
-	}
-
-	private void _updateConfiguration(UnsafeRunnable<Exception> runnable)
-		throws Exception {
-
-		CountDownLatch countDownLatch = new CountDownLatch(2);
-
-		ServiceRegistration<ManagedService> serviceRegistration =
-			_bundleContext.registerService(
-				ManagedService.class, props -> countDownLatch.countDown(),
-				HashMapDictionaryBuilder.<String, Object>put(
-					Constants.SERVICE_PID, _CONFIGURATION_PID
-				).build());
-
-		try {
-			runnable.run();
-
-			countDownLatch.await();
-		}
-		finally {
-			serviceRegistration.unregister();
 		}
 	}
 

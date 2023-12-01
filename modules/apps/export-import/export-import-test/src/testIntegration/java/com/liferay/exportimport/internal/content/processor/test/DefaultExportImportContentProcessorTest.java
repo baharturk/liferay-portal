@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.content.processor.test;
@@ -17,6 +8,7 @@ package com.liferay.exportimport.internal.content.processor.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLAppHelperLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
@@ -49,12 +41,12 @@ import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.VirtualLayoutConstants;
+import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
 import com.liferay.portal.kernel.repository.capabilities.ThumbnailCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.constants.TestDataConstants;
 import com.liferay.portal.kernel.test.randomizerbumpers.NumericStringRandomizerBumper;
@@ -74,6 +66,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
@@ -101,7 +94,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -144,15 +136,13 @@ public class DefaultExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHosts(_stagingGroup);
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_stagingGroup.getGroupId(), TestPropsValues.getUserId());
-
 		_fileEntry = DLAppLocalServiceUtil.addFileEntry(
 			null, TestPropsValues.getUserId(), _stagingGroup.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString() + ".txt", ContentTypes.TEXT_PLAIN,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null, serviceContext);
+			TestDataConstants.TEST_BYTE_ARRAY, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				_stagingGroup.getGroupId(), TestPropsValues.getUserId()));
 
 		ThumbnailCapability thumbnailCapability =
 			_fileEntry.getRepositoryCapability(ThumbnailCapability.class);
@@ -219,7 +209,6 @@ public class DefaultExportImportContentProcessorTest {
 			_stagingPublicLayout.getPlid(), _livePublicLayout.getPlid());
 
 		_portletDataContextImport.setPlid(_livePublicLayout.getPlid());
-
 		_portletDataContextImport.setSourceGroupId(_stagingGroup.getGroupId());
 
 		rootElement.addElement("entry");
@@ -275,6 +264,65 @@ public class DefaultExportImportContentProcessorTest {
 							"$,$include-uuid=false$]") ||
 					content.contains(
 						"[$dl-reference=" + entry + "$,$include-uuid=true$]"));
+
+				count++;
+			}
+		}
+
+		Assert.assertTrue(
+			"There should be at least one file entry reference", count > 0);
+	}
+
+	@Test
+	public void testExportDLReferencesFriendlyURL() throws Exception {
+		_portletDataContextExport.setZipWriter(new TestReaderWriter());
+
+		_fileEntry = DLAppLocalServiceUtil.updateFileEntry(
+			TestPropsValues.getUserId(), _fileEntry.getFileEntryId(),
+			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
+			_fileEntry.getTitle(), _fileEntry.getTitle(), StringPool.BLANK,
+			StringPool.BLANK, DLVersionNumberIncrease.AUTOMATIC,
+			TestDataConstants.TEST_BYTE_ARRAY, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				_stagingGroup.getGroupId(), TestPropsValues.getUserId()));
+
+		String content = _replaceParameters(
+			_getContent("dl_references_file_friendly_urls.txt"), _fileEntry);
+
+		_exportImportContentProcessor.validateContentReferences(
+			_stagingGroup.getGroupId(), content);
+
+		List<String> urls = _getURLs(content);
+
+		content = _exportImportContentProcessor.replaceExportContentReferences(
+			_portletDataContextExport, _referrerStagedModel, content, true,
+			true);
+
+		for (String url : urls) {
+			Assert.assertFalse(
+				url + " must not be in :" + content, content.contains(url));
+		}
+
+		TestReaderWriter testReaderWriter =
+			(TestReaderWriter)_portletDataContextExport.getZipWriter();
+
+		_assertContainsReference(
+			testReaderWriter.getEntries(), DLFileEntryConstants.getClassName(),
+			_fileEntry.getFileEntryId());
+
+		_assertContainsBinary(
+			testReaderWriter.getBinaryEntries(),
+			DLFileEntryConstants.getClassName(), _fileEntry.getFileEntryId());
+
+		int count = 0;
+
+		for (String entry : testReaderWriter.getEntries()) {
+			if (entry.contains(DLFileEntryConstants.getClassName())) {
+				Assert.assertTrue(
+					content,
+					content.contains(
+						"[$dl-reference=" + entry +
+							"$,$include-friendly-url=true$]"));
 
 				count++;
 			}
@@ -491,8 +539,8 @@ public class DefaultExportImportContentProcessorTest {
 
 		Group group = user.getGroup();
 
-		Layout privateLayout = LayoutTestUtil.addLayout(group, true);
-		Layout publicLayout = LayoutTestUtil.addLayout(group, false);
+		Layout privateLayout = LayoutTestUtil.addTypePortletLayout(group, true);
+		Layout publicLayout = LayoutTestUtil.addTypePortletLayout(group, false);
 
 		PortletDataContext portletDataContextExport =
 			PortletDataContextFactoryUtil.createExportPortletDataContext(
@@ -503,12 +551,8 @@ public class DefaultExportImportContentProcessorTest {
 		Element rootElement = SAXReaderUtil.createElement("root");
 
 		portletDataContextExport.setExportDataRootElement(rootElement);
-
-		Element missingReferencesElement = rootElement.addElement(
-			"missing-references");
-
 		portletDataContextExport.setMissingReferencesElement(
-			missingReferencesElement);
+			rootElement.addElement("missing-references"));
 
 		JournalArticle journalArticle = JournalTestUtil.addArticle(
 			group.getGroupId(), RandomTestUtil.randomString(),
@@ -526,6 +570,31 @@ public class DefaultExportImportContentProcessorTest {
 			content, privateLayout, privateLayout.getGroupId());
 		_assertLinksToLayouts(content, publicLayout, 0);
 		_assertLinksToLayouts(content, publicLayout, publicLayout.getGroupId());
+	}
+
+	@Test
+	public void testExportUUIDDLReference() throws Exception {
+		FileEntry fileEntry = DLAppLocalServiceUtil.addFileEntry(
+			null, TestPropsValues.getUserId(), _stagingGroup.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			"00000000-0000-0000-0000-000000000000.txt", ContentTypes.TEXT_PLAIN,
+			TestDataConstants.TEST_BYTE_ARRAY, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				_stagingGroup.getGroupId(), TestPropsValues.getUserId()));
+
+		ThumbnailCapability thumbnailCapability =
+			fileEntry.getRepositoryCapability(ThumbnailCapability.class);
+
+		fileEntry = thumbnailCapability.setLargeImageId(
+			fileEntry, fileEntry.getFileEntryId());
+
+		_portletDataContextExport.setZipWriter(new TestReaderWriter());
+
+		String content = _replaceParameters(
+			_getContent("dl_references.txt"), fileEntry);
+
+		_exportImportContentProcessor.validateContentReferences(
+			_stagingGroup.getGroupId(), content);
 	}
 
 	@Test
@@ -559,6 +628,20 @@ public class DefaultExportImportContentProcessorTest {
 			TestPropsValues.getUserId(), _fileEntry);
 
 		_testImportDLReferences(true);
+	}
+
+	@Test
+	public void testImportDLReferencesFriendlyURLDeletingBefore()
+		throws Exception {
+
+		_testImportDLReferencesFriendlyURL(true);
+	}
+
+	@Test
+	public void testImportDLReferencesFriendlyURLWithoutDeletingBefore()
+		throws Exception {
+
+		_testImportDLReferencesFriendlyURL(false);
 	}
 
 	@Test
@@ -647,8 +730,8 @@ public class DefaultExportImportContentProcessorTest {
 
 	@Test
 	public void testImportLinksToLayoutsIdsReplacement() throws Exception {
-		LayoutTestUtil.addLayout(_liveGroup, true);
-		LayoutTestUtil.addLayout(_liveGroup, false);
+		LayoutTestUtil.addTypePortletLayout(_liveGroup, true);
+		LayoutTestUtil.addTypePortletLayout(_liveGroup, false);
 
 		_exportImportLayouts(true);
 		_exportImportLayouts(false);
@@ -692,7 +775,7 @@ public class DefaultExportImportContentProcessorTest {
 	public void testImportLinksToLayoutsInLayoutSetPrototype()
 		throws Exception {
 
-		LayoutTestUtil.addLayout(_liveGroup, true);
+		LayoutTestUtil.addTypePortletLayout(_liveGroup, true);
 
 		_exportImportLayouts(true);
 
@@ -798,7 +881,7 @@ public class DefaultExportImportContentProcessorTest {
 			friendlyURLMap.put(locale, friendlyURL);
 		}
 
-		return LayoutTestUtil.addLayout(
+		return LayoutTestUtil.addTypePortletLayout(
 			group.getGroupId(), privateLayout, nameMap, friendlyURLMap);
 	}
 
@@ -808,13 +891,11 @@ public class DefaultExportImportContentProcessorTest {
 		Pattern pattern = Pattern.compile(
 			String.format("/%s/%d/\\d+\\.\\d+$", className, classPK));
 
-		Stream<String> entriesStream = entries.stream();
-
 		Assert.assertTrue(
 			String.format(
 				"%s does not contain a binary entry for %s with primary key %s",
 				entries.toString(), className, classPK),
-			entriesStream.anyMatch(pattern.asPredicate()));
+			ListUtil.exists(entries, pattern.asPredicate()));
 	}
 
 	private void _assertContainsPathWithStopCharacters(
@@ -840,13 +921,11 @@ public class DefaultExportImportContentProcessorTest {
 
 		String expected = String.format("/%s/%d.xml", className, classPK);
 
-		Stream<String> entriesStream = entries.stream();
-
 		Assert.assertTrue(
 			String.format(
 				"%s does not contain an entry for %s with primary key %s",
 				entries.toString(), className, classPK),
-			entriesStream.anyMatch(entry -> entry.endsWith(expected)));
+			ListUtil.exists(entries, entry -> entry.endsWith(expected)));
 	}
 
 	private void _assertLinksToLayouts(
@@ -936,6 +1015,19 @@ public class DefaultExportImportContentProcessorTest {
 
 		ExportImportLocalServiceUtil.importLayouts(
 			exportImportConfiguration, larFile);
+	}
+
+	private String _extractValidContent(String content) {
+		List<String> lines = ListUtil.fromArray(StringUtil.splitLines(content));
+		List<String> validLines = new ArrayList<>();
+
+		for (String line : lines) {
+			if (Validator.isNotNull(line) && !line.endsWith(StringPool.COLON)) {
+				validLines.add(line);
+			}
+		}
+
+		return StringUtil.merge(validLines, StringPool.NEW_LINE);
 	}
 
 	private String _getContent(String fileName) throws Exception {
@@ -1062,8 +1154,9 @@ public class DefaultExportImportContentProcessorTest {
 				"[$EXTERNAL_GROUP_FRIENDLY_URL$]",
 				"[$EXTERNAL_PRIVATE_LAYOUT_FRIENDLY_URL$]",
 				"[$EXTERNAL_PUBLIC_LAYOUT_FRIENDLY_URL$]",
-				"[$FRIENDLY_URL_SEPARATOR$]", "[$GROUP_FRIENDLY_URL$]",
-				"[$GROUP_ID$]", "[$GROUP_PRIVATE_PAGES_VIRTUAL_HOST$]",
+				"[$FILE_ENTRY_FRIENDLY_URL$]", "[$FRIENDLY_URL_SEPARATOR$]",
+				"[$GROUP_FRIENDLY_URL$]", "[$GROUP_ID$]", "[$GROUP_NAME$]",
+				"[$GROUP_PRIVATE_PAGES_VIRTUAL_HOST$]",
 				"[$GROUP_PUBLIC_PAGES_VIRTUAL_HOST$]", "[$IMAGE_ID$]",
 				"[$LIVE_GROUP_FRIENDLY_URL$]", "[$LIVE_GROUP_ID$]",
 				"[$LIVE_PUBLIC_LAYOUT_FRIENDLY_URL$]",
@@ -1080,14 +1173,20 @@ public class DefaultExportImportContentProcessorTest {
 				"[$WEB_CONTENT_DISPLAY_SERVLET_MAPPING$]", "[$WEB_ID$]"
 			},
 			new String[] {
-				"/b", VirtualLayoutConstants.CANONICAL_URL_SEPARATOR,
+				FriendlyURLResolverConstants.URL_SEPARATOR_X_BLOGS_ENTRY,
+				VirtualLayoutConstants.CANONICAL_URL_SEPARATOR,
 				GroupConstants.CONTROL_PANEL_FRIENDLY_URL,
-				PropsValues.CONTROL_PANEL_LAYOUT_FRIENDLY_URL, "/d",
+				PropsValues.CONTROL_PANEL_LAYOUT_FRIENDLY_URL,
+				FriendlyURLResolverConstants.URL_SEPARATOR_X_FILE_ENTRY,
 				_externalGroup.getFriendlyURL(),
 				_externalPrivateLayout.getFriendlyURL(),
 				_externalPublicLayout.getFriendlyURL(),
+				FriendlyURLNormalizerUtil.normalizeWithPeriodsAndSlashes(
+					fileEntry.getTitle()),
 				Portal.FRIENDLY_URL_SEPARATOR, _stagingGroup.getFriendlyURL(),
 				String.valueOf(fileEntry.getGroupId()),
+				StringUtil.removeFirst(
+					_stagingGroup.getFriendlyURL(), StringPool.SLASH),
 				stagingPrivateVirtualHostnames.firstKey(),
 				stagingPublicVirtualHostnames.firstKey(),
 				String.valueOf(fileEntry.getFileEntryId()),
@@ -1105,11 +1204,13 @@ public class DefaultExportImportContentProcessorTest {
 				PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING,
 				_stagingPrivateLayout.getFriendlyURL(),
 				_stagingPublicLayout.getFriendlyURL(), fileEntry.getTitle(),
-				fileEntry.getUuid(), "/w", company.getWebId()
+				fileEntry.getUuid(),
+				FriendlyURLResolverConstants.URL_SEPARATOR_X_JOURNAL_ARTICLE,
+				company.getWebId()
 			});
 
 		if (!content.contains("[$TIMESTAMP")) {
-			return content;
+			return _extractValidContent(content);
 		}
 
 		return _replaceTimestampParameters(content);
@@ -1130,7 +1231,11 @@ public class DefaultExportImportContentProcessorTest {
 		List<String> outURLs = new ArrayList<>();
 
 		for (String url : urls) {
-			if (!url.contains("[$TIMESTAMP")) {
+			if (Validator.isNotNull(url) && !url.contains("[$TIMESTAMP") &&
+				!url.endsWith(StringPool.COLON)) {
+
+				outURLs.add(url);
+
 				continue;
 			}
 
@@ -1183,6 +1288,48 @@ public class DefaultExportImportContentProcessorTest {
 
 		String content = _replaceParameters(
 			_getContent("dl_references.txt"), _fileEntry);
+
+		content = _exportImportContentProcessor.replaceExportContentReferences(
+			_portletDataContextExport, _referrerStagedModel, content, true,
+			true);
+
+		_portletDataContextImport.setScopeGroupId(_fileEntry.getGroupId());
+
+		if (deleteFileEntryBeforeImport) {
+			DLAppLocalServiceUtil.deleteFileEntry(_fileEntry.getFileEntryId());
+		}
+
+		content = _exportImportContentProcessor.replaceImportContentReferences(
+			_portletDataContextImport, _referrerStagedModel, content);
+
+		Assert.assertFalse(content, content.contains("[$dl-reference="));
+	}
+
+	private void _testImportDLReferencesFriendlyURL(
+			boolean deleteFileEntryBeforeImport)
+		throws Exception {
+
+		_fileEntry = DLAppLocalServiceUtil.updateFileEntry(
+			TestPropsValues.getUserId(), _fileEntry.getFileEntryId(),
+			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
+			_fileEntry.getTitle(), _fileEntry.getTitle(), StringPool.BLANK,
+			StringPool.BLANK, DLVersionNumberIncrease.AUTOMATIC,
+			TestDataConstants.TEST_BYTE_ARRAY, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				_stagingGroup.getGroupId(), TestPropsValues.getUserId()));
+
+		Element referrerStagedModelElement =
+			_portletDataContextExport.getExportDataElement(
+				_referrerStagedModel);
+
+		String referrerStagedModelPath = ExportImportPathUtil.getModelPath(
+			_referrerStagedModel);
+
+		referrerStagedModelElement.addAttribute(
+			"path", referrerStagedModelPath);
+
+		String content = _replaceParameters(
+			_getContent("dl_references_file_friendly_urls.txt"), _fileEntry);
 
 		content = _exportImportContentProcessor.replaceExportContentReferences(
 			_portletDataContextExport, _referrerStagedModel, content, true,

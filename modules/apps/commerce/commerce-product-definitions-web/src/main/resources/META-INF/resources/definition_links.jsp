@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,7 +12,6 @@ CPDefinitionLinkDisplayContext cpDefinitionLinkDisplayContext = (CPDefinitionLin
 
 CPDefinition cpDefinition = cpDefinitionLinkDisplayContext.getCPDefinition();
 long cpDefinitionId = cpDefinitionLinkDisplayContext.getCPDefinitionId();
-PortletURL portletURL = cpDefinitionLinkDisplayContext.getPortletURL();
 %>
 
 <c:if test="<%= CommerceCatalogPermission.contains(permissionChecker, cpDefinition, ActionKeys.VIEW) %>">
@@ -36,24 +26,25 @@ PortletURL portletURL = cpDefinitionLinkDisplayContext.getPortletURL();
 	</aui:form>
 
 	<div class="pt-4" id="<portlet:namespace />productDefinitionLinksContainer">
-		<aui:form action="<%= portletURL %>" method="post" name="fm">
+		<portlet:actionURL name="/cp_definitions/edit_cp_definition" var="editProductDefinitionLinksActionURL" />
+
+		<aui:form action="<%= editProductDefinitionLinksActionURL %>" method="post" name="fm">
 			<aui:input name="<%= Constants.CMD %>" type="hidden" />
 			<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
+			<aui:input name="cpDefinitionId" type="hidden" value="<%= cpDefinitionId %>" />
+			<aui:input name="workflowAction" type="hidden" value="<%= WorkflowConstants.ACTION_SAVE_DRAFT %>" />
 
-			<clay:data-set-display
+			<frontend-data-set:classic-display
 				contextParams='<%=
 					HashMapBuilder.<String, String>put(
 						"cpDefinitionId", String.valueOf(cpDefinitionLinkDisplayContext.getCPDefinitionId())
 					).build()
 				%>'
 				creationMenu="<%= cpDefinitionLinkDisplayContext.getCreationMenu() %>"
-				dataProviderKey="<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_LINKS %>"
+				dataProviderKey="<%= CommerceProductFDSNames.PRODUCT_LINKS %>"
 				formName="fm"
-				id="<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_LINKS %>"
+				id="<%= CommerceProductFDSNames.PRODUCT_LINKS %>"
 				itemsPerPage="<%= 10 %>"
-				namespace="<%= liferayPortletResponse.getNamespace() %>"
-				pageNumber="<%= 1 %>"
-				portletURL="<%= portletURL %>"
 				style="stacked"
 			/>
 		</aui:form>
@@ -68,7 +59,7 @@ PortletURL portletURL = cpDefinitionLinkDisplayContext.getPortletURL();
 		%>
 
 			eventHandler = Liferay.on(
-				'<portlet:namespace />addCommerceProductDefinitionLink<%= type %>',
+				'<portlet:namespace />addCommerceProductDefinitionLink<%= HtmlUtil.escapeJS(type) %>',
 				() => {
 					Liferay.Util.openSelectionModal({
 						multiple: true,
@@ -92,7 +83,7 @@ PortletURL portletURL = cpDefinitionLinkDisplayContext.getPortletURL();
 							);
 
 							if (typeInput) {
-								typeInput.value = '<%= type %>';
+								typeInput.value = '<%= HtmlUtil.escapeJS(type) %>';
 							}
 
 							const form = document.getElementById(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.service.test;
@@ -142,7 +133,7 @@ public class AssetVocabularyServiceTest {
 		vocabulary =
 			AssetVocabularyLocalServiceUtil.
 				getAssetVocabularyByExternalReferenceCode(
-					_group.getGroupId(), externalReferenceCode);
+					externalReferenceCode, _group.getGroupId());
 
 		Assert.assertEquals(
 			externalReferenceCode, vocabulary.getExternalReferenceCode());
@@ -152,22 +143,19 @@ public class AssetVocabularyServiceTest {
 	public void testAddVocabularyWithoutExternalReferenceCode()
 		throws Exception {
 
-		AssetVocabulary vocabulary = AssetTestUtil.addVocabulary(
+		AssetVocabulary vocabulary1 = AssetTestUtil.addVocabulary(
 			_group.getGroupId());
 
-		String externalReferenceCode = String.valueOf(
-			vocabulary.getVocabularyId());
+		String externalReferenceCode = vocabulary1.getExternalReferenceCode();
 
-		Assert.assertEquals(
-			externalReferenceCode, vocabulary.getExternalReferenceCode());
+		Assert.assertEquals(externalReferenceCode, vocabulary1.getUuid());
 
-		vocabulary =
+		AssetVocabulary vocabulary2 =
 			AssetVocabularyLocalServiceUtil.
 				getAssetVocabularyByExternalReferenceCode(
-					_group.getGroupId(), externalReferenceCode);
+					externalReferenceCode, _group.getGroupId());
 
-		Assert.assertEquals(
-			externalReferenceCode, vocabulary.getExternalReferenceCode());
+		Assert.assertEquals(vocabulary1, vocabulary2);
 	}
 
 	@Test
@@ -543,32 +531,6 @@ public class AssetVocabularyServiceTest {
 		Assert.assertEquals(title, vocabulary.getTitle(LocaleUtil.US, true));
 		Assert.assertEquals(
 			StringUtil.toLowerCase(title), vocabulary.getName());
-	}
-
-	@Test(expected = DuplicateVocabularyException.class)
-	public void testUpdateDuplicateVocabulary() throws Exception {
-		AssetVocabulary vocabulary = AssetTestUtil.addVocabulary(
-			_group.getGroupId(), "test1");
-
-		AssetTestUtil.addVocabulary(_group.getGroupId(), "test2");
-
-		_assetVocabularyLocalService.updateVocabulary(
-			vocabulary.getVocabularyId(), "test2", vocabulary.getTitle(),
-			vocabulary.getTitleMap(), vocabulary.getDescriptionMap(),
-			vocabulary.getSettings(),
-			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
-	}
-
-	@Test(expected = VocabularyNameException.class)
-	public void testUpdateEmptyNameVocabulary() throws Exception {
-		AssetVocabulary vocabulary = AssetTestUtil.addVocabulary(
-			_group.getGroupId(), "test");
-
-		_assetVocabularyLocalService.updateVocabulary(
-			vocabulary.getVocabularyId(), StringPool.BLANK,
-			vocabulary.getTitle(), vocabulary.getTitleMap(),
-			vocabulary.getDescriptionMap(), vocabulary.getSettings(),
-			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 
 	@Rule

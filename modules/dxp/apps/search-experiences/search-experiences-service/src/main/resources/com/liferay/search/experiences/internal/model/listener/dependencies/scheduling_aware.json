@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Show only contents with a valid display date."
+		"en_US": "scheduling-aware-description"
 	},
 	"elementDefinition": {
 		"category": "filter",
@@ -88,7 +88,8 @@
 		"uiConfiguration": {
 		}
 	},
+	"externalReferenceCode": "SCHEDULING_AWARE",
 	"title_i18n": {
-		"en_US": "Scheduling Aware"
+		"en_US": "scheduling-aware"
 	}
 }

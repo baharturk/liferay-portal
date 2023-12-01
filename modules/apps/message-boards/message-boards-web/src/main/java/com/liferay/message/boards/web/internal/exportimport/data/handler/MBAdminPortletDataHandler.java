@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.exportimport.data.handler;
@@ -320,35 +311,16 @@ public class MBAdminPortletDataHandler extends BasePortletDataHandler {
 		threadFlagActionableDynamicQuery.performCount();
 	}
 
-	@Reference(unbind = "-")
-	protected void setMBBanLocalService(MBBanLocalService mbBanLocalService) {
-		_mbBanLocalService = mbBanLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMBCategoryLocalService(
-		MBCategoryLocalService mbCategoryLocalService) {
-
-		_mbCategoryLocalService = mbCategoryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMBThreadFlagLocalService(
-		MBThreadFlagLocalService mbThreadFlagLocalService) {
-
-		_mbThreadFlagLocalService = mbThreadFlagLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMBThreadLocalService(
-		MBThreadLocalService mbThreadLocalService) {
-
-		_mbThreadLocalService = mbThreadLocalService;
-	}
-
+	@Reference
 	private MBBanLocalService _mbBanLocalService;
+
+	@Reference
 	private MBCategoryLocalService _mbCategoryLocalService;
+
+	@Reference
 	private MBThreadFlagLocalService _mbThreadFlagLocalService;
+
+	@Reference
 	private MBThreadLocalService _mbThreadLocalService;
 
 	@Reference

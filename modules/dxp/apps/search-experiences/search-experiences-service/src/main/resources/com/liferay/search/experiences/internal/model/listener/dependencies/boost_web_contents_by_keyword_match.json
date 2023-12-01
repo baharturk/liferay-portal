@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Show selected Web Contents higher in the results if given keywords exist in the search phrase."
+		"en_US": "boost-web-contents-by-keyword-match-description"
 	},
 	"elementDefinition": {
 		"category": "conditional",
@@ -36,18 +36,18 @@
 				{
 					"fields": [
 						{
-							"label": "Article IDs",
+							"label": "article-ids",
 							"name": "article_ids",
 							"type": "multiselect"
 						},
 						{
-							"label": "Keywords",
+							"label": "keywords",
 							"name": "values",
 							"type": "multiselect"
 						},
 						{
 							"defaultValue": 20,
-							"label": "Boost",
+							"label": "boost",
 							"name": "boost",
 							"type": "number",
 							"typeOptions": {
@@ -59,7 +59,8 @@
 			]
 		}
 	},
+	"externalReferenceCode": "BOOST_WEB_CONTENTS_BY_KEYWORD_MATCH",
 	"title_i18n": {
-		"en_US": "Boost Web Contents by Keyword Match"
+		"en_US": "boost-web-contents-by-keyword-match"
 	}
 }

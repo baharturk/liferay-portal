@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.renderer.internal;
@@ -18,7 +9,7 @@ import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
 import com.liferay.dynamic.data.mapping.form.evaluator.DDMFormEvaluator;
 import com.liferay.dynamic.data.mapping.form.evaluator.DDMFormEvaluatorEvaluateRequest;
 import com.liferay.dynamic.data.mapping.form.evaluator.DDMFormEvaluatorEvaluateResponse;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderingContext;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
@@ -40,7 +31,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -68,7 +59,8 @@ public class DDMFormPagesTemplateContextFactory {
 		DDMFormRenderingContext ddmFormRenderingContext,
 		DDMStructureLayoutLocalService ddmStructureLayoutLocalService,
 		DDMStructureLocalService ddmStructureLocalService,
-		GroupLocalService groupLocalService, JSONFactory jsonFactory) {
+		GroupLocalService groupLocalService, HtmlParser htmlParser,
+		JSONFactory jsonFactory) {
 
 		_ddmForm = ddmForm;
 		_ddmFormLayout = ddmFormLayout;
@@ -76,6 +68,7 @@ public class DDMFormPagesTemplateContextFactory {
 		_ddmStructureLayoutLocalService = ddmStructureLayoutLocalService;
 		_ddmStructureLocalService = ddmStructureLocalService;
 		_groupLocalService = groupLocalService;
+		_htmlParser = htmlParser;
 		_jsonFactory = jsonFactory;
 
 		DDMFormValues ddmFormValues =
@@ -111,17 +104,17 @@ public class DDMFormPagesTemplateContextFactory {
 		_ddmFormEvaluator = ddmFormEvaluator;
 	}
 
-	public void setDDMFormFieldTypeServicesTracker(
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker) {
+	public void setDDMFormFieldTypeServicesRegistry(
+		DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry) {
 
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
+		_ddmFormFieldTypeServicesRegistry = ddmFormFieldTypeServicesRegistry;
 	}
 
 	protected String getValue(
 		DDMFormRenderingContext ddmFormRenderingContext, String value) {
 
 		if (ddmFormRenderingContext.isViewMode()) {
-			return HtmlUtil.extractText(value);
+			return _htmlParser.extractText(value);
 		}
 
 		return value;
@@ -168,21 +161,21 @@ public class DDMFormPagesTemplateContextFactory {
 
 		for (DDMFormLayoutColumn ddmFormLayoutColumn : ddmFormLayoutColumns) {
 			columnsTemplateContext.add(
-				_createColumnTemplateContext(ddmFormLayoutColumn));
+				_createColumnTemplateContext(
+					ddmFormLayoutColumn.getDDMFormFieldNames(),
+					ddmFormLayoutColumn.getSize()));
 		}
 
 		return columnsTemplateContext;
 	}
 
 	private Map<String, Object> _createColumnTemplateContext(
-		DDMFormLayoutColumn ddmFormLayoutColumn) {
+		List<String> ddmFormFiledNames, int size) {
 
 		return HashMapBuilder.<String, Object>put(
-			"fields",
-			_createFieldsTemplateContext(
-				ddmFormLayoutColumn.getDDMFormFieldNames())
+			"fields", _createFieldsTemplateContext(ddmFormFiledNames)
 		).put(
-			"size", ddmFormLayoutColumn.getSize()
+			"size", size
 		).build();
 	}
 
@@ -211,11 +204,11 @@ public class DDMFormPagesTemplateContextFactory {
 					getDDMFormFieldsPropertyChanges(),
 				_ddmFormFieldValuesMap.get(ddmFormFieldName),
 				_ddmFormRenderingContext, _ddmStructureLayoutLocalService,
-				_ddmStructureLocalService, _groupLocalService, _jsonFactory,
-				_pageEnabled, _ddmFormLayout);
+				_ddmStructureLocalService, _groupLocalService, _htmlParser,
+				_jsonFactory, _pageEnabled, _ddmFormLayout);
 
-		ddmFormFieldTemplateContextFactory.setDDMFormFieldTypeServicesTracker(
-			_ddmFormFieldTypeServicesTracker);
+		ddmFormFieldTemplateContextFactory.setDDMFormFieldTypeServicesRegistry(
+			_ddmFormFieldTypeServicesRegistry);
 
 		return ddmFormFieldTemplateContextFactory.create();
 	}
@@ -437,7 +430,7 @@ public class DDMFormPagesTemplateContextFactory {
 	private DDMFormEvaluator _ddmFormEvaluator;
 	private DDMFormEvaluatorEvaluateResponse _ddmFormEvaluatorEvaluateResponse;
 	private final Map<String, DDMFormField> _ddmFormFieldsMap;
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
 	private final Map<String, List<DDMFormFieldValue>> _ddmFormFieldValuesMap;
 	private final DDMFormLayout _ddmFormLayout;
 	private final DDMFormRenderingContext _ddmFormRenderingContext;
@@ -446,6 +439,7 @@ public class DDMFormPagesTemplateContextFactory {
 		_ddmStructureLayoutLocalService;
 	private final DDMStructureLocalService _ddmStructureLocalService;
 	private final GroupLocalService _groupLocalService;
+	private final HtmlParser _htmlParser;
 	private final JSONFactory _jsonFactory;
 	private final Locale _locale;
 	private boolean _pageEnabled;

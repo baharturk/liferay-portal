@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.lar;
 
-import com.liferay.asset.kernel.model.AssetLink;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
-import com.liferay.asset.kernel.service.AssetLinkLocalServiceUtil;
+import com.liferay.asset.link.model.AssetLink;
+import com.liferay.asset.link.service.AssetLinkLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.model.ExpandoColumn;
@@ -75,7 +66,6 @@ import com.liferay.portal.kernel.model.Team;
 import com.liferay.portal.kernel.model.TypedModel;
 import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
 import com.liferay.portal.kernel.model.WorkflowedModel;
-import com.liferay.portal.kernel.model.adapter.ModelAdapterUtil;
 import com.liferay.portal.kernel.model.adapter.StagedGroupedWorkflowDefinitionLink;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
@@ -87,25 +77,28 @@ import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.TeamLocalServiceUtil;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalServiceUtil;
+import com.liferay.portal.kernel.util.AggregateClassLoader;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateRange;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowDefinition;
-import com.liferay.portal.kernel.workflow.WorkflowDefinitionManagerUtil;
 import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.kernel.xml.Attribute;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.zip.ZipReader;
 import com.liferay.portal.kernel.zip.ZipWriter;
+import com.liferay.portal.model.adapter.util.ModelAdapterUtil;
+import com.liferay.portal.workflow.util.WorkflowDefinitionManagerUtil;
 import com.liferay.xstream.configurator.XStreamConfigurator;
 import com.liferay.xstream.configurator.XStreamConfiguratorRegistryUtil;
 
@@ -122,6 +115,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -278,13 +272,6 @@ public class PortletDataContextImpl implements PortletDataContext {
 	}
 
 	@Override
-	public void addExpando(
-		Element element, String path, ClassedModel classedModel) {
-
-		addExpando(element, path, classedModel, classedModel.getModelClass());
-	}
-
-	@Override
 	public void addLocks(Class<?> clazz, String key) throws PortalException {
 		if (!_locksMap.containsKey(
 				_getPrimaryKeyString(clazz, (Serializable)key)) &&
@@ -339,7 +326,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 						role.getDescriptiveName());
 				}
 				catch (PortalException portalException) {
-					_log.error(portalException, portalException);
+					_log.error(portalException);
 				}
 			}
 
@@ -419,11 +406,11 @@ public class PortletDataContextImpl implements PortletDataContext {
 		String referenceKey = _getReferenceKey(classedModel);
 
 		if (missing) {
+			referenceElement.addAttribute("missing", Boolean.TRUE.toString());
+
 			if (_references.contains(referenceKey)) {
 				return referenceElement;
 			}
-
-			referenceElement.addAttribute("missing", Boolean.TRUE.toString());
 
 			if (!_missingReferences.contains(referenceKey)) {
 				_missingReferences.add(referenceKey);
@@ -454,6 +441,11 @@ public class PortletDataContextImpl implements PortletDataContext {
 		}
 
 		return value;
+	}
+
+	@Override
+	public void addScopedPrimaryKeys(Collection<String> scopedPrimaryKeys) {
+		_scopedPrimaryKeys.addAll(scopedPrimaryKeys);
 	}
 
 	@Override
@@ -588,7 +580,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 		Element element, ClassedModel classedModel) {
 
 		return createServiceContext(
-			element, null, classedModel, classedModel.getModelClass());
+			element, classedModel, classedModel.getModelClass());
 	}
 
 	@Override
@@ -601,8 +593,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 		StagedModel stagedModel, Class<?> clazz) {
 
 		return createServiceContext(
-			getImportDataStagedModelElement(stagedModel),
-			ExportImportPathUtil.getModelPath(stagedModel), stagedModel, clazz);
+			getImportDataStagedModelElement(stagedModel), stagedModel, clazz);
 	}
 
 	@Override
@@ -610,7 +601,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 		String path, ClassedModel classedModel) {
 
 		return createServiceContext(
-			null, path, classedModel, classedModel.getModelClass());
+			null, classedModel, classedModel.getModelClass());
 	}
 
 	@Override
@@ -747,11 +738,6 @@ public class PortletDataContextImpl implements PortletDataContext {
 	}
 
 	@Override
-	public Map<String, List<ExpandoColumn>> getExpandoColumns() {
-		return _expandoColumnsMap;
-	}
-
-	@Override
 	public Element getExportDataElement(ClassedModel classedModel) {
 		return getExportDataElement(
 			classedModel,
@@ -839,15 +825,19 @@ public class PortletDataContextImpl implements PortletDataContext {
 		String key = StringPool.BLANK;
 
 		if (_importDataElements != null) {
-			key = StringBundler.concat(
-				_importDataRootElement.attributeValue("self-path"),
-				CharPool.POUND, name, CharPool.POUND, attribute, CharPool.POUND,
-				value);
+			String selfPath = _importDataRootElement.attributeValue(
+				"self-path");
 
-			importDataElement = _importDataElements.get(key);
+			if (Validator.isNotNull(selfPath)) {
+				key = StringBundler.concat(
+					selfPath, CharPool.POUND, name, CharPool.POUND, attribute,
+					CharPool.POUND, value);
 
-			if (importDataElement != null) {
-				return importDataElement;
+				importDataElement = _importDataElements.get(key);
+
+				if (importDataElement != null) {
+					return importDataElement;
+				}
 			}
 		}
 
@@ -855,7 +845,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 
 		importDataElement = _getDataElement(groupElement, attribute, value);
 
-		if (_importDataElements != null) {
+		if (Validator.isNotNull(key)) {
 			_importDataElements.put(key, importDataElement);
 		}
 
@@ -922,11 +912,6 @@ public class PortletDataContextImpl implements PortletDataContext {
 	}
 
 	@Override
-	public Object getNewPrimaryKey(Class<?> clazz, Object newPrimaryKey) {
-		return getNewPrimaryKey(clazz.getName(), newPrimaryKey);
-	}
-
-	@Override
 	public Object getNewPrimaryKey(String className, Object newPrimaryKey) {
 		Map<?, ?> primaryKeys = getNewPrimaryKeysMap(className);
 
@@ -985,12 +970,11 @@ public class PortletDataContextImpl implements PortletDataContext {
 	public Element getReferenceDataElement(
 		Element parentElement, Class<?> clazz, long classPK) {
 
-		List<Element> referenceElements = getReferenceElements(
-			parentElement, clazz.getName(), 0, null, (Serializable)classPK,
-			null);
-
 		List<Element> referenceDataElements = getReferenceDataElements(
-			referenceElements, clazz);
+			getReferenceElements(
+				parentElement, clazz.getName(), 0, null, (Serializable)classPK,
+				null),
+			clazz);
 
 		if (referenceDataElements.isEmpty()) {
 			return null;
@@ -1003,11 +987,10 @@ public class PortletDataContextImpl implements PortletDataContext {
 	public Element getReferenceDataElement(
 		Element parentElement, Class<?> clazz, long groupId, String uuid) {
 
-		List<Element> referenceElements = getReferenceElements(
-			parentElement, clazz.getName(), groupId, uuid, null, null);
-
 		List<Element> referenceDataElements = getReferenceDataElements(
-			referenceElements, clazz);
+			getReferenceElements(
+				parentElement, clazz.getName(), groupId, uuid, null, null),
+			clazz);
 
 		if (referenceDataElements.isEmpty()) {
 			return null;
@@ -1041,10 +1024,10 @@ public class PortletDataContextImpl implements PortletDataContext {
 	public List<Element> getReferenceDataElements(
 		Element parentElement, Class<?> clazz, String referenceType) {
 
-		List<Element> referenceElements = getReferenceElements(
-			parentElement, clazz.getName(), 0, null, null, referenceType);
-
-		return getReferenceDataElements(referenceElements, clazz);
+		return getReferenceDataElements(
+			getReferenceElements(
+				parentElement, clazz.getName(), 0, null, null, referenceType),
+			clazz);
 	}
 
 	@Override
@@ -1058,15 +1041,10 @@ public class PortletDataContextImpl implements PortletDataContext {
 	public List<Element> getReferenceDataElements(
 		StagedModel parentStagedModel, Class<?> clazz, String referenceType) {
 
-		List<Element> referenceElements = getReferenceElements(
-			parentStagedModel, clazz.getName(), null, referenceType);
-
-		return getReferenceDataElements(referenceElements, clazz);
-	}
-
-	@Override
-	public Element getReferenceElement(Class<?> clazz, Serializable classPK) {
-		return getReferenceElement(clazz.getName(), classPK);
+		return getReferenceDataElements(
+			getReferenceElements(
+				parentStagedModel, clazz.getName(), null, referenceType),
+			clazz);
 	}
 
 	@Override
@@ -1082,13 +1060,6 @@ public class PortletDataContextImpl implements PortletDataContext {
 		}
 
 		return null;
-	}
-
-	@Override
-	public Element getReferenceElement(
-		StagedModel parentStagedModel, Class<?> clazz, Serializable classPK) {
-
-		return getReferenceElement(parentStagedModel, clazz.getName(), classPK);
 	}
 
 	@Override
@@ -1130,6 +1101,10 @@ public class PortletDataContextImpl implements PortletDataContext {
 	@Override
 	public String getRootPortletId() {
 		return _rootPortletId;
+	}
+
+	public Set<String> getScopedPrimaryKeys() {
+		return _scopedPrimaryKeys;
 	}
 
 	@Override
@@ -1483,20 +1458,11 @@ public class PortletDataContextImpl implements PortletDataContext {
 	public void importPortletPermissions(String resourceName)
 		throws PortalException {
 
-		importPermissions(resourceName, getSourceGroupId(), getScopeGroupId());
-	}
-
-	@Override
-	public boolean isCompanyStagedGroupedModel(
-		StagedGroupedModel stagedGroupedModel) {
-
-		if ((stagedGroupedModel.getGroupId() == getCompanyGroupId()) &&
-			(getGroupId() != getCompanyGroupId())) {
-
-			return true;
+		if (getGroupId() != getScopeGroupId()) {
+			return;
 		}
 
-		return false;
+		importPermissions(resourceName, getSourceGroupId(), getScopeGroupId());
 	}
 
 	@Override
@@ -1531,7 +1497,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -1592,6 +1558,11 @@ public class PortletDataContextImpl implements PortletDataContext {
 			className, StringPool.POUND, classPK);
 
 		return addPrimaryKey(String.class, modelCountedPrimaryKey);
+	}
+
+	@Override
+	public boolean isOriginalPrivateLayout() {
+		return _originalPrivateLayout;
 	}
 
 	@Override
@@ -1739,6 +1710,10 @@ public class PortletDataContextImpl implements PortletDataContext {
 	@Override
 	public void setNewLayouts(List<Layout> newLayouts) {
 		_newLayouts = newLayouts;
+	}
+
+	public void setOriginalPrivateLayout(boolean originalPrivateLayout) {
+		_originalPrivateLayout = originalPrivateLayout;
 	}
 
 	@Override
@@ -1890,8 +1865,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 	}
 
 	protected ServiceContext createServiceContext(
-		Element element, String path, ClassedModel classedModel,
-		Class<?> clazz) {
+		Element element, ClassedModel classedModel, Class<?> clazz) {
 
 		ServiceContext serviceContext = new ServiceContext();
 
@@ -1908,6 +1882,12 @@ public class PortletDataContextImpl implements PortletDataContext {
 			serviceContext.setCreateDate(auditedModel.getCreateDate());
 			serviceContext.setModifiedDate(auditedModel.getModifiedDate());
 			serviceContext.setUserId(getUserId(auditedModel));
+		}
+		else if (classedModel instanceof StagedModel) {
+			StagedModel stagedModel = (StagedModel)classedModel;
+
+			serviceContext.setCreateDate(stagedModel.getCreateDate());
+			serviceContext.setModifiedDate(stagedModel.getModifiedDate());
 		}
 
 		// Permissions
@@ -1932,7 +1912,6 @@ public class PortletDataContextImpl implements PortletDataContext {
 
 			serviceContext.setAssetCategoryIds(
 				getAssetCategoryIds(clazz, classPKObj));
-
 			serviceContext.setAssetTagNames(
 				getAssetTagNames(clazz, classPKObj));
 		}
@@ -1942,10 +1921,8 @@ public class PortletDataContextImpl implements PortletDataContext {
 				"asset-entry-priority");
 
 			if (assetPriorityAttribute != null) {
-				double assetPriority = GetterUtil.getDouble(
-					assetPriorityAttribute.getValue());
-
-				serviceContext.setAssetPriority(assetPriority);
+				serviceContext.setAssetPriority(
+					GetterUtil.getDouble(assetPriorityAttribute.getValue()));
 			}
 		}
 
@@ -1957,7 +1934,10 @@ public class PortletDataContextImpl implements PortletDataContext {
 			expandoPath = element.attributeValue("expando-path");
 		}
 		else {
-			expandoPath = ExportImportPathUtil.getExpandoPath(path);
+			expandoPath = ExportImportPathUtil.getExpandoPath(
+				ExportImportPathUtil.getModelPath(
+					this, classedModel.getModelClassName(),
+					ExportImportClassedModelUtil.getClassPK(classedModel)));
 		}
 
 		if (Validator.isNotNull(expandoPath)) {
@@ -1972,7 +1952,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -2048,14 +2028,17 @@ public class PortletDataContextImpl implements PortletDataContext {
 		String key = StringPool.BLANK;
 
 		if (_importDataElements != null) {
-			key = StringBundler.concat(
-				_importDataRootElement.attributeValue("self-path"),
-				CharPool.POUND, name);
+			String selfPath = _importDataRootElement.attributeValue(
+				"self-path");
 
-			groupElement = _importDataElements.get(key);
+			if (Validator.isNotNull(selfPath)) {
+				key = StringBundler.concat(selfPath, CharPool.POUND, name);
 
-			if (groupElement != null) {
-				return groupElement;
+				groupElement = _importDataElements.get(key);
+
+				if (groupElement != null) {
+					return groupElement;
+				}
 			}
 		}
 
@@ -2066,7 +2049,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 			groupElement = SAXReaderUtil.createElement("EMPTY-ELEMENT");
 		}
 
-		if (_importDataElements != null) {
+		if (Validator.isNotNull(key)) {
 			_importDataElements.put(key, groupElement);
 		}
 
@@ -2192,7 +2175,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 			return getUserId(auditedModel.getUserUuid());
 		}
 		catch (SystemException systemException) {
-			_log.error(systemException, systemException);
+			_log.error(systemException);
 		}
 
 		return 0;
@@ -2601,7 +2584,9 @@ public class PortletDataContextImpl implements PortletDataContext {
 	private void _initXStream() {
 		ClassLoader classLoader =
 			XStreamConfiguratorRegistryUtil.getConfiguratorsClassLoader(
-				XStream.class.getClassLoader());
+				AggregateClassLoader.getAggregateClassLoader(
+					PortalClassLoaderUtil.getClassLoader(),
+					XStream.class.getClassLoader()));
 
 		long modifiedCount = XStreamConfiguratorRegistryUtil.getModifiedCount();
 
@@ -2619,9 +2604,6 @@ public class PortletDataContextImpl implements PortletDataContext {
 			null, new XppDriver(), new ClassLoaderReference(classLoader));
 
 		_xStream.omitField(HashMap.class, "cache_bitmask");
-
-		_xStreamConfigurators =
-			XStreamConfiguratorRegistryUtil.getXStreamConfigurators();
 
 		try {
 			Class<?> timestampClass = classLoader.loadClass(
@@ -2642,13 +2624,16 @@ public class PortletDataContextImpl implements PortletDataContext {
 			new ConverterAdapter(new TimestampConverter()),
 			XStream.PRIORITY_VERY_HIGH);
 
-		if (_xStreamConfigurators.isEmpty()) {
+		List<XStreamConfigurator> xStreamConfigurators =
+			XStreamConfiguratorRegistryUtil.getXStreamConfigurators();
+
+		if (xStreamConfigurators.isEmpty()) {
 			return;
 		}
 
 		List<String> allowedTypeNames = new ArrayList<>();
 
-		for (XStreamConfigurator xStreamConfigurator : _xStreamConfigurators) {
+		for (XStreamConfigurator xStreamConfigurator : xStreamConfigurators) {
 			List<XStreamAlias> xStreamAliases =
 				xStreamConfigurator.getXStreamAliases();
 
@@ -2761,7 +2746,6 @@ public class PortletDataContextImpl implements PortletDataContext {
 	private static ClassLoader _classLoader;
 	private static long _modifiedCount;
 	private static transient XStream _xStream;
-	private static Set<XStreamConfigurator> _xStreamConfigurators;
 
 	private final Map<String, long[]> _assetCategoryIdsMap = new HashMap<>();
 	private final Set<Long> _assetLinkIds = new HashSet<>();
@@ -2790,6 +2774,7 @@ public class PortletDataContextImpl implements PortletDataContext {
 	private final Map<String, Map<?, ?>> _newPrimaryKeysMaps = new HashMap<>();
 	private final Set<String> _notUniquePerLayout = new HashSet<>();
 	private final Map<String, Object> _objectsMap = new HashMap<>();
+	private boolean _originalPrivateLayout;
 	private Map<String, String[]> _parameterMap;
 	private final Map<String, List<KeyValuePair>> _permissionsMap =
 		new HashMap<>();

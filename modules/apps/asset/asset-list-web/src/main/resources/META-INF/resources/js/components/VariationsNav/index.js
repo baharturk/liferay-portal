@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
@@ -29,22 +20,20 @@ const VariationsNav = ({
 	updateVariationsPriorityURL,
 }) => {
 	const states = {
-		createTheFirstSegment:
-			segmentsEntriesAvailables &&
-			assetListEntrySegmentsEntryRels.length === 1,
-		default() {
-			return !this.emptyState && !this.createTheFirstSegment;
-		},
-		defaultWithHeaderButton() {
+		default: assetListEntrySegmentsEntryRels.length > 1,
+		emptyState: assetListEntrySegmentsEntryRels.length === 1,
+		showDefaultStateHeaderAddVariationButton() {
 			return (
-				!this.createTheFirstSegment &&
-				segmentsEntriesAvailables &&
-				assetListEntryValid
+				this.default && assetListEntryValid && segmentsEntriesAvailables
 			);
 		},
-		emptyState:
-			!segmentsEntriesAvailables &&
-			assetListEntrySegmentsEntryRels.length === 1,
+		showEmptyStateAddVariationButton() {
+			return (
+				this.emptyState &&
+				assetListEntryValid &&
+				segmentsEntriesAvailables
+			);
+		},
 	};
 
 	const handleAddVariation = () => {
@@ -64,13 +53,13 @@ const VariationsNav = ({
 					{Liferay.Language.get('personalized-variations')}
 				</p>
 
-				{states.defaultWithHeaderButton() && (
+				{states.showDefaultStateHeaderAddVariationButton() && (
 					<ClayTooltipProvider>
 						<ClayButtonWithIcon
 							data-tooltip-align="top"
 							displayType="unstyled"
 							onClick={handleAddVariation}
-							small
+							size="sm"
 							symbol="plus"
 							title={Liferay.Language.get('create-variation')}
 						/>
@@ -78,7 +67,7 @@ const VariationsNav = ({
 				)}
 			</div>
 
-			{(states.emptyState || states.createTheFirstSegment) && (
+			{states.emptyState && (
 				<ClayEmptyState
 					description={Liferay.Language.get(
 						'no-personalized-variations-were-found'
@@ -87,11 +76,11 @@ const VariationsNav = ({
 						'no-personalized-variations-yet'
 					)}
 				>
-					{states.createTheFirstSegment && (
+					{states.showEmptyStateAddVariationButton() && (
 						<ClayButton
 							displayType="primary"
 							onClick={handleAddVariation}
-							small
+							size="sm"
 						>
 							{Liferay.Language.get('add-personalized-variation')}
 						</ClayButton>
@@ -99,7 +88,7 @@ const VariationsNav = ({
 				</ClayEmptyState>
 			)}
 
-			{states.default() && (
+			{states.default && (
 				<>
 					<p className="mb-3 small text-secondary">
 						{Liferay.Language.get(

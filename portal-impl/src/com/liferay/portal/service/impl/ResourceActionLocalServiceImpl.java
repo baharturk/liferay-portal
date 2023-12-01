@@ -1,28 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.db.partition.DBPartitionUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
+import com.liferay.portal.kernel.db.partition.DBPartition;
 import com.liferay.portal.kernel.exception.NoSuchResourceActionException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.ResourcePermission;
@@ -186,6 +181,10 @@ public class ResourceActionLocalServiceImpl
 						resourceAction);
 				}
 				catch (Throwable throwable) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(throwable);
+					}
+
 					resourceAction =
 						resourceActionLocalService.addResourceAction(
 							name, actionId, bitwiseValue);
@@ -341,8 +340,18 @@ public class ResourceActionLocalServiceImpl
 	}
 
 	protected String encodeKey(String name, String actionId) {
-		return StringBundler.concat(name, StringPool.POUND, actionId);
+		String key = StringBundler.concat(name, StringPool.POUND, actionId);
+
+		if (DBPartition.isPartitionEnabled()) {
+			return StringBundler.concat(
+				key, StringPool.AT, DBPartitionUtil.getCurrentCompanyId());
+		}
+
+		return key;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		ResourceActionLocalServiceImpl.class);
 
 	private static final Map<String, ResourceAction> _resourceActions =
 		new ConcurrentHashMap<>();

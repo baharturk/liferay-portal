@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -51,12 +42,12 @@ renderResponse.setTitle((accountEntryAddressId == 0) ? LanguageUtil.get(request,
 
 		<aui:input name="description" type="textarea" />
 
-		<aui:select label="type" name="addressTypeId">
+		<aui:select label="type" name="addressListTypeId">
 
 			<%
 			String[] types = null;
 
-			if (Objects.equals("billing", defaultType) || Objects.equals("shipping", defaultType)) {
+			if (Objects.equals(defaultType, "billing") || Objects.equals(defaultType, "shipping")) {
 				types = new String[] {defaultType, AccountListTypeConstants.ACCOUNT_ENTRY_ADDRESS_TYPE_BILLING_AND_SHIPPING};
 			}
 			else {
@@ -66,11 +57,11 @@ renderResponse.setTitle((accountEntryAddressId == 0) ? LanguageUtil.get(request,
 			ListType addressListType = null;
 
 			if (address != null) {
-				addressListType = address.getType();
+				addressListType = address.getListType();
 			}
 
 			for (String type : types) {
-				ListType listType = ListTypeLocalServiceUtil.getListType(type, AccountEntry.class.getName() + ListTypeConstants.ADDRESS);
+				ListType listType = ListTypeLocalServiceUtil.getListType(themeDisplay.getCompanyId(), type, AccountEntry.class.getName() + ListTypeConstants.ADDRESS);
 			%>
 
 				<aui:option label="<%= LanguageUtil.get(request, type) %>" selected="<%= (address != null) ? Objects.equals(addressListType.getListTypeId(), listType.getListTypeId()) : false %>" value="<%= listType.getListTypeId() %>" />
@@ -135,29 +126,24 @@ renderResponse.setTitle((accountEntryAddressId == 0) ? LanguageUtil.get(request,
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button href="<%= backURL %>" type="cancel" />
+		<liferay-frontend:edit-form-buttons
+			redirect="<%= backURL %>"
+		/>
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 
-<script>
-	new Liferay.DynamicSelect([
-		{
-			select: '<portlet:namespace />addressCountryId',
-			selectData: Liferay.Address.getCountries,
-			selectDesc: 'nameCurrentValue',
-			selectId: 'countryId',
-			selectSort: '<%= true %>',
-			selectVal: '<%= (address == null) ? 0L : address.getCountryId() %>',
-		},
-		{
-			select: '<portlet:namespace />addressRegionId',
-			selectData: Liferay.Address.getRegions,
-			selectDesc: 'name',
-			selectDisableOnEmpty: '<%= true %>',
-			selectId: 'regionId',
-			selectVal: '<%= (address == null) ? 0L : address.getRegionId() %>',
-		},
-	]);
-</script>
+<liferay-frontend:component
+	componentId="CountryRegionDynamicSelect"
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"countrySelect", portletDisplay.getNamespace() + "addressCountryId"
+		).put(
+			"countrySelectVal", (address == null) ? 0L : address.getCountryId()
+		).put(
+			"regionSelect", portletDisplay.getNamespace() + "addressRegionId"
+		).put(
+			"regionSelectVal", (address == null) ? 0L : address.getRegionId()
+		).build()
+		%>'
+	module="account_entries_admin/js/CountryRegionDynamicSelect"
+/>

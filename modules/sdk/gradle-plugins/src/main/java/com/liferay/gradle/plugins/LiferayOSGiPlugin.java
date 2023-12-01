@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins;
@@ -47,11 +38,11 @@ import com.liferay.gradle.plugins.jasper.jspc.JspCPlugin;
 import com.liferay.gradle.plugins.javadoc.formatter.JavadocFormatterPlugin;
 import com.liferay.gradle.plugins.lang.builder.LangBuilderPlugin;
 import com.liferay.gradle.plugins.node.NodePlugin;
-import com.liferay.gradle.plugins.node.tasks.DownloadNodeModuleTask;
-import com.liferay.gradle.plugins.node.tasks.NpmInstallTask;
+import com.liferay.gradle.plugins.node.task.DownloadNodeModuleTask;
+import com.liferay.gradle.plugins.node.task.NpmInstallTask;
 import com.liferay.gradle.plugins.python.PythonPlugin;
 import com.liferay.gradle.plugins.source.formatter.SourceFormatterPlugin;
-import com.liferay.gradle.plugins.tasks.DirectDeployTask;
+import com.liferay.gradle.plugins.task.DirectDeployTask;
 import com.liferay.gradle.plugins.test.integration.TestIntegrationPlugin;
 import com.liferay.gradle.plugins.tld.formatter.TLDFormatterPlugin;
 import com.liferay.gradle.plugins.tlddoc.builder.TLDDocBuilderPlugin;
@@ -91,6 +82,7 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.CopySpec;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileCopyDetails;
 import org.gradle.api.file.RelativePath;
@@ -103,6 +95,7 @@ import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.BasePluginConvention;
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.ExtensionContainer;
+import org.gradle.api.plugins.JavaLibraryPlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.PluginContainer;
@@ -370,7 +363,7 @@ public class LiferayOSGiPlugin implements Plugin<Project> {
 	private void _applyPlugins(Project project) {
 		GradleUtil.applyPlugin(project, LiferayBasePlugin.class);
 
-		GradleUtil.applyPlugin(project, JavaPlugin.class);
+		GradleUtil.applyPlugin(project, JavaLibraryPlugin.class);
 
 		GradleUtil.applyPlugin(project, CSSBuilderPlugin.class);
 
@@ -847,9 +840,14 @@ public class LiferayOSGiPlugin implements Plugin<Project> {
 										"project.buildpath",
 										buildDirs.getAsPath());
 
-									if (logger.isDebugEnabled()) {
-										logger.debug(
-											"Builder Classpath: {}",
+									if (logger.isDebugEnabled() ||
+										Boolean.getBoolean(
+											"build.bnd.print.builder." +
+												"classpath")) {
+
+										logger.lifecycle(
+											"BND Builder Classpath {}: {}",
+											project.getName(),
 											buildDirs.getAsPath());
 									}
 
@@ -879,7 +877,8 @@ public class LiferayOSGiPlugin implements Plugin<Project> {
 
 									if (logger.isDebugEnabled()) {
 										logger.debug(
-											"Builder Sourcepath: {}",
+											"BND Builder Sourcepath {}: {}",
+											project.getName(),
 											builder.getSourcePath());
 									}
 
@@ -920,8 +919,8 @@ public class LiferayOSGiPlugin implements Plugin<Project> {
 
 									if (logger.isDebugEnabled()) {
 										logger.debug(
-											"Builder Properties: {}",
-											properties);
+											"BND Builder Properties {}: {}",
+											project.getName(), properties);
 									}
 
 									aQute.bnd.osgi.Jar bndJar = builder.build();
@@ -1188,6 +1187,8 @@ public class LiferayOSGiPlugin implements Plugin<Project> {
 
 					deployFastCopy.setDestinationDir(
 						liferayExtension.getLiferayHome());
+					deployFastCopy.setDuplicatesStrategy(
+						DuplicatesStrategy.INCLUDE);
 					deployFastCopy.setIncludeEmptyDirs(false);
 
 					String bundleSymbolicName = bundleExtension.getInstruction(
@@ -1477,6 +1478,21 @@ public class LiferayOSGiPlugin implements Plugin<Project> {
 							@Override
 							public void execute(Task task) {
 								bundleTaskConvention.buildBundle();
+
+								Logger logger = task.getLogger();
+
+								if (logger.isDebugEnabled() ||
+									Boolean.getBoolean(
+										"build.bnd.print.builder.classpath")) {
+
+									FileCollection builderClasspath =
+										bundleTaskConvention.getClasspath();
+
+									logger.lifecycle(
+										"BND Builder Classpath {}: {}",
+										project.getName(),
+										builderClasspath.getAsPath());
+								}
 							}
 
 						});

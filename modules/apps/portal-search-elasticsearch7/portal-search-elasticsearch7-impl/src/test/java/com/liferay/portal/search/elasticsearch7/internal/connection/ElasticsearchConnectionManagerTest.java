@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.connection;
 
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.search.elasticsearch7.configuration.RESTClientLoggerLevel;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationWrapper;
@@ -23,15 +15,19 @@ import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.elasticsearch.client.RestHighLevelClient;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 
 /**
  * @author André de Oliveira
@@ -43,10 +39,24 @@ public class ElasticsearchConnectionManagerTest {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
+	@BeforeClass
+	public static void setUpClass() {
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		_frameworkUtilMockedStatic.when(
+			() -> FrameworkUtil.getBundle(Mockito.any())
+		).thenReturn(
+			bundleContext.getBundle()
+		);
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		_frameworkUtilMockedStatic.close();
+	}
+
 	@Before
 	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
 		_resetAndSetUpMocks();
 
 		_elasticsearchConnectionManager = _createElasticsearchConnectionManager(
@@ -748,31 +758,26 @@ public class ElasticsearchConnectionManagerTest {
 
 	private static final String _REMOTE_3_CONNECTION_ID = "remote 3";
 
-	@Mock
-	private ElasticsearchConnection _defaultRemoteElasticsearchConnection;
+	private static final MockedStatic<FrameworkUtil>
+		_frameworkUtilMockedStatic = Mockito.mockStatic(FrameworkUtil.class);
 
-	@Mock
-	private ElasticsearchConfigurationWrapper
-		_elasticsearchConfigurationWrapper;
-
+	private final ElasticsearchConnection
+		_defaultRemoteElasticsearchConnection = Mockito.mock(
+			ElasticsearchConnection.class);
+	private final ElasticsearchConfigurationWrapper
+		_elasticsearchConfigurationWrapper = Mockito.mock(
+			ElasticsearchConfigurationWrapper.class);
 	private ElasticsearchConnectionManager _elasticsearchConnectionManager;
-
-	@Mock
-	private Http _http;
-
-	@Mock
-	private OperationModeResolver _operationModeResolver;
-
-	@Mock
-	private ElasticsearchConnection _remoteElasticsearchConnection1;
-
-	@Mock
-	private ElasticsearchConnection _remoteElasticsearchConnection2;
-
-	@Mock
-	private ElasticsearchConnection _remoteElasticsearchConnection3;
-
-	@Mock
-	private ElasticsearchConnection _sidecarElasticsearchConnection;
+	private final Http _http = Mockito.mock(Http.class);
+	private final OperationModeResolver _operationModeResolver = Mockito.mock(
+		OperationModeResolver.class);
+	private final ElasticsearchConnection _remoteElasticsearchConnection1 =
+		Mockito.mock(ElasticsearchConnection.class);
+	private final ElasticsearchConnection _remoteElasticsearchConnection2 =
+		Mockito.mock(ElasticsearchConnection.class);
+	private final ElasticsearchConnection _remoteElasticsearchConnection3 =
+		Mockito.mock(ElasticsearchConnection.class);
+	private final ElasticsearchConnection _sidecarElasticsearchConnection =
+		Mockito.mock(ElasticsearchConnection.class);
 
 }

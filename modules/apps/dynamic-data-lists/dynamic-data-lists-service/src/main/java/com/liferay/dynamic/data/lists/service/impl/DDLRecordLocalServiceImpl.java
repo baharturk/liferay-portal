@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.service.impl;
@@ -34,9 +25,9 @@ import com.liferay.dynamic.data.mapping.exception.StorageException;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
 import com.liferay.dynamic.data.mapping.storage.Field;
 import com.liferay.dynamic.data.mapping.storage.Fields;
-import com.liferay.dynamic.data.mapping.storage.StorageEngine;
 import com.liferay.dynamic.data.mapping.util.DDM;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesToFieldsConverter;
 import com.liferay.dynamic.data.mapping.util.FieldsToDDMFormValuesConverter;
@@ -46,7 +37,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.SystemEventConstants;
@@ -68,6 +59,7 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -144,7 +136,7 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 		record.setVersionUserId(user.getUserId());
 		record.setVersionUserName(user.getFullName());
 
-		long ddmStorageId = storageEngine.create(
+		long ddmStorageId = ddmStorageEngineManager.create(
 			recordSet.getCompanyId(), recordSet.getDDMStructureId(),
 			ddmFormValues, serviceContext);
 
@@ -187,6 +179,30 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 		}
 
 		return record;
+	}
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public DDLRecord addRecord(
+			long userId, long groupId, long recordSetId, int displayIndex,
+			Map<String, Serializable> fieldsMap, ServiceContext serviceContext)
+		throws PortalException {
+
+		DDLRecordSet recordSet = _ddlRecordSetPersistence.findByPrimaryKey(
+			recordSetId);
+
+		DDMStructure ddmStructure = recordSet.getDDMStructure();
+
+		Fields fields = toFields(
+			ddmStructure.getStructureId(), fieldsMap,
+			serviceContext.getLocale(), LocaleUtil.getSiteDefault());
+
+		DDMFormValues ddmFormValues = fieldsToDDMFormValuesConverter.convert(
+			ddmStructure, fields);
+
+		return addRecord(
+			userId, groupId, recordSetId, displayIndex, ddmFormValues,
+			serviceContext);
 	}
 
 	/**
@@ -284,7 +300,8 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 
 			// Dynamic data mapping storage
 
-			storageEngine.deleteByClass(recordVersion.getDDMStorageId());
+			ddmStorageEngineManager.deleteByClass(
+				recordVersion.getDDMStorageId());
 
 			// Workflow
 
@@ -417,7 +434,12 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 	public DDMFormValues getDDMFormValues(long ddmStorageId)
 		throws StorageException {
 
-		return storageEngine.getDDMFormValues(ddmStorageId);
+		try {
+			return ddmStorageEngineManager.getDDMFormValues(ddmStorageId);
+		}
+		catch (PortalException portalException) {
+			throw new StorageException(portalException);
+		}
 	}
 
 	@Override
@@ -569,7 +591,7 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 			return;
 		}
 
-		DDMFormValues ddmFormValues = storageEngine.getDDMFormValues(
+		DDMFormValues ddmFormValues = ddmStorageEngineManager.getDDMFormValues(
 			recordVersion.getDDMStorageId());
 
 		serviceContext.setCommand(Constants.REVERT);
@@ -688,7 +710,7 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 
 		String recordSetName = recordSet.getName(locale);
 
-		String title = LanguageUtil.format(
+		String title = _language.format(
 			locale, "new-x-for-list-x",
 			new Object[] {ddmStructureName, recordSetName}, false);
 
@@ -759,7 +781,7 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 		if (recordVersion.isApproved()) {
 			DDLRecordSet recordSet = record.getRecordSet();
 
-			long ddmStorageId = storageEngine.create(
+			long ddmStorageId = ddmStorageEngineManager.create(
 				recordSet.getCompanyId(), recordSet.getDDMStructureId(),
 				ddmFormValues, serviceContext);
 
@@ -772,7 +794,7 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 				WorkflowConstants.STATUS_DRAFT);
 		}
 		else {
-			storageEngine.update(
+			ddmStorageEngineManager.update(
 				recordVersion.getDDMStorageId(), ddmFormValues, serviceContext);
 
 			updateRecordVersion(
@@ -795,7 +817,8 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 
 			// Dynamic data mapping storage
 
-			storageEngine.deleteByClass(recordVersion.getDDMStorageId());
+			ddmStorageEngineManager.deleteByClass(
+				recordVersion.getDDMStorageId());
 
 			return record;
 		}
@@ -813,6 +836,47 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 		}
 
 		return record;
+	}
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public DDLRecord updateRecord(
+			long userId, long recordId, int displayIndex,
+			Map<String, Serializable> fieldsMap, boolean mergeFields,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		DDLRecord record = ddlRecordPersistence.findByPrimaryKey(recordId);
+
+		DDMFormValues oldDDMFormValues = record.getDDMFormValues();
+
+		DDLRecordSet recordSet = record.getRecordSet();
+
+		DDMStructure ddmStructure = recordSet.getDDMStructure();
+
+		Fields fields = toFields(
+			ddmStructure.getStructureId(), fieldsMap,
+			serviceContext.getLocale(), oldDDMFormValues.getDefaultLocale());
+
+		if (mergeFields) {
+			DDLRecordVersion recordVersion = record.getLatestRecordVersion();
+
+			DDMFormValues existingDDMFormValues =
+				ddmStorageEngineManager.getDDMFormValues(
+					recordVersion.getDDMStorageId());
+
+			Fields existingFields = ddmFormValuesToFieldsConverter.convert(
+				recordSet.getDDMStructure(), existingDDMFormValues);
+
+			fields = ddm.mergeFields(fields, existingFields);
+		}
+
+		DDMFormValues ddmFormValues = fieldsToDDMFormValuesConverter.convert(
+			recordSet.getDDMStructure(), fields);
+
+		return updateRecord(
+			userId, recordId, false, displayIndex, ddmFormValues,
+			serviceContext);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -908,7 +972,8 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 			}
 		}
 		else {
-			if (Objects.equals(
+			if ((status != WorkflowConstants.STATUS_PENDING) &&
+				Objects.equals(
 					record.getVersion(), recordVersion.getVersion())) {
 
 				String newVersion = DDLRecordConstants.VERSION_DEFAULT;
@@ -1075,10 +1140,12 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 			return false;
 		}
 
-		DDMFormValues lastDDMFormValues = storageEngine.getDDMFormValues(
-			lastRecordVersion.getDDMStorageId());
-		DDMFormValues latestDDMFormValues = storageEngine.getDDMFormValues(
-			latestRecordVersion.getDDMStorageId());
+		DDMFormValues lastDDMFormValues =
+			ddmStorageEngineManager.getDDMFormValues(
+				lastRecordVersion.getDDMStorageId());
+		DDMFormValues latestDDMFormValues =
+			ddmStorageEngineManager.getDDMFormValues(
+				latestRecordVersion.getDDMStorageId());
 
 		if (!lastDDMFormValues.equals(latestDDMFormValues)) {
 			return false;
@@ -1198,6 +1265,9 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 	protected DDMFormValuesToFieldsConverter ddmFormValuesToFieldsConverter;
 
 	@Reference
+	protected DDMStorageEngineManager ddmStorageEngineManager;
+
+	@Reference
 	protected DDMStructureLocalService ddmStructureLocalService;
 
 	@Reference
@@ -1205,9 +1275,6 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 
 	@Reference
 	protected IndexerRegistry indexerRegistry;
-
-	@Reference
-	protected StorageEngine storageEngine;
 
 	private List<Serializable> _getSerializableValues(Serializable value) {
 		List<Serializable> serializableValues = null;
@@ -1298,6 +1365,9 @@ public class DDLRecordLocalServiceImpl extends DDLRecordLocalServiceBaseImpl {
 
 	@Reference
 	private DDLRecordVersionPersistence _ddlRecordVersionPersistence;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private RatingsStatsLocalService _ratingsStatsLocalService;

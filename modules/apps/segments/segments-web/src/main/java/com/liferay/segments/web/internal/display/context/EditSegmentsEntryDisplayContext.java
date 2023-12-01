@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.web.internal.display.context;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.item.selector.ItemSelector;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -26,10 +17,15 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -38,6 +34,7 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 import com.liferay.segments.criteria.Criteria;
 import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
 import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributorRegistry;
@@ -64,21 +61,28 @@ import javax.servlet.http.HttpServletRequest;
 public class EditSegmentsEntryDisplayContext {
 
 	public EditSegmentsEntryDisplayContext(
-		HttpServletRequest httpServletRequest, RenderRequest renderRequest,
-		RenderResponse renderResponse,
+		CompanyLocalService companyLocalService,
+		GroupLocalService groupLocalService,
+		HttpServletRequest httpServletRequest, ItemSelector itemSelector,
+		RenderRequest renderRequest, RenderResponse renderResponse,
+		SegmentsConfigurationProvider segmentsConfigurationProvider,
 		SegmentsCriteriaContributorRegistry segmentsCriteriaContributorRegistry,
 		SegmentsEntryProviderRegistry segmentsEntryProviderRegistry,
 		SegmentsEntryService segmentsEntryService) {
 
+		_companyLocalService = companyLocalService;
+		_groupLocalService = groupLocalService;
 		_httpServletRequest = httpServletRequest;
+		_itemSelector = itemSelector;
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
+		_segmentsConfigurationProvider = segmentsConfigurationProvider;
 		_segmentsCriteriaContributorRegistry =
 			segmentsCriteriaContributorRegistry;
 		_segmentsEntryProviderRegistry = segmentsEntryProviderRegistry;
 		_segmentsEntryService = segmentsEntryService;
 
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
 		_locale = _themeDisplay.getLocale();
@@ -93,6 +97,17 @@ public class EditSegmentsEntryDisplayContext {
 			_httpServletRequest, "backURL", getRedirect());
 
 		return _backURL;
+	}
+
+	public String getBackURLTitle() {
+		String backURLTitle = ParamUtil.getString(
+			_httpServletRequest, "backURLTitle");
+
+		if (Validator.isNotNull(backURLTitle)) {
+			return backURLTitle;
+		}
+
+		return LanguageUtil.get(_httpServletRequest, "segments");
 	}
 
 	public Map<String, Object> getData() throws Exception {
@@ -230,18 +245,19 @@ public class EditSegmentsEntryDisplayContext {
 		for (SegmentsCriteriaContributor segmentsCriteriaContributor :
 				segmentsCriteriaContributors) {
 
-			Criteria.Criterion criterion =
-				segmentsCriteriaContributor.getCriterion(_getCriteria());
+			JSONObject jsonObject =
+				segmentsCriteriaContributor.getCriteriaJSONObject(
+					_getCriteria());
 
 			contributorsJSONArray.put(
 				JSONUtil.put(
-					"conjunctionId", _getCriterionConjunction(criterion)
+					"conjunctionId", jsonObject.get("conjunctionName")
 				).put(
 					"conjunctionInputId",
 					_renderResponse.getNamespace() + "criterionConjunction" +
 						segmentsCriteriaContributor.getKey()
 				).put(
-					"initialQuery", _getCriterionFilterString(criterion)
+					"initialQuery", jsonObject.get("query")
 				).put(
 					"inputId",
 					_renderResponse.getNamespace() + "criterionFilter" +
@@ -266,22 +282,6 @@ public class EditSegmentsEntryDisplayContext {
 		return segmentsEntry.getCriteriaObj();
 	}
 
-	private String _getCriterionConjunction(Criteria.Criterion criterion) {
-		if (criterion == null) {
-			return StringPool.BLANK;
-		}
-
-		return criterion.getConjunction();
-	}
-
-	private String _getCriterionFilterString(Criteria.Criterion criterion) {
-		if (criterion == null) {
-			return StringPool.BLANK;
-		}
-
-		return criterion.getFilterString();
-	}
-
 	private String _getDefaultLanguageId() throws Exception {
 		Locale siteDefaultLocale = null;
 
@@ -289,7 +289,7 @@ public class EditSegmentsEntryDisplayContext {
 			siteDefaultLocale = PortalUtil.getSiteDefaultLocale(_getGroupId());
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			siteDefaultLocale = LocaleUtil.getSiteDefault();
 		}
@@ -302,6 +302,12 @@ public class EditSegmentsEntryDisplayContext {
 
 		return LocalizationUtil.getDefaultLanguageId(
 			segmentsEntry.getName(), siteDefaultLocale);
+	}
+
+	private String _getGroupDescriptiveName() throws Exception {
+		Group group = _groupLocalService.getGroup(_getGroupId());
+
+		return group.getDescriptiveName(_locale);
 	}
 
 	private long _getGroupId() throws PortalException {
@@ -373,6 +379,8 @@ public class EditSegmentsEntryDisplayContext {
 		).put(
 			"formId", _renderResponse.getNamespace() + "editSegmentFm"
 		).put(
+			"groupId", _getGroupId()
+		).put(
 			"hasUpdatePermission", _hasUpdatePermission()
 		).put(
 			"initialMembersCount", _getSegmentsEntryClassPKsCount()
@@ -380,6 +388,9 @@ public class EditSegmentsEntryDisplayContext {
 			"initialSegmentActive", _isInitialSegmentActive()
 		).put(
 			"initialSegmentName", _getInitialSegmentsNameJSONObject()
+		).put(
+			"isSegmentationEnabled",
+			_isSegmentationEnabled(_themeDisplay.getCompanyId())
 		).put(
 			"locale", _locale.toString()
 		).put(
@@ -393,8 +404,24 @@ public class EditSegmentsEntryDisplayContext {
 		).put(
 			"requestMembersCountURL", _getSegmentsEntryClassPKsCountURL()
 		).put(
+			"scopeName", _getGroupDescriptiveName()
+		).put(
+			"segmentsConfigurationURL", _getSegmentsCompanyConfigurationURL()
+		).put(
 			"showInEditMode", _isShowInEditMode()
 		).build();
+	}
+
+	private String _getSegmentsCompanyConfigurationURL() {
+		try {
+			return _segmentsConfigurationProvider.getCompanyConfigurationURL(
+				_httpServletRequest);
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+		}
+
+		return StringPool.BLANK;
 	}
 
 	private List<SegmentsCriteriaContributor> _getSegmentsCriteriaContributors()
@@ -405,10 +432,17 @@ public class EditSegmentsEntryDisplayContext {
 	}
 
 	private SegmentsEntry _getSegmentsEntry() throws PortalException {
+		if (_segmentsEntry != null) {
+			return _segmentsEntry;
+		}
+
 		long segmentsEntryId = getSegmentsEntryId();
 
 		if (segmentsEntryId > 0) {
-			return _segmentsEntryService.getSegmentsEntry(segmentsEntryId);
+			_segmentsEntry = _segmentsEntryService.getSegmentsEntry(
+				segmentsEntryId);
+
+			return _segmentsEntry;
 		}
 
 		return null;
@@ -474,6 +508,18 @@ public class EditSegmentsEntryDisplayContext {
 		return false;
 	}
 
+	private boolean _isSegmentationEnabled(long companyId) {
+		try {
+			return _segmentsConfigurationProvider.isSegmentationEnabled(
+				companyId);
+		}
+		catch (ConfigurationException configurationException) {
+			_log.error(configurationException);
+		}
+
+		return false;
+	}
+
 	private boolean _isShowInEditMode() {
 		return ParamUtil.getBoolean(
 			_httpServletRequest, "showInEditMode", true);
@@ -483,15 +529,20 @@ public class EditSegmentsEntryDisplayContext {
 		EditSegmentsEntryDisplayContext.class);
 
 	private String _backURL;
+	private final CompanyLocalService _companyLocalService;
 	private Map<String, Object> _data;
 	private Long _groupId;
+	private final GroupLocalService _groupLocalService;
 	private final HttpServletRequest _httpServletRequest;
+	private final ItemSelector _itemSelector;
 	private final Locale _locale;
 	private String _redirect;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
+	private final SegmentsConfigurationProvider _segmentsConfigurationProvider;
 	private final SegmentsCriteriaContributorRegistry
 		_segmentsCriteriaContributorRegistry;
+	private SegmentsEntry _segmentsEntry;
 	private Long _segmentsEntryId;
 	private String _segmentsEntryKey;
 	private final SegmentsEntryProviderRegistry _segmentsEntryProviderRegistry;

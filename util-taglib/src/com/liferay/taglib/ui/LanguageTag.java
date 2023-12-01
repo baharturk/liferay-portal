@@ -1,25 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.portletdisplaytemplate.PortletDisplayTemplateManagerUtil;
 import com.liferay.portal.kernel.servlet.taglib.ui.LanguageEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -131,15 +121,6 @@ public class LanguageTag extends IncludeTag {
 		_useNamespace = true;
 	}
 
-	protected String getDisplayStyle() {
-		if (Validator.isNotNull(_ddmTemplateKey)) {
-			return PortletDisplayTemplateManagerUtil.getDisplayStyle(
-				_ddmTemplateKey);
-		}
-
-		return null;
-	}
-
 	protected long getDisplayStyleGroupId() {
 		if (_ddmTemplateGroupId > 0) {
 			return _ddmTemplateGroupId;
@@ -171,7 +152,7 @@ public class LanguageTag extends IncludeTag {
 			themeDisplay.getPathMain() + "/portal/update_language?p_l_id=" +
 				themeDisplay.getPlid();
 
-		formAction = HttpUtil.setParameter(
+		formAction = HttpComponentsUtil.setParameter(
 			formAction, "redirect",
 			PortalUtil.getCurrentURL(httpServletRequest));
 
@@ -229,7 +210,7 @@ public class LanguageTag extends IncludeTag {
 			String url = null;
 
 			if (!LocaleUtil.equals(locale, currentLocale)) {
-				url = HttpUtil.setParameter(
+				url = HttpComponentsUtil.setParameter(
 					formAction, parameterName, LocaleUtil.toLanguageId(locale));
 			}
 			else if (!displayCurrentLocale) {
@@ -293,10 +274,10 @@ public class LanguageTag extends IncludeTag {
 	@Override
 	protected void setAttributes(HttpServletRequest httpServletRequest) {
 		httpServletRequest.setAttribute(
+			"liferay-ui:language:ddmTemplateKey", _ddmTemplateKey);
+		httpServletRequest.setAttribute(
 			"liferay-ui:language:displayCurrentLocale",
 			String.valueOf(_displayCurrentLocale));
-		httpServletRequest.setAttribute(
-			"liferay-ui:language:displayStyle", getDisplayStyle());
 		httpServletRequest.setAttribute(
 			"liferay-ui:language:displayStyleGroupId",
 			getDisplayStyleGroupId());

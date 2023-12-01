@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -118,16 +109,16 @@ if (publicVirtualHostnames.isEmpty()) {
 		<liferay-ui:message arguments='<%= new Object[] {"<strong>" + themeDisplay.getPortalURL() + themeDisplay.getPathFriendlyURLPublic() + "</strong>"} %>' key="the-friendly-url-is-appended-to-x-for-pages" translateArguments="<%= false %>" />
 	</p>
 
-	<aui:input label="friendly-url" name="groupFriendlyURL" type="text" value="<%= HttpUtil.decodeURL(liveGroup.getFriendlyURL()) %>" />
+	<aui:input label="friendly-url" name="groupFriendlyURL" type="text" value="<%= HttpComponentsUtil.decodeURL(liveGroup.getFriendlyURL()) %>" />
 
 	<c:if test="<%= liveGroup.hasStagingGroup() %>">
-		<aui:input label="staging-friendly-url" name="stagingFriendlyURL" type="text" value="<%= HttpUtil.decodeURL(stagingGroup.getFriendlyURL()) %>" />
+		<aui:input label="staging-friendly-url" name="stagingFriendlyURL" type="text" value="<%= HttpComponentsUtil.decodeURL(stagingGroup.getFriendlyURL()) %>" />
 	</c:if>
 
 	<p class="small text-secondary">
 		<liferay-ui:message key="enter-the-virtual-host-that-map-to-the-friendly-url" />
 
-		<liferay-ui:message arguments='<%= new Object[] {"<strong>www.helloworld.com</strong>", "<strong>/helloworld</strong>", "<strong>" + HttpUtil.getProtocol(request) + "://www.helloworld.com</strong>", "<strong>" + themeDisplay.getPortalURL() + themeDisplay.getPathFriendlyURLPublic() + "/helloworld</strong>"} %>' key="for-example,-if-the-virtual-host-is-x-and-the-friendly-url-is-x,-then-x-is-mapped-to-x" translateArguments="<%= false %>" />
+		<liferay-ui:message arguments='<%= new Object[] {"<strong>www.helloworld.com</strong>", "<strong>/helloworld</strong>", "<strong>" + HttpComponentsUtil.getProtocol(request) + "://www.helloworld.com</strong>", "<strong>" + themeDisplay.getPortalURL() + themeDisplay.getPathFriendlyURLPublic() + "/helloworld</strong>"} %>' key="for-example,-if-the-virtual-host-is-x-and-the-friendly-url-is-x,-then-x-is-mapped-to-x" translateArguments="<%= false %>" />
 	</p>
 
 	<div class="mb-5" id="<portlet:namespace />publicVirtualHostFields">

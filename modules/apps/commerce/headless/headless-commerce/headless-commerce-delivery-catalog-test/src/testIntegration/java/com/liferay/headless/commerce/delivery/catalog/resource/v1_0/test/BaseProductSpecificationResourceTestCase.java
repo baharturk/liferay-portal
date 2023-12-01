@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.resource.v1_0.test;
@@ -28,6 +19,7 @@ import com.liferay.headless.commerce.delivery.catalog.client.pagination.Page;
 import com.liferay.headless.commerce.delivery.catalog.client.pagination.Pagination;
 import com.liferay.headless.commerce.delivery.catalog.client.resource.v1_0.ProductSpecificationResource;
 import com.liferay.headless.commerce.delivery.catalog.client.serdes.v1_0.ProductSpecificationSerDes;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -41,6 +33,7 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
@@ -49,24 +42,24 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtilsBean;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -183,7 +176,10 @@ public abstract class BaseProductSpecificationResourceTestCase {
 		ProductSpecification productSpecification =
 			randomProductSpecification();
 
+		productSpecification.setSpecificationGroupKey(regex);
+		productSpecification.setSpecificationGroupTitle(regex);
 		productSpecification.setSpecificationKey(regex);
+		productSpecification.setSpecificationTitle(regex);
 		productSpecification.setValue(regex);
 
 		String json = ProductSpecificationSerDes.toJSON(productSpecification);
@@ -192,7 +188,13 @@ public abstract class BaseProductSpecificationResourceTestCase {
 
 		productSpecification = ProductSpecificationSerDes.toDTO(json);
 
+		Assert.assertEquals(
+			regex, productSpecification.getSpecificationGroupKey());
+		Assert.assertEquals(
+			regex, productSpecification.getSpecificationGroupTitle());
 		Assert.assertEquals(regex, productSpecification.getSpecificationKey());
+		Assert.assertEquals(
+			regex, productSpecification.getSpecificationTitle());
 		Assert.assertEquals(regex, productSpecification.getValue());
 	}
 
@@ -214,7 +216,7 @@ public abstract class BaseProductSpecificationResourceTestCase {
 				getChannelProductProductSpecificationsPage(
 					channelId, productId, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if ((irrelevantChannelId != null) && (irrelevantProductId != null)) {
 			ProductSpecification irrelevantProductSpecification =
@@ -226,14 +228,17 @@ public abstract class BaseProductSpecificationResourceTestCase {
 				productSpecificationResource.
 					getChannelProductProductSpecificationsPage(
 						irrelevantChannelId, irrelevantProductId,
-						Pagination.of(1, 2));
+						Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantProductSpecification),
+			assertContains(
+				irrelevantProductSpecification,
 				(List<ProductSpecification>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetChannelProductProductSpecificationsPage_getExpectedActions(
+					irrelevantChannelId, irrelevantProductId));
 		}
 
 		ProductSpecification productSpecification1 =
@@ -249,12 +254,26 @@ public abstract class BaseProductSpecificationResourceTestCase {
 				getChannelProductProductSpecificationsPage(
 					channelId, productId, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(productSpecification1, productSpecification2),
-			(List<ProductSpecification>)page.getItems());
-		assertValid(page);
+		assertContains(
+			productSpecification1, (List<ProductSpecification>)page.getItems());
+		assertContains(
+			productSpecification2, (List<ProductSpecification>)page.getItems());
+		assertValid(
+			page,
+			testGetChannelProductProductSpecificationsPage_getExpectedActions(
+				channelId, productId));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetChannelProductProductSpecificationsPage_getExpectedActions(
+				Long channelId, Long productId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -265,6 +284,14 @@ public abstract class BaseProductSpecificationResourceTestCase {
 			testGetChannelProductProductSpecificationsPage_getChannelId();
 		Long productId =
 			testGetChannelProductProductSpecificationsPage_getProductId();
+
+		Page<ProductSpecification> productSpecificationPage =
+			productSpecificationResource.
+				getChannelProductProductSpecificationsPage(
+					channelId, productId, null);
+
+		int totalCount = GetterUtil.getInteger(
+			productSpecificationPage.getTotalCount());
 
 		ProductSpecification productSpecification1 =
 			testGetChannelProductProductSpecificationsPage_addProductSpecification(
@@ -281,21 +308,21 @@ public abstract class BaseProductSpecificationResourceTestCase {
 		Page<ProductSpecification> page1 =
 			productSpecificationResource.
 				getChannelProductProductSpecificationsPage(
-					channelId, productId, Pagination.of(1, 2));
+					channelId, productId, Pagination.of(1, totalCount + 2));
 
 		List<ProductSpecification> productSpecifications1 =
 			(List<ProductSpecification>)page1.getItems();
 
 		Assert.assertEquals(
-			productSpecifications1.toString(), 2,
+			productSpecifications1.toString(), totalCount + 2,
 			productSpecifications1.size());
 
 		Page<ProductSpecification> page2 =
 			productSpecificationResource.
 				getChannelProductProductSpecificationsPage(
-					channelId, productId, Pagination.of(2, 2));
+					channelId, productId, Pagination.of(2, totalCount + 2));
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<ProductSpecification> productSpecifications2 =
 			(List<ProductSpecification>)page2.getItems();
@@ -307,12 +334,17 @@ public abstract class BaseProductSpecificationResourceTestCase {
 		Page<ProductSpecification> page3 =
 			productSpecificationResource.
 				getChannelProductProductSpecificationsPage(
-					channelId, productId, Pagination.of(1, 3));
+					channelId, productId,
+					Pagination.of(1, (int)totalCount + 3));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(
-				productSpecification1, productSpecification2,
-				productSpecification3),
+		assertContains(
+			productSpecification1,
+			(List<ProductSpecification>)page3.getItems());
+		assertContains(
+			productSpecification2,
+			(List<ProductSpecification>)page3.getItems());
+		assertContains(
+			productSpecification3,
 			(List<ProductSpecification>)page3.getItems());
 	}
 
@@ -480,6 +512,26 @@ public abstract class BaseProductSpecificationResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"specificationGroupKey", additionalAssertFieldName)) {
+
+				if (productSpecification.getSpecificationGroupKey() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"specificationGroupTitle", additionalAssertFieldName)) {
+
+				if (productSpecification.getSpecificationGroupTitle() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("specificationId", additionalAssertFieldName)) {
 				if (productSpecification.getSpecificationId() == null) {
 					valid = false;
@@ -490,6 +542,16 @@ public abstract class BaseProductSpecificationResourceTestCase {
 
 			if (Objects.equals("specificationKey", additionalAssertFieldName)) {
 				if (productSpecification.getSpecificationKey() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"specificationTitle", additionalAssertFieldName)) {
+
+				if (productSpecification.getSpecificationTitle() == null) {
 					valid = false;
 				}
 
@@ -513,6 +575,13 @@ public abstract class BaseProductSpecificationResourceTestCase {
 	}
 
 	protected void assertValid(Page<ProductSpecification> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<ProductSpecification> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<ProductSpecification> productSpecifications =
@@ -528,6 +597,25 @@ public abstract class BaseProductSpecificationResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -643,6 +731,32 @@ public abstract class BaseProductSpecificationResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"specificationGroupKey", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						productSpecification1.getSpecificationGroupKey(),
+						productSpecification2.getSpecificationGroupKey())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"specificationGroupTitle", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						productSpecification1.getSpecificationGroupTitle(),
+						productSpecification2.getSpecificationGroupTitle())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("specificationId", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						productSpecification1.getSpecificationId(),
@@ -658,6 +772,19 @@ public abstract class BaseProductSpecificationResourceTestCase {
 				if (!Objects.deepEquals(
 						productSpecification1.getSpecificationKey(),
 						productSpecification2.getSpecificationKey())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"specificationTitle", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						productSpecification1.getSpecificationTitle(),
+						productSpecification2.getSpecificationTitle())) {
 
 					return false;
 				}
@@ -713,14 +840,16 @@ public abstract class BaseProductSpecificationResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -737,6 +866,10 @@ public abstract class BaseProductSpecificationResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -746,18 +879,18 @@ public abstract class BaseProductSpecificationResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -785,13 +918,106 @@ public abstract class BaseProductSpecificationResourceTestCase {
 		}
 
 		if (entityFieldName.equals("priority")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(productSpecification.getPriority()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("productId")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("specificationGroupKey")) {
+			Object object = productSpecification.getSpecificationGroupKey();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("specificationGroupTitle")) {
+			Object object = productSpecification.getSpecificationGroupTitle();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("specificationId")) {
@@ -800,18 +1026,139 @@ public abstract class BaseProductSpecificationResourceTestCase {
 		}
 
 		if (entityFieldName.equals("specificationKey")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(productSpecification.getSpecificationKey()));
-			sb.append("'");
+			Object object = productSpecification.getSpecificationKey();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("specificationTitle")) {
+			Object object = productSpecification.getSpecificationTitle();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("value")) {
-			sb.append("'");
-			sb.append(String.valueOf(productSpecification.getValue()));
-			sb.append("'");
+			Object object = productSpecification.getValue();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -866,8 +1213,14 @@ public abstract class BaseProductSpecificationResourceTestCase {
 				optionCategoryId = RandomTestUtil.randomLong();
 				priority = RandomTestUtil.randomDouble();
 				productId = RandomTestUtil.randomLong();
+				specificationGroupKey = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				specificationGroupTitle = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				specificationId = RandomTestUtil.randomLong();
 				specificationKey = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				specificationTitle = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				value = StringUtil.toLowerCase(RandomTestUtil.randomString());
 			}
@@ -893,6 +1246,115 @@ public abstract class BaseProductSpecificationResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -968,18 +1430,6 @@ public abstract class BaseProductSpecificationResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseProductSpecificationResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

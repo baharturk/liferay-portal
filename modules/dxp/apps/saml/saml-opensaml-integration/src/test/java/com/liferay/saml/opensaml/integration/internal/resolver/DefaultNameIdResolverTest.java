@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.opensaml.integration.internal.resolver;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.portal.kernel.bean.BeanProperties;
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.saml.opensaml.integration.internal.BaseSamlTestCase;
 import com.liferay.saml.opensaml.integration.internal.metadata.MetadataManager;
@@ -49,27 +40,27 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 
-		BeanPropertiesUtil beanPropertiesUtil = new BeanPropertiesUtil();
+		_beanProperties = Mockito.mock(BeanProperties.class);
 
-		_beanProperties = mock(BeanProperties.class);
+		ReflectionTestUtil.setFieldValue(
+			_defaultNameIdResolver, "_beanProperties", _beanProperties);
 
-		beanPropertiesUtil.setBeanProperties(_beanProperties);
+		_metadataManager = Mockito.mock(MetadataManager.class);
 
-		_metadataManager = mock(MetadataManager.class);
+		ReflectionTestUtil.setFieldValue(
+			_defaultNameIdResolver, "_metadataManager", _metadataManager);
 
-		_defaultNameIdResolver.setMetadataManager(_metadataManager);
-
-		when(
+		Mockito.when(
 			_metadataManager.getNameIdFormat(Mockito.eq(SP_ENTITY_ID))
 		).thenReturn(
-			NameID.EMAIL.toString()
+			NameID.EMAIL
 		);
 
-		_user = mock(User.class);
+		_user = Mockito.mock(User.class);
 
-		_expandoBridge = mock(ExpandoBridge.class);
+		_expandoBridge = Mockito.mock(ExpandoBridge.class);
 
-		when(
+		Mockito.when(
 			_user.getExpandoBridge()
 		).thenReturn(
 			_expandoBridge
@@ -78,14 +69,14 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 	@Test
 	public void testResolveEmailAddressNameId() throws Exception {
-		when(
+		Mockito.when(
 			_beanProperties.getObject(
 				Mockito.any(User.class), Mockito.eq("emailAddress"))
 		).thenReturn(
 			"test@liferay.com"
 		);
 
-		when(
+		Mockito.when(
 			_metadataManager.getNameIdAttribute(Mockito.eq(SP_ENTITY_ID))
 		).thenReturn(
 			"emailAddress"
@@ -100,13 +91,13 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 	@Test
 	public void testResolveExpandoNameId() throws Exception {
-		when(
+		Mockito.when(
 			_expandoBridge.getAttribute(Mockito.eq("customerId"))
 		).thenReturn(
 			"12345"
 		);
 
-		when(
+		Mockito.when(
 			_metadataManager.getNameIdAttribute(Mockito.eq(SP_ENTITY_ID))
 		).thenReturn(
 			"expando:customerId"
@@ -121,14 +112,14 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 	@Test
 	public void testResolveNameIdWithPolicy() throws Exception {
-		when(
+		Mockito.when(
 			_beanProperties.getObject(
 				Mockito.any(User.class), Mockito.eq("screenName"))
 		).thenReturn(
 			"test"
 		);
 
-		when(
+		Mockito.when(
 			_metadataManager.getNameIdAttribute(Mockito.eq(SP_ENTITY_ID))
 		).thenReturn(
 			"screenName"
@@ -136,11 +127,11 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 		NameIDPolicy nameIDPolicy = OpenSamlUtil.buildNameIdPolicy();
 
-		nameIDPolicy.setFormat(NameID.ENTITY.toString());
+		nameIDPolicy.setFormat(NameID.ENTITY);
 		nameIDPolicy.setSPNameQualifier("urn:liferay");
 
 		String nameId = _defaultNameIdResolver.resolve(
-			_user, SP_ENTITY_ID, NameID.ENTITY.toString(), null, false, null);
+			_user, SP_ENTITY_ID, NameID.ENTITY, null, false, null);
 
 		Assert.assertNotNull(nameId);
 		Assert.assertEquals("test", nameId);
@@ -148,23 +139,23 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 	@Test
 	public void testResolveScreenNameNameId() throws Exception {
-		when(
+		Mockito.when(
 			_beanProperties.getObject(
 				Mockito.any(User.class), Mockito.eq("screenName"))
 		).thenReturn(
 			"test"
 		);
 
-		when(
+		Mockito.when(
 			_metadataManager.getNameIdAttribute(Mockito.eq(SP_ENTITY_ID))
 		).thenReturn(
 			"screenName"
 		);
 
-		when(
+		Mockito.when(
 			_metadataManager.getNameIdFormat(Mockito.eq(SP_ENTITY_ID))
 		).thenReturn(
-			NameID.ENTITY.toString()
+			NameID.ENTITY
 		);
 
 		String nameId = _defaultNameIdResolver.resolve(
@@ -176,7 +167,7 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 	@Test
 	public void testResolveStaticNameId() throws Exception {
-		when(
+		Mockito.when(
 			_metadataManager.getNameIdAttribute(Mockito.eq(SP_ENTITY_ID))
 		).thenReturn(
 			"static:test@liferay.com"

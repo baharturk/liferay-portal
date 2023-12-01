@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React, {FocusEventHandler} from 'react';
 import {ISymbols} from '../NumericInputMask/NumericInputMask';
 import './Numeric.scss';
+import type {FieldChangeEventHandler, Locale, LocalizedValue} from '../types';
 declare const Numeric: React.FC<IProps>;
 export {Numeric};
 declare const _default: any;
@@ -25,6 +17,8 @@ interface IProps {
 	dataType: NumericDataType;
 	decimalPlaces: number;
 	defaultLanguageId: Locale;
+	errorMessage?: string;
+	focused: boolean;
 	id: string;
 	inputMask?: boolean;
 	inputMaskFormat?: string;
@@ -32,13 +26,16 @@ interface IProps {
 	localizedValue?: LocalizedValue<string>;
 	name: string;
 	onBlur: FocusEventHandler<HTMLInputElement>;
-	onChange: FieldChangeEventHandler<String>;
+	onChange: FieldChangeEventHandler<string>;
 	onFocus: FocusEventHandler<HTMLInputElement>;
 	placeholder?: string;
 	predefinedValue?: string;
 	readOnly: boolean;
+	required?: boolean;
 	settingsContext?: any;
 	symbols: ISymbols;
+	tip?: string;
+	valid?: boolean;
 	value?: string;
 }
 declare type NumericDataType = 'integer' | 'double';

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.persistence.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -49,7 +39,6 @@ import com.liferay.segments.service.persistence.impl.constants.SegmentsPersisten
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -80,9 +69,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eduardo Garcia
  * @generated
  */
-@Component(
-	service = {SegmentsEntryRolePersistence.class, BasePersistence.class}
-)
+@Component(service = SegmentsEntryRolePersistence.class)
 public class SegmentsEntryRolePersistenceImpl
 	extends BasePersistenceImpl<SegmentsEntryRole>
 	implements SegmentsEntryRolePersistence {
@@ -206,7 +193,7 @@ public class SegmentsEntryRolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SegmentsEntryRole>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SegmentsEntryRole segmentsEntryRole : list) {
@@ -586,7 +573,7 @@ public class SegmentsEntryRolePersistenceImpl
 
 			finderArgs = new Object[] {segmentsEntryId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -728,7 +715,7 @@ public class SegmentsEntryRolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SegmentsEntryRole>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SegmentsEntryRole segmentsEntryRole : list) {
@@ -1098,7 +1085,7 @@ public class SegmentsEntryRolePersistenceImpl
 
 			finderArgs = new Object[] {roleId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1206,20 +1193,21 @@ public class SegmentsEntryRolePersistenceImpl
 	public SegmentsEntryRole fetchByS_R(
 		long segmentsEntryId, long roleId, boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsEntryRole.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {segmentsEntryId, roleId};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(_finderPathFetchByS_R, finderArgs);
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByS_R, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			SegmentsEntryRole.class);
 
 		if (result instanceof SegmentsEntryRole) {
 			SegmentsEntryRole segmentsEntryRole = (SegmentsEntryRole)result;
@@ -1229,6 +1217,15 @@ public class SegmentsEntryRolePersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						SegmentsEntryRole.class,
+						segmentsEntryRole.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -1326,7 +1323,7 @@ public class SegmentsEntryRolePersistenceImpl
 
 			finderArgs = new Object[] {segmentsEntryId, roleId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1753,7 +1750,9 @@ public class SegmentsEntryRolePersistenceImpl
 	 */
 	@Override
 	public SegmentsEntryRole fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(SegmentsEntryRole.class)) {
+		if (ctPersistenceHelper.isProductionMode(
+				SegmentsEntryRole.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -1974,7 +1973,7 @@ public class SegmentsEntryRolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<SegmentsEntryRole>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2050,7 +2049,7 @@ public class SegmentsEntryRolePersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -2223,30 +2222,14 @@ public class SegmentsEntryRolePersistenceImpl
 			new String[] {Long.class.getName(), Long.class.getName()},
 			new String[] {"segmentsEntryId", "roleId"}, false);
 
-		_setSegmentsEntryRoleUtilPersistence(this);
+		SegmentsEntryRoleUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setSegmentsEntryRoleUtilPersistence(null);
+		SegmentsEntryRoleUtil.setPersistence(null);
 
 		entityCache.removeCache(SegmentsEntryRoleImpl.class.getName());
-	}
-
-	private void _setSegmentsEntryRoleUtilPersistence(
-		SegmentsEntryRolePersistence segmentsEntryRolePersistence) {
-
-		try {
-			Field field = SegmentsEntryRoleUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, segmentsEntryRolePersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -2311,9 +2294,5 @@ public class SegmentsEntryRolePersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private SegmentsEntryRoleModelArgumentsResolver
-		_segmentsEntryRoleModelArgumentsResolver;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.search.bar.portlet.helper;
@@ -30,8 +21,6 @@ import com.liferay.portal.search.web.internal.search.bar.portlet.SearchBarPortle
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,17 +28,23 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Bryan Engler
  */
-@Component(immediate = true, service = SearchBarPrecedenceHelper.class)
+@Component(service = SearchBarPrecedenceHelper.class)
 public class SearchBarPrecedenceHelper {
 
-	public Optional<Portlet> findHeaderSearchBarPortletOptional(
-		ThemeDisplay themeDisplay) {
+	public Portlet findHeaderSearchBarPortlet(ThemeDisplay themeDisplay) {
+		List<Portlet> portlets = _getPortlets(themeDisplay);
 
-		Stream<Portlet> stream = _getPortletsStream(themeDisplay);
+		Portlet headerSearchBarPortlet = null;
 
-		return stream.filter(
-			this::_isHeaderSearchBar
-		).findAny();
+		for (Portlet portlet : portlets) {
+			if (_isHeaderSearchBar(portlet)) {
+				headerSearchBarPortlet = portlet;
+
+				break;
+			}
+		}
+
+		return headerSearchBarPortlet;
 	}
 
 	public boolean isDisplayWarningIgnoredConfiguration(
@@ -88,21 +83,18 @@ public class SearchBarPrecedenceHelper {
 	public boolean isSearchBarInBodyWithHeaderSearchBarAlreadyPresent(
 		ThemeDisplay themeDisplay, String portletId) {
 
-		Optional<Portlet> optional = findHeaderSearchBarPortletOptional(
+		Portlet headerSearchBarPortlet = findHeaderSearchBarPortlet(
 			themeDisplay);
 
-		if (!optional.isPresent()) {
-			return false;
-		}
+		if ((headerSearchBarPortlet == null) ||
+			_isSamePortlet(headerSearchBarPortlet, portletId)) {
 
-		Portlet portlet = optional.get();
-
-		if (_isSamePortlet(portlet, portletId)) {
 			return false;
 		}
 
 		SearchBarPortletPreferences searchBarPortletPreferences1 =
-			_getSearchBarPortletPreferences(portlet, themeDisplay);
+			_getSearchBarPortletPreferences(
+				headerSearchBarPortlet, themeDisplay);
 
 		if (!SearchBarPortletDestinationUtil.isSameDestination(
 				searchBarPortletPreferences1, themeDisplay)) {
@@ -114,8 +106,8 @@ public class SearchBarPrecedenceHelper {
 			_getSearchBarPortletPreferences(portletId, themeDisplay);
 
 		if (!Objects.equals(
-				searchBarPortletPreferences1.getFederatedSearchKeyString(),
-				searchBarPortletPreferences2.getFederatedSearchKeyString())) {
+				searchBarPortletPreferences1.getFederatedSearchKey(),
+				searchBarPortletPreferences2.getFederatedSearchKey())) {
 
 			return false;
 		}
@@ -123,36 +115,20 @@ public class SearchBarPrecedenceHelper {
 		return true;
 	}
 
-	@Reference(unbind = "-")
-	protected void setPortletLocalService(
-		PortletLocalService portletLocalService) {
-
-		_portletLocalService = portletLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortletPreferencesLookup(
-		PortletPreferencesLookup portletPreferencesLookup) {
-
-		_portletPreferencesLookup = portletPreferencesLookup;
-	}
-
-	private Stream<Portlet> _getPortletsStream(ThemeDisplay themeDisplay) {
+	private List<Portlet> _getPortlets(ThemeDisplay themeDisplay) {
 		Layout layout = themeDisplay.getLayout();
 
 		LayoutTypePortlet layoutTypePortlet =
 			(LayoutTypePortlet)layout.getLayoutType();
 
-		List<Portlet> portlets = layoutTypePortlet.getAllPortlets(false);
-
-		return portlets.stream();
+		return layoutTypePortlet.getAllPortlets(false);
 	}
 
 	private SearchBarPortletPreferences _getSearchBarPortletPreferences(
 		Portlet portlet, ThemeDisplay themeDisplay) {
 
 		if (portlet == null) {
-			return new SearchBarPortletPreferencesImpl(Optional.empty());
+			return new SearchBarPortletPreferencesImpl(null);
 		}
 
 		return new SearchBarPortletPreferencesImpl(

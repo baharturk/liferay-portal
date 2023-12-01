@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.ratings.internal.page.ratings.exportimport.data.handler;
@@ -36,8 +27,8 @@ import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistryUtil;
 import com.liferay.portal.kernel.xml.Element;
+import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
 import com.liferay.ratings.kernel.model.RatingsEntry;
 import com.liferay.ratings.kernel.service.RatingsEntryLocalService;
 import com.liferay.ratings.page.ratings.constants.PageRatingsPortletKeys;
@@ -136,13 +127,6 @@ public class PageRatingsPortletDataHandler extends BasePortletDataHandler {
 		actionableDynamicQuery.performCount();
 	}
 
-	@Reference(unbind = "-")
-	protected void setRatingsEntryLocalService(
-		RatingsEntryLocalService ratingsEntryLocalService) {
-
-		_ratingsEntryLocalService = ratingsEntryLocalService;
-	}
-
 	private long _getGroupId(RatingsEntry ratingsEntry) throws PortalException {
 		PersistedModelLocalService persistedModelLocalService =
 			PersistedModelLocalServiceRegistryUtil.
@@ -160,8 +144,7 @@ public class PageRatingsPortletDataHandler extends BasePortletDataHandler {
 		}
 		catch (NoSuchModelException noSuchModelException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					noSuchModelException.getMessage(), noSuchModelException);
+				_log.debug(noSuchModelException);
 			}
 
 			return GroupConstants.DEFAULT_PARENT_GROUP_ID;
@@ -264,6 +247,7 @@ public class PageRatingsPortletDataHandler extends BasePortletDataHandler {
 	@Reference
 	private PortletDataContextFactory _portletDataContextFactory;
 
+	@Reference
 	private RatingsEntryLocalService _ratingsEntryLocalService;
 
 	private static class ImportRatingsCallable implements Callable<Void> {

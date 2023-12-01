@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.impl;
@@ -109,12 +100,31 @@ public class DLFileVersionLocalServiceImpl
 	}
 
 	@Override
+	public List<DLFileVersion> getFileVersions(
+		long fileEntryId, int status, int start, int end) {
+
+		if (status == WorkflowConstants.STATUS_ANY) {
+			return dlFileVersionPersistence.findByFileEntryId(
+				fileEntryId, start, end, new DLFileVersionVersionComparator());
+		}
+
+		return dlFileVersionPersistence.findByF_S(
+			fileEntryId, status, start, end,
+			new DLFileVersionVersionComparator());
+	}
+
+	@Override
 	public int getFileVersionsCount(long fileEntryId, int status) {
 		if (status == WorkflowConstants.STATUS_ANY) {
 			return dlFileVersionPersistence.countByFileEntryId(fileEntryId);
 		}
 
 		return dlFileVersionPersistence.countByF_S(fileEntryId, status);
+	}
+
+	@Override
+	public int getFileVersionsCount(long companyId, String storeUUID) {
+		return dlFileVersionPersistence.countByC_SU(companyId, storeUUID);
 	}
 
 	@Override
@@ -178,7 +188,6 @@ public class DLFileVersionLocalServiceImpl
 						treePathProperty.isNull(),
 						treePathProperty.ne(treePath)));
 			});
-
 		actionableDynamicQuery.setPerformActionMethod(
 			(DLFileVersion dlFileVersion) -> {
 				dlFileVersion.setTreePath(treePath);

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.service.base;
@@ -18,6 +9,11 @@ import com.liferay.change.tracking.model.CTEntry;
 import com.liferay.change.tracking.service.CTEntryLocalService;
 import com.liferay.change.tracking.service.CTEntryLocalServiceUtil;
 import com.liferay.change.tracking.service.persistence.CTEntryPersistence;
+import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
+import com.liferay.exportimport.kernel.lar.ManifestSummary;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
+import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
@@ -28,10 +24,13 @@ import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -44,8 +43,6 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -244,6 +241,34 @@ public abstract class CTEntryLocalServiceBaseImpl
 	}
 
 	/**
+	 * Returns the ct entry with the matching UUID and company.
+	 *
+	 * @param uuid the ct entry's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching ct entry, or <code>null</code> if a matching ct entry could not be found
+	 */
+	@Override
+	public CTEntry fetchCTEntryByUuidAndCompanyId(String uuid, long companyId) {
+		return ctEntryPersistence.fetchByUuid_C_First(uuid, companyId, null);
+	}
+
+	@Override
+	public CTEntry fetchCTEntryByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return ctEntryPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
+	public CTEntry getCTEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return ctEntryPersistence.findByERC_C(externalReferenceCode, companyId);
+	}
+
+	/**
 	 * Returns the ct entry with the primary key.
 	 *
 	 * @param ctEntryId the primary key of the ct entry
@@ -296,6 +321,72 @@ public abstract class CTEntryLocalServiceBaseImpl
 		actionableDynamicQuery.setPrimaryKeyPropertyName("ctEntryId");
 	}
 
+	@Override
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		final PortletDataContext portletDataContext) {
+
+		final ExportActionableDynamicQuery exportActionableDynamicQuery =
+			new ExportActionableDynamicQuery() {
+
+				@Override
+				public long performCount() throws PortalException {
+					ManifestSummary manifestSummary =
+						portletDataContext.getManifestSummary();
+
+					StagedModelType stagedModelType = getStagedModelType();
+
+					long modelAdditionCount = super.performCount();
+
+					manifestSummary.addModelAdditionCount(
+						stagedModelType, modelAdditionCount);
+
+					long modelDeletionCount =
+						ExportImportHelperUtil.getModelDeletionCount(
+							portletDataContext, stagedModelType);
+
+					manifestSummary.addModelDeletionCount(
+						stagedModelType, modelDeletionCount);
+
+					return modelAdditionCount;
+				}
+
+			};
+
+		initActionableDynamicQuery(exportActionableDynamicQuery);
+
+		exportActionableDynamicQuery.setAddCriteriaMethod(
+			new ActionableDynamicQuery.AddCriteriaMethod() {
+
+				@Override
+				public void addCriteria(DynamicQuery dynamicQuery) {
+					portletDataContext.addDateRangeCriteria(
+						dynamicQuery, "modifiedDate");
+				}
+
+			});
+
+		exportActionableDynamicQuery.setCompanyId(
+			portletDataContext.getCompanyId());
+
+		exportActionableDynamicQuery.setPerformActionMethod(
+			new ActionableDynamicQuery.PerformActionMethod<CTEntry>() {
+
+				@Override
+				public void performAction(CTEntry ctEntry)
+					throws PortalException {
+
+					StagedModelDataHandlerUtil.exportStagedModel(
+						portletDataContext, ctEntry);
+				}
+
+			});
+		exportActionableDynamicQuery.setStagedModelType(
+			new StagedModelType(
+				PortalUtil.getClassNameId(CTEntry.class.getName())));
+
+		return exportActionableDynamicQuery;
+	}
+
 	/**
 	 * @throws PortalException
 	 */
@@ -313,6 +404,11 @@ public abstract class CTEntryLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement CTEntryLocalServiceImpl#deleteCTEntry(CTEntry) to avoid orphaned data");
+		}
+
 		return ctEntryLocalService.deleteCTEntry((CTEntry)persistedModel);
 	}
 
@@ -329,6 +425,21 @@ public abstract class CTEntryLocalServiceBaseImpl
 		throws PortalException {
 
 		return ctEntryPersistence.findByPrimaryKey(primaryKeyObj);
+	}
+
+	/**
+	 * Returns the ct entry with the matching UUID and company.
+	 *
+	 * @param uuid the ct entry's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching ct entry
+	 * @throws PortalException if a matching ct entry could not be found
+	 */
+	@Override
+	public CTEntry getCTEntryByUuidAndCompanyId(String uuid, long companyId)
+		throws PortalException {
+
+		return ctEntryPersistence.findByUuid_C_First(uuid, companyId, null);
 	}
 
 	/**
@@ -375,7 +486,7 @@ public abstract class CTEntryLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		CTEntryLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -390,7 +501,7 @@ public abstract class CTEntryLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		ctEntryLocalService = (CTEntryLocalService)aopProxy;
 
-		_setLocalServiceUtilService(ctEntryLocalService);
+		CTEntryLocalServiceUtil.setService(ctEntryLocalService);
 	}
 
 	/**
@@ -435,22 +546,6 @@ public abstract class CTEntryLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		CTEntryLocalService ctEntryLocalService) {
-
-		try {
-			Field field = CTEntryLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, ctEntryLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	protected CTEntryLocalService ctEntryLocalService;
 
 	@Reference
@@ -459,5 +554,8 @@ public abstract class CTEntryLocalServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		CTEntryLocalServiceBaseImpl.class);
 
 }

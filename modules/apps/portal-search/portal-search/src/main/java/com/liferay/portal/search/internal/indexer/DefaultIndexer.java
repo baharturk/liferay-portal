@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.indexer;
@@ -25,6 +16,7 @@ import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerPostProcessor;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
@@ -40,6 +32,7 @@ import com.liferay.portal.search.indexer.IndexerWriter;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchSettings;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -57,8 +50,7 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 		IndexerSearcher indexerSearcher, IndexerWriter<T> indexerWriter,
 		IndexerPermissionPostFilter indexerPermissionPostFilter,
 		IndexerQueryBuilderImpl indexerQueryBuilderImpl,
-		IndexerSummaryBuilder indexerSummaryBuilder,
-		IndexerPostProcessorsHolder indexerPostProcessorsHolder) {
+		IndexerSummaryBuilder indexerSummaryBuilder, String className) {
 
 		_modelSearchSettings = modelSearchSettings;
 		_indexerDocumentBuilder = indexerDocumentBuilder;
@@ -67,7 +59,7 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 		_indexerPermissionPostFilter = indexerPermissionPostFilter;
 		_indexerQueryBuilderImpl = indexerQueryBuilderImpl;
 		_indexerSummaryBuilder = indexerSummaryBuilder;
-		_indexerPostProcessorsHolder = indexerPostProcessorsHolder;
+		_className = className;
 	}
 
 	@Override
@@ -132,17 +124,15 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 
 	@Override
 	public IndexerPostProcessor[] getIndexerPostProcessors() {
-		return _indexerPostProcessorsHolder.toArray();
+		List<IndexerPostProcessor> indexerPostProcessors =
+			IndexerRegistryUtil.getIndexerPostProcessors(this);
+
+		return indexerPostProcessors.toArray(new IndexerPostProcessor[0]);
 	}
 
 	@Override
 	public String[] getSearchClassNames() {
 		return _modelSearchSettings.getSearchClassNames();
-	}
-
-	@Override
-	public String getSearchEngineId() {
-		return _modelSearchSettings.getSearchEngineId();
 	}
 
 	@Override
@@ -185,7 +175,7 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 
 	@Override
 	public boolean isCommitImmediately() {
-		return _modelSearchSettings.isCommitImmediately();
+		return false;
 	}
 
 	@Override
@@ -200,7 +190,13 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 
 	@Override
 	public boolean isPermissionAware() {
-		return _indexerPermissionPostFilter.isPermissionAware();
+		if (_modelSearchSettings.isPermissionAware() &&
+			_indexerPermissionPostFilter.isPermissionAware()) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
@@ -245,14 +241,6 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 	}
 
 	@Override
-	public void registerIndexerPostProcessor(
-		IndexerPostProcessor indexerPostProcessor) {
-
-		_indexerPostProcessorsHolder.addIndexerPostProcessor(
-			indexerPostProcessor);
-	}
-
-	@Override
 	public void reindex(Collection<T> objects) throws SearchException {
 		_indexerWriter.reindex(objects);
 	}
@@ -270,6 +258,11 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 	@Override
 	public void reindex(T baseModel) throws SearchException {
 		_indexerWriter.reindex(baseModel);
+	}
+
+	@Override
+	public void reindex(T baseModel, boolean notify) throws SearchException {
+		_indexerWriter.reindex(baseModel, notify);
 	}
 
 	@Override
@@ -301,14 +294,6 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 		_indexerWriter.setEnabled(indexerEnabled);
 	}
 
-	@Override
-	public void unregisterIndexerPostProcessor(
-		IndexerPostProcessor indexerPostProcessor) {
-
-		_indexerPostProcessorsHolder.removeIndexerPostProcessor(
-			indexerPostProcessor);
-	}
-
 	private Locale _getLocale(PortletRequest portletRequest) {
 		if (portletRequest != null) {
 			return portletRequest.getLocale();
@@ -317,9 +302,9 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 		return LocaleUtil.getMostRelevantLocale();
 	}
 
+	private final String _className;
 	private final IndexerDocumentBuilder _indexerDocumentBuilder;
 	private final IndexerPermissionPostFilter _indexerPermissionPostFilter;
-	private final IndexerPostProcessorsHolder _indexerPostProcessorsHolder;
 	private final IndexerQueryBuilderImpl _indexerQueryBuilderImpl;
 	private final IndexerSearcher _indexerSearcher;
 	private final IndexerSummaryBuilder _indexerSummaryBuilder;

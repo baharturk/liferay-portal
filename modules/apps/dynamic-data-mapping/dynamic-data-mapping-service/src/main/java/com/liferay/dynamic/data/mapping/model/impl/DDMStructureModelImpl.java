@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.model.impl;
 
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMStructureModel;
-import com.liferay.dynamic.data.mapping.model.DDMStructureSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -41,18 +31,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -211,70 +198,6 @@ public class DDMStructureModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static DDMStructure toModel(DDMStructureSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		DDMStructure model = new DDMStructureImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setStructureId(soapModel.getStructureId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setVersionUserId(soapModel.getVersionUserId());
-		model.setVersionUserName(soapModel.getVersionUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setParentStructureId(soapModel.getParentStructureId());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setStructureKey(soapModel.getStructureKey());
-		model.setVersion(soapModel.getVersion());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setDefinition(soapModel.getDefinition());
-		model.setStorageType(soapModel.getStorageType());
-		model.setType(soapModel.getType());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<DDMStructure> toModels(DDMStructureSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<DDMStructure> models = new ArrayList<DDMStructure>(
-			soapModels.length);
-
-		for (DDMStructureSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public DDMStructureModelImpl() {
 	}
 
@@ -351,155 +274,155 @@ public class DDMStructureModelImpl
 	public Map<String, Function<DDMStructure, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<DDMStructure, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, DDMStructure>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			DDMStructure.class.getClassLoader(), DDMStructure.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<DDMStructure, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<DDMStructure> constructor =
-				(Constructor<DDMStructure>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<DDMStructure, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<DDMStructure, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", DDMStructure::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", DDMStructure::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", DDMStructure::getUuid);
+			attributeGetterFunctions.put(
+				"structureId", DDMStructure::getStructureId);
+			attributeGetterFunctions.put("groupId", DDMStructure::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", DDMStructure::getCompanyId);
+			attributeGetterFunctions.put("userId", DDMStructure::getUserId);
+			attributeGetterFunctions.put("userName", DDMStructure::getUserName);
+			attributeGetterFunctions.put(
+				"versionUserId", DDMStructure::getVersionUserId);
+			attributeGetterFunctions.put(
+				"versionUserName", DDMStructure::getVersionUserName);
+			attributeGetterFunctions.put(
+				"createDate", DDMStructure::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", DDMStructure::getModifiedDate);
+			attributeGetterFunctions.put(
+				"parentStructureId", DDMStructure::getParentStructureId);
+			attributeGetterFunctions.put(
+				"classNameId", DDMStructure::getClassNameId);
+			attributeGetterFunctions.put(
+				"structureKey", DDMStructure::getStructureKey);
+			attributeGetterFunctions.put("version", DDMStructure::getVersion);
+			attributeGetterFunctions.put("name", DDMStructure::getName);
+			attributeGetterFunctions.put(
+				"description", DDMStructure::getDescription);
+			attributeGetterFunctions.put(
+				"definition", DDMStructure::getDefinition);
+			attributeGetterFunctions.put(
+				"storageType", DDMStructure::getStorageType);
+			attributeGetterFunctions.put("type", DDMStructure::getType);
+			attributeGetterFunctions.put(
+				"lastPublishDate", DDMStructure::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<DDMStructure, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<DDMStructure, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<DDMStructure, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<DDMStructure, Object>>();
-		Map<String, BiConsumer<DDMStructure, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<DDMStructure, ?>>();
+		private static final Map<String, BiConsumer<DDMStructure, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", DDMStructure::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<DDMStructure, Long>)DDMStructure::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", DDMStructure::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<DDMStructure, Long>)DDMStructure::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", DDMStructure::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<DDMStructure, String>)DDMStructure::setUuid);
-		attributeGetterFunctions.put(
-			"structureId", DDMStructure::getStructureId);
-		attributeSetterBiConsumers.put(
-			"structureId",
-			(BiConsumer<DDMStructure, Long>)DDMStructure::setStructureId);
-		attributeGetterFunctions.put("groupId", DDMStructure::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<DDMStructure, Long>)DDMStructure::setGroupId);
-		attributeGetterFunctions.put("companyId", DDMStructure::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<DDMStructure, Long>)DDMStructure::setCompanyId);
-		attributeGetterFunctions.put("userId", DDMStructure::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<DDMStructure, Long>)DDMStructure::setUserId);
-		attributeGetterFunctions.put("userName", DDMStructure::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<DDMStructure, String>)DDMStructure::setUserName);
-		attributeGetterFunctions.put(
-			"versionUserId", DDMStructure::getVersionUserId);
-		attributeSetterBiConsumers.put(
-			"versionUserId",
-			(BiConsumer<DDMStructure, Long>)DDMStructure::setVersionUserId);
-		attributeGetterFunctions.put(
-			"versionUserName", DDMStructure::getVersionUserName);
-		attributeSetterBiConsumers.put(
-			"versionUserName",
-			(BiConsumer<DDMStructure, String>)DDMStructure::setVersionUserName);
-		attributeGetterFunctions.put("createDate", DDMStructure::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<DDMStructure, Date>)DDMStructure::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", DDMStructure::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<DDMStructure, Date>)DDMStructure::setModifiedDate);
-		attributeGetterFunctions.put(
-			"parentStructureId", DDMStructure::getParentStructureId);
-		attributeSetterBiConsumers.put(
-			"parentStructureId",
-			(BiConsumer<DDMStructure, Long>)DDMStructure::setParentStructureId);
-		attributeGetterFunctions.put(
-			"classNameId", DDMStructure::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<DDMStructure, Long>)DDMStructure::setClassNameId);
-		attributeGetterFunctions.put(
-			"structureKey", DDMStructure::getStructureKey);
-		attributeSetterBiConsumers.put(
-			"structureKey",
-			(BiConsumer<DDMStructure, String>)DDMStructure::setStructureKey);
-		attributeGetterFunctions.put("version", DDMStructure::getVersion);
-		attributeSetterBiConsumers.put(
-			"version",
-			(BiConsumer<DDMStructure, String>)DDMStructure::setVersion);
-		attributeGetterFunctions.put("name", DDMStructure::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<DDMStructure, String>)DDMStructure::setName);
-		attributeGetterFunctions.put(
-			"description", DDMStructure::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<DDMStructure, String>)DDMStructure::setDescription);
-		attributeGetterFunctions.put("definition", DDMStructure::getDefinition);
-		attributeSetterBiConsumers.put(
-			"definition",
-			(BiConsumer<DDMStructure, String>)DDMStructure::setDefinition);
-		attributeGetterFunctions.put(
-			"storageType", DDMStructure::getStorageType);
-		attributeSetterBiConsumers.put(
-			"storageType",
-			(BiConsumer<DDMStructure, String>)DDMStructure::setStorageType);
-		attributeGetterFunctions.put("type", DDMStructure::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<DDMStructure, Integer>)DDMStructure::setType);
-		attributeGetterFunctions.put(
-			"lastPublishDate", DDMStructure::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<DDMStructure, Date>)DDMStructure::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<DDMStructure, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<DDMStructure, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<DDMStructure, Long>)DDMStructure::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DDMStructure, Long>)
+					DDMStructure::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<DDMStructure, String>)DDMStructure::setUuid);
+			attributeSetterBiConsumers.put(
+				"structureId",
+				(BiConsumer<DDMStructure, Long>)DDMStructure::setStructureId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<DDMStructure, Long>)DDMStructure::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<DDMStructure, Long>)DDMStructure::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<DDMStructure, Long>)DDMStructure::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<DDMStructure, String>)DDMStructure::setUserName);
+			attributeSetterBiConsumers.put(
+				"versionUserId",
+				(BiConsumer<DDMStructure, Long>)DDMStructure::setVersionUserId);
+			attributeSetterBiConsumers.put(
+				"versionUserName",
+				(BiConsumer<DDMStructure, String>)
+					DDMStructure::setVersionUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<DDMStructure, Date>)DDMStructure::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<DDMStructure, Date>)DDMStructure::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"parentStructureId",
+				(BiConsumer<DDMStructure, Long>)
+					DDMStructure::setParentStructureId);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<DDMStructure, Long>)DDMStructure::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"structureKey",
+				(BiConsumer<DDMStructure, String>)
+					DDMStructure::setStructureKey);
+			attributeSetterBiConsumers.put(
+				"version",
+				(BiConsumer<DDMStructure, String>)DDMStructure::setVersion);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<DDMStructure, String>)DDMStructure::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<DDMStructure, String>)DDMStructure::setDescription);
+			attributeSetterBiConsumers.put(
+				"definition",
+				(BiConsumer<DDMStructure, String>)DDMStructure::setDefinition);
+			attributeSetterBiConsumers.put(
+				"storageType",
+				(BiConsumer<DDMStructure, String>)DDMStructure::setStorageType);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<DDMStructure, Integer>)DDMStructure::setType);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<DDMStructure, Date>)
+					DDMStructure::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1184,6 +1107,17 @@ public class DDMStructureModelImpl
 		com.liferay.dynamic.data.mapping.model.DDMForm ddmForm) {
 	}
 
+	public Map<String, com.liferay.dynamic.data.mapping.model.DDMFormField>
+		getDDMFormFieldsMap() {
+
+		return null;
+	}
+
+	public void setDDMFormFieldsMap(
+		Map<String, com.liferay.dynamic.data.mapping.model.DDMFormField>
+			ddmFormFieldsMap) {
+	}
+
 	@Override
 	public StagedModelType getStagedModelType() {
 		return new StagedModelType(
@@ -1481,6 +1415,8 @@ public class DDMStructureModelImpl
 
 		setDDMForm(null);
 
+		setDDMFormFieldsMap(null);
+
 		_columnBitmask = 0;
 	}
 
@@ -1616,6 +1552,10 @@ public class DDMStructureModelImpl
 
 		ddmStructureCacheModel._ddmForm = getDDMForm();
 
+		setDDMFormFieldsMap(null);
+
+		ddmStructureCacheModel._ddmFormFieldsMap = getDDMFormFieldsMap();
+
 		return ddmStructureCacheModel;
 	}
 
@@ -1668,41 +1608,12 @@ public class DDMStructureModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<DDMStructure, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<DDMStructure, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<DDMStructure, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((DDMStructure)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, DDMStructure>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					DDMStructure.class, ModelWrapper.class);
 
 	}
 
@@ -1735,8 +1646,9 @@ public class DDMStructureModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<DDMStructure, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<DDMStructure, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

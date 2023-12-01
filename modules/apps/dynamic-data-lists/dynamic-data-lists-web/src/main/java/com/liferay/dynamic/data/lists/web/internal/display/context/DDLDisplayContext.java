@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.web.internal.display.context;
@@ -36,9 +27,9 @@ import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.security.permission.DDMPermissionSupport;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.StorageEngine;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
 import com.liferay.dynamic.data.mapping.util.DDMDisplay;
-import com.liferay.dynamic.data.mapping.util.DDMDisplayRegistry;
+import com.liferay.dynamic.data.mapping.util.DDMDisplayRegistryUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
@@ -48,7 +39,6 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBu
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItemList;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -59,6 +49,7 @@ import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
@@ -91,10 +82,9 @@ public class DDLDisplayContext {
 			RenderRequest renderRequest, RenderResponse renderResponse, DDL ddl,
 			DDLRecordSetLocalService ddlRecordSetLocalService,
 			DDLWebConfiguration ddlWebConfiguration,
-			DDMDisplayRegistry ddmDisplayRegistry,
 			DDMPermissionSupport ddmPermissionSupport,
-			DDMTemplateLocalService ddmTemplateLocalService,
-			StorageEngine storageEngine)
+			DDMStorageEngineManager ddmStorageEngineManager,
+			DDMTemplateLocalService ddmTemplateLocalService)
 		throws PortalException {
 
 		_renderRequest = renderRequest;
@@ -102,21 +92,18 @@ public class DDLDisplayContext {
 		_ddl = ddl;
 		_ddlRecordSetLocalService = ddlRecordSetLocalService;
 		_ddlWebConfiguration = ddlWebConfiguration;
-		_ddmDisplayRegistry = ddmDisplayRegistry;
 		_ddmPermissionSupport = ddmPermissionSupport;
+		_ddmStorageEngineManager = ddmStorageEngineManager;
 		_ddmTemplateLocalService = ddmTemplateLocalService;
-		_storageEngine = storageEngine;
 
 		_ddlRequestHelper = new DDLRequestHelper(
-			PortalUtil.getHttpServletRequest(_renderRequest));
+			PortalUtil.getHttpServletRequest(renderRequest));
 
 		if (Validator.isNotNull(_getPortletResource())) {
 			return;
 		}
 
-		DDLRecordSet recordSet = getRecordSet();
-
-		if ((recordSet == null) || !_hasViewPermission()) {
+		if ((getRecordSet() == null) || !_hasViewPermission()) {
 			renderRequest.setAttribute(
 				WebKeys.PORTLET_CONFIGURATOR_VISIBILITY, Boolean.TRUE);
 		}
@@ -180,7 +167,6 @@ public class DDLDisplayContext {
 					_renderResponse.createRenderURL(), "mvcPath",
 					"/edit_record_set.jsp", "redirect",
 					PortalUtil.getCurrentURL(_ddlRequestHelper.getRequest()));
-
 				dropdownItem.setLabel(
 					LanguageUtil.get(_ddlRequestHelper.getRequest(), "add"));
 			}
@@ -218,7 +204,7 @@ public class DDLDisplayContext {
 	}
 
 	public DDMFormValues getDDMFormValues(long classPK) throws PortalException {
-		return _storageEngine.getDDMFormValues(classPK);
+		return _ddmStorageEngineManager.getDDMFormValues(classPK);
 	}
 
 	public long getDisplayDDMTemplateId() {
@@ -456,7 +442,7 @@ public class DDLDisplayContext {
 		return _ddl.getRecordsJSONArray(records, latestRecordVersion, locale);
 	}
 
-	public SearchContainer<?> getSearch() {
+	public SearchContainer<?> getSearchContainer() {
 		PortletURL portletURL = PortletURLBuilder.create(
 			getPortletURL()
 		).setParameter(
@@ -478,9 +464,17 @@ public class DDLDisplayContext {
 			getDDLRecordSetOrderByComparator(
 				getOrderByCol(), getOrderByType()));
 		recordSetSearch.setOrderByType(getOrderByType());
-
-		_setDDLRecordSetSearchResults(recordSetSearch);
-		_setDDLRecordSetSearchTotal(recordSetSearch);
+		recordSetSearch.setResultsAndTotal(
+			() -> _ddlRecordSetLocalService.search(
+				_ddlRequestHelper.getCompanyId(),
+				_ddlRequestHelper.getScopeGroupId(), getKeywords(),
+				DDLRecordSetConstants.SCOPE_DYNAMIC_DATA_LISTS,
+				recordSetSearch.getStart(), recordSetSearch.getEnd(),
+				recordSetSearch.getOrderByComparator()),
+			_ddlRecordSetLocalService.searchCount(
+				_ddlRequestHelper.getCompanyId(),
+				_ddlRequestHelper.getScopeGroupId(), getKeywords(),
+				DDLRecordSetConstants.SCOPE_DYNAMIC_DATA_LISTS));
 
 		return recordSetSearch;
 	}
@@ -508,7 +502,7 @@ public class DDLDisplayContext {
 	}
 
 	public int getTotalItems() {
-		SearchContainer<?> searchContainer = getSearch();
+		SearchContainer<?> searchContainer = getSearchContainer();
 
 		return searchContainer.getTotal();
 	}
@@ -732,9 +726,7 @@ public class DDLDisplayContext {
 		return DropdownItemListBuilder.add(
 			dropdownItem -> {
 				dropdownItem.setActive(true);
-
 				dropdownItem.setHref(getPortletURL(), "navigation", "all");
-
 				dropdownItem.setLabel(
 					LanguageUtil.get(_ddlRequestHelper.getRequest(), "all"));
 			}
@@ -821,7 +813,7 @@ public class DDLDisplayContext {
 	}
 
 	private DDMDisplay _getDDMDisplay() {
-		return _ddmDisplayRegistry.getDDMDisplay(
+		return DDMDisplayRegistryUtil.getDDMDisplay(
 			DDLPortletKeys.DYNAMIC_DATA_LISTS);
 	}
 
@@ -900,28 +892,6 @@ public class DDLDisplayContext {
 		return _hasAddDDMTemplatePermission;
 	}
 
-	private void _setDDLRecordSetSearchResults(
-		RecordSetSearch recordSetSearch) {
-
-		List<DDLRecordSet> results = _ddlRecordSetLocalService.search(
-			_ddlRequestHelper.getCompanyId(),
-			_ddlRequestHelper.getScopeGroupId(), getKeywords(),
-			DDLRecordSetConstants.SCOPE_DYNAMIC_DATA_LISTS,
-			recordSetSearch.getStart(), recordSetSearch.getEnd(),
-			recordSetSearch.getOrderByComparator());
-
-		recordSetSearch.setResults(results);
-	}
-
-	private void _setDDLRecordSetSearchTotal(RecordSetSearch recordSetSearch) {
-		int total = _ddlRecordSetLocalService.searchCount(
-			_ddlRequestHelper.getCompanyId(),
-			_ddlRequestHelper.getScopeGroupId(), getKeywords(),
-			DDLRecordSetConstants.SCOPE_DYNAMIC_DATA_LISTS);
-
-		recordSetSearch.setTotal(total);
-	}
-
 	private static final String[] _DISPLAY_VIEWS = {"descriptive", "list"};
 
 	private final DDL _ddl;
@@ -929,8 +899,8 @@ public class DDLDisplayContext {
 	private final DDLRecordSetLocalService _ddlRecordSetLocalService;
 	private final DDLRequestHelper _ddlRequestHelper;
 	private final DDLWebConfiguration _ddlWebConfiguration;
-	private final DDMDisplayRegistry _ddmDisplayRegistry;
 	private final DDMPermissionSupport _ddmPermissionSupport;
+	private final DDMStorageEngineManager _ddmStorageEngineManager;
 	private final DDMTemplateLocalService _ddmTemplateLocalService;
 	private DDMTemplate _displayDDMTemplate;
 	private DDMTemplate _formDDMTemplate;
@@ -947,6 +917,5 @@ public class DDLDisplayContext {
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
 	private Boolean _showConfigurationIcon;
-	private final StorageEngine _storageEngine;
 
 }

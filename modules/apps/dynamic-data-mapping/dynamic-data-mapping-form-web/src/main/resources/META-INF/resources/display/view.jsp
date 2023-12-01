@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -18,6 +9,7 @@
 
 <%
 long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
+boolean limitToOneSubmissionPerUser = DDMFormInstanceSubmissionLimitStatusUtil.isLimitToOneSubmissionPerUser(ddmFormDisplayContext.getFormInstance());
 %>
 
 <c:choose>
@@ -46,7 +38,7 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 			</clay:container-fluid>
 		</div>
 	</c:when>
-	<c:when test="<%= (ddmFormDisplayContext.isLimitToOneSubmissionPerUserEnabled() && !ddmFormDisplayContext.isLoggedUser()) || ddmFormDisplayContext.isRequireAuthentication() %>">
+	<c:when test="<%= (!ddmFormDisplayContext.isLoggedUser() && limitToOneSubmissionPerUser) || ddmFormDisplayContext.isRequireAuthentication() %>">
 		<div class="ddm-form-basic-info">
 			<clay:container-fluid>
 				<clay:alert
@@ -64,12 +56,10 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 		<%
 		DDMFormInstance formInstance = ddmFormDisplayContext.getFormInstance();
 
-		boolean expired = false;
+		boolean expired = DDMFormInstanceExpirationStatusUtil.isFormExpired(formInstance, timeZone);
 
-		if (ddmFormDisplayContext.isExpirationDateEnabled()) {
-			expired = DDMFormInstanceExpirationStatusUtil.isFormExpired(formInstance, timeZone);
-		}
-
+		boolean formAvailable = ddmFormDisplayContext.isFormAvailable();
+		boolean formShared = ddmFormDisplayContext.isFormShared();
 		boolean preview = ddmFormDisplayContext.isPreview();
 		boolean showSuccessPage = ddmFormDisplayContext.isShowSuccessPage();
 
@@ -79,12 +69,11 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 		%>
 
 		<c:choose>
-			<c:when test="<%= !preview && (expired || showSuccessPage || ddmFormDisplayContext.hasSubmittedAnEntry()) %>">
+			<c:when test="<%= !preview && (ddmFormDisplayContext.isSubmissionLimitReached() || expired || showSuccessPage) %>">
 
 				<%
 				String pageDescription = null;
 				String pageTitle = null;
-				boolean showPartialResultsToRespondents = ddmFormDisplayContext.isFFShowPartialResultsEnabled() && ddmFormDisplayContext.isShowPartialResultsToRespondents();
 
 				if (expired) {
 					pageDescription = LanguageUtil.get(request, "this-form-has-an-expiration-date");
@@ -95,8 +84,10 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 					pageTitle = ddmFormDisplayContext.getSuccessPageTitle(displayLocale);
 				}
 				else {
-					pageDescription = LanguageUtil.get(request, "you-can-fill-out-this-form-only-once.-contact-the-owner-of-the-form-if-you-think-this-is-a-mistake");
-					pageTitle = LanguageUtil.get(request, "you-have-already-responded");
+					Map<String, String> limitToOneSubmissionPerUserMap = ddmFormDisplayContext.getLimitToOneSubmissionPerUserMap();
+
+					pageDescription = limitToOneSubmissionPerUserMap.get("limitToOneSubmissionPerUserBody");
+					pageTitle = limitToOneSubmissionPerUserMap.get("limitToOneSubmissionPerUserHeader");
 				}
 				%>
 
@@ -104,6 +95,10 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 					module="admin/js/components/DefaultPage"
 					props='<%=
 						HashMapBuilder.<String, Object>put(
+							"dataEngineModule", ddmFormDisplayContext.getDataEngineModule()
+						).put(
+							"displayChartAsTable", ddmFormDisplayContext.isDisplayChartAsTable()
+						).put(
 							"formDescription", formInstance.getDescription(displayLocale)
 						).put(
 							"formReportDataURL", formReportDataURL.toString()
@@ -114,14 +109,14 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 						).put(
 							"pageTitle", pageTitle
 						).put(
-							"showPartialResultsToRespondents", showPartialResultsToRespondents
+							"showPartialResultsToRespondents", ddmFormDisplayContext.isShowPartialResultsToRespondents()
 						).put(
-							"showSubmitAgainButton", !ddmFormDisplayContext.isLimitToOneSubmissionPerUserEnabled() && !expired
+							"showSubmitAgainButton", !expired && !limitToOneSubmissionPerUser
 						).build()
 					%>'
 				/>
 			</c:when>
-			<c:when test="<%= ddmFormDisplayContext.isFormAvailable() %>">
+			<c:when test="<%= formAvailable || preview %>">
 				<portlet:actionURL name="/dynamic_data_mapping_form/add_form_instance_record" var="addFormInstanceRecordActionURL" />
 
 				<div class="portlet-forms">
@@ -179,12 +174,25 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 						<liferay-ui:error exception="<%= NoSuchFormInstanceException.class %>" message="the-selected-form-no-longer-exists" />
 						<liferay-ui:error exception="<%= NoSuchStructureException.class %>" message="unable-to-retrieve-the-definition-of-the-selected-form" />
 						<liferay-ui:error exception="<%= NoSuchStructureLayoutException.class %>" message="unable-to-retrieve-the-layout-of-the-selected-form" />
-						<liferay-ui:error exception="<%= ObjectEntryValuesException.class %>" message="the-maximum-length-is-280-characters-for-text-fields" />
+						<liferay-ui:error exception="<%= ObjectEntryValuesException.ExceedsIntegerSize.class %>" message="object-entry-value-exceeds-integer-field-allowed-size" />
+						<liferay-ui:error exception="<%= ObjectEntryValuesException.ExceedsLongMaxSize.class %>" message="object-entry-value-exceeds-maximum-long-field-allowed-size" />
+						<liferay-ui:error exception="<%= ObjectEntryValuesException.ExceedsLongMinSize.class %>" message="object-entry-value-falls-below-minimum-long-field-allowed-size" />
+						<liferay-ui:error exception="<%= ObjectEntryValuesException.ExceedsLongSize.class %>" message="object-entry-value-exceeds-long-field-allowed-size" />
+
+						<liferay-ui:error exception="<%= ObjectEntryValuesException.ExceedsTextMaxLength.class %>">
+
+							<%
+							ObjectEntryValuesException.ExceedsTextMaxLength etml = (ObjectEntryValuesException.ExceedsTextMaxLength)errorException;
+							%>
+
+							<liferay-ui:message arguments="<%= new String[] {String.valueOf(etml.getMaxLength()), etml.getObjectFieldName()} %>" key="the-entry-value-exceeds-the-maximum-length-of-x-characters-for-object-field-x" translateArguments="<%= false %>" />
+						</liferay-ui:error>
+
 						<liferay-ui:error exception="<%= StorageException.class %>" message="there-was-an-error-when-accessing-the-data-storage" />
 
 						<liferay-ui:error-principal />
 
-						<c:if test="<%= ddmFormDisplayContext.isFormShared() || preview %>">
+						<c:if test="<%= formShared || preview %>">
 							<clay:container-fluid>
 								<div class="locale-actions">
 									<liferay-ui:language
@@ -254,13 +262,15 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 								module="admin/js/FormView"
 								props='<%=
 									HashMapBuilder.<String, Object>put(
-										"description", HtmlUtil.replaceNewLine(StringUtil.trim(HtmlUtil.escape(formInstance.getDescription(displayLocale))))
+										"dataEngineModule", ddmFormDisplayContext.getDataEngineModule()
+									).put(
+										"description", StringUtil.trim(formInstance.getDescription(displayLocale))
+									).put(
+										"displayChartAsTable", ddmFormDisplayContext.isDisplayChartAsTable()
 									).put(
 										"formReportDataURL", formReportDataURL.toString()
 									).put(
-										"hasDescription", StringUtils.isNotEmpty(formInstance.getDescription(displayLocale))
-									).put(
-										"title", HtmlUtil.escape(formInstance.getName(displayLocale))
+										"title", formInstance.getName(displayLocale)
 									).put(
 										"validateCSRFTokenURL", validateCSRFTokenURL.toString()
 									).putAll(
@@ -275,6 +285,8 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 				</div>
 
 				<aui:script use="aui-base">
+					var <portlet:namespace />form;
+
 					function <portlet:namespace />clearInterval(intervalId) {
 						if (intervalId) {
 							clearInterval(intervalId);
@@ -291,7 +303,7 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 
 					Liferay.on('destroyPortlet', <portlet:namespace />clearPortletHandlers);
 
-					<c:if test="<%= ddmFormDisplayContext.isFormShared() %>">
+					<c:if test="<%= formShared %>">
 						document.title =
 							'<%= HtmlUtil.escapeJS(formInstance.getName(displayLocale)) %>';
 					</c:if>
@@ -299,14 +311,12 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 					function <portlet:namespace />fireFormView() {
 						Liferay.fire('ddmFormView', {
 							formId: '<%= formInstanceId %>',
-							title: '<%= HtmlUtil.escape(formInstance.getName(displayLocale)) %>',
+							title: '<%= HtmlUtil.escapeJS(formInstance.getName(displayLocale)) %>',
 						});
 					}
 
 					<c:choose>
 						<c:when test="<%= ddmFormDisplayContext.isAutosaveEnabled() %>">
-							var <portlet:namespace />form;
-
 							<liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" id="/dynamic_data_mapping_form/add_form_instance_record" var="autoSaveFormInstanceRecordURL">
 								<portlet:param name="autoSave" value="<%= Boolean.TRUE.toString() %>" />
 								<portlet:param name="languageId" value="<%= languageId %>" />
@@ -336,7 +346,7 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 							function <portlet:namespace />startAutoSave() {
 								<portlet:namespace />clearInterval(<portlet:namespace />intervalId);
 
-								<portlet:namespace />intervalId = setInterval(
+								window.<portlet:namespace />intervalId = setInterval(
 									<portlet:namespace />autoSave,
 									<%= ddmFormDisplayContext.getAutosaveInterval() %>
 								);
@@ -350,7 +360,7 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 
 								var time = Liferay.Session.get('sessionLength') || tenSeconds;
 
-								<portlet:namespace />intervalId = setInterval(
+								window.<portlet:namespace />intervalId = setInterval(
 									<portlet:namespace />extendSession,
 									time / 2
 								);
@@ -400,11 +410,9 @@ long formInstanceId = ddmFormDisplayContext.getFormInstanceId();
 						</c:choose>
 					}
 
-					<c:if test="<%= ddmFormDisplayContext.isRememberMe() %>">
-						var rememberMe = true;
-					</c:if>
+					var rememberMe = <%= ddmFormDisplayContext.isRememberMe() %>;
 
-					<portlet:namespace />sessionIntervalId = setInterval(() => {
+					window.<portlet:namespace />sessionIntervalId = setInterval(() => {
 						if (Liferay.Session || rememberMe) {
 							clearInterval(<portlet:namespace />sessionIntervalId);
 

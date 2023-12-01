@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.portlet.action;
@@ -25,7 +16,6 @@ import com.liferay.dynamic.data.mapping.util.DDMFormFieldUtil;
 import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.servlet.SessionErrors;
@@ -36,8 +26,8 @@ import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.upload.UploadPortletRequestImpl;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -54,7 +44,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Rodrigo Paulino
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + JournalPortletKeys.JOURNAL,
 		"mvc.command.name=/journal/import_data_definition"
@@ -73,7 +62,7 @@ public class ImportDataDefinitionMVCActionCommand extends BaseMVCActionCommand {
 				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
 			UploadPortletRequest uploadPortletRequest =
-				_getUploadPortletRequest(actionRequest);
+				_portal.getUploadPortletRequest(actionRequest);
 
 			DataDefinition dataDefinition = DataDefinition.toDTO(
 				FileUtil.read(uploadPortletRequest.getFile("jsonFile")));
@@ -103,12 +92,10 @@ public class ImportDataDefinitionMVCActionCommand extends BaseMVCActionCommand {
 			hideDefaultSuccessMessage(actionRequest);
 		}
 		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
-			}
+			_log.error(exception);
 
 			SessionErrors.add(
-				actionRequest, "importDataDefinitionErrorMessage");
+				actionRequest, "importDataDefinitionErrorMessage", exception);
 
 			hideDefaultErrorMessage(actionRequest);
 		}
@@ -117,28 +104,23 @@ public class ImportDataDefinitionMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	private String _generateFieldName(String fieldName) {
-		String newFieldName = DDMFormFieldUtil.getDDMFormFieldName(
-			fieldName.substring(0, fieldName.length() - 8));
+		String newFieldName = null;
+
+		int index = fieldName.length() - 8;
+
+		if ((index >= 0) && Validator.isNumber(fieldName.substring(index))) {
+			newFieldName = DDMFormFieldUtil.getDDMFormFieldName(
+				fieldName.substring(0, index));
+		}
+		else {
+			newFieldName = DDMFormFieldUtil.getDDMFormFieldName(fieldName);
+		}
 
 		while (_fieldNames.contains(newFieldName)) {
 			_generateFieldName(fieldName);
 		}
 
 		return newFieldName;
-	}
-
-	private UploadPortletRequest _getUploadPortletRequest(
-		ActionRequest actionRequest) {
-
-		LiferayPortletRequest liferayPortletRequest =
-			_portal.getLiferayPortletRequest(actionRequest);
-
-		return new UploadPortletRequestImpl(
-			_portal.getUploadServletRequest(
-				liferayPortletRequest.getHttpServletRequest()),
-			liferayPortletRequest,
-			_portal.getPortletNamespace(
-				liferayPortletRequest.getPortletName()));
 	}
 
 	private void _populateFieldNameBlacklist(DataDefinition dataDefinition) {

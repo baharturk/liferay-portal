@@ -1,44 +1,51 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {render} from '@liferay/frontend-js-react-web';
 
-import SidebarPanel from '../SidebarPanel';
-import SidebarPanelInfoView from '../components/SidebarPanelInfoView';
+import SidebarPanel from '../components/SidebarPanel';
+import SidebarPanelInfoView from '../components/SidebarPanelInfoView/SidebarPanelInfoView';
 import SidebarPanelMetricsView from '../components/SidebarPanelMetricsView';
+import {
+	handlePanelStateFromSession,
+	handleSessionOnSidebarOpen,
+} from './panelStateHandler';
+
+const ACTIVE_ROW_CSS_CLASS = 'table-active';
 
 const deselectAllRows = (portletNamespace) => {
 	const activeRows = document.querySelectorAll(
-		`[data-searchcontainerid="${portletNamespace}content"] tr.active`
+		`#${portletNamespace}contentSearchContainer tr.${ACTIVE_ROW_CSS_CLASS}`
 	);
 
-	activeRows.forEach((row) => row.classList.remove('active'));
+	activeRows.forEach((row) => row.classList.remove(ACTIVE_ROW_CSS_CLASS));
 };
 
 const getRow = (portletNamespace, rowId) =>
 	document.querySelector(
-		`[data-searchcontainerid="${portletNamespace}content"] [data-rowid="${rowId}"]`
+		`#${portletNamespace}contentSearchContainer [data-rowid="${rowId}"]`
 	);
 
 const selectRow = (portletNamespace, rowId) => {
 	deselectAllRows(portletNamespace);
 
 	const currentRow = getRow(portletNamespace, rowId);
-	currentRow.classList.add('active');
+
+	if (!currentRow) {
+		return;
+	}
+
+	currentRow.classList.add(ACTIVE_ROW_CSS_CLASS);
 };
 
-const showSidebar = ({View, fetchURL, portletNamespace}) => {
+const showSidebar = ({
+	View,
+	fetchURL,
+	portletNamespace,
+	singlePageApplicationEnabled,
+}) => {
 	const id = `${portletNamespace}sidebar`;
 
 	const sidebarPanel = Liferay.component(id);
@@ -60,6 +67,7 @@ const showSidebar = ({View, fetchURL, portletNamespace}) => {
 				ref: (element) => {
 					Liferay.component(id, element);
 				},
+				singlePageApplicationEnabled,
 				viewComponent: View,
 			},
 			container
@@ -71,12 +79,30 @@ const showSidebar = ({View, fetchURL, portletNamespace}) => {
 };
 
 const actions = {
-	showInfo({fetchURL, portletNamespace, rowId}) {
+	showInfo({
+		fetchURL,
+		panelState,
+		portletNamespace,
+		rowId,
+		selectedItemRowId,
+		singlePageApplicationEnabled,
+	}) {
 		selectRow(portletNamespace, rowId);
+
+		if (singlePageApplicationEnabled) {
+			handleSessionOnSidebarOpen({
+				fetchURL,
+				panelState,
+				rowId,
+				selectedItemRowId,
+			});
+		}
+
 		showSidebar({
 			View: SidebarPanelInfoView,
 			fetchURL,
 			portletNamespace,
+			singlePageApplicationEnabled,
 		});
 	},
 	showMetrics({fetchURL, portletNamespace, rowId}) {
@@ -89,11 +115,24 @@ const actions = {
 	},
 };
 
+export {selectRow, showSidebar};
+
 export default function propsTransformer({
+	additionalProps,
 	items,
 	portletNamespace,
 	...otherProps
 }) {
+	const {
+		panelState,
+		selectedItemRowId,
+		singlePageApplicationEnabled,
+	} = additionalProps;
+
+	if (singlePageApplicationEnabled) {
+		handlePanelStateFromSession(additionalProps);
+	}
+
 	return {
 		...otherProps,
 		items: items.map((item) => {
@@ -107,8 +146,11 @@ export default function propsTransformer({
 
 						actions[action]({
 							fetchURL: item.data.fetchURL,
+							panelState,
 							portletNamespace,
 							rowId: item.data.classPK,
+							selectedItemRowId,
+							singlePageApplicationEnabled,
 						});
 					}
 				},

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import * as FormSupport from '../../utils/FormSupport.es';
@@ -154,7 +145,7 @@ export function handleResizeRight(props, state, indexes, columnTarget) {
 			};
 		}
 		else if (columnTarget > currentColumnPosition) {
-			if (nextColumn.size === 1 && nextColumn.fields.length === 0) {
+			if (nextColumn.size === 1 && !nextColumn.fields.length) {
 				newCurrentColumn = {
 					...currentColumn,
 					size: currentColumn.size + newSize,
@@ -268,7 +259,7 @@ export function handleResizeLeft(props, state, indexes, columnTarget) {
 	else if (
 		previousColumn &&
 		previousColumn.size === 1 &&
-		previousColumn.fields.length === 0 &&
+		!previousColumn.fields.length &&
 		columnTarget <= previousColumnPosition
 	) {
 		newContext = FormSupport.removeColumn(

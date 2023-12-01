@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -76,10 +67,12 @@ public class AddressCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(55);
+		StringBundler sb = new StringBundler(57);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", externalReferenceCode=");
@@ -102,10 +95,10 @@ public class AddressCacheModel
 		sb.append(classPK);
 		sb.append(", countryId=");
 		sb.append(countryId);
+		sb.append(", listTypeId=");
+		sb.append(listTypeId);
 		sb.append(", regionId=");
 		sb.append(regionId);
-		sb.append(", typeId=");
-		sb.append(typeId);
 		sb.append(", city=");
 		sb.append(city);
 		sb.append(", description=");
@@ -142,6 +135,7 @@ public class AddressCacheModel
 		AddressImpl addressImpl = new AddressImpl();
 
 		addressImpl.setMvccVersion(mvccVersion);
+		addressImpl.setCtCollectionId(ctCollectionId);
 
 		if (uuid == null) {
 			addressImpl.setUuid("");
@@ -185,8 +179,8 @@ public class AddressCacheModel
 		addressImpl.setClassNameId(classNameId);
 		addressImpl.setClassPK(classPK);
 		addressImpl.setCountryId(countryId);
+		addressImpl.setListTypeId(listTypeId);
 		addressImpl.setRegionId(regionId);
-		addressImpl.setTypeId(typeId);
 
 		if (city == null) {
 			addressImpl.setCity("");
@@ -260,6 +254,8 @@ public class AddressCacheModel
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
 		externalReferenceCode = objectInput.readUTF();
 
@@ -278,9 +274,9 @@ public class AddressCacheModel
 
 		countryId = objectInput.readLong();
 
-		regionId = objectInput.readLong();
+		listTypeId = objectInput.readLong();
 
-		typeId = objectInput.readLong();
+		regionId = objectInput.readLong();
 		city = objectInput.readUTF();
 		description = objectInput.readUTF();
 
@@ -304,6 +300,8 @@ public class AddressCacheModel
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
 
 		if (uuid == null) {
 			objectOutput.writeUTF("");
@@ -341,9 +339,9 @@ public class AddressCacheModel
 
 		objectOutput.writeLong(countryId);
 
-		objectOutput.writeLong(regionId);
+		objectOutput.writeLong(listTypeId);
 
-		objectOutput.writeLong(typeId);
+		objectOutput.writeLong(regionId);
 
 		if (city == null) {
 			objectOutput.writeUTF("");
@@ -408,6 +406,7 @@ public class AddressCacheModel
 	}
 
 	public long mvccVersion;
+	public long ctCollectionId;
 	public String uuid;
 	public String externalReferenceCode;
 	public long addressId;
@@ -419,8 +418,8 @@ public class AddressCacheModel
 	public long classNameId;
 	public long classPK;
 	public long countryId;
+	public long listTypeId;
 	public long regionId;
-	public long typeId;
 	public String city;
 	public String description;
 	public double latitude;

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz.group;
 
+import com.liferay.jenkins.results.parser.BatchHistory;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.Job;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
@@ -22,6 +14,9 @@ import java.io.File;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
@@ -46,40 +41,66 @@ public class SegmentTestClassGroup extends BaseTestClassGroup {
 		return new ArrayList<>(_axisTestClassGroups);
 	}
 
+	public BatchHistory getBatchHistory() {
+		return _batchTestClassGroup.getBatchHistory();
+	}
+
 	public int getBatchIndex() {
 		List<SegmentTestClassGroup> segmentTestClassGroups =
-			_parentBatchTestClassGroup.getSegmentTestClassGroups();
+			_batchTestClassGroup.getSegmentTestClassGroups();
 
 		return segmentTestClassGroups.indexOf(this);
 	}
 
 	public String getBatchJobName() {
-		return _parentBatchTestClassGroup.getBatchJobName();
+		return _batchTestClassGroup.getBatchJobName();
 	}
 
 	public String getBatchName() {
-		return _parentBatchTestClassGroup.getBatchName();
+		return _batchTestClassGroup.getBatchName();
+	}
+
+	public BatchTestClassGroup getBatchTestClassGroup() {
+		return _batchTestClassGroup;
 	}
 
 	public String getCohortName() {
-		return _parentBatchTestClassGroup.getCohortName();
+		return _batchTestClassGroup.getCohortName();
+	}
+
+	public String getDownstreamJobName() {
+		return _batchTestClassGroup.getDownstreamJobName();
 	}
 
 	@Override
 	public Job getJob() {
-		return _parentBatchTestClassGroup.getJob();
+		return _batchTestClassGroup.getJob();
+	}
+
+	public JSONObject getJSONObject() {
+		JSONObject jsonObject = new JSONObject();
+
+		JSONArray axesJSONArray = new JSONArray();
+
+		for (AxisTestClassGroup axisTestClassGroup : getAxisTestClassGroups()) {
+			axesJSONArray.put(axisTestClassGroup.getJSONObject());
+		}
+
+		jsonObject.put(
+			"axes", axesJSONArray
+		).put(
+			"segment_name", getSegmentName()
+		);
+
+		return jsonObject;
 	}
 
 	public Integer getMaximumSlavesPerHost() {
-		return _parentBatchTestClassGroup.getMaximumSlavesPerHost();
+		return _batchTestClassGroup.getMaximumSlavesPerHost();
 	}
 
 	public Integer getMinimumSlaveRAM() {
-		return _parentBatchTestClassGroup.getMinimumSlaveRAM();
-	}
-
-	public BatchTestClassGroup getParentBatchTestClassGroup() {
-		return _parentBatchTestClassGroup;
+		return _batchTestClassGroup.getMinimumSlaveRAM();
 	}
 
 	public String getSegmentName() {
@@ -88,8 +109,7 @@ public class SegmentTestClassGroup extends BaseTestClassGroup {
 	}
 
 	public String getSlaveLabel() {
-		BatchTestClassGroup batchTestClassGroup =
-			getParentBatchTestClassGroup();
+		BatchTestClassGroup batchTestClassGroup = getBatchTestClassGroup();
 
 		return batchTestClassGroup.getSlaveLabel();
 	}
@@ -117,6 +137,16 @@ public class SegmentTestClassGroup extends BaseTestClassGroup {
 			sb.append("\n");
 		}
 
+		Job job = getJob();
+
+		String companyDefaultLocale = job.getCompanyDefaultLocale();
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(companyDefaultLocale)) {
+			sb.append("TEST_COMPANY_DEFAULT_LOCALE=");
+			sb.append(companyDefaultLocale);
+			sb.append("\n");
+		}
+
 		return sb.toString();
 	}
 
@@ -134,11 +164,39 @@ public class SegmentTestClassGroup extends BaseTestClassGroup {
 	protected SegmentTestClassGroup(
 		BatchTestClassGroup parentBatchTestClassGroup) {
 
-		_parentBatchTestClassGroup = parentBatchTestClassGroup;
+		_batchTestClassGroup = parentBatchTestClassGroup;
+	}
+
+	protected SegmentTestClassGroup(
+		BatchTestClassGroup parentBatchTestClassGroup, JSONObject jsonObject) {
+
+		_batchTestClassGroup = parentBatchTestClassGroup;
+
+		JSONArray axesJSONArray = jsonObject.getJSONArray("axes");
+
+		if ((axesJSONArray == null) || axesJSONArray.isEmpty()) {
+			return;
+		}
+
+		for (int i = 0; i < axesJSONArray.length(); i++) {
+			JSONObject axisJSONObject = axesJSONArray.getJSONObject(i);
+
+			if (axisJSONObject == null) {
+				continue;
+			}
+
+			AxisTestClassGroup axisTestClassGroup =
+				TestClassGroupFactory.newAxisTestClassGroup(
+					axisJSONObject, this);
+
+			_axisTestClassGroups.add(axisTestClassGroup);
+
+			_batchTestClassGroup.addAxisTestClassGroup(axisTestClassGroup);
+		}
 	}
 
 	private final List<AxisTestClassGroup> _axisTestClassGroups =
 		new ArrayList<>();
-	private final BatchTestClassGroup _parentBatchTestClassGroup;
+	private final BatchTestClassGroup _batchTestClassGroup;
 
 }

@@ -1,25 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayIcon from '@clayui/icon';
 import {normalizeFieldName} from 'data-engine-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useRef} from 'react';
 
 import {FieldBase} from '../FieldBase/ReactFieldBase.es';
 import Text from '../Text/Text.es';
 import {useSyncValue} from '../hooks/useSyncValue.es';
 
-const KeyValue = ({className, disabled, onChange, value, ...otherProps}) => (
+const KeyValue = ({
+	allowSpecialCharacters,
+	className,
+	disabled,
+	onChange,
+	value,
+	...otherProps
+}) => (
 	<div className="active form-text key-value-editor">
 		<label className="control-label key-value-label">
 			{className === 'key-value-reference-input'
@@ -31,10 +31,11 @@ const KeyValue = ({className, disabled, onChange, value, ...otherProps}) => (
 		<input
 			{...otherProps}
 			className={`${disabled ? 'disabled ' : ''}${className}`}
-			onChange={(event) => {
-				const value = normalizeFieldName(event.target.value);
-				onChange({target: {value}});
-			}}
+			onChange={({target: {value}}) =>
+				onChange(
+					allowSpecialCharacters ? value : normalizeFieldName(value)
+				)
+			}
 			readOnly={disabled}
 			tabIndex={disabled ? '-1' : '0'}
 			type="text"
@@ -44,6 +45,7 @@ const KeyValue = ({className, disabled, onChange, value, ...otherProps}) => (
 );
 
 const Main = ({
+	allowSpecialCharacters,
 	editingLanguageId,
 	generateKeyword,
 	keyword: initialKeyword,
@@ -51,7 +53,9 @@ const Main = ({
 	name,
 	onBlur,
 	onChange,
+	onClick,
 	onFocus,
+	onKeyDown,
 	onKeywordBlur,
 	onKeywordChange,
 	onReferenceBlur,
@@ -60,6 +64,7 @@ const Main = ({
 	readOnly,
 	reference,
 	required,
+	showCloseButton,
 	showKeyword = false,
 	showLabel,
 	spritemap,
@@ -85,17 +90,20 @@ const Main = ({
 				editingLanguageId={editingLanguageId}
 				name={`keyValueLabel${name}`}
 				onBlur={onBlur}
-				onChange={(event) => {
-					const {value} = event.target;
-
-					onChange(event);
+				onChange={({target: {value}}) => {
+					onChange(value);
 
 					if (generateKeywordRef.current) {
-						const newKeyword = normalizeFieldName(value);
-						onKeywordChange(event, newKeyword, true);
+						onKeywordChange(
+							allowSpecialCharacters
+								? value
+								: normalizeFieldName(value),
+							true
+						);
 					}
 				}}
 				onFocus={onFocus}
+				onKeyDown={onKeyDown}
 				placeholder={placeholder}
 				readOnly={readOnly}
 				required={required}
@@ -106,16 +114,29 @@ const Main = ({
 				visible={visible}
 			/>
 
+			{showCloseButton && (
+				<button
+					aria-label={sub(
+						Liferay.Language.get('remove-x-option'),
+						keyword
+					)}
+					className="close close-modal"
+					onClick={onClick}
+					type="button"
+				>
+					<ClayIcon symbol="times" />
+				</button>
+			)}
+
 			{showKeyword && (
 				<KeyValue
+					allowSpecialCharacters={allowSpecialCharacters}
 					className="key-value-input"
 					disabled={keywordReadOnly}
 					onBlur={onKeywordBlur}
-					onChange={(event) => {
-						const {value} = event.target;
-
+					onChange={(value) => {
 						generateKeywordRef.current = false;
-						onKeywordChange(event, value, false);
+						onKeywordChange(value, false);
 						setKeyword(value);
 					}}
 					value={keyword}
@@ -123,11 +144,10 @@ const Main = ({
 			)}
 
 			<KeyValue
+				allowSpecialCharacters={allowSpecialCharacters}
 				className="key-value-reference-input"
 				onBlur={onReferenceBlur}
-				onChange={(event) => {
-					onReferenceChange(event);
-				}}
+				onChange={onReferenceChange}
 				value={reference}
 			/>
 		</FieldBase>

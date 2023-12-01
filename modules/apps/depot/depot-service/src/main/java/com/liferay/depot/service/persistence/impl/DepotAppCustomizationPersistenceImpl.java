@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.service.persistence.impl;
@@ -35,7 +26,6 @@ import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -46,7 +36,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Collections;
@@ -72,9 +61,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(
-	service = {DepotAppCustomizationPersistence.class, BasePersistence.class}
-)
+@Component(service = DepotAppCustomizationPersistence.class)
 public class DepotAppCustomizationPersistenceImpl
 	extends BasePersistenceImpl<DepotAppCustomization>
 	implements DepotAppCustomizationPersistence {
@@ -195,7 +182,7 @@ public class DepotAppCustomizationPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<DepotAppCustomization>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DepotAppCustomization depotAppCustomization : list) {
@@ -565,7 +552,7 @@ public class DepotAppCustomizationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {depotEntryId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -681,7 +668,8 @@ public class DepotAppCustomizationPersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByD_E, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByD_E, finderArgs, this);
 		}
 
 		if (result instanceof DepotAppCustomization) {
@@ -798,7 +786,7 @@ public class DepotAppCustomizationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {depotEntryId, enabled};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -923,7 +911,8 @@ public class DepotAppCustomizationPersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByD_P, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByD_P, finderArgs, this);
 		}
 
 		if (result instanceof DepotAppCustomization) {
@@ -1038,7 +1027,7 @@ public class DepotAppCustomizationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {depotEntryId, portletId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1545,7 +1534,7 @@ public class DepotAppCustomizationPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<DepotAppCustomization>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1615,7 +1604,7 @@ public class DepotAppCustomizationPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1720,30 +1709,14 @@ public class DepotAppCustomizationPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"depotEntryId", "portletId"}, false);
 
-		_setDepotAppCustomizationUtilPersistence(this);
+		DepotAppCustomizationUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setDepotAppCustomizationUtilPersistence(null);
+		DepotAppCustomizationUtil.setPersistence(null);
 
 		entityCache.removeCache(DepotAppCustomizationImpl.class.getName());
-	}
-
-	private void _setDepotAppCustomizationUtilPersistence(
-		DepotAppCustomizationPersistence depotAppCustomizationPersistence) {
-
-		try {
-			Field field = DepotAppCustomizationUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, depotAppCustomizationPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -1806,9 +1779,5 @@ public class DepotAppCustomizationPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private DepotAppCustomizationModelArgumentsResolver
-		_depotAppCustomizationModelArgumentsResolver;
 
 }

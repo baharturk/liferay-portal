@@ -1,35 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.util;
 
-import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.ConfigurationFactoryImpl;
 import com.liferay.portal.configuration.ConfigurationImpl;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.configuration.Filter;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
-import com.liferay.portal.kernel.servlet.WebDirDetector;
-import com.liferay.portal.kernel.util.ClassUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.ServerDetector;
@@ -40,8 +27,6 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-
-import javax.servlet.Servlet;
 
 /**
  * @author Brian Wing Shun Chan
@@ -253,8 +238,8 @@ public class PropsUtil {
 
 					webId = company.getWebId();
 				}
-				catch (PortalException portalException) {
-					_log.error(portalException, portalException);
+				catch (Exception exception) {
+					_log.error(exception);
 				}
 
 				configuration = new ConfigurationImpl(
@@ -329,21 +314,6 @@ public class PropsUtil {
 		return defaultLiferayHome;
 	}
 
-	private static String _getLibDir(Class<?> clazz) {
-		String path = ClassUtil.getParentPath(
-			clazz.getClassLoader(), clazz.getName());
-
-		int pos = path.lastIndexOf(".jar!");
-
-		if (pos == -1) {
-			pos = path.lastIndexOf(".jar/");
-		}
-
-		pos = path.lastIndexOf(CharPool.SLASH, pos);
-
-		return path.substring(0, pos + 1);
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(PropsUtil.class);
 
 	private static final Configuration _configuration;
@@ -355,73 +325,6 @@ public class PropsUtil {
 
 		SystemProperties.set(
 			PropsKeys.DEFAULT_LIFERAY_HOME, _getDefaultLiferayHome());
-
-		// Global shared lib directory
-
-		String globalSharedLibDir = _getLibDir(Servlet.class);
-
-		if (_log.isInfoEnabled()) {
-			_log.info("Global shared lib directory " + globalSharedLibDir);
-		}
-
-		SystemProperties.set(
-			PropsKeys.LIFERAY_LIB_GLOBAL_SHARED_DIR, globalSharedLibDir);
-
-		// Global lib directory
-
-		String globalLibDir = _getLibDir(CentralizedThreadLocal.class);
-
-		if (_log.isInfoEnabled()) {
-			_log.info("Global lib directory " + globalLibDir);
-		}
-
-		SystemProperties.set(PropsKeys.LIFERAY_LIB_GLOBAL_DIR, globalLibDir);
-
-		// Portal lib directory
-
-		ClassLoader classLoader = PropsUtil.class.getClassLoader();
-
-		String portalLibDir = WebDirDetector.getLibDir(classLoader);
-
-		String portalLibDirProperty = System.getProperty(
-			PropsKeys.LIFERAY_LIB_PORTAL_DIR);
-
-		if (portalLibDirProperty != null) {
-			if (!portalLibDirProperty.endsWith(StringPool.SLASH)) {
-				portalLibDirProperty += StringPool.SLASH;
-			}
-
-			portalLibDir = portalLibDirProperty;
-		}
-
-		if (_log.isInfoEnabled()) {
-			_log.info("Portal lib directory " + portalLibDir);
-		}
-
-		SystemProperties.set(PropsKeys.LIFERAY_LIB_PORTAL_DIR, portalLibDir);
-
-		// Portal shielded container lib directory
-
-		String portalShieldedContainerLibDirProperty = System.getProperty(
-			PropsKeys.LIFERAY_SHIELDED_CONTAINER_LIB_PORTAL_DIR);
-
-		if (portalShieldedContainerLibDirProperty == null) {
-			portalShieldedContainerLibDirProperty = portalLibDir;
-		}
-
-		SystemProperties.set(
-			PropsKeys.LIFERAY_SHIELDED_CONTAINER_LIB_PORTAL_DIR,
-			portalShieldedContainerLibDirProperty);
-
-		// Portal web directory
-
-		String portalWebDir = WebDirDetector.getRootDir(portalLibDir);
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Portal web directory " + portalWebDir);
-		}
-
-		SystemProperties.set(PropsKeys.LIFERAY_WEB_PORTAL_DIR, portalWebDir);
 
 		// Liferay home directory
 

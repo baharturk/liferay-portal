@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.dto.v1_0;
@@ -162,6 +153,128 @@ public class PageSectionDefinition implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BackgroundImage backgroundImage;
 
+	@Schema(description = "Defines the content visibility of the container.")
+	public String getContentVisibility() {
+		return contentVisibility;
+	}
+
+	public void setContentVisibility(String contentVisibility) {
+		this.contentVisibility = contentVisibility;
+	}
+
+	@JsonIgnore
+	public void setContentVisibility(
+		UnsafeSupplier<String, Exception> contentVisibilityUnsafeSupplier) {
+
+		try {
+			contentVisibility = contentVisibilityUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField(
+		description = "Defines the content visibility of the container."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String contentVisibility;
+
+	@Schema(
+		description = "A list of CSS Classes that are applied to the element."
+	)
+	public String[] getCssClasses() {
+		return cssClasses;
+	}
+
+	public void setCssClasses(String[] cssClasses) {
+		this.cssClasses = cssClasses;
+	}
+
+	@JsonIgnore
+	public void setCssClasses(
+		UnsafeSupplier<String[], Exception> cssClassesUnsafeSupplier) {
+
+		try {
+			cssClasses = cssClassesUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField(
+		description = "A list of CSS Classes that are applied to the element."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String[] cssClasses;
+
+	@Schema(description = "Custom CSS that is applied on the fragment.")
+	public String getCustomCSS() {
+		return customCSS;
+	}
+
+	public void setCustomCSS(String customCSS) {
+		this.customCSS = customCSS;
+	}
+
+	@JsonIgnore
+	public void setCustomCSS(
+		UnsafeSupplier<String, Exception> customCSSUnsafeSupplier) {
+
+		try {
+			customCSS = customCSSUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField(description = "Custom CSS that is applied on the fragment.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String customCSS;
+
+	@Schema(description = "The custom CSS viewports of the page collection.")
+	@Valid
+	public CustomCSSViewport[] getCustomCSSViewports() {
+		return customCSSViewports;
+	}
+
+	public void setCustomCSSViewports(CustomCSSViewport[] customCSSViewports) {
+		this.customCSSViewports = customCSSViewports;
+	}
+
+	@JsonIgnore
+	public void setCustomCSSViewports(
+		UnsafeSupplier<CustomCSSViewport[], Exception>
+			customCSSViewportsUnsafeSupplier) {
+
+		try {
+			customCSSViewports = customCSSViewportsUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField(
+		description = "The custom CSS viewports of the page collection."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected CustomCSSViewport[] customCSSViewports;
+
 	@Schema(description = "The fragment link of the page section.")
 	@Valid
 	public FragmentLink getFragmentLink() {
@@ -252,6 +365,68 @@ public class PageSectionDefinition implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentViewport[] fragmentViewports;
 
+	@Schema(description = "The page section's html properties")
+	@Valid
+	public HtmlProperties getHtmlProperties() {
+		return htmlProperties;
+	}
+
+	public void setHtmlProperties(HtmlProperties htmlProperties) {
+		this.htmlProperties = htmlProperties;
+	}
+
+	@JsonIgnore
+	public void setHtmlProperties(
+		UnsafeSupplier<HtmlProperties, Exception>
+			htmlPropertiesUnsafeSupplier) {
+
+		try {
+			htmlProperties = htmlPropertiesUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField(description = "The page section's html properties")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected HtmlProperties htmlProperties;
+
+	@Schema(
+		description = "A flag that indicates whether the page section is indexed or not."
+	)
+	public Boolean getIndexed() {
+		return indexed;
+	}
+
+	public void setIndexed(Boolean indexed) {
+		this.indexed = indexed;
+	}
+
+	@JsonIgnore
+	public void setIndexed(
+		UnsafeSupplier<Boolean, Exception> indexedUnsafeSupplier) {
+
+		try {
+			indexed = indexedUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField(
+		description = "A flag that indicates whether the page section is indexed or not."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean indexed;
+
 	@Schema(description = "the page section's layout.")
 	@Valid
 	public Layout getLayout() {
@@ -280,6 +455,32 @@ public class PageSectionDefinition implements Serializable {
 	@GraphQLField(description = "the page section's layout.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Layout layout;
+
+	@Schema(description = "The custom name of a Page section.")
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	@JsonIgnore
+	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
+		try {
+			name = nameUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField(description = "The custom name of a Page section.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String name;
 
 	@Override
 	public boolean equals(Object object) {
@@ -343,6 +544,78 @@ public class PageSectionDefinition implements Serializable {
 			sb.append(String.valueOf(backgroundImage));
 		}
 
+		if (contentVisibility != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"contentVisibility\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(contentVisibility));
+
+			sb.append("\"");
+		}
+
+		if (cssClasses != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"cssClasses\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < cssClasses.length; i++) {
+				sb.append("\"");
+
+				sb.append(_escape(cssClasses[i]));
+
+				sb.append("\"");
+
+				if ((i + 1) < cssClasses.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		if (customCSS != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"customCSS\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(customCSS));
+
+			sb.append("\"");
+		}
+
+		if (customCSSViewports != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"customCSSViewports\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < customCSSViewports.length; i++) {
+				sb.append(String.valueOf(customCSSViewports[i]));
+
+				if ((i + 1) < customCSSViewports.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
 		if (fragmentLink != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -383,6 +656,26 @@ public class PageSectionDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		if (htmlProperties != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"htmlProperties\": ");
+
+			sb.append(String.valueOf(htmlProperties));
+		}
+
+		if (indexed != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"indexed\": ");
+
+			sb.append(indexed);
+		}
+
 		if (layout != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -391,6 +684,20 @@ public class PageSectionDefinition implements Serializable {
 			sb.append("\"layout\": ");
 
 			sb.append(String.valueOf(layout));
+		}
+
+		if (name != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"name\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(name));
+
+			sb.append("\"");
 		}
 
 		sb.append("}");
@@ -487,5 +794,7 @@ public class PageSectionDefinition implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

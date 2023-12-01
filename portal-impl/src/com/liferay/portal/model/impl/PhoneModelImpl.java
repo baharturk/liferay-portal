@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -25,7 +16,6 @@ import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.Phone;
 import com.liferay.portal.kernel.model.PhoneModel;
-import com.liferay.portal.kernel.model.PhoneSoap;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -39,18 +29,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -78,13 +65,14 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 	public static final String TABLE_NAME = "Phone";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"uuid_", Types.VARCHAR},
-		{"phoneId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"classNameId", Types.BIGINT}, {"classPK", Types.BIGINT},
-		{"number_", Types.VARCHAR}, {"extension", Types.VARCHAR},
-		{"typeId", Types.BIGINT}, {"primary_", Types.BOOLEAN}
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"uuid_", Types.VARCHAR}, {"phoneId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"classNameId", Types.BIGINT},
+		{"classPK", Types.BIGINT}, {"number_", Types.VARCHAR},
+		{"extension", Types.VARCHAR}, {"listTypeId", Types.BIGINT},
+		{"primary_", Types.BOOLEAN}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -92,6 +80,7 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("phoneId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -103,12 +92,12 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 		TABLE_COLUMNS_MAP.put("classPK", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("number_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("extension", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("typeId", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("listTypeId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("primary_", Types.BOOLEAN);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table Phone (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,phoneId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,classNameId LONG,classPK LONG,number_ VARCHAR(75) null,extension VARCHAR(75) null,typeId LONG,primary_ BOOLEAN)";
+		"create table Phone (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,phoneId LONG not null,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,classNameId LONG,classPK LONG,number_ VARCHAR(75) null,extension VARCHAR(75) null,listTypeId LONG,primary_ BOOLEAN,primary key (phoneId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table Phone";
 
@@ -182,61 +171,6 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 	 */
 	@Deprecated
 	public static final long CREATEDATE_COLUMN_BITMASK = 64L;
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static Phone toModel(PhoneSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		Phone model = new PhoneImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setPhoneId(soapModel.getPhoneId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setNumber(soapModel.getNumber());
-		model.setExtension(soapModel.getExtension());
-		model.setTypeId(soapModel.getTypeId());
-		model.setPrimary(soapModel.isPrimary());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<Phone> toModels(PhoneSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<Phone> models = new ArrayList<Phone>(soapModels.length);
-
-		for (PhoneSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
@@ -313,100 +247,94 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 	}
 
 	public Map<String, Function<Phone, Object>> getAttributeGetterFunctions() {
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<Phone, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, Phone>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			Phone.class.getClassLoader(), Phone.class, ModelWrapper.class);
+		private static final Map<String, Function<Phone, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<Phone> constructor =
-				(Constructor<Phone>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<Phone, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<Phone, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("mvccVersion", Phone::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", Phone::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", Phone::getUuid);
+			attributeGetterFunctions.put("phoneId", Phone::getPhoneId);
+			attributeGetterFunctions.put("companyId", Phone::getCompanyId);
+			attributeGetterFunctions.put("userId", Phone::getUserId);
+			attributeGetterFunctions.put("userName", Phone::getUserName);
+			attributeGetterFunctions.put("createDate", Phone::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", Phone::getModifiedDate);
+			attributeGetterFunctions.put("classNameId", Phone::getClassNameId);
+			attributeGetterFunctions.put("classPK", Phone::getClassPK);
+			attributeGetterFunctions.put("number", Phone::getNumber);
+			attributeGetterFunctions.put("extension", Phone::getExtension);
+			attributeGetterFunctions.put("listTypeId", Phone::getListTypeId);
+			attributeGetterFunctions.put("primary", Phone::getPrimary);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<Phone, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<Phone, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<Phone, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<Phone, Object>>();
-		Map<String, BiConsumer<Phone, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<Phone, ?>>();
+		private static final Map<String, BiConsumer<Phone, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", Phone::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion", (BiConsumer<Phone, Long>)Phone::setMvccVersion);
-		attributeGetterFunctions.put("uuid", Phone::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<Phone, String>)Phone::setUuid);
-		attributeGetterFunctions.put("phoneId", Phone::getPhoneId);
-		attributeSetterBiConsumers.put(
-			"phoneId", (BiConsumer<Phone, Long>)Phone::setPhoneId);
-		attributeGetterFunctions.put("companyId", Phone::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<Phone, Long>)Phone::setCompanyId);
-		attributeGetterFunctions.put("userId", Phone::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<Phone, Long>)Phone::setUserId);
-		attributeGetterFunctions.put("userName", Phone::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<Phone, String>)Phone::setUserName);
-		attributeGetterFunctions.put("createDate", Phone::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<Phone, Date>)Phone::setCreateDate);
-		attributeGetterFunctions.put("modifiedDate", Phone::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate", (BiConsumer<Phone, Date>)Phone::setModifiedDate);
-		attributeGetterFunctions.put("classNameId", Phone::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId", (BiConsumer<Phone, Long>)Phone::setClassNameId);
-		attributeGetterFunctions.put("classPK", Phone::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK", (BiConsumer<Phone, Long>)Phone::setClassPK);
-		attributeGetterFunctions.put("number", Phone::getNumber);
-		attributeSetterBiConsumers.put(
-			"number", (BiConsumer<Phone, String>)Phone::setNumber);
-		attributeGetterFunctions.put("extension", Phone::getExtension);
-		attributeSetterBiConsumers.put(
-			"extension", (BiConsumer<Phone, String>)Phone::setExtension);
-		attributeGetterFunctions.put("typeId", Phone::getTypeId);
-		attributeSetterBiConsumers.put(
-			"typeId", (BiConsumer<Phone, Long>)Phone::setTypeId);
-		attributeGetterFunctions.put("primary", Phone::getPrimary);
-		attributeSetterBiConsumers.put(
-			"primary", (BiConsumer<Phone, Boolean>)Phone::setPrimary);
+		static {
+			Map<String, BiConsumer<Phone, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<Phone, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion", (BiConsumer<Phone, Long>)Phone::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<Phone, Long>)Phone::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<Phone, String>)Phone::setUuid);
+			attributeSetterBiConsumers.put(
+				"phoneId", (BiConsumer<Phone, Long>)Phone::setPhoneId);
+			attributeSetterBiConsumers.put(
+				"companyId", (BiConsumer<Phone, Long>)Phone::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<Phone, Long>)Phone::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName", (BiConsumer<Phone, String>)Phone::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate", (BiConsumer<Phone, Date>)Phone::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<Phone, Date>)Phone::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId", (BiConsumer<Phone, Long>)Phone::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK", (BiConsumer<Phone, Long>)Phone::setClassPK);
+			attributeSetterBiConsumers.put(
+				"number", (BiConsumer<Phone, String>)Phone::setNumber);
+			attributeSetterBiConsumers.put(
+				"extension", (BiConsumer<Phone, String>)Phone::setExtension);
+			attributeSetterBiConsumers.put(
+				"listTypeId", (BiConsumer<Phone, Long>)Phone::setListTypeId);
+			attributeSetterBiConsumers.put(
+				"primary", (BiConsumer<Phone, Boolean>)Phone::setPrimary);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -422,6 +350,21 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -700,17 +643,17 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 
 	@JSON
 	@Override
-	public long getTypeId() {
-		return _typeId;
+	public long getListTypeId() {
+		return _listTypeId;
 	}
 
 	@Override
-	public void setTypeId(long typeId) {
+	public void setListTypeId(long listTypeId) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_typeId = typeId;
+		_listTypeId = listTypeId;
 	}
 
 	@JSON
@@ -807,6 +750,7 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 		PhoneImpl phoneImpl = new PhoneImpl();
 
 		phoneImpl.setMvccVersion(getMvccVersion());
+		phoneImpl.setCtCollectionId(getCtCollectionId());
 		phoneImpl.setUuid(getUuid());
 		phoneImpl.setPhoneId(getPhoneId());
 		phoneImpl.setCompanyId(getCompanyId());
@@ -818,7 +762,7 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 		phoneImpl.setClassPK(getClassPK());
 		phoneImpl.setNumber(getNumber());
 		phoneImpl.setExtension(getExtension());
-		phoneImpl.setTypeId(getTypeId());
+		phoneImpl.setListTypeId(getListTypeId());
 		phoneImpl.setPrimary(isPrimary());
 
 		phoneImpl.resetOriginalValues();
@@ -832,6 +776,8 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 
 		phoneImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		phoneImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		phoneImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
 		phoneImpl.setPhoneId(this.<Long>getColumnOriginalValue("phoneId"));
 		phoneImpl.setCompanyId(this.<Long>getColumnOriginalValue("companyId"));
@@ -847,7 +793,8 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 		phoneImpl.setNumber(this.<String>getColumnOriginalValue("number_"));
 		phoneImpl.setExtension(
 			this.<String>getColumnOriginalValue("extension"));
-		phoneImpl.setTypeId(this.<Long>getColumnOriginalValue("typeId"));
+		phoneImpl.setListTypeId(
+			this.<Long>getColumnOriginalValue("listTypeId"));
 		phoneImpl.setPrimary(this.<Boolean>getColumnOriginalValue("primary_"));
 
 		return phoneImpl;
@@ -926,6 +873,8 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 
 		phoneCacheModel.mvccVersion = getMvccVersion();
 
+		phoneCacheModel.ctCollectionId = getCtCollectionId();
+
 		phoneCacheModel.uuid = getUuid();
 
 		String uuid = phoneCacheModel.uuid;
@@ -986,7 +935,7 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 			phoneCacheModel.extension = null;
 		}
 
-		phoneCacheModel.typeId = getTypeId();
+		phoneCacheModel.listTypeId = getListTypeId();
 
 		phoneCacheModel.primary = isPrimary();
 
@@ -1041,44 +990,17 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<Phone, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<Phone, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<Phone, Object> attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((Phone)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, Phone>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					Phone.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private long _phoneId;
 	private long _companyId;
@@ -1091,14 +1013,15 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 	private long _classPK;
 	private String _number;
 	private String _extension;
-	private long _typeId;
+	private long _listTypeId;
 	private boolean _primary;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<Phone, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<Phone, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1124,6 +1047,7 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put("phoneId", _phoneId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1135,7 +1059,7 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 		_columnOriginalValues.put("classPK", _classPK);
 		_columnOriginalValues.put("number_", _number);
 		_columnOriginalValues.put("extension", _extension);
-		_columnOriginalValues.put("typeId", _typeId);
+		_columnOriginalValues.put("listTypeId", _listTypeId);
 		_columnOriginalValues.put("primary_", _primary);
 	}
 
@@ -1164,31 +1088,33 @@ public class PhoneModelImpl extends BaseModelImpl<Phone> implements PhoneModel {
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("uuid_", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("phoneId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("phoneId", 8L);
 
-		columnBitmasks.put("userId", 16L);
+		columnBitmasks.put("companyId", 16L);
 
-		columnBitmasks.put("userName", 32L);
+		columnBitmasks.put("userId", 32L);
 
-		columnBitmasks.put("createDate", 64L);
+		columnBitmasks.put("userName", 64L);
 
-		columnBitmasks.put("modifiedDate", 128L);
+		columnBitmasks.put("createDate", 128L);
 
-		columnBitmasks.put("classNameId", 256L);
+		columnBitmasks.put("modifiedDate", 256L);
 
-		columnBitmasks.put("classPK", 512L);
+		columnBitmasks.put("classNameId", 512L);
 
-		columnBitmasks.put("number_", 1024L);
+		columnBitmasks.put("classPK", 1024L);
 
-		columnBitmasks.put("extension", 2048L);
+		columnBitmasks.put("number_", 2048L);
 
-		columnBitmasks.put("typeId", 4096L);
+		columnBitmasks.put("extension", 4096L);
 
-		columnBitmasks.put("primary_", 8192L);
+		columnBitmasks.put("listTypeId", 8192L);
+
+		columnBitmasks.put("primary_", 16384L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

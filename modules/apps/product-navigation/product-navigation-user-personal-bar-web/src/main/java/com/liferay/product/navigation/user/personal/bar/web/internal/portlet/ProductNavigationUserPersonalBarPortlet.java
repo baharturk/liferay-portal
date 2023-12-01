@@ -1,21 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.product.navigation.user.personal.bar.web.internal.portlet;
 
-import com.liferay.application.list.PanelAppRegistry;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserNotificationDeliveryConstants;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
@@ -57,7 +46,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.view-template=/view.jsp",
 		"javax.portlet.name=" + ProductNavigationUserPersonalBarPortletKeys.PRODUCT_NAVIGATION_USER_PERSONAL_BAR,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"javax.portlet.security-role-ref=power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -73,7 +63,7 @@ public class ProductNavigationUserPersonalBarPortlet extends MVCPortlet {
 
 		User user = themeDisplay.getUser();
 
-		if (!user.isDefaultUser()) {
+		if (!user.isGuestUser()) {
 			renderRequest.setAttribute(
 				ProductNavigationUserPersonalBarWebKeys.NOTIFICATIONS_COUNT,
 				_getNotificationsCount(themeDisplay));
@@ -86,18 +76,6 @@ public class ProductNavigationUserPersonalBarPortlet extends MVCPortlet {
 		super.doDispatch(renderRequest, renderResponse);
 	}
 
-	@Reference(unbind = "-")
-	protected void setPanelAppRegistry(PanelAppRegistry panelAppRegistry) {
-		_panelAppRegistry = panelAppRegistry;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPanelCategoryRegistry(
-		PanelCategoryRegistry panelCategoryRegistry) {
-
-		_panelCategoryRegistry = panelCategoryRegistry;
-	}
-
 	private int _getNotificationsCount(ThemeDisplay themeDisplay) {
 		if (_userNotificationEventLocalService == null) {
 			return 0;
@@ -108,9 +86,6 @@ public class ProductNavigationUserPersonalBarPortlet extends MVCPortlet {
 				themeDisplay.getUserId(),
 				UserNotificationDeliveryConstants.TYPE_WEBSITE, true, false);
 	}
-
-	private PanelAppRegistry _panelAppRegistry;
-	private PanelCategoryRegistry _panelCategoryRegistry;
 
 	@Reference
 	private Portal _portal;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.internal.search;
@@ -47,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Eudaldo Alonso
  */
-@Component(immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class WikiNodeIndexer extends BaseIndexer<WikiNode> {
 
 	public static final String CLASS_NAME = WikiNode.class.getName();
@@ -132,16 +123,7 @@ public class WikiNodeIndexer extends BaseIndexer<WikiNode> {
 			return;
 		}
 
-		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), wikiNode.getCompanyId(), document,
-			isCommitImmediately());
-	}
-
-	@Reference(unbind = "-")
-	protected void setWikiNodeLocalService(
-		WikiNodeLocalService wikiNodeLocalService) {
-
-		_wikiNodeLocalService = wikiNodeLocalService;
+		_indexWriterHelper.updateDocument(wikiNode.getCompanyId(), document);
 	}
 
 	@Reference
@@ -149,8 +131,8 @@ public class WikiNodeIndexer extends BaseIndexer<WikiNode> {
 
 	private void _deleteDocument(WikiNode wikiNode) throws Exception {
 		_indexWriterHelper.deleteDocument(
-			getSearchEngineId(), wikiNode.getCompanyId(),
-			uidFactory.getUID(wikiNode), isCommitImmediately());
+			wikiNode.getCompanyId(), uidFactory.getUID(wikiNode),
+			isCommitImmediately());
 	}
 
 	private void _reindexEntries(long companyId) throws Exception {
@@ -179,7 +161,6 @@ public class WikiNodeIndexer extends BaseIndexer<WikiNode> {
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}
@@ -193,6 +174,7 @@ public class WikiNodeIndexer extends BaseIndexer<WikiNode> {
 	@Reference
 	private TrashHelper _trashHelper;
 
+	@Reference
 	private WikiNodeLocalService _wikiNodeLocalService;
 
 	@Reference(target = "(model.class.name=com.liferay.wiki.model.WikiNode)")

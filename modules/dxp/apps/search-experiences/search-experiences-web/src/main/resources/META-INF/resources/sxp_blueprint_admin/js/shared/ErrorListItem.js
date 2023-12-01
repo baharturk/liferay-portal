@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
@@ -15,14 +9,7 @@ import ClayLayout from '@clayui/layout';
 import getCN from 'classnames';
 import React, {useState} from 'react';
 
-const ERROR_OMIT_KEYS = [
-	'className',
-	'sxpElementId',
-	'localizedMessage',
-	'msg',
-	'throwable',
-	'severity',
-];
+import {TEST_IDS} from '../utils/testIds';
 
 const CONFIGURATION_FIELD_NAME = {
 	advanced_configuration: Liferay.Language.get('advanced-configuration'),
@@ -37,6 +24,17 @@ const CONFIGURATION_FIELD_NAME = {
 	uiConfigurationJSON: Liferay.Language.get('ui-configuration'),
 };
 
+// `error` object properties that should not be displayed.
+
+const ERROR_OMIT_KEYS = [
+	'className',
+	'sxpElementId',
+	'localizedMessage',
+	'msg',
+	'throwable',
+	'severity',
+];
+
 // Types from search-experiences-blueprints-api/src/main/java/com/liferay/search/experiences/blueprints/message/Severity.java
 
 const SEVERITY_DISPLAY_TYPE = {
@@ -45,29 +43,47 @@ const SEVERITY_DISPLAY_TYPE = {
 	WARN: 'warning',
 };
 
-const getConfigurationFieldName = (rootProperty) => {
+/**
+ * Gets the user-friendly field name for the given JSON property key.
+ *
+ * For example:
+ * getConfigurationFieldName('advanced_configuration')
+ * => 'Advanced Configuration'
+ *
+ * @param {string} rootProperty The blueprint configuration JSON property key.
+ * @returns {string}
+ */
+function getConfigurationFieldName(rootProperty) {
 	const configName = Object.keys(CONFIGURATION_FIELD_NAME).find((key) =>
 		rootProperty?.includes(key)
 	);
 
 	return configName ? CONFIGURATION_FIELD_NAME[configName] : '';
-};
+}
 
-const prettyPrint = (value) => {
+function getTextCSSClass(severity) {
+	return 'text-' + (SEVERITY_DISPLAY_TYPE[severity] || 'danger');
+}
+
+function prettyPrint(value) {
 	return JSON.stringify(value, null, 2);
-};
+}
 
-function ErrorListItem({item, onFocusSXPElement}) {
+/**
+ * Displays an alert depending on the `error` object properties.
+ * Used in the preview sidebar.
+ */
+function ErrorListItem({error, onFocusSXPElement}) {
 	const [collapse, setCollapse] = useState(true);
 
 	const _getDescription = () => {
 		const configurationFieldName = getConfigurationFieldName(
-			item.rootProperty
+			error.rootProperty
 		);
 
 		return configurationFieldName
-			? `${item.msg} (${configurationFieldName})`
-			: item.msg;
+			? `${error.msg} (${configurationFieldName})`
+			: error.msg;
 	};
 
 	const _handleCollapse = () => {
@@ -75,12 +91,12 @@ function ErrorListItem({item, onFocusSXPElement}) {
 	};
 
 	const _handleFocusSXPElement = () => {
-		onFocusSXPElement(item.sxpElementId);
+		onFocusSXPElement(error.sxpElementId);
 	};
 
 	const _isCollapsible = () => {
-		return Object.keys(item).some(
-			(property) => !ERROR_OMIT_KEYS.includes(property)
+		return Object.keys(error).some(
+			(property) => error[property] && !ERROR_OMIT_KEYS.includes(property)
 		);
 	};
 
@@ -89,19 +105,20 @@ function ErrorListItem({item, onFocusSXPElement}) {
 			className={getCN('error-list-item', {
 				collapsible: _isCollapsible(),
 			})}
-			displayType={SEVERITY_DISPLAY_TYPE[item.severity] || 'danger'}
+			data-testid={TEST_IDS.ERROR_LIST_ITEM}
+			displayType={SEVERITY_DISPLAY_TYPE[error.severity] || 'danger'}
 		>
 			<span className="message" onClick={_handleCollapse}>
 				<span className="title">
-					{item.localizedMessage || Liferay.Language.get('error')}
+					{error.localizedMessage || Liferay.Language.get('error')}
 				</span>
 
-				{item.msg && (
+				{error.msg && (
 					<span className="description">{_getDescription()}</span>
 				)}
 			</span>
 
-			{!!item.sxpElementId && (
+			{!!error.sxpElementId && (
 				<div className="scroll-button">
 					<ClayButton alert onClick={_handleFocusSXPElement} small>
 						{Liferay.Language.get('view-element')}
@@ -111,8 +128,16 @@ function ErrorListItem({item, onFocusSXPElement}) {
 
 			{_isCollapsible() && (
 				<ClayButtonWithIcon
+					aria-label={
+						collapse
+							? Liferay.Language.get('expand')
+							: Liferay.Language.get('collapse')
+					}
 					borderless
-					className="collapse-button text-danger"
+					className={getCN(
+						'collapse-button',
+						getTextCSSClass(error.severity)
+					)}
 					displayType="unstyled"
 					onClick={_handleCollapse}
 					small
@@ -122,8 +147,9 @@ function ErrorListItem({item, onFocusSXPElement}) {
 
 			{!collapse && _isCollapsible() && (
 				<ClayAlert.Footer>
-					{Object.keys(item).map(
+					{Object.keys(error).map(
 						(property) =>
+							error[property] &&
 							!ERROR_OMIT_KEYS.includes(property) && (
 								<ClayLayout.Row justify="start" key={property}>
 									<ClayLayout.Col
@@ -134,10 +160,14 @@ function ErrorListItem({item, onFocusSXPElement}) {
 									</ClayLayout.Col>
 
 									<ClayLayout.Col size={9}>
-										<code>
-											{typeof item[property] === 'object'
-												? prettyPrint(item[property])
-												: item[property]}
+										<code
+											className={getTextCSSClass(
+												error.severity
+											)}
+										>
+											{typeof error[property] === 'object'
+												? prettyPrint(error[property])
+												: error[property]}
 										</code>
 									</ClayLayout.Col>
 								</ClayLayout.Row>

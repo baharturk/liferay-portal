@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.grouped.model.impl;
 
 import com.liferay.commerce.product.type.grouped.model.CPDefinitionGroupedEntry;
 import com.liferay.commerce.product.type.grouped.model.CPDefinitionGroupedEntryModel;
-import com.liferay.commerce.product.type.grouped.model.CPDefinitionGroupedEntrySoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -125,24 +112,6 @@ public class CPDefinitionGroupedEntryModelImpl
 	public static final String TX_MANAGER = "liferayTransactionManager";
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
@@ -180,68 +149,18 @@ public class CPDefinitionGroupedEntryModelImpl
 	public static final long PRIORITY_COLUMN_BITMASK = 32L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CPDefinitionGroupedEntry toModel(
-		CPDefinitionGroupedEntrySoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		CPDefinitionGroupedEntry model = new CPDefinitionGroupedEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setCPDefinitionGroupedEntryId(
-			soapModel.getCPDefinitionGroupedEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setCPDefinitionId(soapModel.getCPDefinitionId());
-		model.setEntryCProductId(soapModel.getEntryCProductId());
-		model.setPriority(soapModel.getPriority());
-		model.setQuantity(soapModel.getQuantity());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CPDefinitionGroupedEntry> toModels(
-		CPDefinitionGroupedEntrySoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CPDefinitionGroupedEntry> models =
-			new ArrayList<CPDefinitionGroupedEntry>(soapModels.length);
-
-		for (CPDefinitionGroupedEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.product.type.grouped.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.product.type.grouped.model.CPDefinitionGroupedEntry"));
 
 	public CPDefinitionGroupedEntryModelImpl() {
 	}
@@ -320,142 +239,131 @@ public class CPDefinitionGroupedEntryModelImpl
 	public Map<String, Function<CPDefinitionGroupedEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CPDefinitionGroupedEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CPDefinitionGroupedEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CPDefinitionGroupedEntry.class.getClassLoader(),
-			CPDefinitionGroupedEntry.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<CPDefinitionGroupedEntry, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<CPDefinitionGroupedEntry> constructor =
-				(Constructor<CPDefinitionGroupedEntry>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<CPDefinitionGroupedEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<CPDefinitionGroupedEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CPDefinitionGroupedEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"uuid", CPDefinitionGroupedEntry::getUuid);
+			attributeGetterFunctions.put(
+				"CPDefinitionGroupedEntryId",
+				CPDefinitionGroupedEntry::getCPDefinitionGroupedEntryId);
+			attributeGetterFunctions.put(
+				"groupId", CPDefinitionGroupedEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", CPDefinitionGroupedEntry::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CPDefinitionGroupedEntry::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CPDefinitionGroupedEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CPDefinitionGroupedEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CPDefinitionGroupedEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"CPDefinitionId", CPDefinitionGroupedEntry::getCPDefinitionId);
+			attributeGetterFunctions.put(
+				"entryCProductId",
+				CPDefinitionGroupedEntry::getEntryCProductId);
+			attributeGetterFunctions.put(
+				"priority", CPDefinitionGroupedEntry::getPriority);
+			attributeGetterFunctions.put(
+				"quantity", CPDefinitionGroupedEntry::getQuantity);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CPDefinitionGroupedEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<CPDefinitionGroupedEntry, Object>>
-			_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CPDefinitionGroupedEntry, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<CPDefinitionGroupedEntry, Object>>();
-		Map<String, BiConsumer<CPDefinitionGroupedEntry, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<CPDefinitionGroupedEntry, ?>>();
+		private static final Map
+			<String, BiConsumer<CPDefinitionGroupedEntry, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", CPDefinitionGroupedEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CPDefinitionGroupedEntry, Long>)
-				CPDefinitionGroupedEntry::setMvccVersion);
-		attributeGetterFunctions.put("uuid", CPDefinitionGroupedEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<CPDefinitionGroupedEntry, String>)
-				CPDefinitionGroupedEntry::setUuid);
-		attributeGetterFunctions.put(
-			"CPDefinitionGroupedEntryId",
-			CPDefinitionGroupedEntry::getCPDefinitionGroupedEntryId);
-		attributeSetterBiConsumers.put(
-			"CPDefinitionGroupedEntryId",
-			(BiConsumer<CPDefinitionGroupedEntry, Long>)
-				CPDefinitionGroupedEntry::setCPDefinitionGroupedEntryId);
-		attributeGetterFunctions.put(
-			"groupId", CPDefinitionGroupedEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<CPDefinitionGroupedEntry, Long>)
-				CPDefinitionGroupedEntry::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", CPDefinitionGroupedEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CPDefinitionGroupedEntry, Long>)
-				CPDefinitionGroupedEntry::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", CPDefinitionGroupedEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CPDefinitionGroupedEntry, Long>)
-				CPDefinitionGroupedEntry::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CPDefinitionGroupedEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CPDefinitionGroupedEntry, String>)
-				CPDefinitionGroupedEntry::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CPDefinitionGroupedEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CPDefinitionGroupedEntry, Date>)
-				CPDefinitionGroupedEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CPDefinitionGroupedEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CPDefinitionGroupedEntry, Date>)
-				CPDefinitionGroupedEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"CPDefinitionId", CPDefinitionGroupedEntry::getCPDefinitionId);
-		attributeSetterBiConsumers.put(
-			"CPDefinitionId",
-			(BiConsumer<CPDefinitionGroupedEntry, Long>)
-				CPDefinitionGroupedEntry::setCPDefinitionId);
-		attributeGetterFunctions.put(
-			"entryCProductId", CPDefinitionGroupedEntry::getEntryCProductId);
-		attributeSetterBiConsumers.put(
-			"entryCProductId",
-			(BiConsumer<CPDefinitionGroupedEntry, Long>)
-				CPDefinitionGroupedEntry::setEntryCProductId);
-		attributeGetterFunctions.put(
-			"priority", CPDefinitionGroupedEntry::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<CPDefinitionGroupedEntry, Double>)
-				CPDefinitionGroupedEntry::setPriority);
-		attributeGetterFunctions.put(
-			"quantity", CPDefinitionGroupedEntry::getQuantity);
-		attributeSetterBiConsumers.put(
-			"quantity",
-			(BiConsumer<CPDefinitionGroupedEntry, Integer>)
-				CPDefinitionGroupedEntry::setQuantity);
+		static {
+			Map<String, BiConsumer<CPDefinitionGroupedEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CPDefinitionGroupedEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CPDefinitionGroupedEntry, Long>)
+					CPDefinitionGroupedEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<CPDefinitionGroupedEntry, String>)
+					CPDefinitionGroupedEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"CPDefinitionGroupedEntryId",
+				(BiConsumer<CPDefinitionGroupedEntry, Long>)
+					CPDefinitionGroupedEntry::setCPDefinitionGroupedEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CPDefinitionGroupedEntry, Long>)
+					CPDefinitionGroupedEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CPDefinitionGroupedEntry, Long>)
+					CPDefinitionGroupedEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CPDefinitionGroupedEntry, Long>)
+					CPDefinitionGroupedEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CPDefinitionGroupedEntry, String>)
+					CPDefinitionGroupedEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CPDefinitionGroupedEntry, Date>)
+					CPDefinitionGroupedEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CPDefinitionGroupedEntry, Date>)
+					CPDefinitionGroupedEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"CPDefinitionId",
+				(BiConsumer<CPDefinitionGroupedEntry, Long>)
+					CPDefinitionGroupedEntry::setCPDefinitionId);
+			attributeSetterBiConsumers.put(
+				"entryCProductId",
+				(BiConsumer<CPDefinitionGroupedEntry, Long>)
+					CPDefinitionGroupedEntry::setEntryCProductId);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<CPDefinitionGroupedEntry, Double>)
+					CPDefinitionGroupedEntry::setPriority);
+			attributeSetterBiConsumers.put(
+				"quantity",
+				(BiConsumer<CPDefinitionGroupedEntry, Integer>)
+					CPDefinitionGroupedEntry::setQuantity);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -908,7 +816,7 @@ public class CPDefinitionGroupedEntryModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -917,7 +825,7 @@ public class CPDefinitionGroupedEntryModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -1043,44 +951,13 @@ public class CPDefinitionGroupedEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CPDefinitionGroupedEntry, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CPDefinitionGroupedEntry, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CPDefinitionGroupedEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((CPDefinitionGroupedEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, CPDefinitionGroupedEntry>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						CPDefinitionGroupedEntry.class, ModelWrapper.class);
 
 	}
 
@@ -1103,7 +980,8 @@ public class CPDefinitionGroupedEntryModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CPDefinitionGroupedEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

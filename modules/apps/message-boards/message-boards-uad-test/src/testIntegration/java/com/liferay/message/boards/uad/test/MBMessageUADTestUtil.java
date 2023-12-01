@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.uad.test;
@@ -20,7 +11,6 @@ import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.message.boards.service.MBMessageLocalService;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -44,13 +34,11 @@ public class MBMessageUADTestUtil {
 			MBMessageLocalService mbMessageLocalService, long userId)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				TestPropsValues.getGroupId());
-
 		MBCategory mbCategory = mbCategoryLocalService.addCategory(
 			userId, 0, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), serviceContext);
+			RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(
+				TestPropsValues.getGroupId()));
 
 		return addMBMessage(
 			mbMessageLocalService, userId, mbCategory.getCategoryId());
@@ -61,14 +49,12 @@ public class MBMessageUADTestUtil {
 			long mbCategoryId)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				TestPropsValues.getGroupId());
-
 		return mbMessageLocalService.addMessage(
 			userId, RandomTestUtil.randomString(), TestPropsValues.getGroupId(),
 			mbCategoryId, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), serviceContext);
+			RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(
+				TestPropsValues.getGroupId()));
 	}
 
 	public static MBMessage addMBMessage(
@@ -79,15 +65,13 @@ public class MBMessageUADTestUtil {
 		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
 			Collections.emptyList();
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				TestPropsValues.getGroupId());
-
 		return mbMessageLocalService.addMessage(
 			userId, RandomTestUtil.randomString(), TestPropsValues.getGroupId(),
 			mbCategoryId, mbThreadId, 0, RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), MBMessageConstants.DEFAULT_FORMAT,
-			inputStreamOVPs, false, 0.0, false, serviceContext);
+			inputStreamOVPs, false, 0.0, false,
+			ServiceContextTestUtil.getServiceContext(
+				TestPropsValues.getGroupId()));
 	}
 
 	public static MBMessage addMBMessageWithStatusByUserId(
@@ -99,13 +83,11 @@ public class MBMessageUADTestUtil {
 		MBMessage mbMessage = addMBMessage(
 			mbCategoryLocalService, mbMessageLocalService, userId);
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				TestPropsValues.getGroupId());
-
 		return mbMessageLocalService.updateStatus(
 			statusByUserId, mbMessage.getMessageId(),
-			WorkflowConstants.STATUS_APPROVED, serviceContext,
+			WorkflowConstants.STATUS_APPROVED,
+			ServiceContextTestUtil.getServiceContext(
+				TestPropsValues.getGroupId()),
 			HashMapBuilder.<String, Serializable>put(
 				WorkflowConstants.CONTEXT_URL, "http://localhost"
 			).build());

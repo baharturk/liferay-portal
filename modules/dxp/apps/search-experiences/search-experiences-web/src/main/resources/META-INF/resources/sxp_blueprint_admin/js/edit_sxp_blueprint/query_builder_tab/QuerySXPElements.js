@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -18,12 +12,14 @@ import React, {useState} from 'react';
 import JSONSXPElement from '../../shared/JSONSXPElement';
 import SXPElement from '../../shared/sxp_element/index';
 import {SXP_ELEMENT_PREFIX} from '../../utils/constants';
-import {isCustomJSONSXPElement} from '../../utils/utils';
+import {setStorageAddSXPElementSidebar} from '../../utils/sessionStorage';
+import isCustomJSONSXPElement from '../../utils/sxp_element/is_custom_json_sxp_element';
 
 function QuerySXPElements({
 	elementInstances,
 	entityJSON,
 	errors = [],
+	isIndexCompany,
 	isSubmitting,
 	indexFields,
 	onBlur,
@@ -36,6 +32,12 @@ function QuerySXPElements({
 	touched = [],
 }) {
 	const [collapseAll, setCollapseAll] = useState(false);
+
+	const _handleClickAddQueryElement = () => {
+		setStorageAddSXPElementSidebar();
+
+		onChangeAddSXPElementVisibility();
+	};
 
 	return (
 		<div className="query-sxp-elements">
@@ -64,9 +66,7 @@ function QuerySXPElements({
 								)}
 								displayType="primary"
 								monospaced
-								onClick={() =>
-									onChangeAddSXPElementVisibility()
-								}
+								onClick={_handleClickAddQueryElement}
 								small
 								title={Liferay.Language.get(
 									'add-query-element'
@@ -79,7 +79,7 @@ function QuerySXPElements({
 				</ClayLayout.Col>
 			</ClayLayout.Row>
 
-			{elementInstances.length === 0 ? (
+			{!elementInstances.length ? (
 				<div className="sheet">
 					<div className="selected-sxp-elements-empty-text">
 						{Liferay.Language.get(
@@ -114,6 +114,7 @@ function QuerySXPElements({
 								id={id}
 								index={index}
 								indexFields={indexFields}
+								isIndexCompany={isIndexCompany}
 								isSubmitting={isSubmitting}
 								key={id}
 								onBlur={onBlur}

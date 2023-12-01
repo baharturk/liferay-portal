@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.servlet.jsp.compiler.internal;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
@@ -32,7 +25,6 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashSet;
@@ -67,21 +59,22 @@ import org.apache.jasper.runtime.JspFactoryImpl;
 import org.apache.jasper.runtime.TagHandlerPool;
 
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleReference;
-import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.util.tracker.BundleTracker;
 
 /**
  * @author Raymond Augé
  */
 public class JspServlet extends HttpServlet {
+
+	public JspServlet(Set<String> fragmentHosts) {
+		_fragmentHosts = fragmentHosts;
+	}
 
 	@Override
 	public void destroy() {
@@ -153,19 +146,12 @@ public class JspServlet extends HttpServlet {
 			throw new IllegalStateException();
 		}
 
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		try {
-			currentThread.setContextClassLoader(classLoader);
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				classLoader)) {
 
 			JspFactory.setDefaultFactory(new JspFactoryImpl());
 
 			JspFactorySwapper.swap();
-		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
 		}
 
 		List<Bundle> bundles = new ArrayList<>();
@@ -216,45 +202,9 @@ public class JspServlet extends HttpServlet {
 			"saveBytecode", "true"
 		).build();
 
-		String symbolicName = _bundle.getSymbolicName();
-
-		BundleTracker<Bundle> bundleTracker = new BundleTracker(
-			_bundle.getBundleContext(), ~Bundle.UNINSTALLED, null) {
-
-			@Override
-			public Bundle addingBundle(Bundle bundle, BundleEvent bundleEvent) {
-				Dictionary<String, String> dictionary = bundle.getHeaders(
-					StringPool.BLANK);
-
-				String fragmentHost = dictionary.get(Constants.FRAGMENT_HOST);
-
-				if (fragmentHost != null) {
-					int index = fragmentHost.indexOf(StringPool.SEMICOLON);
-
-					if (index != -1) {
-						fragmentHost = fragmentHost.substring(0, index);
-					}
-
-					if (fragmentHost.equals(symbolicName)) {
-						Enumeration<URL> enumeration = bundle.findEntries(
-							"META-INF/resources", "*.jsp*", true);
-
-						if (enumeration != null) {
-							defaults.put("hasFragment", "true");
-
-							close();
-						}
-					}
-				}
-
-				return bundle;
-			}
-
-		};
-
-		bundleTracker.open();
-
-		bundleTracker.close();
+		if (_fragmentHosts.contains(_bundle.getSymbolicName())) {
+			defaults.put("hasFragment", "true");
+		}
 
 		defaults.put(
 			TagHandlerPool.OPTION_TAGPOOL, JspTagHandlerPool.class.getName());
@@ -327,12 +277,8 @@ public class JspServlet extends HttpServlet {
 			HttpServletResponse httpServletResponse)
 		throws IOException, ServletException {
 
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		try {
-			currentThread.setContextClassLoader(_jspBundleClassloader);
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				_jspBundleClassloader)) {
 
 			if (_logVerbosityLevelDebug) {
 				String path = (String)httpServletRequest.getAttribute(
@@ -362,9 +308,6 @@ public class JspServlet extends HttpServlet {
 			}
 
 			_jspServlet.service(httpServletRequest, httpServletResponse);
-		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
 		}
 	}
 
@@ -427,6 +370,7 @@ public class JspServlet extends HttpServlet {
 
 	private Bundle[] _allParticipatingBundles;
 	private Bundle _bundle;
+	private final Set<String> _fragmentHosts;
 	private JspBundleClassloader _jspBundleClassloader;
 	private final HttpServlet _jspServlet =
 		new org.apache.jasper.servlet.JspServlet();
@@ -691,7 +635,7 @@ public class JspServlet extends HttpServlet {
 			}
 			catch (MalformedURLException malformedURLException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(malformedURLException, malformedURLException);
+					_log.debug(malformedURLException);
 				}
 			}
 
@@ -711,7 +655,7 @@ public class JspServlet extends HttpServlet {
 			}
 			catch (IOException ioException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(ioException, ioException);
+					_log.debug(ioException);
 				}
 
 				return null;

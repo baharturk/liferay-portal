@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,6 +10,7 @@
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
 <%@ taglib uri="http://liferay.com/tld/aui" prefix="aui" %><%@
+taglib uri="http://liferay.com/tld/clay" prefix="clay" %><%@
 taglib uri="http://liferay.com/tld/ddm" prefix="liferay-ddm" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
 
@@ -27,8 +19,9 @@ page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %><%@
 page import="com.liferay.portal.search.web.internal.category.facet.configuration.CategoryFacetPortletInstanceConfiguration" %><%@
+page import="com.liferay.portal.search.web.internal.category.facet.portlet.CategoryFacetPortlet" %><%@
 page import="com.liferay.portal.search.web.internal.facet.display.context.AssetCategoriesSearchFacetDisplayContext" %><%@
-page import="com.liferay.portal.search.web.internal.facet.display.context.AssetCategoriesSearchFacetTermDisplayContext" %>
+page import="com.liferay.portal.search.web.internal.facet.display.context.BucketDisplayContext" %>
 
 <portlet:defineObjects />
 
@@ -47,13 +40,13 @@ CategoryFacetPortletInstanceConfiguration categoryFacetPortletInstanceConfigurat
 		<aui:input autocomplete="off" name="<%= HtmlUtil.escapeAttribute(assetCategoriesSearchFacetDisplayContext.getParameterName()) %>" type="hidden" value="<%= assetCategoriesSearchFacetDisplayContext.getParameterValue() %>" />
 	</c:when>
 	<c:otherwise>
-		<aui:form method="post" name="fm">
+		<aui:form action="#" method="post" name="fm">
 			<aui:input autocomplete="off" name="<%= HtmlUtil.escapeAttribute(assetCategoriesSearchFacetDisplayContext.getParameterName()) %>" type="hidden" value="<%= assetCategoriesSearchFacetDisplayContext.getParameterValue() %>" />
 			<aui:input cssClass="facet-parameter-name" name="facet-parameter-name" type="hidden" value="<%= assetCategoriesSearchFacetDisplayContext.getParameterName() %>" />
 			<aui:input cssClass="start-parameter-name" name="start-parameter-name" type="hidden" value="<%= assetCategoriesSearchFacetDisplayContext.getPaginationStartParameterName() %>" />
 
 			<liferay-ddm:template-renderer
-				className="<%= AssetCategoriesSearchFacetTermDisplayContext.class.getName() %>"
+				className="<%= CategoryFacetPortlet.class.getName() %>"
 				contextObjects='<%=
 					HashMapBuilder.<String, Object>put(
 						"assetCategoriesSearchFacetDisplayContext", assetCategoriesSearchFacetDisplayContext
@@ -63,7 +56,7 @@ CategoryFacetPortletInstanceConfiguration categoryFacetPortletInstanceConfigurat
 				%>'
 				displayStyle="<%= categoryFacetPortletInstanceConfiguration.displayStyle() %>"
 				displayStyleGroupId="<%= assetCategoriesSearchFacetDisplayContext.getDisplayStyleGroupId() %>"
-				entries="<%= assetCategoriesSearchFacetDisplayContext.getTermDisplayContexts() %>"
+				entries="<%= assetCategoriesSearchFacetDisplayContext.getBucketDisplayContexts() %>"
 			>
 				<liferay-ui:panel-container
 					extended="<%= true %>"
@@ -79,13 +72,24 @@ CategoryFacetPortletInstanceConfiguration categoryFacetPortletInstanceConfigurat
 						persistState="<%= true %>"
 						title="category"
 					>
-						<aui:fieldset>
+						<div class="panel-body">
+							<c:if test="<%= !assetCategoriesSearchFacetDisplayContext.isNothingSelected() %>">
+								<clay:button
+									cssClass="btn-unstyled c-mb-4 facet-clear-btn"
+									displayType="link"
+									id='<%= liferayPortletResponse.getNamespace() + "facetAssetCategoriesClear" %>'
+									onClick="Liferay.Search.FacetUtil.clearSelections(event);"
+								>
+									<strong><liferay-ui:message key="clear" /></strong>
+								</clay:button>
+							</c:if>
+
 							<ul class="list-unstyled">
 
 								<%
 								int i = 0;
 
-								for (AssetCategoriesSearchFacetTermDisplayContext assetCategoriesSearchFacetTermDisplayContext : assetCategoriesSearchFacetDisplayContext.getTermDisplayContexts()) {
+								for (BucketDisplayContext bucketDisplayContext : assetCategoriesSearchFacetDisplayContext.getBucketDisplayContexts()) {
 									i++;
 								%>
 
@@ -93,9 +97,9 @@ CategoryFacetPortletInstanceConfiguration categoryFacetPortletInstanceConfigurat
 										<div class="custom-checkbox custom-control">
 											<label class="facet-checkbox-label" for="<portlet:namespace />term_<%= i %>">
 												<input
-													<%= assetCategoriesSearchFacetTermDisplayContext.isSelected() ? "checked" : StringPool.BLANK %>
+													<%= bucketDisplayContext.isSelected() ? "checked" : StringPool.BLANK %>
 													class="custom-control-input facet-term"
-													data-term-id="<%= assetCategoriesSearchFacetTermDisplayContext.getAssetCategoryId() %>"
+													data-term-id="<%= bucketDisplayContext.getFilterValue() %>"
 													disabled
 													id="<portlet:namespace />term_<%= i %>"
 													name="<portlet:namespace />term_<%= i %>"
@@ -103,13 +107,22 @@ CategoryFacetPortletInstanceConfiguration categoryFacetPortletInstanceConfigurat
 													type="checkbox"
 												/>
 
-												<span class="custom-control-label term-name <%= assetCategoriesSearchFacetTermDisplayContext.isSelected() ? "facet-term-selected" : "facet-term-unselected" %>">
-													<span class="custom-control-label-text"><%= HtmlUtil.escape(assetCategoriesSearchFacetTermDisplayContext.getDisplayName()) %></span>
+												<span class="custom-control-label term-name <%= bucketDisplayContext.isSelected() ? "facet-term-selected" : "facet-term-unselected" %>">
+													<span class="custom-control-label-text">
+														<c:choose>
+															<c:when test="<%= bucketDisplayContext.isSelected() %>">
+																<strong><%= HtmlUtil.escape(bucketDisplayContext.getBucketText()) %></strong>
+															</c:when>
+															<c:otherwise>
+																<%= HtmlUtil.escape(bucketDisplayContext.getBucketText()) %>
+															</c:otherwise>
+														</c:choose>
+													</span>
 												</span>
 
-												<c:if test="<%= assetCategoriesSearchFacetTermDisplayContext.isFrequencyVisible() %>">
+												<c:if test="<%= bucketDisplayContext.isFrequencyVisible() %>">
 													<small class="term-count">
-														(<%= assetCategoriesSearchFacetTermDisplayContext.getFrequency() %>)
+														(<%= bucketDisplayContext.getFrequency() %>)
 													</small>
 												</c:if>
 											</label>
@@ -120,12 +133,7 @@ CategoryFacetPortletInstanceConfiguration categoryFacetPortletInstanceConfigurat
 								}
 								%>
 
-							</ul>
-						</aui:fieldset>
-
-						<c:if test="<%= !assetCategoriesSearchFacetDisplayContext.isNothingSelected() %>">
-							<aui:button cssClass="btn-link btn-unstyled facet-clear-btn" onClick="Liferay.Search.FacetUtil.clearSelections(event);" value="clear" />
-						</c:if>
+						</ul>
 					</liferay-ui:panel>
 				</liferay-ui:panel-container>
 			</liferay-ddm:template-renderer>

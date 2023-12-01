@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.moderation.internal.instance.lifecycle;
@@ -21,9 +12,9 @@ import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.workflow.WorkflowDefinitionManager;
+import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -36,7 +27,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eduardo García
  */
 @Component(
-	immediate = true, property = "service.ranking:Integer=100",
+	property = "service.ranking:Integer=100",
 	service = PortalInstanceLifecycleListener.class
 )
 public class AddMBModerationWorkflowDefinitionPortalInstanceLifecycleListener
@@ -53,7 +44,7 @@ public class AddMBModerationWorkflowDefinitionPortalInstanceLifecycleListener
 			return;
 		}
 
-		long defaultUserId = _userLocalService.getDefaultUserId(
+		long guestUserId = _userLocalService.getGuestUserId(
 			company.getCompanyId());
 
 		String content = StringUtil.read(
@@ -62,8 +53,8 @@ public class AddMBModerationWorkflowDefinitionPortalInstanceLifecycleListener
 			"dependencies/message-boards-moderation-workflow-definition.xml");
 
 		_workflowDefinitionManager.deployWorkflowDefinition(
-			company.getCompanyId(), defaultUserId,
-			LocalizationUtil.getXml(
+			company.getCompanyId(), guestUserId,
+			_localization.getXml(
 				_getTitleMap(company.getCompanyId()),
 				_language.getLanguageId(company.getLocale()), "title"),
 			MBModerationConstants.WORKFLOW_DEFINITION_NAME,
@@ -87,9 +78,12 @@ public class AddMBModerationWorkflowDefinitionPortalInstanceLifecycleListener
 	private Language _language;
 
 	@Reference
+	private Localization _localization;
+
+	@Reference
 	private UserLocalService _userLocalService;
 
-	@Reference(target = "(proxy.bean=false)")
+	@Reference
 	private WorkflowDefinitionManager _workflowDefinitionManager;
 
 }

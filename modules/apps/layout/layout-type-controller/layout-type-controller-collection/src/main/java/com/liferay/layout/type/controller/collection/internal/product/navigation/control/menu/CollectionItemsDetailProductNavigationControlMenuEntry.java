@@ -1,29 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.type.controller.collection.internal.product.navigation.control.menu;
 
 import com.liferay.asset.list.asset.entry.provider.AssetListAssetEntryProvider;
 import com.liferay.asset.list.service.AssetListEntryLocalService;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.layout.type.controller.collection.internal.constants.CollectionPageLayoutTypeControllerWebKeys;
 import com.liferay.layout.type.controller.collection.internal.display.context.CollectionItemsDetailDisplayContext;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.kernel.model.PortletPreferencesIds;
 import com.liferay.portal.kernel.portlet.InvokerPortlet;
 import com.liferay.portal.kernel.portlet.LiferayRenderRequest;
 import com.liferay.portal.kernel.portlet.LiferayRenderResponse;
@@ -65,7 +55,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
 	property = {
 		"product.navigation.control.menu.category.key=" + ProductNavigationControlMenuCategoryKeys.TOOLS,
 		"product.navigation.control.menu.entry.order:Integer=140"
@@ -104,7 +93,7 @@ public class CollectionItemsDetailProductNavigationControlMenuEntry
 				collectionItemsDetailDisplayContext =
 					new CollectionItemsDetailDisplayContext(
 						_assetListEntryLocalService,
-						_assetListAssetEntryProvider, _infoItemServiceTracker,
+						_assetListAssetEntryProvider, _infoItemServiceRegistry,
 						liferayRenderRequest, liferayRenderResponse,
 						themeDisplay);
 
@@ -150,12 +139,8 @@ public class CollectionItemsDetailProductNavigationControlMenuEntry
 	}
 
 	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.collection)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	private LiferayRenderRequest _createLiferayRenderRequest(
@@ -172,13 +157,10 @@ public class CollectionItemsDetailProductNavigationControlMenuEntry
 		InvokerPortlet invokerPortlet = PortletInstanceFactoryUtil.create(
 			portlet, servletContext);
 
-		PortletPreferencesIds portletPreferencesIds =
-			PortletPreferencesFactoryUtil.getPortletPreferencesIds(
-				httpServletRequest, portlet.getPortletId());
-
 		PortletPreferences portletPreferences =
 			_portletPreferencesLocalService.getStrictPreferences(
-				portletPreferencesIds);
+				PortletPreferencesFactoryUtil.getPortletPreferencesIds(
+					httpServletRequest, portlet.getPortletId()));
 
 		PortletConfig portletConfig = PortletConfigFactoryUtil.create(
 			portlet, servletContext);
@@ -223,12 +205,17 @@ public class CollectionItemsDetailProductNavigationControlMenuEntry
 	private AssetListEntryLocalService _assetListEntryLocalService;
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Reference
 	private PortletLocalService _portletLocalService;
 
 	@Reference
 	private PortletPreferencesLocalService _portletPreferencesLocalService;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.collection)"
+	)
+	private ServletContext _servletContext;
 
 }

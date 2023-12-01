@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -52,14 +43,14 @@ EditSiteTeamAssignmentsUsersDisplayContext editSiteTeamAssignmentsUsersDisplayCo
 				<c:when test='<%= Objects.equals(editSiteTeamAssignmentsUsersDisplayContext.getDisplayStyle(), "icon") %>'>
 					<liferay-ui:search-container-column-text>
 						<clay:user-card
+							propsTransformer="js/UserDropdownDefaultPropsTransformer"
 							userCard="<%= new UserUserCard(user2, editSiteTeamAssignmentsUsersDisplayContext.getTeamId(), renderRequest, renderResponse, searchContainer.getRowChecker()) %>"
-							userColorClass='<%= "sticker-user-icon " + LexiconUtil.getUserColorCssClass(user2) %>'
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>
 				<c:when test='<%= Objects.equals(editSiteTeamAssignmentsUsersDisplayContext.getDisplayStyle(), "descriptive") %>'>
 					<liferay-ui:search-container-column-text>
-						<liferay-ui:user-portrait
+						<liferay-user:user-portrait
 							userId="<%= user2.getUserId() %>"
 						/>
 					</liferay-ui:search-container-column-text>
@@ -81,6 +72,7 @@ EditSiteTeamAssignmentsUsersDisplayContext editSiteTeamAssignmentsUsersDisplayCo
 						%>
 
 						<clay:dropdown-actions
+							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= userActionDropdownItemsProvider.getActionDropdownItems() %>"
 							propsTransformer="js/UserDropdownDefaultPropsTransformer"
 						/>
@@ -106,6 +98,7 @@ EditSiteTeamAssignmentsUsersDisplayContext editSiteTeamAssignmentsUsersDisplayCo
 						%>
 
 						<clay:dropdown-actions
+							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= userActionDropdownItemsProvider.getActionDropdownItems() %>"
 							propsTransformer="js/UserDropdownDefaultPropsTransformer"
 						/>

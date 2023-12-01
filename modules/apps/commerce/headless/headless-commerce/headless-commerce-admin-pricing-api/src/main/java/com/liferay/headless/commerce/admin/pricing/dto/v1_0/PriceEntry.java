@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.dto.v1_0;
@@ -92,7 +83,7 @@ public class PriceEntry implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, ?> customFields;
 
-	@Schema
+	@Schema(example = "AB-34098-789-N")
 	public String getExternalReferenceCode() {
 		return externalReferenceCode;
 	}
@@ -120,7 +111,7 @@ public class PriceEntry implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getHasTierPrice() {
 		return hasTierPrice;
 	}
@@ -149,7 +140,7 @@ public class PriceEntry implements Serializable {
 	protected Boolean hasTierPrice;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getId() {
 		return id;
 	}
@@ -176,7 +167,7 @@ public class PriceEntry implements Serializable {
 	protected Long id;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	@Valid
 	public BigDecimal getPrice() {
 		return price;
@@ -206,7 +197,7 @@ public class PriceEntry implements Serializable {
 	@NotNull
 	protected BigDecimal price;
 
-	@Schema
+	@Schema(example = "PLAB-34098-789-N")
 	public String getPriceListExternalReferenceCode() {
 		return priceListExternalReferenceCode;
 	}
@@ -239,7 +230,7 @@ public class PriceEntry implements Serializable {
 	protected String priceListExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "20078")
 	public Long getPriceListId() {
 		return priceListId;
 	}
@@ -268,7 +259,7 @@ public class PriceEntry implements Serializable {
 	protected Long priceListId;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	@Valid
 	public BigDecimal getPromoPrice() {
 		return promoPrice;
@@ -297,7 +288,7 @@ public class PriceEntry implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal promoPrice;
 
-	@Schema
+	@Schema(example = "BL500IC")
 	public String getSku() {
 		return sku;
 	}
@@ -323,7 +314,7 @@ public class PriceEntry implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String sku;
 
-	@Schema
+	@Schema(example = "CAB-34098-789-N")
 	public String getSkuExternalReferenceCode() {
 		return skuExternalReferenceCode;
 	}
@@ -354,7 +345,7 @@ public class PriceEntry implements Serializable {
 	protected String skuExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getSkuId() {
 		return skuId;
 	}
@@ -676,5 +667,7 @@ public class PriceEntry implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

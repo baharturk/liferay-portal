@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.portlet;
@@ -19,7 +10,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -747,7 +738,7 @@ public class PortletRequestModel implements Serializable {
 		}
 		catch (IllegalStateException illegalStateException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(illegalStateException.getMessage());
+				_log.warn(illegalStateException);
 			}
 		}
 	}
@@ -765,7 +756,7 @@ public class PortletRequestModel implements Serializable {
 			}
 			catch (IllegalStateException illegalStateException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(illegalStateException.getMessage());
+					_log.warn(illegalStateException);
 				}
 			}
 
@@ -781,7 +772,7 @@ public class PortletRequestModel implements Serializable {
 				}
 				catch (WindowStateException windowStateException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(windowStateException, windowStateException);
+						_log.debug(windowStateException);
 					}
 				}
 
@@ -792,7 +783,7 @@ public class PortletRequestModel implements Serializable {
 				}
 				catch (WindowStateException windowStateException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(windowStateException, windowStateException);
+						_log.debug(windowStateException);
 					}
 				}
 
@@ -803,7 +794,7 @@ public class PortletRequestModel implements Serializable {
 				}
 				catch (WindowStateException windowStateException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(windowStateException, windowStateException);
+						_log.debug(windowStateException);
 					}
 				}
 
@@ -814,7 +805,7 @@ public class PortletRequestModel implements Serializable {
 				}
 				catch (WindowStateException windowStateException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(windowStateException, windowStateException);
+						_log.debug(windowStateException);
 					}
 				}
 
@@ -825,22 +816,22 @@ public class PortletRequestModel implements Serializable {
 				}
 				catch (WindowStateException windowStateException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(windowStateException, windowStateException);
+						_log.debug(windowStateException);
 					}
 				}
 			}
 			catch (IllegalStateException illegalStateException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(illegalStateException.getMessage());
+					_log.warn(illegalStateException);
 				}
 			}
 
 			ResourceURL resourceURL = mimeResponse.createResourceURL();
 
-			String resourceURLString = HttpUtil.removeParameter(
+			String resourceURLString = HttpComponentsUtil.removeParameter(
 				resourceURL.toString(), _portletNamespace + "struts_action");
 
-			resourceURLString = HttpUtil.removeParameter(
+			resourceURLString = HttpComponentsUtil.removeParameter(
 				resourceURLString, _portletNamespace + "redirect");
 
 			_resourceURL = resourceURLString;
@@ -876,22 +867,21 @@ public class PortletRequestModel implements Serializable {
 
 			return !map.isEmpty();
 		}
-		else {
-			String objString = String.valueOf(object);
 
-			if (Validator.isNull(objString)) {
-				return false;
-			}
+		String objString = String.valueOf(object);
 
-			String hashCode = StringPool.AT.concat(
-				StringUtil.toHexString(object.hashCode()));
-
-			if (objString.endsWith(hashCode)) {
-				return false;
-			}
-
-			return true;
+		if (Validator.isNull(objString)) {
+			return false;
 		}
+
+		String hashCode = StringPool.AT.concat(
+			StringUtil.toHexString(object.hashCode()));
+
+		if (objString.endsWith(hashCode)) {
+			return false;
+		}
+
+		return true;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

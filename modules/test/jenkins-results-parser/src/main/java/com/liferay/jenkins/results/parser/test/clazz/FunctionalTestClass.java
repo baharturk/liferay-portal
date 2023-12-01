@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz;
@@ -23,6 +14,8 @@ import java.io.File;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
@@ -48,13 +41,26 @@ public class FunctionalTestClass extends BaseTestClass {
 	}
 
 	@Override
+	public JSONObject getJSONObject() {
+		JSONObject jsonObject = super.getJSONObject();
+
+		jsonObject.put(
+			"poshi_properties", _poshiProperties
+		).put(
+			"test_class_method_name", _testClassMethodName
+		);
+
+		return jsonObject;
+	}
+
+	@Override
 	public String getName() {
 		String name = super.getName();
 		String testClassMethodName = getTestClassMethodName();
 
 		return JenkinsResultsParserUtil.combine(
-			name.replaceAll("([^\\.]+)\\..*", "$1"), "#",
-			testClassMethodName.replaceAll("([^#]+#)?(.*)", "$2"));
+			name.replaceAll("(.+/)[^/]+", "$1"),
+			testClassMethodName.replaceAll("([^\\.]+\\.)?(.*)", "$2"));
 	}
 
 	public Properties getPoshiProperties() {
@@ -63,6 +69,28 @@ public class FunctionalTestClass extends BaseTestClass {
 
 	public String getTestClassMethodName() {
 		return _testClassMethodName;
+	}
+
+	protected FunctionalTestClass(
+		BatchTestClassGroup batchTestClassGroup, JSONObject jsonObject) {
+
+		super(batchTestClassGroup, jsonObject);
+
+		_testClassMethodName = jsonObject.getString("test_class_method_name");
+
+		_poshiProperties = new Properties();
+
+		JSONObject poshiPropertiesJSONObject = jsonObject.getJSONObject(
+			"poshi_properties");
+
+		if (poshiPropertiesJSONObject == null) {
+			return;
+		}
+
+		for (String key : poshiPropertiesJSONObject.keySet()) {
+			_poshiProperties.setProperty(
+				key, poshiPropertiesJSONObject.getString(key));
+		}
 	}
 
 	protected FunctionalTestClass(
@@ -76,6 +104,10 @@ public class FunctionalTestClass extends BaseTestClass {
 
 		_poshiProperties = PoshiContext.getNamespacedClassCommandNameProperties(
 			getTestClassMethodName());
+	}
+
+	protected String getTestName() {
+		return getTestClassMethodName();
 	}
 
 	private static File _getTestClassFile(String testClassMethodName) {

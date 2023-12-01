@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -19,8 +10,8 @@ import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.permission.CommonPermissionUtil;
 import com.liferay.portal.service.base.AddressServiceBaseImpl;
+import com.liferay.portal.service.permission.CommonPermissionUtil;
 
 import java.util.List;
 
@@ -34,7 +25,7 @@ public class AddressServiceImpl extends AddressServiceBaseImpl {
 	public Address addAddress(
 			String className, long classPK, String street1, String street2,
 			String street3, String city, String zip, long regionId,
-			long countryId, long typeId, boolean mailing, boolean primary,
+			long countryId, long listTypeId, boolean mailing, boolean primary,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -42,8 +33,9 @@ public class AddressServiceImpl extends AddressServiceBaseImpl {
 			getPermissionChecker(), className, classPK, ActionKeys.UPDATE);
 
 		return addressLocalService.addAddress(
-			getUserId(), className, classPK, street1, street2, street3, city,
-			zip, regionId, countryId, typeId, mailing, primary, serviceContext);
+			null, getUserId(), className, classPK, null, null, street1, street2,
+			street3, city, zip, regionId, countryId, listTypeId, mailing,
+			primary, null, serviceContext);
 	}
 
 	@Override
@@ -84,8 +76,8 @@ public class AddressServiceImpl extends AddressServiceBaseImpl {
 	@Override
 	public Address updateAddress(
 			long addressId, String street1, String street2, String street3,
-			String city, String zip, long regionId, long countryId, long typeId,
-			boolean mailing, boolean primary)
+			String city, String zip, long regionId, long countryId,
+			long listTypeId, boolean mailing, boolean primary)
 		throws PortalException {
 
 		Address address = addressPersistence.findByPrimaryKey(addressId);
@@ -96,7 +88,7 @@ public class AddressServiceImpl extends AddressServiceBaseImpl {
 
 		return addressLocalService.updateAddress(
 			addressId, street1, street2, street3, city, zip, regionId,
-			countryId, typeId, mailing, primary);
+			countryId, listTypeId, mailing, primary);
 	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -46,12 +37,12 @@ public class PhoneLocalServiceUtil {
 	 */
 	public static Phone addPhone(
 			long userId, String className, long classPK, String number,
-			String extension, long typeId, boolean primary,
+			String extension, long listTypeId, boolean primary,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addPhone(
-			userId, className, classPK, number, extension, typeId, primary,
+			userId, className, classPK, number, extension, listTypeId, primary,
 			serviceContext);
 	}
 
@@ -335,12 +326,12 @@ public class PhoneLocalServiceUtil {
 	}
 
 	public static Phone updatePhone(
-			long phoneId, String number, String extension, long typeId,
+			long phoneId, String number, String extension, long listTypeId,
 			boolean primary)
 		throws PortalException {
 
 		return getService().updatePhone(
-			phoneId, number, extension, typeId, primary);
+			phoneId, number, extension, listTypeId, primary);
 	}
 
 	/**
@@ -359,6 +350,10 @@ public class PhoneLocalServiceUtil {
 
 	public static PhoneLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(PhoneLocalService service) {
+		_service = service;
 	}
 
 	private static volatile PhoneLocalService _service;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -338,18 +329,19 @@ export default class SidePanel extends React.Component {
 	}
 
 	render() {
-		const visibility = this.state.visible ? 'is-visible' : 'is-hidden';
 		const loading =
 			this.state.loading || (this.state.moving && this.state.visible)
 				? 'is-loading'
 				: '';
+		const moving = this.state.moving ? 'is-moving' : '';
+		const visibility = this.state.visible ? 'is-visible' : 'is-hidden';
 
 		const content = (
 			<>
 				<Modal id={this.state.iframeHandlerModalId} />
 				<div
 					className={classNames(
-						'side-panel-nav-cover navigation-bar border-bottom',
+						'fds-side-panel-nav-cover navigation-bar border-bottom',
 						visibility
 					)}
 					style={{top: this.state.menuCoverTopDistance}}
@@ -360,8 +352,10 @@ export default class SidePanel extends React.Component {
 						<ul className="navbar-nav">
 							<li className="nav-item">
 								<button
+									aria-label={Liferay.Language.get('back')}
 									className="btn btn-unstyled nav-link"
 									onClick={() => this.close()}
+									title={Liferay.Language.get('back')}
 								>
 									<ClayIcon symbol="angle-left" />
 								</button>
@@ -371,8 +365,9 @@ export default class SidePanel extends React.Component {
 				</div>
 				<div
 					className={classNames(
-						'side-panel',
-						`side-panel-${this.state.size}`,
+						'fds-side-panel',
+						`fds-side-panel-${this.state.size}`,
+						moving,
 						visibility,
 						loading
 					)}
@@ -388,15 +383,17 @@ export default class SidePanel extends React.Component {
 					)}
 
 					<ClayButton
+						aria-label={Liferay.Language.get('close')}
 						className={classNames(
-							'side-panel-close',
+							'fds-side-panel-close',
 							this.state.closeButtonStyle === 'simple' &&
-								'side-panel-close-simple',
+								'fds-side-panel-close-simple',
 							this.state.closeButtonStyle === 'menu' &&
-								'side-panel-close-menu'
+								'fds-side-panel-close-menu'
 						)}
 						displayType="monospaced"
 						onClick={() => this.close()}
+						title={Liferay.Language.get('close')}
 					>
 						<ClayIcon symbol="times" />
 					</ClayButton>

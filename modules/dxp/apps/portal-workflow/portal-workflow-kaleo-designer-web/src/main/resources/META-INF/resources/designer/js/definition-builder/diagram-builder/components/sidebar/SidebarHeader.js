@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayModal, {useModal} from '@clayui/modal';
 import PropTypes from 'prop-types';
 import React, {useContext, useEffect, useState} from 'react';
-import {isNode} from 'react-flow-renderer';
 
 import {DefinitionBuilderContext} from '../../../DefinitionBuilderContext';
 import {DiagramBuilderContext} from '../../DiagramBuilderContext';
@@ -21,7 +14,10 @@ import {getModalInfo} from './utils';
 
 export default function SidebarHeader({
 	backButtonFunction = () => {},
-	showHeaderButtons,
+	contentName,
+	deleteButtonFunction = () => {},
+	showBackButton,
+	showDeleteButton,
 	title,
 }) {
 	const {setElements} = useContext(DefinitionBuilderContext);
@@ -40,29 +36,37 @@ export default function SidebarHeader({
 
 	const deleteItem = () => {
 		setElements((elements) =>
-			elements.filter((element) => element.id !== selectedItem.id)
+			elements.filter(
+				(element) =>
+					element.id !== selectedItem.id &&
+					element.source !== selectedItem.id &&
+					element.target !== selectedItem.id
+			)
 		);
 		setShowDeleteConfirmationModal(false);
 		backButtonFunction();
 	};
 
-	useEffect(() => {
-		if (selectedItem) {
-			setModalInfo(
-				getModalInfo(
-					isNode(selectedItem) ? selectedItem.type : 'transition'
-				)
-			);
+	const deleteContent = () => {
+		deleteButtonFunction();
+		setShowDeleteConfirmationModal(false);
+		backButtonFunction();
+	};
 
-			const handleKeyDown = (event) => {
-				if (
-					(event.key === 'Backspace' || event.key === 'Delete') &&
-					document.querySelectorAll('.form-control:focus').length ===
-						0
-				) {
-					setShowDeleteConfirmationModal(true);
-				}
-			};
+	const handleKeyDown = (event) => {
+		if (
+			(event.key === 'Backspace' || event.key === 'Delete') &&
+			contentName !== 'assignments' &&
+			!document.querySelectorAll('.form-control:focus').length &&
+			!document.querySelectorAll('.CodeMirror-focused').length
+		) {
+			setShowDeleteConfirmationModal(true);
+		}
+	};
+
+	useEffect(() => {
+		if (contentName) {
+			setModalInfo(getModalInfo(contentName));
 
 			window.addEventListener('keydown', handleKeyDown);
 
@@ -70,11 +74,12 @@ export default function SidebarHeader({
 				window.removeEventListener('keydown', handleKeyDown);
 			};
 		}
-	}, [selectedItem]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [contentName]);
 
 	return (
 		<div className="sidebar-header">
-			{showHeaderButtons && (
+			{showBackButton && (
 				<ClayButtonWithIcon
 					className="text-secondary"
 					displayType="unstyled"
@@ -86,9 +91,10 @@ export default function SidebarHeader({
 			<div className="spaced-items">
 				<span className="title">{title}</span>
 
-				{showHeaderButtons && (
+				{showDeleteButton && (
 					<ClayButtonWithIcon
 						className="text-secondary trash-button"
+						disabled={contentName === 'assignments'}
 						displayType="unstyled"
 						onClick={() => setShowDeleteConfirmationModal(true)}
 						symbol="trash"
@@ -121,7 +127,11 @@ export default function SidebarHeader({
 
 								<ClayButton
 									displayType="danger"
-									onClick={deleteItem}
+									onClick={
+										deleteButtonFunction
+											? deleteContent
+											: deleteItem
+									}
 								>
 									{Liferay.Language.get('delete')}
 								</ClayButton>
@@ -136,6 +146,8 @@ export default function SidebarHeader({
 
 SidebarHeader.propTypes = {
 	backButtonFunction: PropTypes.func,
-	showHeaderButtons: PropTypes.bool,
+	deleteButtonFunction: PropTypes.func,
+	showBackButton: PropTypes.bool,
+	showDeleteButton: PropTypes.bool,
 	title: PropTypes.string.isRequired,
 };

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -48,7 +39,6 @@ import com.liferay.portal.model.impl.WorkflowDefinitionLinkModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -195,7 +185,7 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<WorkflowDefinitionLink>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (WorkflowDefinitionLink workflowDefinitionLink : list) {
@@ -572,7 +562,8 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 			finderArgs = new Object[] {companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -729,7 +720,7 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<WorkflowDefinitionLink>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (WorkflowDefinitionLink workflowDefinitionLink : list) {
@@ -1155,7 +1146,8 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 			finderArgs = new Object[] {groupId, companyId, classNameId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1325,7 +1317,7 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<WorkflowDefinitionLink>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (WorkflowDefinitionLink workflowDefinitionLink : list) {
@@ -1749,7 +1741,8 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 			finderArgs = new Object[] {groupId, companyId, classPK};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1931,7 +1924,7 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<WorkflowDefinitionLink>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (WorkflowDefinitionLink workflowDefinitionLink : list) {
@@ -2406,7 +2399,8 @@ public class WorkflowDefinitionLinkPersistenceImpl
 				companyId, workflowDefinitionName, workflowDefinitionVersion
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2601,7 +2595,7 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<WorkflowDefinitionLink>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (WorkflowDefinitionLink workflowDefinitionLink : list) {
@@ -3055,7 +3049,8 @@ public class WorkflowDefinitionLinkPersistenceImpl
 				groupId, companyId, classNameId, classPK
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3209,12 +3204,9 @@ public class WorkflowDefinitionLinkPersistenceImpl
 		long groupId, long companyId, long classNameId, long classPK,
 		long typePK, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			WorkflowDefinitionLink.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {
 				groupId, companyId, classNameId, classPK, typePK
 			};
@@ -3222,10 +3214,13 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByG_C_C_C_T, finderArgs);
+				_finderPathFetchByG_C_C_C_T, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			WorkflowDefinitionLink.class);
 
 		if (result instanceof WorkflowDefinitionLink) {
 			WorkflowDefinitionLink workflowDefinitionLink =
@@ -3239,6 +3234,15 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						WorkflowDefinitionLink.class,
+						workflowDefinitionLink.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -3379,7 +3383,8 @@ public class WorkflowDefinitionLinkPersistenceImpl
 				groupId, companyId, classNameId, classPK, typePK
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3851,7 +3856,7 @@ public class WorkflowDefinitionLinkPersistenceImpl
 	@Override
 	public WorkflowDefinitionLink fetchByPrimaryKey(Serializable primaryKey) {
 		if (CTPersistenceHelperUtil.isProductionMode(
-				WorkflowDefinitionLink.class)) {
+				WorkflowDefinitionLink.class, primaryKey)) {
 
 			return super.fetchByPrimaryKey(primaryKey);
 		}
@@ -4079,7 +4084,7 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<WorkflowDefinitionLink>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -4155,7 +4160,7 @@ public class WorkflowDefinitionLinkPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -4437,29 +4442,13 @@ public class WorkflowDefinitionLinkPersistenceImpl
 			},
 			false);
 
-		_setWorkflowDefinitionLinkUtilPersistence(this);
+		WorkflowDefinitionLinkUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setWorkflowDefinitionLinkUtilPersistence(null);
+		WorkflowDefinitionLinkUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(WorkflowDefinitionLinkImpl.class.getName());
-	}
-
-	private void _setWorkflowDefinitionLinkUtilPersistence(
-		WorkflowDefinitionLinkPersistence workflowDefinitionLinkPersistence) {
-
-		try {
-			Field field = WorkflowDefinitionLinkUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, workflowDefinitionLinkPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_WORKFLOWDEFINITIONLINK =

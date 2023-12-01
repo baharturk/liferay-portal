@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.category.property.service.persistence.impl;
@@ -38,7 +29,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -50,7 +40,6 @@ import com.liferay.portal.kernel.util.SetUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -82,9 +71,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(
-	service = {AssetCategoryPropertyPersistence.class, BasePersistence.class}
-)
+@Component(service = AssetCategoryPropertyPersistence.class)
 public class AssetCategoryPropertyPersistenceImpl
 	extends BasePersistenceImpl<AssetCategoryProperty>
 	implements AssetCategoryPropertyPersistence {
@@ -207,7 +194,7 @@ public class AssetCategoryPropertyPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetCategoryProperty>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetCategoryProperty assetCategoryProperty : list) {
@@ -584,7 +571,7 @@ public class AssetCategoryPropertyPersistenceImpl
 
 			finderArgs = new Object[] {companyId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -729,7 +716,7 @@ public class AssetCategoryPropertyPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetCategoryProperty>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetCategoryProperty assetCategoryProperty : list) {
@@ -1106,7 +1093,7 @@ public class AssetCategoryPropertyPersistenceImpl
 
 			finderArgs = new Object[] {categoryId};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1256,7 +1243,7 @@ public class AssetCategoryPropertyPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetCategoryProperty>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (AssetCategoryProperty assetCategoryProperty : list) {
@@ -1683,7 +1670,7 @@ public class AssetCategoryPropertyPersistenceImpl
 
 			finderArgs = new Object[] {companyId, key};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1814,20 +1801,21 @@ public class AssetCategoryPropertyPersistenceImpl
 
 		key = Objects.toString(key, "");
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			AssetCategoryProperty.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {categoryId, key};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(_finderPathFetchByCA_K, finderArgs);
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByCA_K, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			AssetCategoryProperty.class);
 
 		if (result instanceof AssetCategoryProperty) {
 			AssetCategoryProperty assetCategoryProperty =
@@ -1838,6 +1826,15 @@ public class AssetCategoryPropertyPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						AssetCategoryProperty.class,
+						assetCategoryProperty.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -1948,7 +1945,7 @@ public class AssetCategoryPropertyPersistenceImpl
 
 			finderArgs = new Object[] {categoryId, key};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2410,7 +2407,9 @@ public class AssetCategoryPropertyPersistenceImpl
 	 */
 	@Override
 	public AssetCategoryProperty fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(AssetCategoryProperty.class)) {
+		if (ctPersistenceHelper.isProductionMode(
+				AssetCategoryProperty.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -2633,7 +2632,7 @@ public class AssetCategoryPropertyPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<AssetCategoryProperty>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2709,7 +2708,7 @@ public class AssetCategoryPropertyPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -2909,30 +2908,14 @@ public class AssetCategoryPropertyPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"categoryId", "key_"}, false);
 
-		_setAssetCategoryPropertyUtilPersistence(this);
+		AssetCategoryPropertyUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setAssetCategoryPropertyUtilPersistence(null);
+		AssetCategoryPropertyUtil.setPersistence(null);
 
 		entityCache.removeCache(AssetCategoryPropertyImpl.class.getName());
-	}
-
-	private void _setAssetCategoryPropertyUtilPersistence(
-		AssetCategoryPropertyPersistence assetCategoryPropertyPersistence) {
-
-		try {
-			Field field = AssetCategoryPropertyUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, assetCategoryPropertyPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -3001,9 +2984,5 @@ public class AssetCategoryPropertyPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private AssetCategoryPropertyModelArgumentsResolver
-		_assetCategoryPropertyModelArgumentsResolver;
 
 }

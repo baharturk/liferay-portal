@@ -1,46 +1,37 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-navigation-interaction-touch',
 	(A) => {
-		var ANDROID = A.UA.android;
+		const ANDROID = A.UA.android;
 
-		var ANDROID_LEGACY = ANDROID && ANDROID < 4.4;
+		const ANDROID_LEGACY = ANDROID && ANDROID < 4.4;
 
-		var STR_OPEN = 'open';
+		const STR_OPEN = 'open';
 
 		A.mix(
 			Liferay.NavigationInteraction.prototype,
 			{
 				_handleShowNavigationMenu(menuNew) {
-					var instance = this;
+					const instance = this;
 
-					var mapHover = instance.MAP_HOVER;
+					const mapHover = instance.MAP_HOVER;
 
 					mapHover.menu = menuNew;
 
-					var menuOpen = menuNew.hasClass(STR_OPEN);
+					const menuOpen = menuNew.hasClass(STR_OPEN);
 
-					var handleId = menuNew.attr('id') + 'Handle';
+					const handleId = menuNew.attr('id') + 'Handle';
 
-					var handle = Liferay.Data[handleId];
+					let handle = Liferay.Data[handleId];
 
 					if (!menuOpen) {
 						Liferay.fire('showNavigationMenu', mapHover);
 
-						var outsideEvents = ['clickoutside', 'touchendoutside'];
+						let outsideEvents = ['clickoutside', 'touchendoutside'];
 
 						if (ANDROID_LEGACY) {
 							outsideEvents = outsideEvents[0];
@@ -70,7 +61,7 @@ AUI.add(
 				},
 
 				_initChildMenuHandlers(navigation) {
-					var instance = this;
+					const instance = this;
 
 					if (navigation) {
 						A.Event.defineOutside('touchend');
@@ -113,9 +104,9 @@ AUI.add(
 				_initNodeFocusManager: A.Lang.emptyFn,
 
 				_onTouchClick(event) {
-					var instance = this;
+					const instance = this;
 
-					var menuNew = event.currentTarget.ancestor(
+					const menuNew = event.currentTarget.ancestor(
 						instance._directChildLi
 					);
 

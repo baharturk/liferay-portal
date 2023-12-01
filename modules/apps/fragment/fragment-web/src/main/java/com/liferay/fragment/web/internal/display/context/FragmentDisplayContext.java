@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.web.internal.display.context;
@@ -17,33 +8,40 @@ package com.liferay.fragment.web.internal.display.context;
 import com.liferay.fragment.constants.FragmentActionKeys;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.contributor.FragmentCollectionContributor;
-import com.liferay.fragment.contributor.FragmentCollectionContributorTracker;
+import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.model.FragmentCollection;
+import com.liferay.fragment.model.FragmentComposition;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.service.FragmentCollectionLocalServiceUtil;
 import com.liferay.fragment.service.FragmentEntryServiceUtil;
 import com.liferay.fragment.util.comparator.FragmentCollectionContributorNameComparator;
 import com.liferay.fragment.util.comparator.FragmentCompositionFragmentEntryNameComparator;
 import com.liferay.fragment.web.internal.constants.FragmentTypeConstants;
-import com.liferay.fragment.web.internal.constants.FragmentWebKeys;
 import com.liferay.fragment.web.internal.security.permission.resource.FragmentPermission;
 import com.liferay.fragment.web.internal.util.FragmentPortletUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.IconItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.VerticalNavItemList;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
@@ -61,7 +59,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.PortletURL;
@@ -83,11 +80,11 @@ public class FragmentDisplayContext {
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 
-		_fragmentCollectionContributorTracker =
-			(FragmentCollectionContributorTracker)
-				_httpServletRequest.getAttribute(
-					FragmentWebKeys.FRAGMENT_COLLECTION_CONTRIBUTOR_TRACKER);
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_fragmentCollectionContributorRegistry =
+			(FragmentCollectionContributorRegistry)
+				httpServletRequest.getAttribute(
+					FragmentCollectionContributorRegistry.class.getName());
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
@@ -102,17 +99,58 @@ public class FragmentDisplayContext {
 					"/fragment/edit_fragment_collection", "redirect",
 					_themeDisplay.getURLCurrent());
 				dropdownItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "collection"));
+					LanguageUtil.get(_httpServletRequest, "fragment-set"));
 			}
 		).add(
 			dropdownItem -> {
 				dropdownItem.putData("action", "openImportView");
+				dropdownItem.putData(
+					"importURL",
+					(String)fragmentCollectionsViewContext.get("importURL"));
 				dropdownItem.putData(
 					"viewImportURL",
 					(String)fragmentCollectionsViewContext.get(
 						"viewImportURL"));
 				dropdownItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "import"));
+			}
+		).build();
+	}
+
+	public Map<String, Object> getAdditionalProps() {
+		return HashMapBuilder.<String, Object>put(
+			"addFragmentCollectionURL",
+			() -> {
+				LiferayPortletURL addFragmentCollectionURL =
+					(LiferayPortletURL)_renderResponse.createResourceURL();
+
+				addFragmentCollectionURL.setCopyCurrentRenderParameters(false);
+				addFragmentCollectionURL.setResourceID(
+					"/fragment/add_fragment_collection");
+
+				return addFragmentCollectionURL.toString();
+			}
+		).put(
+			"fragmentCollections",
+			() -> {
+				JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+
+				for (FragmentCollection fragmentCollection :
+						FragmentCollectionLocalServiceUtil.
+							getFragmentCollections(
+								_themeDisplay.getScopeGroupId(),
+								QueryUtil.ALL_POS, QueryUtil.ALL_POS)) {
+
+					jsonArray.put(
+						JSONUtil.put(
+							"fragmentCollectionId",
+							fragmentCollection.getFragmentCollectionId()
+						).put(
+							"name", fragmentCollection.getName()
+						));
+				}
+
+				return jsonArray;
 			}
 		).build();
 	}
@@ -153,6 +191,7 @@ public class FragmentDisplayContext {
 					DropdownItemListBuilder.add(
 						dropdownItem -> {
 							dropdownItem.putData("action", "exportCollections");
+							dropdownItem.setIcon("export");
 							dropdownItem.setLabel(
 								LanguageUtil.get(
 									_httpServletRequest, "export"));
@@ -160,7 +199,15 @@ public class FragmentDisplayContext {
 					).add(
 						() -> hasManageFragmentEntriesPermission,
 						dropdownItem -> {
-							dropdownItem.putData("action", "openImportView");
+							dropdownItem.setHref(
+								PortletURLBuilder.createRenderURL(
+									_renderResponse
+								).setMVCRenderCommandName(
+									"/fragment/view_import"
+								).setParameter(
+									"fragmentCollectionId", 0
+								).buildString());
+							dropdownItem.setIcon("import");
 							dropdownItem.setLabel(
 								LanguageUtil.get(
 									_httpServletRequest, "import"));
@@ -175,6 +222,7 @@ public class FragmentDisplayContext {
 						() -> hasManageFragmentEntriesPermission,
 						dropdownItem -> {
 							dropdownItem.putData("action", "deleteCollections");
+							dropdownItem.setIcon("trash");
 							dropdownItem.setLabel(
 								LanguageUtil.get(
 									_httpServletRequest, "delete"));
@@ -213,15 +261,23 @@ public class FragmentDisplayContext {
 		contributedEntries.sort(
 			new FragmentCompositionFragmentEntryNameComparator(true));
 
-		contributedEntriesSearchContainer.setResults(
-			ListUtil.subList(
+		if (isSearch()) {
+			contributedEntries = ListUtil.filter(
 				contributedEntries,
-				contributedEntriesSearchContainer.getStart(),
-				contributedEntriesSearchContainer.getEnd()));
+				contributedEntry -> {
+					String lowerCaseName = StringUtil.toLowerCase(
+						_getName(contributedEntry));
+
+					return lowerCaseName.contains(
+						StringUtil.toLowerCase(_getKeywords()));
+				});
+		}
+
+		contributedEntriesSearchContainer.setResultsAndTotal(
+			contributedEntries);
 
 		contributedEntriesSearchContainer.setRowChecker(
 			new EmptyOnClickRowChecker(_renderResponse));
-		contributedEntriesSearchContainer.setTotal(contributedEntries.size());
 
 		_contributedEntriesSearchContainer = contributedEntriesSearchContainer;
 
@@ -241,7 +297,7 @@ public class FragmentDisplayContext {
 	}
 
 	public FragmentCollectionContributor getFragmentCollectionContributor() {
-		return _fragmentCollectionContributorTracker.
+		return _fragmentCollectionContributorRegistry.
 			getFragmentCollectionContributor(getFragmentCollectionKey());
 	}
 
@@ -249,7 +305,7 @@ public class FragmentDisplayContext {
 		getFragmentCollectionContributors(Locale locale) {
 
 		List<FragmentCollectionContributor> fragmentCollectionContributors =
-			_fragmentCollectionContributorTracker.
+			_fragmentCollectionContributorRegistry.
 				getFragmentCollectionContributors();
 
 		Collections.sort(
@@ -349,6 +405,22 @@ public class FragmentDisplayContext {
 				return exportFragmentCollectionsURL.toString();
 			}
 		).put(
+			"importURL",
+			() -> PortletURLBuilder.createActionURL(
+				_renderResponse
+			).setActionName(
+				"/fragment/import"
+			).setRedirect(
+				_themeDisplay.getURLCurrent()
+			).setPortletResource(
+				() -> {
+					PortletDisplay portletDisplay =
+						_themeDisplay.getPortletDisplay();
+
+					return portletDisplay.getId();
+				}
+			).buildString()
+		).put(
 			"viewDeleteFragmentCollectionsURL",
 			() -> PortletURLBuilder.createRenderURL(
 				_renderResponse
@@ -398,9 +470,6 @@ public class FragmentDisplayContext {
 				_getOrderByCol(), getOrderByType()));
 		fragmentEntriesSearchContainer.setOrderByType(getOrderByType());
 
-		List<Object> fragmentCompositionsAndEntries = null;
-		int fragmentCompositionsAndEntriesCount = 0;
-
 		FragmentCollection fragmentCollection = getFragmentCollection();
 
 		int status = WorkflowConstants.STATUS_ANY;
@@ -411,47 +480,47 @@ public class FragmentDisplayContext {
 			status = WorkflowConstants.STATUS_APPROVED;
 		}
 
-		if (isSearch()) {
-			fragmentCompositionsAndEntries =
-				FragmentEntryServiceUtil.
-					getFragmentCompositionsAndFragmentEntries(
-						fragmentCollection.getGroupId(),
-						fragmentCollection.getFragmentCollectionId(),
-						_getKeywords(), status,
-						fragmentEntriesSearchContainer.getStart(),
-						fragmentEntriesSearchContainer.getEnd(),
-						fragmentEntriesSearchContainer.getOrderByComparator());
+		int fragmentEntryStatus = status;
 
-			fragmentCompositionsAndEntriesCount =
+		if (isSearch()) {
+			fragmentEntriesSearchContainer.setResultsAndTotal(
+				() ->
+					FragmentEntryServiceUtil.
+						getFragmentCompositionsAndFragmentEntries(
+							fragmentCollection.getGroupId(),
+							fragmentCollection.getFragmentCollectionId(),
+							_getKeywords(), fragmentEntryStatus,
+							fragmentEntriesSearchContainer.getStart(),
+							fragmentEntriesSearchContainer.getEnd(),
+							fragmentEntriesSearchContainer.
+								getOrderByComparator()),
 				FragmentEntryServiceUtil.
 					getFragmentCompositionsAndFragmentEntriesCount(
 						fragmentCollection.getGroupId(),
 						fragmentCollection.getFragmentCollectionId(),
-						_getKeywords(), status);
+						_getKeywords(), fragmentEntryStatus));
 		}
 		else {
-			fragmentCompositionsAndEntries =
-				FragmentEntryServiceUtil.
-					getFragmentCompositionsAndFragmentEntries(
-						fragmentCollection.getGroupId(),
-						fragmentCollection.getFragmentCollectionId(), status,
-						fragmentEntriesSearchContainer.getStart(),
-						fragmentEntriesSearchContainer.getEnd(),
-						fragmentEntriesSearchContainer.getOrderByComparator());
-
-			fragmentCompositionsAndEntriesCount =
+			fragmentEntriesSearchContainer.setResultsAndTotal(
+				() ->
+					FragmentEntryServiceUtil.
+						getFragmentCompositionsAndFragmentEntries(
+							fragmentCollection.getGroupId(),
+							fragmentCollection.getFragmentCollectionId(),
+							fragmentEntryStatus,
+							fragmentEntriesSearchContainer.getStart(),
+							fragmentEntriesSearchContainer.getEnd(),
+							fragmentEntriesSearchContainer.
+								getOrderByComparator()),
 				FragmentEntryServiceUtil.
 					getFragmentCompositionsAndFragmentEntriesCount(
 						fragmentCollection.getGroupId(),
-						fragmentCollection.getFragmentCollectionId(), status);
+						fragmentCollection.getFragmentCollectionId(),
+						fragmentEntryStatus));
 		}
 
-		fragmentEntriesSearchContainer.setResults(
-			fragmentCompositionsAndEntries);
 		fragmentEntriesSearchContainer.setRowChecker(
 			new EmptyOnClickRowChecker(_renderResponse));
-		fragmentEntriesSearchContainer.setTotal(
-			fragmentCompositionsAndEntriesCount);
 
 		_fragmentEntriesSearchContainer = fragmentEntriesSearchContainer;
 
@@ -528,8 +597,6 @@ public class FragmentDisplayContext {
 
 		return PortletURLBuilder.createRenderURL(
 			_renderResponse
-		).setMVCRenderCommandName(
-			"/fragment/view"
 		).setParameter(
 			"fragmentCollectionId",
 			() -> {
@@ -540,6 +607,86 @@ public class FragmentDisplayContext {
 				return null;
 			}
 		).buildString();
+	}
+
+	public VerticalNavItemList getVerticalNavItemList(
+		List<FragmentCollection> fragmentCollections) {
+
+		VerticalNavItemList verticalNavItemList = new VerticalNavItemList();
+
+		for (FragmentCollection fragmentCollection : fragmentCollections) {
+			verticalNavItemList.add(
+				verticalNavItem -> {
+					if (isLocked(fragmentCollection)) {
+						verticalNavItem.addIcon(
+							IconItem.of("lock", StringPool.BLANK));
+					}
+
+					verticalNavItem.setActive(
+						fragmentCollection.getFragmentCollectionId() ==
+							getFragmentCollectionId());
+
+					Long fragmentCollectionId =
+						fragmentCollection.getFragmentCollectionId();
+
+					verticalNavItem.setHref(
+						PortletURLBuilder.createRenderURL(
+							_renderResponse
+						).setParameter(
+							"fragmentCollectionId", fragmentCollectionId
+						).buildString());
+					verticalNavItem.setId(String.valueOf(fragmentCollectionId));
+
+					verticalNavItem.setLabel(
+						HtmlUtil.escape(fragmentCollection.getName()));
+				});
+		}
+
+		return verticalNavItemList;
+	}
+
+	public VerticalNavItemList getVerticalNavItemList(
+		List<FragmentCollection> fragmentCollections,
+		List<FragmentCollectionContributor> fragmentCollectionContributors) {
+
+		VerticalNavItemList verticalNavItemList = new VerticalNavItemList();
+
+		for (FragmentCollectionContributor fragmentCollectionContributor :
+				fragmentCollectionContributors) {
+
+			verticalNavItemList.add(
+				verticalNavItem -> {
+					verticalNavItem.addIcon(
+						IconItem.of("lock", StringPool.BLANK));
+
+					verticalNavItem.setActive(
+						Objects.equals(
+							fragmentCollectionContributor.
+								getFragmentCollectionKey(),
+							getFragmentCollectionKey()));
+
+					String fragmentCollectionKey =
+						fragmentCollectionContributor.
+							getFragmentCollectionKey();
+
+					verticalNavItem.setHref(
+						PortletURLBuilder.createRenderURL(
+							_renderResponse
+						).setParameter(
+							"fragmentCollectionKey", fragmentCollectionKey
+						).buildString());
+					verticalNavItem.setId(fragmentCollectionKey);
+
+					verticalNavItem.setLabel(
+						HtmlUtil.escape(
+							fragmentCollectionContributor.getName(
+								_themeDisplay.getLocale())));
+				});
+		}
+
+		verticalNavItemList.addAll(getVerticalNavItemList(fragmentCollections));
+
+		return verticalNavItemList;
 	}
 
 	public boolean hasDeletePermission() {
@@ -664,28 +811,26 @@ public class FragmentDisplayContext {
 		}
 
 		List<FragmentCollectionContributor> fragmentCollectionContributors =
-			_fragmentCollectionContributorTracker.
+			_fragmentCollectionContributorRegistry.
 				getFragmentCollectionContributors();
 
 		if (ListUtil.isEmpty(fragmentCollectionContributors)) {
 			return StringPool.BLANK;
 		}
 
-		Stream<FragmentCollectionContributor> stream =
-			fragmentCollectionContributors.stream();
+		fragmentCollectionContributors = ListUtil.sort(
+			fragmentCollectionContributors,
+			new FragmentCollectionContributorNameComparator(
+				_themeDisplay.getLocale()));
 
 		FragmentCollectionContributor fragmentCollectionContributor =
-			stream.sorted(
-				new FragmentCollectionContributorNameComparator(
-					_themeDisplay.getLocale())
-			).findFirst(
-			).get();
+			fragmentCollectionContributors.get(0);
 
 		return fragmentCollectionContributor.getFragmentCollectionKey();
 	}
 
 	private FragmentCollectionContributor _getFragmentCollectionContributor() {
-		return _fragmentCollectionContributorTracker.
+		return _fragmentCollectionContributorRegistry.
 			getFragmentCollectionContributor(getFragmentCollectionKey());
 	}
 
@@ -697,6 +842,19 @@ public class FragmentDisplayContext {
 		_keywords = ParamUtil.getString(_httpServletRequest, "keywords");
 
 		return _keywords;
+	}
+
+	private String _getName(Object object) {
+		if (object instanceof FragmentComposition) {
+			FragmentComposition fragmentComposition =
+				(FragmentComposition)object;
+
+			return fragmentComposition.getName();
+		}
+
+		FragmentEntry fragmentEntry = (FragmentEntry)object;
+
+		return fragmentEntry.getName();
 	}
 
 	private String _getOrderByCol() {
@@ -714,8 +872,6 @@ public class FragmentDisplayContext {
 	private PortletURL _getPortletURL() {
 		return PortletURLBuilder.createRenderURL(
 			_renderResponse
-		).setMVCRenderCommandName(
-			"/fragment/view"
 		).setKeywords(
 			() -> {
 				String keywords = _getKeywords();
@@ -814,8 +970,8 @@ public class FragmentDisplayContext {
 
 	private SearchContainer<Object> _contributedEntriesSearchContainer;
 	private FragmentCollection _fragmentCollection;
-	private final FragmentCollectionContributorTracker
-		_fragmentCollectionContributorTracker;
+	private final FragmentCollectionContributorRegistry
+		_fragmentCollectionContributorRegistry;
 	private Long _fragmentCollectionId;
 	private String _fragmentCollectionKey;
 	private SearchContainer<Object> _fragmentEntriesSearchContainer;

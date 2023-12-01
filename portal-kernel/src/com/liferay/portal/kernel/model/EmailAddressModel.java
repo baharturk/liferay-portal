@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
 
 import java.util.Date;
 
@@ -33,8 +25,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface EmailAddressModel
-	extends AttachedModel, BaseModel<EmailAddress>, MVCCModel, ShardedModel,
-			StagedAuditedModel {
+	extends AttachedModel, BaseModel<EmailAddress>, CTModel<EmailAddress>,
+			MVCCModel, ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -47,6 +39,7 @@ public interface EmailAddressModel
 	 *
 	 * @return the primary key of this email address
 	 */
+	@Override
 	public long getPrimaryKey();
 
 	/**
@@ -54,6 +47,7 @@ public interface EmailAddressModel
 	 *
 	 * @param primaryKey the primary key of this email address
 	 */
+	@Override
 	public void setPrimaryKey(long primaryKey);
 
 	/**
@@ -71,6 +65,22 @@ public interface EmailAddressModel
 	 */
 	@Override
 	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the ct collection ID of this email address.
+	 *
+	 * @return the ct collection ID of this email address
+	 */
+	@Override
+	public long getCtCollectionId();
+
+	/**
+	 * Sets the ct collection ID of this email address.
+	 *
+	 * @param ctCollectionId the ct collection ID of this email address
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId);
 
 	/**
 	 * Returns the uuid of this email address.
@@ -258,18 +268,18 @@ public interface EmailAddressModel
 	public void setAddress(String address);
 
 	/**
-	 * Returns the type ID of this email address.
+	 * Returns the list type ID of this email address.
 	 *
-	 * @return the type ID of this email address
+	 * @return the list type ID of this email address
 	 */
-	public long getTypeId();
+	public long getListTypeId();
 
 	/**
-	 * Sets the type ID of this email address.
+	 * Sets the list type ID of this email address.
 	 *
-	 * @param typeId the type ID of this email address
+	 * @param listTypeId the list type ID of this email address
 	 */
-	public void setTypeId(long typeId);
+	public void setListTypeId(long listTypeId);
 
 	/**
 	 * Returns the primary of this email address.
@@ -294,5 +304,9 @@ public interface EmailAddressModel
 
 	@Override
 	public EmailAddress cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

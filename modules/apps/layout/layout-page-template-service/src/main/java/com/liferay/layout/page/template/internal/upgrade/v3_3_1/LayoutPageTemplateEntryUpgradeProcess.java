@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.internal.upgrade.v3_3_1;
@@ -121,7 +112,12 @@ public class LayoutPageTemplateEntryUpgradeProcess extends UpgradeProcess {
 		throws PortalException {
 
 		LayoutPrototype layoutPrototype =
-			_layoutPrototypeLocalService.getLayoutPrototype(layoutPrototypeId);
+			_layoutPrototypeLocalService.fetchLayoutPrototype(
+				layoutPrototypeId);
+
+		if (layoutPrototype == null) {
+			return;
+		}
 
 		Map<Locale, String> nameMap = layoutPrototype.getNameMap();
 
@@ -152,10 +148,10 @@ public class LayoutPageTemplateEntryUpgradeProcess extends UpgradeProcess {
 						"from LayoutPageTemplateEntry");
 			PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(
-						"update LayoutPageTemplateEntry set " +
-							"layoutPageTemplateEntryKey = ?, name = ? where " +
-								"layoutPageTemplateEntryId = ?"))) {
+					connection,
+					"update LayoutPageTemplateEntry set " +
+						"layoutPageTemplateEntryKey = ?, name = ? where " +
+							"layoutPageTemplateEntryId = ?")) {
 
 			while (resultSet.next()) {
 				String name = resultSet.getString("name");

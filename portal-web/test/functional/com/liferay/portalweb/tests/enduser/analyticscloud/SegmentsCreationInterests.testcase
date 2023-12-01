@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property custom.properties = "jsonws.web.service.paths.excludes=";
 	property portal.release = "false";
 	property portal.upstream = "true";
@@ -43,32 +45,28 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			JSONGroup.deleteGroupByName(groupName = "Site Name");
-
-			JSONUser.tearDownNonAdminUsers();
 		}
 
 		ACUtils.tearDownAC();
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9273 | Test Summary: Create a Segment of Individuals Interested And Another One Not Interest In a Topic"
-	@priority = "5"
+	@priority = 5
 	test CanCreateIndividualsSegmentInterestAndAnotherOneNotInterestInTopic {
 		property portal.upstream = "quarantine";
 
-		ACUtils.createBlogsAndAddToPage();
+		// AC Quarantine Reason: Segment membership list taking too long to load
 
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
+		ACUtils.createBlogsAndAddToPage();
 
 		task ("View the page and blog with the new user") {
 			User.logoutAndLoginPG(
@@ -89,7 +87,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Add a new dynamic segment using Interests") {
@@ -135,7 +133,7 @@ definition {
 
 			ACNavigation.switchTab(tabName = "Membership");
 
-			ACUtils.viewNoResultsMessage(noResultMessage = "There are no items found.");
+			ACUtils.viewGenericText(textValueList = "There are no members found on the selected time period.,Check back later to verify if data has been received from your data sources.,Learn more about individuals.");
 		}
 	}
 

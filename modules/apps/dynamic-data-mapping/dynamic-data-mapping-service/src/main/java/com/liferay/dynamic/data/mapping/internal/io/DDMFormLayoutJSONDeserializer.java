@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io;
 
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.internal.io.util.DDMFormFieldDeserializerUtil;
 import com.liferay.dynamic.data.mapping.io.DDMFormLayoutDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormLayoutDeserializerDeserializeRequest;
@@ -27,7 +18,6 @@ import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.util.LocalizedValueUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -36,7 +26,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcellus Tavares
  */
 @Component(
-	immediate = true, property = "ddm.form.layout.deserializer.type=json",
+	property = "ddm.form.layout.deserializer.type=json",
 	service = DDMFormLayoutDeserializer.class
 )
 public class DDMFormLayoutJSONDeserializer
@@ -66,14 +55,15 @@ public class DDMFormLayoutJSONDeserializer
 			JSONObject jsonObject = _jsonFactory.createJSONObject(
 				ddmFormLayoutDeserializerDeserializeRequest.getContent());
 
+			JSONArray jsonArray = jsonObject.getJSONArray("fields");
+
+			if (jsonArray == null) {
+				jsonArray = _jsonFactory.createJSONArray();
+			}
+
 			ddmFormLayout.setDDMFormFields(
 				DDMFormFieldDeserializerUtil.deserialize(
-					_ddmFormFieldTypeServicesTracker,
-					Optional.ofNullable(
-						jsonObject.getJSONArray("fields")
-					).orElse(
-						JSONFactoryUtil.createJSONArray()
-					),
+					_ddmFormFieldTypeServicesRegistry, jsonArray,
 					_jsonFactory));
 
 			if (Validator.isNotNull(
@@ -106,7 +96,7 @@ public class DDMFormLayoutJSONDeserializer
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			builder = builder.exception(exception);
@@ -144,10 +134,8 @@ public class DDMFormLayoutJSONDeserializer
 		List<DDMFormLayoutColumn> ddmFormLayoutColumns = new ArrayList<>();
 
 		for (int i = 0; i < jsonArray.length(); i++) {
-			DDMFormLayoutColumn ddmFormLayoutColumn = getDDMFormLayoutColumn(
-				jsonArray.getJSONObject(i));
-
-			ddmFormLayoutColumns.add(ddmFormLayoutColumn);
+			ddmFormLayoutColumns.add(
+				getDDMFormLayoutColumn(jsonArray.getJSONObject(i)));
 		}
 
 		return ddmFormLayoutColumns;
@@ -172,10 +160,8 @@ public class DDMFormLayoutJSONDeserializer
 		List<DDMFormLayoutPage> ddmFormLayoutPages = new ArrayList<>();
 
 		for (int i = 0; i < jsonArray.length(); i++) {
-			DDMFormLayoutPage ddmFormLayoutPage = getDDMFormLayoutPage(
-				jsonArray.getJSONObject(i));
-
-			ddmFormLayoutPages.add(ddmFormLayoutPage);
+			ddmFormLayoutPages.add(
+				getDDMFormLayoutPage(jsonArray.getJSONObject(i)));
 		}
 
 		return ddmFormLayoutPages;
@@ -185,25 +171,11 @@ public class DDMFormLayoutJSONDeserializer
 		List<DDMFormLayoutRow> ddmFormLayoutRows = new ArrayList<>();
 
 		for (int i = 0; i < jsonArray.length(); i++) {
-			DDMFormLayoutRow ddmFormLayoutRow = _getDDMFormLayoutRow(
-				jsonArray.getJSONObject(i));
-
-			ddmFormLayoutRows.add(ddmFormLayoutRow);
+			ddmFormLayoutRows.add(
+				_getDDMFormLayoutRow(jsonArray.getJSONObject(i)));
 		}
 
 		return ddmFormLayoutRows;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMFormFieldTypeServicesTracker(
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker) {
-
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJSONFactory(JSONFactory jsonFactory) {
-		_jsonFactory = jsonFactory;
 	}
 
 	private List<String> _getDDMFormLayoutColumnFieldNames(
@@ -308,7 +280,10 @@ public class DDMFormLayoutJSONDeserializer
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormLayoutJSONDeserializer.class);
 
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
+	@Reference
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
+
+	@Reference
 	private JSONFactory _jsonFactory;
 
 }

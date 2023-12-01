@@ -1,26 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.content.dashboard.web.internal.display.context;
 
 import com.liferay.asset.kernel.model.AssetCategory;
-import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
-import com.liferay.content.dashboard.web.internal.item.type.ContentDashboardItemSubtype;
-import com.liferay.content.dashboard.web.internal.util.ContentDashboardGroupUtil;
+import com.liferay.asset.tags.item.selector.AssetTagsItemSelectorReturnType;
+import com.liferay.asset.tags.item.selector.criterion.AssetTagsItemSelectorCriterion;
+import com.liferay.content.dashboard.item.action.exception.ContentDashboardItemActionException;
+import com.liferay.content.dashboard.item.filter.ContentDashboardItemFilter;
+import com.liferay.content.dashboard.item.filter.provider.ContentDashboardItemFilterProvider;
+import com.liferay.content.dashboard.item.type.ContentDashboardItemSubtype;
+import com.liferay.content.dashboard.web.internal.item.filter.ContentDashboardItemFilterProviderRegistry;
 import com.liferay.frontend.taglib.clay.servlet.taglib.display.context.SearchContainerManagementToolbarDisplayContext;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemBuilder;
@@ -29,25 +24,32 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemListBuilder;
 import com.liferay.info.item.InfoItemReference;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.item.selector.criteria.InfoItemItemSelectorReturnType;
+import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.LiferayWindowState;
-import com.liferay.portal.kernel.portlet.PortletProvider;
-import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
@@ -55,11 +57,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import javax.portlet.PortletException;
 import javax.portlet.PortletURL;
 
 import javax.servlet.http.HttpServletRequest;
@@ -74,9 +74,11 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 		AssetCategoryLocalService assetCategoryLocalService,
 		AssetVocabularyLocalService assetVocabularyLocalService,
 		ContentDashboardAdminDisplayContext contentDashboardAdminDisplayContext,
+		ContentDashboardItemFilterProviderRegistry
+			contentDashboardItemFilterProviderRegistry,
 		GroupLocalService groupLocalService,
-		HttpServletRequest httpServletRequest,
-		LiferayPortletRequest liferayPortletRequest,
+		HttpServletRequest httpServletRequest, ItemSelector itemSelector,
+		Language language, LiferayPortletRequest liferayPortletRequest,
 		LiferayPortletResponse liferayPortletResponse, Locale locale,
 		UserLocalService userLocalService) {
 
@@ -88,7 +90,11 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 		_assetVocabularyLocalService = assetVocabularyLocalService;
 		_contentDashboardAdminDisplayContext =
 			contentDashboardAdminDisplayContext;
+		_contentDashboardItemFilterProviderRegistry =
+			contentDashboardItemFilterProviderRegistry;
 		_groupLocalService = groupLocalService;
+		_itemSelector = itemSelector;
+		_language = language;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
 		_locale = locale;
@@ -97,25 +103,52 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 
 	@Override
 	public String getClearResultsURL() {
-		return PortletURLBuilder.create(
-			getPortletURL()
-		).setKeywords(
-			StringPool.BLANK
-		).setParameter(
-			"assetCategoryId", (String)null
-		).setParameter(
-			"assetTagId", (String)null
-		).setParameter(
-			"authorIds", (String)null
-		).setParameter(
-			"contentDashboardItemSubtypePayload", (String)null
-		).setParameter(
-			"fileExtension", (String)null
-		).setParameter(
-			"scopeId", (String)null
-		).setParameter(
-			"status", WorkflowConstants.STATUS_ANY
-		).buildString();
+		PortletURLBuilder.AfterParameterStep afterParameterStep =
+			PortletURLBuilder.create(
+				getPortletURL()
+			).setKeywords(
+				StringPool.BLANK
+			).setParameter(
+				"assetCategoryId", (String)null
+			).setParameter(
+				"assetTagId", (String)null
+			).setParameter(
+				"authorIds", (String)null
+			).setParameter(
+				"contentDashboardItemSubtypePayload", (String)null
+			).setParameter(
+				"scopeId", (String)null
+			).setParameter(
+				"status", WorkflowConstants.STATUS_ANY
+			);
+
+		List<ContentDashboardItemFilterProvider>
+			contentDashboardItemFilterProviders =
+				_contentDashboardItemFilterProviderRegistry.
+					getContentDashboardItemFilterProviders();
+
+		try {
+			for (ContentDashboardItemFilterProvider
+					contentDashboardItemFilterProvider :
+						contentDashboardItemFilterProviders) {
+
+				ContentDashboardItemFilter contentDashboardItemFilter =
+					contentDashboardItemFilterProvider.
+						getContentDashboardItemFilter(
+							_liferayPortletRequest.getHttpServletRequest());
+
+				afterParameterStep.setParameter(
+					contentDashboardItemFilter.getParameterName(),
+					(String)null);
+			}
+		}
+		catch (ContentDashboardItemActionException
+					contentDashboardItemActionException) {
+
+			_log.error(contentDashboardItemActionException);
+		}
+
+		return afterParameterStep.buildString();
 	}
 
 	@Override
@@ -124,7 +157,7 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(_getFilterDropdownItems());
 				dropdownGroupItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "filter-by") +
+					_language.get(httpServletRequest, "filter-by") +
 						StringPool.TRIPLE_PERIOD);
 			}
 		).addGroup(
@@ -132,16 +165,24 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 				dropdownGroupItem.setDropdownItems(
 					_getFilterAuthorDropdownItems());
 				dropdownGroupItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "filter-by-author"));
+					_language.get(httpServletRequest, "filter-by-author"));
 			}
 		).addGroup(
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(
 					_getFilterStatusDropdownItems());
 				dropdownGroupItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "filter-by-status"));
+					_language.get(httpServletRequest, "filter-by-status"));
 			}
 		).addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					_getFilterByReviewDateDropdownItems());
+				dropdownGroupItem.setLabel(
+					_language.get(httpServletRequest, "filter-by-review-date"));
+			}
+		).addGroup(
+			() -> !FeatureFlagManagerUtil.isEnabled("LPS-144527"),
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
 				dropdownGroupItem.setLabel(getOrderByDropdownItemsLabel());
@@ -157,43 +198,41 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 		LabelItemListBuilder.LabelItemListWrapper labelItemListWrapper =
 			new LabelItemListBuilder.LabelItemListWrapper();
 
+		_addContentDashboardItemFilterProviders(labelItemListWrapper);
+
 		for (Long assetCategoryId : assetCategoryIds) {
 			labelItemListWrapper.add(
 				labelItem -> {
 					labelItem.putData(
 						"removeLabelURL",
-						String.valueOf(
-							PortletURLBuilder.create(
-								PortletURLUtil.clone(
-									currentURLObj, liferayPortletResponse)
-							).setParameter(
-								"assetCategoryId",
-								() -> {
-									Stream<Long> stream =
-										assetCategoryIds.stream();
+						_getRemoveLabelURL(
+							"assetCategoryId",
+							() -> TransformUtil.transformToArray(
+								assetCategoryIds,
+								curAssetCategoryId -> {
+									if (Objects.equals(
+											assetCategoryId,
+											curAssetCategoryId)) {
 
-									return stream.filter(
-										id -> id != assetCategoryId
-									).map(
-										String::valueOf
-									).toArray(
-										String[]::new
-									);
-								}
-							).buildString()));
+										return null;
+									}
+
+									return String.valueOf(curAssetCategoryId);
+								},
+								String.class)));
 					labelItem.setCloseable(true);
-					labelItem.setLabel(
-						StringBundler.concat(
-							LanguageUtil.get(httpServletRequest, "category"),
-							StringPool.COLON,
-							Optional.ofNullable(
-								_assetCategoryLocalService.fetchAssetCategory(
-									assetCategoryId)
-							).map(
-								assetCategory -> assetCategory.getTitle(_locale)
-							).orElse(
-								StringPool.BLANK
-							)));
+
+					String title = StringPool.BLANK;
+
+					AssetCategory assetCategory =
+						_assetCategoryLocalService.fetchAssetCategory(
+							assetCategoryId);
+
+					if (assetCategory != null) {
+						title = assetCategory.getTitle(_locale);
+					}
+
+					labelItem.setLabel(_getLabel("category", title));
 				});
 		}
 
@@ -204,58 +243,17 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 			labelItem -> {
 				labelItem.putData(
 					"removeLabelURL",
-					PortletURLBuilder.create(
-						PortletURLUtil.clone(
-							currentURLObj, liferayPortletResponse)
-					).setParameter(
-						"scopeId", (String)null
-					).buildString());
+					_getRemoveLabelURL("scopeId", (String)null));
 				labelItem.setCloseable(true);
 				labelItem.setLabel(
-					StringBundler.concat(
-						LanguageUtil.get(
-							httpServletRequest, "site-or-asset-library"),
-						": ", _getScopeLabel(scopeId)));
+					_getLabel(
+						"site-or-asset-library", _getScopeLabel(scopeId)));
 			});
 
 		List<? extends ContentDashboardItemSubtype>
 			contentDashboardItemSubtypes =
 				_contentDashboardAdminDisplayContext.
 					getContentDashboardItemSubtypes();
-
-		List<String> fileExtensions =
-			_contentDashboardAdminDisplayContext.getFileExtensions();
-
-		for (String fileExtension : fileExtensions) {
-			labelItemListWrapper.add(
-				labelItem -> {
-					labelItem.putData(
-						"removeLabelURL",
-						String.valueOf(
-							PortletURLBuilder.create(
-								PortletURLUtil.clone(
-									currentURLObj, liferayPortletResponse)
-							).setParameter(
-								"fileExtension",
-								() -> {
-									Stream<String> stream =
-										fileExtensions.stream();
-
-									return stream.filter(
-										curFileExtension -> !Objects.equals(
-											curFileExtension, fileExtension)
-									).toArray(
-										String[]::new
-									);
-								}
-							).buildString()));
-					labelItem.setCloseable(true);
-					labelItem.setLabel(
-						StringBundler.concat(
-							LanguageUtil.get(httpServletRequest, "extension"),
-							": ", fileExtension));
-				});
-		}
 
 		for (ContentDashboardItemSubtype contentDashboardItemSubtype :
 				contentDashboardItemSubtypes) {
@@ -264,49 +262,13 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 				labelItem -> {
 					labelItem.putData(
 						"removeLabelURL",
-						String.valueOf(
-							PortletURLBuilder.create(
-								PortletURLUtil.clone(
-									currentURLObj, liferayPortletResponse)
-							).setParameter(
-								"contentDashboardItemSubtypePayload",
-								() -> {
-									Stream
-										<? extends ContentDashboardItemSubtype>
-											stream =
-												contentDashboardItemSubtypes.
-													stream();
-
-									InfoItemReference infoItemReference =
-										contentDashboardItemSubtype.
-											getInfoItemReference();
-
-									return stream.filter(
-										curContentDashboardItemSubtype -> {
-											InfoItemReference
-												curInfoItemReference =
-													curContentDashboardItemSubtype.
-														getInfoItemReference();
-
-											return !Objects.equals(
-												curInfoItemReference.
-													getClassPK(),
-												infoItemReference.getClassPK());
-										}
-									).map(
-										curContentDashboardItemSubtype ->
-											curContentDashboardItemSubtype.
-												toJSONString(_locale)
-									).toArray(
-										String[]::new
-									);
-								}
-							).buildString()));
+						_getRemoveContentDashboardItemSubtypePayloadsURL(
+							contentDashboardItemSubtypes,
+							contentDashboardItemSubtype));
 					labelItem.setCloseable(true);
 					labelItem.setLabel(
-						StringBundler.concat(
-							LanguageUtil.get(httpServletRequest, "subtype"),
-							": ",
+						_getLabel(
+							"subtype",
 							contentDashboardItemSubtype.getFullLabel(_locale)));
 				});
 		}
@@ -319,38 +281,32 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 				labelItem -> {
 					labelItem.putData(
 						"removeLabelURL",
-						String.valueOf(
-							PortletURLBuilder.create(
-								PortletURLUtil.clone(
-									currentURLObj, liferayPortletResponse)
-							).setParameter(
-								"authorIds",
-								() -> {
-									Stream<Long> stream = authorIds.stream();
+						_getRemoveLabelURL(
+							"authorIds",
+							() -> TransformUtil.transformToArray(
+								authorIds,
+								curAuthorId -> {
+									if (Objects.equals(authorId, curAuthorId)) {
+										return null;
+									}
 
-									return stream.filter(
-										id -> id != authorId
-									).map(
-										String::valueOf
-									).toArray(
-										String[]::new
-									);
-								}
-							).buildString()));
+									return String.valueOf(curAuthorId);
+								},
+								String.class)));
 					labelItem.setCloseable(true);
+
+					String fullName = StringPool.BLANK;
+
+					User user = _userLocalService.fetchUser(authorId);
+
+					if (user != null) {
+						fullName = user.getFullName();
+					}
+
 					labelItem.setLabel(
-						StringBundler.concat(
-							LanguageUtil.get(httpServletRequest, "author"),
-							StringPool.COLON,
-							LanguageUtil.get(
-								httpServletRequest,
-								Optional.ofNullable(
-									_userLocalService.fetchUser(authorId)
-								).map(
-									User::getFullName
-								).orElse(
-									StringPool.BLANK
-								))));
+						_getLabel(
+							"author",
+							_language.get(httpServletRequest, fullName)));
 				});
 		}
 
@@ -361,16 +317,24 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 			labelItem -> {
 				labelItem.putData(
 					"removeLabelURL",
-					PortletURLBuilder.create(
-						PortletURLUtil.clone(
-							currentURLObj, liferayPortletResponse)
-					).setParameter(
-						"status", (String)null
-					).buildString());
+					_getRemoveLabelURL("status", (String)null));
 				labelItem.setCloseable(true);
 				labelItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "status") + ": " +
-						_getStatusLabel(status));
+					_getLabel("status", _getStatusLabel(status)));
+			});
+
+		labelItemListWrapper.add(
+			() -> Validator.isNotNull(
+				_contentDashboardAdminDisplayContext.getReviewDateString()),
+			labelItem -> {
+				labelItem.putData(
+					"removeLabelURL",
+					_getRemoveLabelURL("reviewDate", (String)null));
+				labelItem.setCloseable(true);
+				labelItem.setLabel(
+					_getLabel(
+						"review-date",
+						_language.get(httpServletRequest, "to-be-reviewed")));
 			});
 
 		Set<String> assetTagIds =
@@ -381,28 +345,22 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 				labelItem -> {
 					labelItem.putData(
 						"removeLabelURL",
-						String.valueOf(
-							PortletURLBuilder.create(
-								PortletURLUtil.clone(
-									currentURLObj, liferayPortletResponse)
-							).setParameter(
-								"assetTagId",
-								() -> {
-									Stream<String> stream =
-										assetTagIds.stream();
+						_getRemoveLabelURL(
+							"assetTagId",
+							() -> TransformUtil.transformToArray(
+								assetTagIds,
+								curAssetTagId -> {
+									if (Objects.equals(
+											assetTagId, curAssetTagId)) {
 
-									return stream.filter(
-										id -> !Objects.equals(id, assetTagId)
-									).toArray(
-										String[]::new
-									);
-								}
-							).buildString()));
+										return null;
+									}
+
+									return curAssetTagId;
+								},
+								String.class)));
 					labelItem.setCloseable(true);
-					labelItem.setLabel(
-						StringBundler.concat(
-							LanguageUtil.get(httpServletRequest, "tag"),
-							StringPool.COLON, assetTagId));
+					labelItem.setLabel(_getLabel("tag", assetTagId));
 				});
 		}
 
@@ -416,7 +374,7 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			return liferayPortletResponse.createRenderURL();
@@ -430,41 +388,29 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 		List<Long> assetCategoryIds =
 			_contentDashboardAdminDisplayContext.getAssetCategoryIds();
 
-		if (!ListUtil.isEmpty(assetCategoryIds)) {
-			Stream<Long> stream = assetCategoryIds.stream();
-
+		if (ListUtil.isNotEmpty(assetCategoryIds)) {
 			portletURL.setParameter(
 				"assetCategoryId",
-				stream.map(
-					String::valueOf
-				).toArray(
-					String[]::new
-				));
+				TransformUtil.transformToArray(
+					assetCategoryIds, String::valueOf, String.class));
 		}
 
 		Set<String> assetTagIds =
 			_contentDashboardAdminDisplayContext.getAssetTagIds();
 
-		if (!SetUtil.isEmpty(assetTagIds)) {
-			Stream<String> stream = assetTagIds.stream();
-
+		if (SetUtil.isNotEmpty(assetTagIds)) {
 			portletURL.setParameter(
-				"assetTagId", stream.toArray(String[]::new));
+				"assetTagId", assetTagIds.toArray(new String[0]));
 		}
 
 		List<Long> authorIds =
 			_contentDashboardAdminDisplayContext.getAuthorIds();
 
-		if (!ListUtil.isEmpty(authorIds)) {
-			Stream<Long> stream = authorIds.stream();
-
+		if (ListUtil.isNotEmpty(authorIds)) {
 			portletURL.setParameter(
 				"authorIds",
-				stream.map(
-					String::valueOf
-				).toArray(
-					String[]::new
-				));
+				TransformUtil.transformToArray(
+					authorIds, String::valueOf, String.class));
 		}
 
 		List<? extends ContentDashboardItemSubtype>
@@ -472,22 +418,21 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 				_contentDashboardAdminDisplayContext.
 					getContentDashboardItemSubtypes();
 
-		if (!ListUtil.isEmpty(contentDashboardItemSubtypes)) {
-			Stream<? extends ContentDashboardItemSubtype> stream =
-				contentDashboardItemSubtypes.stream();
-
+		if (ListUtil.isNotEmpty(contentDashboardItemSubtypes)) {
 			portletURL.setParameter(
 				"contentDashboardItemSubtypePayload",
-				stream.map(
+				TransformUtil.transformToArray(
+					contentDashboardItemSubtypes,
 					contentDashboardItemSubtype ->
-						contentDashboardItemSubtype.toJSONString(_locale)
-				).toArray(
-					String[]::new
-				));
+						contentDashboardItemSubtype.toJSONString(_locale),
+					String.class));
 		}
 
 		portletURL.setParameter("orderByCol", getOrderByCol());
 		portletURL.setParameter("orderByType", getOrderByType());
+		portletURL.setParameter(
+			"reviewDate",
+			_contentDashboardAdminDisplayContext.getReviewDateString());
 		portletURL.setParameter(
 			"scopeId",
 			String.valueOf(_contentDashboardAdminDisplayContext.getScopeId()));
@@ -504,111 +449,153 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 	}
 
 	@Override
-	public Boolean isDisabled() {
-		return false;
-	}
-
-	@Override
 	public Boolean isSelectable() {
 		return false;
 	}
 
 	@Override
 	protected String[] getOrderByKeys() {
-		return new String[] {"title", "modified-date"};
+		return new String[] {"title", "modified-date", "review-date"};
 	}
 
-	private PortletURL _getAssetCategorySelectorURL() throws PortalException {
-		return PortletURLBuilder.create(
-			PortletProviderUtil.getPortletURL(
-				_liferayPortletRequest, AssetCategory.class.getName(),
-				PortletProvider.Action.BROWSE)
-		).setParameter(
-			"eventName",
-			_liferayPortletResponse.getNamespace() + "selectedAssetCategory"
-		).setParameter(
-			"selectedCategories",
-			() -> {
-				List<Long> assetCategoryIds =
-					_contentDashboardAdminDisplayContext.getAssetCategoryIds();
+	private void _addContentDashboardItemFilterProviders(
+		LabelItemListBuilder.LabelItemListWrapper labelItemListWrapper) {
 
-				Stream<Long> assetCategoryIdsStream = assetCategoryIds.stream();
+		List<ContentDashboardItemFilterProvider>
+			contentDashboardItemFilterProviders =
+				_contentDashboardItemFilterProviderRegistry.
+					getContentDashboardItemFilterProviders();
 
-				return assetCategoryIdsStream.map(
-					String::valueOf
-				).collect(
-					Collectors.joining(StringPool.COMMA)
-				);
+		for (ContentDashboardItemFilterProvider
+				contentDashboardItemFilterProvider :
+					contentDashboardItemFilterProviders) {
+
+			try {
+				ContentDashboardItemFilter contentDashboardItemFilter =
+					contentDashboardItemFilterProvider.
+						getContentDashboardItemFilter(
+							_liferayPortletRequest.getHttpServletRequest());
+
+				List<String> parameterValues =
+					contentDashboardItemFilter.getParameterValues();
+
+				for (String parameterValue : parameterValues) {
+					labelItemListWrapper.add(
+						labelItem -> {
+							labelItem.putData(
+								"removeLabelURL",
+								_getRemoveLabelURL(
+									contentDashboardItemFilter.
+										getParameterName(),
+									() -> TransformUtil.transformToArray(
+										parameterValues,
+										curParameterValue -> {
+											if (Objects.equals(
+													parameterValue,
+													curParameterValue)) {
+
+												return null;
+											}
+
+											return curParameterValue;
+										},
+										String.class)));
+							labelItem.setCloseable(true);
+							labelItem.setLabel(
+								_getLabel(
+									contentDashboardItemFilter.
+										getParameterLabel(_locale),
+									parameterValue));
+						});
+				}
 			}
+			catch (ContentDashboardItemActionException
+						contentDashboardItemActionException) {
+
+				_log.error(contentDashboardItemActionException);
+			}
+		}
+	}
+
+	private String _getAssetCategorySelectorURL() throws PortalException {
+		RequestBackedPortletURLFactory requestBackedPortletURLFactory =
+			RequestBackedPortletURLFactoryUtil.create(_liferayPortletRequest);
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		InfoItemItemSelectorCriterion itemSelectorCriterion =
+			new InfoItemItemSelectorCriterion();
+
+		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new InfoItemItemSelectorReturnType());
+		itemSelectorCriterion.setItemType(AssetCategory.class.getName());
+		itemSelectorCriterion.setMultiSelection(true);
+
+		return PortletURLBuilder.create(
+			_itemSelector.getItemSelectorURL(
+				requestBackedPortletURLFactory, themeDisplay.getScopeGroup(),
+				themeDisplay.getScopeGroupId(),
+				_liferayPortletResponse.getNamespace() +
+					"selectedAssetCategory",
+				itemSelectorCriterion)
 		).setParameter(
-			"singleSelect", false
+			"selectedCategoryIds",
+			StringUtil.merge(
+				_contentDashboardAdminDisplayContext.getAssetCategoryIds(),
+				StringPool.COMMA)
 		).setParameter(
 			"vocabularyIds",
-			() -> {
-				ThemeDisplay themeDisplay =
-					(ThemeDisplay)_liferayPortletRequest.getAttribute(
-						WebKeys.THEME_DISPLAY);
-
-				List<AssetVocabulary> assetVocabularies =
-					_assetVocabularyLocalService.getCompanyVocabularies(
-						themeDisplay.getCompanyId());
-
-				Stream<AssetVocabulary> assetVocabularyStream =
-					assetVocabularies.stream();
-
-				return assetVocabularyStream.map(
-					AssetVocabulary::getVocabularyId
-				).map(
-					String::valueOf
-				).collect(
-					Collectors.joining(StringPool.COMMA)
-				);
-			}
-		).setWindowState(
-			LiferayWindowState.POP_UP
-		).buildPortletURL();
+			() -> ListUtil.toString(
+				_assetVocabularyLocalService.getCompanyVocabularies(
+					themeDisplay.getCompanyId()),
+				AssetVocabulary.VOCABULARY_ID_ACCESSOR)
+		).buildString();
 	}
 
-	private PortletURL _getAssetTagSelectorURL() throws PortalException {
-		return PortletURLBuilder.create(
-			PortletProviderUtil.getPortletURL(
-				_liferayPortletRequest, AssetTag.class.getName(),
-				PortletProvider.Action.BROWSE)
-		).setParameter(
-			"eventName",
-			_liferayPortletResponse.getNamespace() + "selectedAssetTag"
-		).setParameter(
-			"groupIds",
-			() -> {
-				ThemeDisplay themeDisplay =
-					(ThemeDisplay)_liferayPortletRequest.getAttribute(
-						WebKeys.THEME_DISPLAY);
+	private PortletURL _getAssetTagSelectorURL() {
+		AssetTagsItemSelectorCriterion assetTagsItemSelectorCriterion =
+			new AssetTagsItemSelectorCriterion();
 
-				List<Long> groupIds = _groupLocalService.getGroupIds(
-					themeDisplay.getCompanyId(), true);
+		assetTagsItemSelectorCriterion.setAllGroupIds(true);
+		assetTagsItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new AssetTagsItemSelectorReturnType());
+		assetTagsItemSelectorCriterion.setMultiSelection(true);
 
-				Stream<Long> groupIdsStream = groupIds.stream();
+		return _itemSelector.getItemSelectorURL(
+			RequestBackedPortletURLFactoryUtil.create(_liferayPortletRequest),
+			_liferayPortletResponse.getNamespace() + "selectTag",
+			assetTagsItemSelectorCriterion);
+	}
 
-				return groupIdsStream.map(
-					String::valueOf
-				).collect(
-					Collectors.joining(StringPool.COMMA)
-				);
-			}
-		).setParameter(
-			"selectedTagNames",
-			() -> {
-				Set<String> assetTagIds =
-					_contentDashboardAdminDisplayContext.getAssetTagIds();
+	private List<DropdownItem>
+		_getContentDashboardItemFilterProviderDropdownItems() {
 
-				Stream<String> assetTagIdsStream = assetTagIds.stream();
+		return TransformUtil.transform(
+			_contentDashboardItemFilterProviderRegistry.
+				getContentDashboardItemFilterProviders(),
+			contentDashboardItemFilterProvider -> {
+				try {
+					ContentDashboardItemFilter contentDashboardItemFilter =
+						contentDashboardItemFilterProvider.
+							getContentDashboardItemFilter(
+								_liferayPortletRequest.getHttpServletRequest());
 
-				return assetTagIdsStream.collect(
-					Collectors.joining(StringPool.COMMA));
-			}
-		).setWindowState(
-			LiferayWindowState.POP_UP
-		).buildPortletURL();
+					if (contentDashboardItemFilter == null) {
+						return null;
+					}
+
+					return contentDashboardItemFilter.getDropdownItem();
+				}
+				catch (ContentDashboardItemActionException
+							contentDashboardItemActionException) {
+
+					_log.error(contentDashboardItemActionException);
+				}
+
+				return null;
+			});
 	}
 
 	private List<DropdownItem> _getFilterAuthorDropdownItems() {
@@ -625,7 +612,7 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 					"authorIds", (String)null
 				).buildPortletURL()
 			).setLabel(
-				LanguageUtil.get(httpServletRequest, "all")
+				_language.get(httpServletRequest, "all")
 			).build(),
 			() -> {
 				DropdownItem dropdownItem = new DropdownItem();
@@ -640,8 +627,7 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 				dropdownItem.setHref(
 					getPortletURL(), "authorIds",
 					_contentDashboardAdminDisplayContext.getUserId());
-				dropdownItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "me"));
+				dropdownItem.setLabel(_language.get(httpServletRequest, "me"));
 
 				return dropdownItem;
 			},
@@ -649,7 +635,7 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 				"action", "selectAuthor"
 			).putData(
 				"dialogTitle",
-				LanguageUtil.get(httpServletRequest, "select-author")
+				_language.get(httpServletRequest, "select-author")
 			).putData(
 				"redirectURL",
 				PortletURLBuilder.create(
@@ -659,9 +645,7 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 				).buildString()
 			).putData(
 				"selectAuthorURL",
-				String.valueOf(
-					_contentDashboardAdminDisplayContext.
-						getAuthorItemSelectorURL())
+				_contentDashboardAdminDisplayContext.getAuthorItemSelectorURL()
 			).setActive(
 				() -> {
 					if (((authorIds.size() == 1) &&
@@ -676,18 +660,39 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 					return null;
 				}
 			).setLabel(
-				LanguageUtil.get(httpServletRequest, "author") +
+				_language.get(httpServletRequest, "author") +
 					StringPool.TRIPLE_PERIOD
 			).build());
 	}
 
+	private List<DropdownItem> _getFilterByReviewDateDropdownItems() {
+		String reviewDate =
+			_contentDashboardAdminDisplayContext.getReviewDateString();
+
+		return DropdownItemListBuilder.add(
+			dropdownItem -> {
+				dropdownItem.setActive(Validator.isNull(reviewDate));
+				dropdownItem.setHref(getPortletURL(), "reviewDate", null);
+				dropdownItem.setLabel(_language.get(httpServletRequest, "all"));
+			}
+		).add(
+			dropdownItem -> {
+				dropdownItem.setActive(Validator.isNotNull(reviewDate));
+				dropdownItem.setHref(
+					getPortletURL(), "reviewDate", "toBeReviewed");
+				dropdownItem.setLabel(
+					_language.get(httpServletRequest, "to-be-reviewed"));
+			}
+		).build();
+	}
+
 	private List<DropdownItem> _getFilterDropdownItems() {
-		return DropdownItemList.of(
+		DropdownItemList dropdownItemList = DropdownItemList.of(
 			() -> DropdownItemBuilder.putData(
 				"action", "selectAssetCategory"
 			).putData(
 				"dialogTitle",
-				LanguageUtil.get(httpServletRequest, "select-categories")
+				_language.get(httpServletRequest, "select-categories")
 			).putData(
 				"redirectURL",
 				PortletURLBuilder.create(
@@ -696,24 +701,23 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 					"assetCategoryId", (String)null
 				).buildString()
 			).putData(
-				"selectAssetCategoryURL",
-				String.valueOf(_getAssetCategorySelectorURL())
+				"selectAssetCategoryURL", _getAssetCategorySelectorURL()
 			).setActive(
-				!ListUtil.isEmpty(
+				ListUtil.isNotEmpty(
 					_contentDashboardAdminDisplayContext.getAssetCategoryIds())
 			).setLabel(
-				LanguageUtil.get(httpServletRequest, "categories") +
+				_language.get(httpServletRequest, "categories") +
 					StringPool.TRIPLE_PERIOD
 			).build(),
 			() -> {
-				String label = LanguageUtil.get(
+				String label = _language.get(
 					httpServletRequest, "site-or-asset-library");
 
 				return DropdownItemBuilder.putData(
 					"action", "selectScope"
 				).putData(
 					"dialogTitle",
-					LanguageUtil.get(
+					_language.get(
 						httpServletRequest, "select-site-or-asset-library")
 				).putData(
 					"redirectURL",
@@ -737,7 +741,7 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 				"action", "selectContentDashboardItemSubtype"
 			).putData(
 				"dialogTitle",
-				LanguageUtil.get(httpServletRequest, "filter-by-type")
+				_language.get(httpServletRequest, "filter-by-type")
 			).putData(
 				"redirectURL",
 				PortletURLBuilder.create(
@@ -751,42 +755,17 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 					_contentDashboardAdminDisplayContext.
 						getContentDashboardItemSubtypeItemSelectorURL())
 			).setActive(
-				!ListUtil.isEmpty(
+				ListUtil.isNotEmpty(
 					_contentDashboardAdminDisplayContext.
 						getContentDashboardItemSubtypes())
 			).setLabel(
-				LanguageUtil.get(httpServletRequest, "type") +
-					StringPool.TRIPLE_PERIOD
-			).build(),
-			() -> DropdownItemBuilder.putData(
-				"action", "selectFileExtension"
-			).putData(
-				"dialogTitle",
-				LanguageUtil.get(httpServletRequest, "filter-by-extension")
-			).putData(
-				"redirectURL",
-				PortletURLBuilder.create(
-					getPortletURL()
-				).setParameter(
-					"fileExtension", (String)null
-				).buildString()
-			).putData(
-				"selectFileExtensionURL",
-				String.valueOf(
-					_contentDashboardAdminDisplayContext.
-						getFileExtensionItemSelectorURL())
-			).setActive(
-				!ListUtil.isEmpty(
-					_contentDashboardAdminDisplayContext.getFileExtensions())
-			).setLabel(
-				LanguageUtil.get(httpServletRequest, "extension") +
+				_language.get(httpServletRequest, "type") +
 					StringPool.TRIPLE_PERIOD
 			).build(),
 			() -> DropdownItemBuilder.putData(
 				"action", "selectAssetTag"
 			).putData(
-				"dialogTitle",
-				LanguageUtil.get(httpServletRequest, "select-tags")
+				"dialogTitle", _language.get(httpServletRequest, "select-tags")
 			).putData(
 				"redirectURL",
 				PortletURLBuilder.create(
@@ -797,12 +776,17 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 			).putData(
 				"selectTagURL", String.valueOf(_getAssetTagSelectorURL())
 			).setActive(
-				!ListUtil.isEmpty(
-					_contentDashboardAdminDisplayContext.getAssetCategoryIds())
+				SetUtil.isNotEmpty(
+					_contentDashboardAdminDisplayContext.getAssetTagIds())
 			).setLabel(
-				LanguageUtil.get(httpServletRequest, "tags") +
+				_language.get(httpServletRequest, "tags") +
 					StringPool.TRIPLE_PERIOD
 			).build());
+
+		dropdownItemList.addAll(
+			_getContentDashboardItemFilterProviderDropdownItems());
+
+		return dropdownItemList;
 	}
 
 	private List<DropdownItem> _getFilterStatusDropdownItems() {
@@ -825,27 +809,95 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 		};
 	}
 
+	private String _getLabel(String key, String value) {
+		return StringBundler.concat(
+			_language.get(httpServletRequest, key), StringPool.COLON,
+			StringPool.SPACE, value);
+	}
+
+	private String _getRemoveContentDashboardItemSubtypePayloadsURL(
+			List<? extends ContentDashboardItemSubtype>
+				contentDashboardItemSubtypes,
+			ContentDashboardItemSubtype<?> contentDashboardItemSubtype)
+		throws PortletException {
+
+		InfoItemReference infoItemReference =
+			contentDashboardItemSubtype.getInfoItemReference();
+
+		return PortletURLBuilder.create(
+			PortletURLUtil.clone(currentURLObj, liferayPortletResponse)
+		).setParameter(
+			"contentDashboardItemSubtypePayload",
+			() -> TransformUtil.transformToArray(
+				contentDashboardItemSubtypes,
+				curContentDashboardItemSubtype -> {
+					InfoItemReference curInfoItemReference =
+						curContentDashboardItemSubtype.getInfoItemReference();
+
+					if (Objects.equals(
+							infoItemReference, curInfoItemReference)) {
+
+						return null;
+					}
+
+					return curContentDashboardItemSubtype.toJSONString(_locale);
+				},
+				String.class)
+		).buildString();
+	}
+
+	private String _getRemoveLabelURL(
+			String name,
+			PortletURLBuilder.UnsafeSupplier<Object, Exception>
+				valueUnsafeSupplier)
+		throws PortletException {
+
+		return PortletURLBuilder.create(
+			PortletURLUtil.clone(currentURLObj, liferayPortletResponse)
+		).setParameter(
+			name, valueUnsafeSupplier
+		).buildString();
+	}
+
+	private String _getRemoveLabelURL(String name, String value)
+		throws PortletException {
+
+		return PortletURLBuilder.create(
+			PortletURLUtil.clone(currentURLObj, liferayPortletResponse)
+		).setParameter(
+			name, value
+		).buildString();
+	}
+
 	private String _getScopeLabel(long scopeId) {
-		return Optional.ofNullable(
-			_groupLocalService.fetchGroup(scopeId)
-		).map(
-			group -> ContentDashboardGroupUtil.getGroupName(group, _locale)
-		).orElse(
-			StringPool.BLANK
-		);
+		Group group = _groupLocalService.fetchGroup(scopeId);
+
+		if (group == null) {
+			return StringPool.BLANK;
+		}
+
+		try {
+			return group.getDescriptiveName(_locale);
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+
+			return group.getName(_locale);
+		}
 	}
 
 	private List<Integer> _getStatuses() {
 		return Arrays.asList(
-			WorkflowConstants.STATUS_ANY, WorkflowConstants.STATUS_DRAFT,
-			WorkflowConstants.STATUS_SCHEDULED,
-			WorkflowConstants.STATUS_APPROVED);
+			WorkflowConstants.STATUS_ANY, WorkflowConstants.STATUS_APPROVED,
+			WorkflowConstants.STATUS_DRAFT, WorkflowConstants.STATUS_EXPIRED,
+			WorkflowConstants.STATUS_PENDING,
+			WorkflowConstants.STATUS_SCHEDULED);
 	}
 
 	private String _getStatusLabel(int status) {
 		String label = WorkflowConstants.getStatusLabel(status);
 
-		return LanguageUtil.get(httpServletRequest, label);
+		return _language.get(httpServletRequest, label);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -855,7 +907,11 @@ public class ContentDashboardAdminManagementToolbarDisplayContext
 	private final AssetVocabularyLocalService _assetVocabularyLocalService;
 	private final ContentDashboardAdminDisplayContext
 		_contentDashboardAdminDisplayContext;
+	private final ContentDashboardItemFilterProviderRegistry
+		_contentDashboardItemFilterProviderRegistry;
 	private final GroupLocalService _groupLocalService;
+	private final ItemSelector _itemSelector;
+	private final Language _language;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
 	private final Locale _locale;

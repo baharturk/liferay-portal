@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.portlet.action.helper;
@@ -21,7 +12,6 @@ import com.liferay.dynamic.data.mapping.exception.StructureDefinitionException;
 import com.liferay.dynamic.data.mapping.exception.StructureLayoutException;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormContextDeserializer;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormContextDeserializerRequest;
-import com.liferay.dynamic.data.mapping.form.web.internal.configuration.activator.FFSubmissionsSettingsConfigurationActivator;
 import com.liferay.dynamic.data.mapping.form.web.internal.portlet.action.util.DDMFormInstanceFieldSettingsValidator;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
@@ -39,7 +29,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.redirect.RedirectURLSettings;
@@ -81,7 +71,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marcellus Tavares
  */
-@Component(immediate = true, service = SaveFormInstanceMVCCommandHelper.class)
+@Component(service = SaveFormInstanceMVCCommandHelper.class)
 public class SaveFormInstanceMVCCommandHelper {
 
 	public Map<Locale, String> getNameMap(
@@ -96,8 +86,7 @@ public class SaveFormInstanceMVCCommandHelper {
 		if (nameMap.isEmpty() || Validator.isNull(nameMap.get(defaultLocale))) {
 			nameMap.put(
 				defaultLocale,
-				LanguageUtil.get(
-					_getResourceBundle(defaultLocale), defaultName));
+				_language.get(_getResourceBundle(defaultLocale), defaultName));
 		}
 
 		return nameMap;
@@ -274,7 +263,7 @@ public class SaveFormInstanceMVCCommandHelper {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return valueString;
@@ -284,7 +273,7 @@ public class SaveFormInstanceMVCCommandHelper {
 	private String _getRedirectURLExceptionMessage(
 		HttpServletRequest httpServletRequest, String fieldName, String value) {
 
-		return LanguageUtil.format(
+		return _language.format(
 			httpServletRequest,
 			"the-external-redirect-url-x-is-not-allowed.-set-it-in-the-x-" +
 				"field-of-the-x-configuration-in-x-to-allow-it",
@@ -321,7 +310,7 @@ public class SaveFormInstanceMVCCommandHelper {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return null;
@@ -373,12 +362,6 @@ public class SaveFormInstanceMVCCommandHelper {
 	private void _validateExpirationDate(DDMFormValues ddmFormValues)
 		throws Exception {
 
-		if (!_ffSubmissionsSettingsConfigurationActivator.
-				expirationDateEnabled()) {
-
-			return;
-		}
-
 		Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
 			ddmFormValues.getDDMFormFieldValuesMap(false);
 
@@ -395,7 +378,7 @@ public class SaveFormInstanceMVCCommandHelper {
 			}
 			catch (DateTimeParseException dateTimeParseException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(dateTimeParseException, dateTimeParseException);
+					_log.debug(dateTimeParseException);
 				}
 
 				DDMForm ddmForm = ddmFormValues.getDDMForm();
@@ -483,15 +466,14 @@ public class SaveFormInstanceMVCCommandHelper {
 					}
 					catch (UnknownHostException unknownHostException) {
 						if (_log.isDebugEnabled()) {
-							_log.debug(
-								unknownHostException, unknownHostException);
+							_log.debug(unknownHostException);
 						}
 					}
 				}
 			}
 
 			throw new FormInstanceSettingsRedirectURLException(
-				LanguageUtil.get(
+				_language.get(
 					httpServletRequest,
 					"the-specified-redirect-url-is-not-allowed"));
 		}
@@ -527,7 +509,7 @@ public class SaveFormInstanceMVCCommandHelper {
 
 		if (Validator.isNull(objectDefinitionId)) {
 			throw new FormInstanceSettingsStorageTypeException(
-				LanguageUtil.get(
+				_language.get(
 					httpServletRequest,
 					"you-must-define-an-object-for-the-selected-storage-type"));
 		}
@@ -537,8 +519,7 @@ public class SaveFormInstanceMVCCommandHelper {
 		SaveFormInstanceMVCCommandHelper.class);
 
 	@Reference
-	private FFSubmissionsSettingsConfigurationActivator
-		_ffSubmissionsSettingsConfigurationActivator;
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -98,12 +89,12 @@ renderResponse.setTitle(!configuredExport ? LanguageUtil.get(request, "new-custo
 	/>
 
 	<%
-	int incompleteBackgroundTaskCount = BackgroundTaskManagerUtil.getBackgroundTasksCount(liveGroupId, BackgroundTaskExecutorNames.LAYOUT_EXPORT_BACKGROUND_TASK_EXECUTOR, false);
+	int incompleteBackgroundTasksCount = BackgroundTaskManagerUtil.getBackgroundTasksCount(liveGroupId, BackgroundTaskExecutorNames.LAYOUT_EXPORT_BACKGROUND_TASK_EXECUTOR, false);
 	%>
 
-	<div class="<%= (incompleteBackgroundTaskCount == 0) ? "hide" : "in-progress" %>" id="<portlet:namespace />incompleteProcessMessage">
+	<div class="<%= (incompleteBackgroundTasksCount == 0) ? "hide" : "in-progress" %>" id="<portlet:namespace />incompleteProcessMessage">
 		<liferay-util:include page="/incomplete_processes_message.jsp" servletContext="<%= application %>">
-			<liferay-util:param name="incompleteBackgroundTaskCount" value="<%= String.valueOf(incompleteBackgroundTaskCount) %>" />
+			<liferay-util:param name="incompleteBackgroundTasksCount" value="<%= String.valueOf(incompleteBackgroundTasksCount) %>" />
 		</liferay-util:include>
 	</div>
 
@@ -128,56 +119,62 @@ renderResponse.setTitle(!configuredExport ? LanguageUtil.get(request, "new-custo
 		<liferay-ui:error exception="<%= LARFileNameException.class %>" message="please-enter-a-file-with-a-valid-file-name" />
 
 		<div class="export-dialog-tree">
-			<aui:fieldset-group markupView="lexicon">
-				<aui:fieldset>
-					<c:choose>
-						<c:when test="<%= exportImportConfiguration == null %>">
-							<aui:input label="title" maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" placeholder="process-name-placeholder" />
-						</c:when>
-						<c:otherwise>
-							<aui:input label="title" maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" value="<%= exportImportConfiguration.getName() %>" />
-						</c:otherwise>
-					</c:choose>
-				</aui:fieldset>
+			<div class="alert alert-warning">
+				<liferay-ui:message key="export-process-deletion-warning-message" />
+			</div>
 
-				<liferay-staging:deletions
-					cmd="<%= Constants.EXPORT %>"
-					exportImportConfigurationId="<%= exportImportConfigurationId %>"
-				/>
+			<div class="sheet">
+				<div class="panel-group panel-group-flush">
+					<aui:fieldset>
+						<c:choose>
+							<c:when test="<%= exportImportConfiguration == null %>">
+								<aui:input label="title" maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" placeholder="process-name-placeholder" />
+							</c:when>
+							<c:otherwise>
+								<aui:input label="title" maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" value="<%= exportImportConfiguration.getName() %>" />
+							</c:otherwise>
+						</c:choose>
+					</aui:fieldset>
 
-				<c:if test="<%= !group.isDepot() && !group.isCompany() && !group.isLayoutPrototype() %>">
-					<liferay-staging:select-pages
-						action="<%= Constants.EXPORT %>"
+					<liferay-staging:deletions
+						cmd="<%= Constants.EXPORT %>"
+						exportImportConfigurationId="<%= exportImportConfigurationId %>"
+					/>
+
+					<c:if test="<%= !group.isDepot() && !group.isCompany() && !group.isLayoutPrototype() %>">
+						<liferay-staging:select-pages
+							action="<%= Constants.EXPORT %>"
+							disableInputs="<%= configuredExport %>"
+							exportImportConfigurationId="<%= exportImportConfigurationId %>"
+							groupId="<%= liveGroupId %>"
+							privateLayout="<%= privateLayout %>"
+							treeId="<%= treeId %>"
+						/>
+					</c:if>
+
+					<liferay-staging:content
+						cmd="<%= Constants.EXPORT %>"
 						disableInputs="<%= configuredExport %>"
 						exportImportConfigurationId="<%= exportImportConfigurationId %>"
-						groupId="<%= liveGroupId %>"
-						privateLayout="<%= privateLayout %>"
-						treeId="<%= treeId %>"
+						type="<%= Constants.EXPORT %>"
 					/>
-				</c:if>
 
-				<liferay-staging:content
-					cmd="<%= Constants.EXPORT %>"
-					disableInputs="<%= configuredExport %>"
-					exportImportConfigurationId="<%= exportImportConfigurationId %>"
-					type="<%= Constants.EXPORT %>"
-				/>
+					<liferay-staging:permissions
+						action="<%= Constants.EXPORT %>"
+						descriptionCSSClass="permissions-description"
+						disableInputs="<%= configuredExport %>"
+						exportImportConfigurationId="<%= exportImportConfigurationId %>"
+						global="<%= group.isCompany() %>"
+						labelCSSClass="permissions-label"
+					/>
 
-				<liferay-staging:permissions
-					action="<%= Constants.EXPORT %>"
-					descriptionCSSClass="permissions-description"
-					disableInputs="<%= configuredExport %>"
-					exportImportConfigurationId="<%= exportImportConfigurationId %>"
-					global="<%= group.isCompany() %>"
-					labelCSSClass="permissions-label"
-				/>
+					<div class="sheet-footer">
+						<aui:button type="submit" value="export" />
 
-				<div class="sheet-footer">
-					<aui:button type="submit" value="export" />
-
-					<aui:button href="<%= backURL %>" type="cancel" />
+						<aui:button href="<%= backURL %>" type="cancel" />
+					</div>
 				</div>
-			</aui:fieldset-group>
+			</div>
 		</div>
 	</aui:form>
 </clay:container-fluid>

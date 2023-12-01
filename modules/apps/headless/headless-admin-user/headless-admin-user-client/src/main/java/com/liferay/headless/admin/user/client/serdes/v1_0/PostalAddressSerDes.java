@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.client.serdes.v1_0;
@@ -129,6 +120,34 @@ public class PostalAddressSerDes {
 			sb.append("\"id\": ");
 
 			sb.append(postalAddress.getId());
+		}
+
+		if (postalAddress.getName() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"name\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(postalAddress.getName()));
+
+			sb.append("\"");
+		}
+
+		if (postalAddress.getPhoneNumber() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"phoneNumber\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(postalAddress.getPhoneNumber()));
+
+			sb.append("\"");
 		}
 
 		if (postalAddress.getPostalCode() != null) {
@@ -267,6 +286,21 @@ public class PostalAddressSerDes {
 			map.put("id", String.valueOf(postalAddress.getId()));
 		}
 
+		if (postalAddress.getName() == null) {
+			map.put("name", null);
+		}
+		else {
+			map.put("name", String.valueOf(postalAddress.getName()));
+		}
+
+		if (postalAddress.getPhoneNumber() == null) {
+			map.put("phoneNumber", null);
+		}
+		else {
+			map.put(
+				"phoneNumber", String.valueOf(postalAddress.getPhoneNumber()));
+		}
+
 		if (postalAddress.getPostalCode() == null) {
 			map.put("postalCode", null);
 		}
@@ -366,6 +400,16 @@ public class PostalAddressSerDes {
 				if (jsonParserFieldValue != null) {
 					postalAddress.setId(
 						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				if (jsonParserFieldValue != null) {
+					postalAddress.setName((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "phoneNumber")) {
+				if (jsonParserFieldValue != null) {
+					postalAddress.setPhoneNumber((String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "postalCode")) {

@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Hide contents in a category."
+		"en_US": "hide-contents-in-a-category-description"
 	},
 	"elementDefinition": {
 		"category": "hide",
@@ -37,7 +37,7 @@
 				{
 					"fields": [
 						{
-							"label": "Asset Category ID",
+							"label": "asset-category-name-id",
 							"name": "asset_category_id",
 							"type": "number"
 						}
@@ -46,7 +46,8 @@
 			]
 		}
 	},
+	"externalReferenceCode": "HIDE_CONTENTS_IN_A_CATEGORY",
 	"title_i18n": {
-		"en_US": "Hide Contents in a Category"
+		"en_US": "hide-contents-in-a-category"
 	}
 }

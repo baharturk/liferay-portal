@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.contributor.wiki;
 
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.similar.results.web.internal.helper.HttpHelper;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
@@ -42,50 +34,49 @@ public class WikiSimilarResultsContributor
 		String[] parameters = _httpHelper.getFriendlyURLParameters(
 			routeHelper.getURLString());
 
-		SearchStringUtil.requireEquals("wiki", parameters[0]);
+		SearchStringUtil.requireEquals(
+			"wiki", URLCodec.decodeURL(parameters[0]));
 
 		routeBuilder.addAttribute(
-			"nodeName", parameters[1]
+			"nodeName", URLCodec.decodeURL(parameters[1])
 		).addAttribute(
-			"title", parameters[2]
+			"title", URLCodec.decodeURL(parameters[2])
 		);
 	}
 
 	@Override
-	@Reference(unbind = "-")
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		super.setAssetEntryLocalService(assetEntryLocalService);
-	}
-
-	@Reference(unbind = "-")
-	protected void setHttpHelper(HttpHelper httpHelper) {
-		_httpHelper = httpHelper;
+	protected AssetEntryLocalService getAssetEntryLocalService() {
+		return _assetEntryLocalService;
 	}
 
 	@Override
-	@Reference(unbind = "-")
-	protected void setUIDFactory(UIDFactory uidFactory) {
-		super.setUIDFactory(uidFactory);
+	protected UIDFactory getUidFactory() {
+		return _uidFactory;
 	}
 
 	@Override
-	@Reference(unbind = "-")
-	protected void setWikiNodeLocalService(
-		WikiNodeLocalService wikiNodeLocalService) {
-
-		super.setWikiNodeLocalService(wikiNodeLocalService);
+	protected WikiNodeLocalService getWikiNodeLocalService() {
+		return _wikiNodeLocalService;
 	}
 
 	@Override
-	@Reference(unbind = "-")
-	protected void setWikiPageLocalService(
-		WikiPageLocalService wikiPageLocalService) {
-
-		super.setWikiPageLocalService(wikiPageLocalService);
+	protected WikiPageLocalService getWikiPageLocalService() {
+		return _wikiPageLocalService;
 	}
 
+	@Reference
+	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
 	private HttpHelper _httpHelper;
+
+	@Reference
+	private UIDFactory _uidFactory;
+
+	@Reference
+	private WikiNodeLocalService _wikiNodeLocalService;
+
+	@Reference
+	private WikiPageLocalService _wikiPageLocalService;
 
 }

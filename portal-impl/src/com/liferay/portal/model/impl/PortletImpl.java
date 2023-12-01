@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
 
-import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.expando.kernel.model.CustomAttributesDisplay;
 import com.liferay.exportimport.kernel.lar.PortletDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
@@ -33,10 +23,10 @@ import com.liferay.portal.kernel.model.PortletFilter;
 import com.liferay.portal.kernel.model.PortletInfo;
 import com.liferay.portal.kernel.model.PublicRenderParameter;
 import com.liferay.portal.kernel.model.portlet.PortletDependency;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.notifications.UserNotificationHandler;
 import com.liferay.portal.kernel.plugin.PluginPackage;
-import com.liferay.portal.kernel.poller.PollerProcessor;
 import com.liferay.portal.kernel.pop.MessageListener;
 import com.liferay.portal.kernel.portlet.ConfigurationAction;
 import com.liferay.portal.kernel.portlet.ControlPanelEntry;
@@ -44,6 +34,7 @@ import com.liferay.portal.kernel.portlet.FriendlyURLMapper;
 import com.liferay.portal.kernel.portlet.FriendlyURLMapperTracker;
 import com.liferay.portal.kernel.portlet.PortletBag;
 import com.liferay.portal.kernel.portlet.PortletBagPool;
+import com.liferay.portal.kernel.portlet.PortletConfigurationListener;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.PortletLayoutListener;
 import com.liferay.portal.kernel.portlet.PortletQNameUtil;
@@ -66,7 +57,6 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.webdav.WebDAVStorage;
@@ -164,8 +154,8 @@ public class PortletImpl extends PortletBaseImpl {
 		String friendlyURLMapping, String friendlyURLRoutes,
 		String urlEncoderClass, String portletDataHandlerClass,
 		List<String> stagedModelDataHandlerClasses, String templateHandlerClass,
-		String portletLayoutListenerClass, String pollerProcessorClass,
-		String popMessageListenerClass,
+		String portletConfigurationListenerClass,
+		String portletLayoutListenerClass, String popMessageListenerClass,
 		List<String> socialActivityInterpreterClasses,
 		String socialRequestInterpreterClass,
 		String userNotificationDefinitions,
@@ -240,8 +230,8 @@ public class PortletImpl extends PortletBaseImpl {
 		_portletDataHandlerClass = portletDataHandlerClass;
 		_stagedModelDataHandlerClasses = stagedModelDataHandlerClasses;
 		_templateHandlerClass = templateHandlerClass;
+		_portletConfigurationListenerClass = portletConfigurationListenerClass;
 		_portletLayoutListenerClass = portletLayoutListenerClass;
-		_pollerProcessorClass = pollerProcessorClass;
 		_popMessageListenerClass = popMessageListenerClass;
 		_socialActivityInterpreterClasses = socialActivityInterpreterClasses;
 		_socialRequestInterpreterClass = socialRequestInterpreterClass;
@@ -406,11 +396,11 @@ public class PortletImpl extends PortletBaseImpl {
 			getPortletName(), getDisplayName(), getPortletClass(),
 			getConfigurationActionClass(), getIndexerClasses(),
 			getOpenSearchClass(), getSchedulerEntries(), getPortletURLClass(),
-			getFriendlyURLMapperClass(), getFriendlyURLMapping(),
+			getFriendlyURLMapperClass(), _friendlyURLMapping,
 			getFriendlyURLRoutes(), getURLEncoderClass(),
 			getPortletDataHandlerClass(), getStagedModelDataHandlerClasses(),
-			getTemplateHandlerClass(), getPortletLayoutListenerClass(),
-			getPollerProcessorClass(), getPopMessageListenerClass(),
+			getTemplateHandlerClass(), getPortletConfigurationListenerClass(),
+			getPortletLayoutListenerClass(), getPopMessageListenerClass(),
 			getSocialActivityInterpreterClasses(),
 			getSocialRequestInterpreterClass(),
 			getUserNotificationDefinitions(),
@@ -603,22 +593,6 @@ public class PortletImpl extends PortletBaseImpl {
 	}
 
 	/**
-	 * Returns the asset type instances of the portlet.
-	 *
-	 * @return the asset type instances of the portlet
-	 */
-	@Override
-	public List<AssetRendererFactory<?>> getAssetRendererFactoryInstances() {
-		if (_assetRendererFactoryClasses.isEmpty()) {
-			return null;
-		}
-
-		PortletBag portletBag = PortletBagPool.get(getRootPortletId());
-
-		return portletBag.getAssetRendererFactoryInstances();
-	}
-
-	/**
 	 * Returns the names of the parameters that will be automatically propagated
 	 * through the portlet.
 	 *
@@ -737,15 +711,17 @@ public class PortletImpl extends PortletBaseImpl {
 	public ControlPanelEntry getControlPanelEntryInstance() {
 		PortletBag portletBag = PortletBagPool.get(getRootPortletId());
 
+		ControlPanelEntry controlPanelEntry = _controlPanelEntrySnapshot.get();
+
 		if (portletBag == null) {
-			return _controlPanelEntry;
+			return controlPanelEntry;
 		}
 
 		List<ControlPanelEntry> controlPanelEntryInstances =
 			portletBag.getControlPanelEntryInstances();
 
 		if (controlPanelEntryInstances.isEmpty()) {
-			return _controlPanelEntry;
+			return controlPanelEntry;
 		}
 
 		return controlPanelEntryInstances.get(0);
@@ -927,18 +903,27 @@ public class PortletImpl extends PortletBaseImpl {
 	 */
 	@Override
 	public String getFriendlyURLMapping() {
+		return getFriendlyURLMapping(true);
+	}
+
+	@Override
+	public String getFriendlyURLMapping(boolean lookUpFriendlyURLMapper) {
 		if (Validator.isNotNull(_friendlyURLMapping)) {
 			return _friendlyURLMapping;
 		}
 
-		FriendlyURLMapper friendlyURLMapperInstance =
-			getFriendlyURLMapperInstance();
+		if (lookUpFriendlyURLMapper) {
+			FriendlyURLMapper friendlyURLMapperInstance =
+				getFriendlyURLMapperInstance();
 
-		if (friendlyURLMapperInstance == null) {
-			return null;
+			if (friendlyURLMapperInstance == null) {
+				return null;
+			}
+
+			return friendlyURLMapperInstance.getMapping();
 		}
 
-		return friendlyURLMapperInstance.getMapping();
+		return null;
 	}
 
 	/**
@@ -1280,35 +1265,6 @@ public class PortletImpl extends PortletBaseImpl {
 	}
 
 	/**
-	 * Returns the name of the poller processor class of the portlet.
-	 *
-	 * @return the name of the poller processor class of the portlet
-	 */
-	@Override
-	public String getPollerProcessorClass() {
-		return _pollerProcessorClass;
-	}
-
-	/**
-	 * Returns the poller processor instance of the portlet.
-	 *
-	 * @return the poller processor instance of the portlet
-	 */
-	@Override
-	public PollerProcessor getPollerProcessorInstance() {
-		PortletBag portletBag = PortletBagPool.get(getRootPortletId());
-
-		List<PollerProcessor> pollerProcessorInstances =
-			portletBag.getPollerProcessorInstances();
-
-		if (pollerProcessorInstances.isEmpty()) {
-			return null;
-		}
-
-		return pollerProcessorInstances.get(0);
-	}
-
-	/**
 	 * Returns the name of the POP message listener class of the portlet.
 	 *
 	 * @return the name of the POP message listener class of the portlet
@@ -1367,6 +1323,32 @@ public class PortletImpl extends PortletBaseImpl {
 	@Override
 	public String getPortletClass() {
 		return _portletClass;
+	}
+
+	@Override
+	public String getPortletConfigurationListenerClass() {
+		return _portletConfigurationListenerClass;
+	}
+
+	@Override
+	public PortletConfigurationListener
+		getPortletConfigurationListenerInstance() {
+
+		PortletBag portletBag = PortletBagPool.get(getRootPortletId());
+
+		if (portletBag == null) {
+			return null;
+		}
+
+		List<PortletConfigurationListener>
+			portletConfigurationListenerInstances =
+				portletBag.getPortletConfigurationListenerInstances();
+
+		if (portletConfigurationListenerInstances.isEmpty()) {
+			return null;
+		}
+
+		return portletConfigurationListenerInstances.get(0);
 	}
 
 	/**
@@ -2314,7 +2296,7 @@ public class PortletImpl extends PortletBaseImpl {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return false;
@@ -3473,17 +3455,6 @@ public class PortletImpl extends PortletBaseImpl {
 	}
 
 	/**
-	 * Sets the name of the poller processor class of the portlet.
-	 *
-	 * @param pollerProcessorClass the name of the poller processor class of the
-	 *        portlet
-	 */
-	@Override
-	public void setPollerProcessorClass(String pollerProcessorClass) {
-		_pollerProcessorClass = pollerProcessorClass;
-	}
-
-	/**
 	 * Sets the name of the POP message listener class of the portlet.
 	 *
 	 * @param popMessageListenerClass the name of the POP message listener class
@@ -3526,6 +3497,13 @@ public class PortletImpl extends PortletBaseImpl {
 	@Override
 	public void setPortletClass(String portletClass) {
 		_portletClass = portletClass;
+	}
+
+	@Override
+	public void setPortletConfigurationListenerClass(
+		String portletConfigurationListenerClass) {
+
+		_portletConfigurationListenerClass = portletConfigurationListenerClass;
 	}
 
 	/**
@@ -4247,12 +4225,12 @@ public class PortletImpl extends PortletBaseImpl {
 	 */
 	private static final Log _log = LogFactoryUtil.getLog(PortletImpl.class);
 
-	private static volatile ControlPanelEntry _controlPanelEntry =
-		ServiceProxyFactory.newServiceTrackedInstance(
-			ControlPanelEntry.class, PortletImpl.class, "_controlPanelEntry",
+	private static final Snapshot<ControlPanelEntry>
+		_controlPanelEntrySnapshot = new Snapshot<>(
+			PortletImpl.class, ControlPanelEntry.class,
 			"(&(!(javax.portlet.name=*))(objectClass=" +
 				ControlPanelEntry.class.getName() + "))",
-			false);
+			true);
 
 	/**
 	 * Map of the ready states of all portlets keyed by their root portlet ID.
@@ -4530,11 +4508,6 @@ public class PortletImpl extends PortletBaseImpl {
 	private PluginPackage _pluginPackage;
 
 	/**
-	 * The name of the poller processor class of the portlet.
-	 */
-	private String _pollerProcessorClass;
-
-	/**
 	 * The name of the POP message listener class of the portlet.
 	 */
 	private String _popMessageListenerClass;
@@ -4554,6 +4527,8 @@ public class PortletImpl extends PortletBaseImpl {
 	 * The name of the portlet class of the portlet.
 	 */
 	private String _portletClass;
+
+	private String _portletConfigurationListenerClass;
 
 	/**
 	 * The name of the portlet data handler class of the portlet.

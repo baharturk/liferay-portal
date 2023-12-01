@@ -1,27 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.admin.web.internal.portlet.action;
 
+import com.liferay.account.constants.AccountActionKeys;
 import com.liferay.account.constants.AccountPortletKeys;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryService;
+import com.liferay.portal.kernel.exception.ModelListenerException;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
-import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.AddressLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -39,12 +32,13 @@ import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_ADMIN,
 		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
@@ -64,46 +58,58 @@ public class EditAccountEntryAddressMVCActionCommand
 
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
 
-		Address accountEntryAddress = null;
+		try {
+			Address accountEntryAddress = null;
 
-		if (cmd.equals(Constants.ADD)) {
-			accountEntryAddress = _addAccountEntryAddress(actionRequest);
-		}
-		else if (cmd.equals(Constants.UPDATE)) {
-			_updateAccountEntryAddress(actionRequest);
-		}
-
-		String defaultType = ParamUtil.getString(actionRequest, "defaultType");
-
-		if (Objects.equals("billing", defaultType) ||
-			Objects.equals("shipping", defaultType)) {
-
-			long accountEntryId = ParamUtil.getLong(
-				actionRequest, "accountEntryId");
-
-			AccountEntry accountEntry = _accountEntryService.getAccountEntry(
-				accountEntryId);
-
-			long addressId = 0;
-
-			if (accountEntryAddress != null) {
-				addressId = accountEntryAddress.getAddressId();
+			if (cmd.equals(Constants.ADD)) {
+				accountEntryAddress = _addAccountEntryAddress(actionRequest);
+			}
+			else if (cmd.equals(Constants.UPDATE)) {
+				_updateAccountEntryAddress(actionRequest);
 			}
 
-			if (Objects.equals("billing", defaultType)) {
-				accountEntry.setDefaultBillingAddressId(addressId);
-			}
-			else if (Objects.equals("shipping", defaultType)) {
-				accountEntry.setDefaultShippingAddressId(addressId);
+			String defaultType = ParamUtil.getString(
+				actionRequest, "defaultType");
+
+			if (Objects.equals(defaultType, "billing") ||
+				Objects.equals(defaultType, "shipping")) {
+
+				long accountEntryId = ParamUtil.getLong(
+					actionRequest, "accountEntryId");
+
+				AccountEntry accountEntry =
+					_accountEntryService.getAccountEntry(accountEntryId);
+
+				long addressId = 0;
+
+				if (accountEntryAddress != null) {
+					addressId = accountEntryAddress.getAddressId();
+				}
+
+				if (Objects.equals(defaultType, "billing")) {
+					accountEntry.setDefaultBillingAddressId(addressId);
+				}
+				else if (Objects.equals(defaultType, "shipping")) {
+					accountEntry.setDefaultShippingAddressId(addressId);
+				}
+
+				_accountEntryService.updateAccountEntry(accountEntry);
 			}
 
-			_accountEntryService.updateAccountEntry(accountEntry);
+			String redirect = ParamUtil.getString(actionRequest, "redirect");
+
+			if (Validator.isNotNull(redirect)) {
+				sendRedirect(actionRequest, actionResponse, redirect);
+			}
 		}
+		catch (Exception exception) {
+			if ((exception instanceof ModelListenerException) &&
+				(exception.getCause() instanceof PortalException)) {
 
-		String redirect = ParamUtil.getString(actionRequest, "redirect");
+				throw (PortalException)exception.getCause();
+			}
 
-		if (Validator.isNotNull(redirect)) {
-			sendRedirect(actionRequest, actionResponse, redirect);
+			throw exception;
 		}
 	}
 
@@ -123,7 +129,8 @@ public class EditAccountEntryAddressMVCActionCommand
 			actionRequest, "addressRegionId");
 		long addressCountryId = ParamUtil.getLong(
 			actionRequest, "addressCountryId");
-		long addressTypeId = ParamUtil.getLong(actionRequest, "addressTypeId");
+		long addressListTypeId = ParamUtil.getLong(
+			actionRequest, "addressListTypeId");
 		String phoneNumber = ParamUtil.getString(actionRequest, "phoneNumber");
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -135,8 +142,8 @@ public class EditAccountEntryAddressMVCActionCommand
 		return _addressLocalService.addAddress(
 			null, themeDisplay.getUserId(), AccountEntry.class.getName(),
 			accountEntryId, name, description, street1, street2, street3, city,
-			zip, addressRegionId, addressCountryId, addressTypeId, false, false,
-			phoneNumber, serviceContext);
+			zip, addressRegionId, addressCountryId, addressListTypeId, false,
+			false, phoneNumber, serviceContext);
 	}
 
 	private void _checkPermission(ActionRequest actionRequest)
@@ -148,7 +155,7 @@ public class EditAccountEntryAddressMVCActionCommand
 		_accountEntryModelResourcePermission.check(
 			themeDisplay.getPermissionChecker(),
 			ParamUtil.getLong(actionRequest, "accountEntryId"),
-			ActionKeys.UPDATE);
+			AccountActionKeys.MANAGE_ADDRESSES);
 	}
 
 	private void _updateAccountEntryAddress(ActionRequest actionRequest)
@@ -168,19 +175,22 @@ public class EditAccountEntryAddressMVCActionCommand
 			actionRequest, "addressRegionId");
 		long addressCountryId = ParamUtil.getLong(
 			actionRequest, "addressCountryId");
-		long addressTypeId = ParamUtil.getLong(actionRequest, "addressTypeId");
+		long addressListTypeId = ParamUtil.getLong(
+			actionRequest, "addressListTypeId");
 		String phoneNumber = ParamUtil.getString(actionRequest, "phoneNumber");
 
 		_addressLocalService.updateAddress(
 			accountEntryAddressId, name, description, street1, street2, street3,
-			city, zip, addressRegionId, addressCountryId, addressTypeId, false,
-			false, phoneNumber);
+			city, zip, addressRegionId, addressCountryId, addressListTypeId,
+			false, false, phoneNumber);
 	}
 
 	@Reference(
+		policy = ReferencePolicy.DYNAMIC,
+		policyOption = ReferencePolicyOption.GREEDY,
 		target = "(model.class.name=com.liferay.account.model.AccountEntry)"
 	)
-	private ModelResourcePermission<AccountEntry>
+	private volatile ModelResourcePermission<AccountEntry>
 		_accountEntryModelResourcePermission;
 
 	@Reference

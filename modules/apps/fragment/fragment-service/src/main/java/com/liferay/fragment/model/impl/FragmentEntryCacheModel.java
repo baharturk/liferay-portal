@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model.impl;
@@ -77,7 +68,7 @@ public class FragmentEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(57);
+		StringBundler sb = new StringBundler(59);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -125,6 +116,8 @@ public class FragmentEntryCacheModel
 		sb.append(readOnly);
 		sb.append(", type=");
 		sb.append(type);
+		sb.append(", typeOptions=");
+		sb.append(typeOptions);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append(", status=");
@@ -239,6 +232,13 @@ public class FragmentEntryCacheModel
 		fragmentEntryImpl.setReadOnly(readOnly);
 		fragmentEntryImpl.setType(type);
 
+		if (typeOptions == null) {
+			fragmentEntryImpl.setTypeOptions("");
+		}
+		else {
+			fragmentEntryImpl.setTypeOptions(typeOptions);
+		}
+
 		if (lastPublishDate == Long.MIN_VALUE) {
 			fragmentEntryImpl.setLastPublishDate(null);
 		}
@@ -308,6 +308,7 @@ public class FragmentEntryCacheModel
 		readOnly = objectInput.readBoolean();
 
 		type = objectInput.readInt();
+		typeOptions = (String)objectInput.readObject();
 		lastPublishDate = objectInput.readLong();
 
 		status = objectInput.readInt();
@@ -410,6 +411,14 @@ public class FragmentEntryCacheModel
 		objectOutput.writeBoolean(readOnly);
 
 		objectOutput.writeInt(type);
+
+		if (typeOptions == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(typeOptions);
+		}
+
 		objectOutput.writeLong(lastPublishDate);
 
 		objectOutput.writeInt(status);
@@ -450,6 +459,7 @@ public class FragmentEntryCacheModel
 	public long previewFileEntryId;
 	public boolean readOnly;
 	public int type;
+	public String typeOptions;
 	public long lastPublishDate;
 	public int status;
 	public long statusByUserId;

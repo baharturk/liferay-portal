@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.order;
@@ -24,9 +15,12 @@ import com.liferay.commerce.order.CommerceOrderValidatorResult;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.service.CPDefinitionInventoryLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+
+import java.math.BigDecimal;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -38,7 +32,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"commerce.order.validator.key=" + DefaultCommerceOrderValidatorImpl.KEY,
 		"commerce.order.validator.priority:Integer=10"
@@ -58,7 +51,7 @@ public class DefaultCommerceOrderValidatorImpl
 	@Override
 	public CommerceOrderValidatorResult validate(
 			Locale locale, CommerceOrder commerceOrder, CPInstance cpInstance,
-			int quantity)
+			BigDecimal quantity)
 		throws PortalException {
 
 		if (cpInstance == null) {
@@ -74,20 +67,10 @@ public class DefaultCommerceOrderValidatorImpl
 			_cpDefinitionInventoryEngineRegistry.getCPDefinitionInventoryEngine(
 				cpDefinitionInventory);
 
-		int minOrderQuantity = cpDefinitionInventoryEngine.getMinOrderQuantity(
-			cpInstance);
-		int maxOrderQuantity = cpDefinitionInventoryEngine.getMaxOrderQuantity(
-			cpInstance);
-		String[] allowedOrderQuantities =
-			cpDefinitionInventoryEngine.getAllowedOrderQuantities(cpInstance);
+		BigDecimal minOrderQuantity =
+			cpDefinitionInventoryEngine.getMinOrderQuantity(cpInstance);
 
-		if (cpDefinitionInventoryEngine.isBackOrderAllowed(cpInstance) &&
-			(quantity >= minOrderQuantity) && (quantity <= maxOrderQuantity)) {
-
-			return new CommerceOrderValidatorResult(true);
-		}
-
-		if (quantity < minOrderQuantity) {
+		if (BigDecimalUtil.lt(quantity, minOrderQuantity)) {
 			return new CommerceOrderValidatorResult(
 				false,
 				_getLocalizedMessage(
@@ -95,7 +78,12 @@ public class DefaultCommerceOrderValidatorImpl
 					new Object[] {minOrderQuantity}));
 		}
 
-		if ((maxOrderQuantity > 0) && (quantity > maxOrderQuantity)) {
+		BigDecimal maxOrderQuantity =
+			cpDefinitionInventoryEngine.getMaxOrderQuantity(cpInstance);
+
+		if (BigDecimalUtil.gt(maxOrderQuantity, BigDecimal.ZERO) &&
+			BigDecimalUtil.gt(quantity, maxOrderQuantity)) {
+
 			return new CommerceOrderValidatorResult(
 				false,
 				_getLocalizedMessage(
@@ -103,14 +91,30 @@ public class DefaultCommerceOrderValidatorImpl
 					new Object[] {maxOrderQuantity}));
 		}
 
+		String[] allowedOrderQuantities =
+			cpDefinitionInventoryEngine.getAllowedOrderQuantities(cpInstance);
+
 		if ((allowedOrderQuantities.length > 0) &&
 			!ArrayUtil.contains(
-				allowedOrderQuantities, String.valueOf(quantity))) {
+				allowedOrderQuantities, String.valueOf(quantity.intValue()))) {
 
 			return new CommerceOrderValidatorResult(
 				false,
 				_getLocalizedMessage(
-					locale, "that-quantity-is-not-allowed", null));
+					locale, "the-specified-quantity-is-not-allowed", null));
+		}
+
+		BigDecimal multipleOrderQuantity =
+			cpDefinitionInventoryEngine.getMultipleOrderQuantity(cpInstance);
+
+		if (!BigDecimalUtil.eq(
+				quantity.remainder(multipleOrderQuantity), BigDecimal.ZERO)) {
+
+			return new CommerceOrderValidatorResult(
+				false,
+				_getLocalizedMessage(
+					locale, "the-specified-quantity-is-not-a-multiple-of-x",
+					new Object[] {multipleOrderQuantity}));
 		}
 
 		return new CommerceOrderValidatorResult(true);
@@ -136,14 +140,12 @@ public class DefaultCommerceOrderValidatorImpl
 			_cpDefinitionInventoryEngineRegistry.getCPDefinitionInventoryEngine(
 				cpDefinitionInventory);
 
-		if (cpDefinitionInventoryEngine.isBackOrderAllowed(cpInstance)) {
-			return new CommerceOrderValidatorResult(true);
-		}
+		BigDecimal minOrderQuantity =
+			cpDefinitionInventoryEngine.getMinOrderQuantity(cpInstance);
 
-		int minOrderQuantity = cpDefinitionInventoryEngine.getMinOrderQuantity(
-			cpInstance);
+		BigDecimal quantity = commerceOrderItem.getQuantity();
 
-		if (commerceOrderItem.getQuantity() < minOrderQuantity) {
+		if (BigDecimalUtil.lt(quantity, minOrderQuantity)) {
 			return new CommerceOrderValidatorResult(
 				commerceOrderItem.getCommerceOrderItemId(), false,
 				_getLocalizedMessage(
@@ -151,11 +153,11 @@ public class DefaultCommerceOrderValidatorImpl
 					new Object[] {minOrderQuantity}));
 		}
 
-		int maxOrderQuantity = cpDefinitionInventoryEngine.getMaxOrderQuantity(
-			cpInstance);
+		BigDecimal maxOrderQuantity =
+			cpDefinitionInventoryEngine.getMaxOrderQuantity(cpInstance);
 
-		if ((maxOrderQuantity > 0) &&
-			(commerceOrderItem.getQuantity() > maxOrderQuantity)) {
+		if (BigDecimalUtil.gt(maxOrderQuantity, BigDecimal.ZERO) &&
+			BigDecimalUtil.gt(quantity, maxOrderQuantity)) {
 
 			return new CommerceOrderValidatorResult(
 				commerceOrderItem.getCommerceOrderItemId(), false,
@@ -169,13 +171,25 @@ public class DefaultCommerceOrderValidatorImpl
 
 		if ((allowedOrderQuantities.length > 0) &&
 			!ArrayUtil.contains(
-				allowedOrderQuantities,
-				String.valueOf(commerceOrderItem.getQuantity()))) {
+				allowedOrderQuantities, String.valueOf(quantity.intValue()))) {
 
 			return new CommerceOrderValidatorResult(
 				commerceOrderItem.getCommerceOrderItemId(), false,
 				_getLocalizedMessage(
-					locale, "that-quantity-is-not-allowed", null));
+					locale, "the-specified-quantity-is-not-allowed", null));
+		}
+
+		BigDecimal multipleOrderQuantity =
+			cpDefinitionInventoryEngine.getMultipleOrderQuantity(cpInstance);
+
+		if (!BigDecimalUtil.eq(
+				quantity.remainder(multipleOrderQuantity), BigDecimal.ZERO)) {
+
+			return new CommerceOrderValidatorResult(
+				false,
+				_getLocalizedMessage(
+					locale, "the-specified-quantity-is-not-a-multiple-of-x",
+					new Object[] {multipleOrderQuantity}));
 		}
 
 		return new CommerceOrderValidatorResult(true);
@@ -192,10 +206,10 @@ public class DefaultCommerceOrderValidatorImpl
 			"content.Language", locale, getClass());
 
 		if (arguments == null) {
-			return LanguageUtil.get(resourceBundle, key);
+			return _language.get(resourceBundle, key);
 		}
 
-		return LanguageUtil.format(resourceBundle, key, arguments);
+		return _language.format(resourceBundle, key, arguments);
 	}
 
 	@Reference
@@ -205,5 +219,8 @@ public class DefaultCommerceOrderValidatorImpl
 	@Reference
 	private CPDefinitionInventoryLocalService
 		_cpDefinitionInventoryLocalService;
+
+	@Reference
+	private Language _language;
 
 }

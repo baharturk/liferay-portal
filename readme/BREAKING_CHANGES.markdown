@@ -1,4 +1,4 @@
-# What are the Breaking Changes for Liferay 7.4?
+# 7.4 Breaking Changes
 
 This document presents a chronological list of changes that break existing functionality, APIs, or contracts with third party Liferay developers or users. We try our best to minimize these disruptions, but sometimes they are unavoidable.
 
@@ -12,7 +12,7 @@ Here are some of the types of changes documented in this file:
 * Execution requirements: Java version, J2EE Version, browser versions, etc.
 * Deprecations or end of support: For example, warning that a certain feature or API will be dropped in an upcoming version.
 
-*This document has been reviewed through the breaking change entry at commit `851ef01d7128`.*
+*This document has been reviewed through the breaking change entry at commit `90a08686f0a880cebbedbfb27328fea50b2f9991`.*
 
 Each change must have a brief descriptive title and contain the following information:
 
@@ -181,7 +181,7 @@ This affects you if you have custom entities for which display pages can be crea
 
 ### How should I update my code?
 
-If you have custom entities with display pages, swap the display page logic by adding the `BaseUpgradeAssetDisplayPageEntries` upgrade process to your application. The process receives a table, primary key column name, and a class name.
+If you have custom entities with display pages, swap the display page logic by adding the `BaseUpgradeAssetDisplayPageEntry` upgrade process to your application. The process receives a table, primary key column name, and a class name.
 
 ### Why was this change made?
 
@@ -932,7 +932,7 @@ This was done to clarify the folder that `buildService` should target.
 
 ### What changed?
 
-The `addFragmentEntry` methods in `FragmentEntryLocalService` and `FragmentEntryService` have been updated.
+The `addFragmentEntry` methods in `FragmentEntryLocalService` and `FragmentEntryService` have a new parameter for the icon of a `FragmentEntry`.
 
 ### Who is affected?
 
@@ -940,7 +940,7 @@ This affects anyone using `FragmentEntryLocalService` and `FragmentEntryService`
 
 ### How should I update my code?
 
-Use the new `addFragmentEntry` methods in `FragmentEntryLocalService` and `FragmentEntryService`. Note, that they include a new `String` parameter for the `icon` of a `FragmentEntry`.
+When you use the new `addFragmentEntry` methods in `FragmentEntryLocalService` and `FragmentEntryService`, you must include a new `String` parameter for the `icon` of a `FragmentEntry`.
 
 ### Why was this change made?
 
@@ -969,3 +969,895 @@ Use `getSegmentsEntryIds` in `FragmentEntryProcessorContext`, `DefaultFragmentEn
 This change was made so that a collection's variations can be retrieved when using collections in a fragment.
 
 ---------------------------------------
+
+## Renamed Google Cloud autotranslation module
+
+- **Date:** 2022-Jan-17
+- **JIRA Ticket:** [LPS-145450](http://issues.liferay.com/browse/LPS-145450)
+
+### What changed?
+
+The `translation-google-cloud-translator` module and its packages were renamed. Although these packages are internal, the rename is not backwards compatible, as it changes the PID of the service configuration.
+
+### Who is affected?
+
+Any installation that has configured the Google Cloud autotranslator service.
+
+### How should I update my code?
+
+No code changes are necessary. Administrators may need to reconfigure the Google Could autotranslator service.
+
+---------------------------------------
+
+## Redirect URLs removed from Portal Properties
+- **Date:** 2022-May-24
+- **JIRA Ticket:** [LPS-128837](https://issues.liferay.com/browse/LPS-128837)
+
+### What changed?
+
+Redirect URL configuration is no longer configurable via portal properties. It can be configured in the UI, under [Redirect URLs](../../system-administration/configuring-liferay/virtual-instances/redirect-urls.md) in Instance Settings.
+
+### Who is affected?
+
+This affects anyone using portal properties to configure redirect URLs.
+
+### How should I update my code?
+
+Set your necessary configurations in the UI, under [Redirect URLs](../../system-administration/configuring-liferay/virtual-instances/redirect-urls.md) in Instance Settings.
+
+### Why was this change made?
+
+This change was made so that administrators can set separate redirect URL configurations for each Liferay instance.
+
+---------------------------------------
+
+## Portal Libs Cleanup
+
+- **Date** 2022-May-26
+- **JIRA Ticket** [LPS-142130](https://issues.liferay.com/browse/LPS-142130)
+
+### Removed
+
+- abdera.jar, axiom-api.jar and axiom-impl.jar - [LPS-142131](https://issues.liferay.com/browse/LPS-142131)
+- xuggle-xuggler-noarch.jar - [LPS-143939](https://issues.liferay.com/browse/LPS-143939) Note, FFmpeg replaced Xuggler. See [Enabling FFmpeg for Audio and View Previews](../../content-authoring-and-management/documents-and-media/devops/enabling-ffmpeg-for-audio-and-video-previews.md) to learn more.
+- bcmail.jar and bcprov.jar - [LPS-143945](https://issues.liferay.com/browse/LPS-143945)
+- ant.jar - [LPS-143953](https://issues.liferay.com/browse/LPS-143953)
+- aspectj-rt.jar and aspectj-weaver.jar - [LPS-143999](https://issues.liferay.com/browse/LPS-143999)
+- jfreechart.jar and jcommon.jar - [LPS-144001](https://issues.liferay.com/browse/LPS-144001)
+- boilerpipe.jar - [LPS-144005](https://issues.liferay.com/browse/LPS-144005)
+- ecs.jar - [LPS-144081](https://issues.liferay.com/browse/LPS-144081)
+- chardet.jar - [LPS-144084](https://issues.liferay.com/browse/LPS-144084)
+- ical4j.jar - [LPS-144119](https://issues.liferay.com/browse/LPS-144119)
+- jrcs-diff.jar - [LPS-144476](https://issues.liferay.com/browse/LPS-144476)
+- curvesapi.jar - [LPS-144549](https://issues.liferay.com/browse/LPS-144549)
+- concurrent.jar - [LPS-144640](https://issues.liferay.com/browse/LPS-144640)
+- gif89.jar - [LPS-144861](https://issues.liferay.com/browse/LPS-144861)
+- antlr2.jar and antlr3.jar - [LPS-144863](https://issues.liferay.com/browse/LPS-144863)
+- bsf.jar - [LPS-145153](https://issues.liferay.com/browse/LPS-145153)
+- commons-chain.jar - [LPS-145154](https://issues.liferay.com/browse/LPS-145154)
+- freshcookies-security.jar - [LPS-145155](https://issues.liferay.com/browse/LPS-145155)
+- htmlparser.jar - [LPS-145367](https://issues.liferay.com/browse/LPS-145367)
+- jakarta-regexp.jar - [LPS-145500](https://issues.liferay.com/browse/LPS-145500)
+- xmpcore.jar - [LPS-145541](https://issues.liferay.com/browse/LPS-145541)
+- jcifs.jar - [LPS-145556](https://issues.liferay.com/browse/LPS-145556)
+- juh.jar, jurt.jar, ridl.jar and unoil.jar - [LPS-145918](https://issues.liferay.com/browse/LPS-145918)
+- xalan.jar - [LPS-145946](https://issues.liferay.com/browse/LPS-145946)
+- wsdl4j.jar - [LPS-145991](https://issues.liferay.com/browse/LPS-145991)
+- jsr107cache.jar - [LPS-146007](https://issues.liferay.com/browse/LPS-146007)
+- xstream.jar - [LPS-146069](https://issues.liferay.com/browse/LPS-146069)
+- liferay-icu.jar - [LPS-146089](https://issues.liferay.com/browse/LPS-146089)
+- stringtemplate.jar - [LPS-146169](https://issues.liferay.com/browse/LPS-146169)
+- rhino.jar - [LPS-146440](https://issues.liferay.com/browse/LPS-146440)
+- odmg.jar - [LPS-146547](https://issues.liferay.com/browse/LPS-146547)
+- closure-compiler.jar - [LPS-147006](https://issues.liferay.com/browse/LPS-147006)
+- nekohtml.jar - [LPS-147042](https://issues.liferay.com/browse/LPS-147042)
+- hessian.jar - [LPS-147424](https://issues.liferay.com/browse/LPS-147424)
+- jericho-html.jar - [LPS-147656](https://issues.liferay.com/browse/LPS-147656)
+- rmi-api.jar - [LPS-148863](https://issues.liferay.com/browse/LPS-148863)
+- commons-beanutils.jar - [LPS-149082](https://issues.liferay.com/browse/LPS-149082)
+- soap.jar - [LPS-149611](https://issues.liferay.com/browse/LPS-149611)
+- serializer.jar - [LPS-150261](https://issues.liferay.com/browse/LPS-150261)
+- jaxws-rt.jar - [LPS-150410](https://issues.liferay.com/browse/LPS-150410)
+- xbean-spring.jar - [LPS-150448](https://issues.liferay.com/browse/LPS-150448)
+- commons-math.jar - [LPS-150548](https://issues.liferay.com/browse/LPS-150548)
+- streambuffer.jar, mimepull.jar, saaj-api.jar and saaj-impl.jar - [LPS-150781](https://issues.liferay.com/browse/LPS-150781)
+- DBCP, c3p0 and Tomcat pool - [LPS-151028](https://issues.liferay.com/browse/LPS-151028)
+- stax.jar - [LPS-151308](https://issues.liferay.com/browse/LPS-151308)
+
+### Moved to Modules
+
+- im4java.jar and monte-cc.jar - [LPS-144170](https://issues.liferay.com/browse/LPS-144170)
+- java-diff.jar, daisydiff.jar and eclipse-core-runtime.jar - [LPS-144201](https://issues.liferay.com/browse/LPS-144201)
+- urlrewritefilter.jar - [LPS-145186](https://issues.liferay.com/browse/LPS-145186)
+- jai_core.jar and jai-codec.jar - [LPS-145778](https://issues.liferay.com/browse/LPS-145778)
+- ccpp.jar, ccpp-ri.jar, jena.jar, oro.jar and reffilter.jar - [LPS-145917](https://issues.liferay.com/browse/LPS-145917)
+- netty-buffer.jar, netty-codec.jar, netty-common.jar, netty-handler.jar, netty-resolver.jar and netty-transport.jar - [LPS-146451](https://issues.liferay.com/browse/LPS-146451)
+- jazzy.jar - [LPS-146894](https://issues.liferay.com/browse/LPS-146894)
+- commons-discovery.jar - [LPS-147205](https://issues.liferay.com/browse/LPS-147205)
+- scribe.jar - [LPS-147542](https://issues.liferay.com/browse/LPS-147542)
+- tika-core.jar, tika-parsers.jar, vorbis-java-core.jar and vorbis-java-tika.jar - [LPS-147938](https://issues.liferay.com/browse/LPS-147938)
+- commons-lang3.jar - [LPS-148100](https://issues.liferay.com/browse/LPS-148100)
+- commons-digester.jar and commons-validator.jar - [LPS-148191](https://issues.liferay.com/browse/LPS-148191)
+- jmatio.jar - [LPS-148218](https://issues.liferay.com/browse/LPS-148218)
+- mime4j.jar - [LPS-148287](https://issues.liferay.com/browse/LPS-148287)
+- poi.jar - [LPS-148302](https://issues.liferay.com/browse/LPS-148302)
+- metadata-extractor.jar and xmpcore.jar - [LPS-148460](https://issues.liferay.com/browse/LPS-148460)
+- commons-compress.jar - [LPS-148461](https://issues.liferay.com/browse/LPS-148461)
+- tagsoup.jar - [LPS-148497](https://issues.liferay.com/browse/LPS-148497)
+- java-libpstjar - [LPS-148577](https://issues.liferay.com/browse/LPS-148577)
+- mp4parser.jar - [LPS-148582](https://issues.liferay.com/browse/LPS-148582)
+- juniversalchardet.jar - [LPS-148666](https://issues.liferay.com/browse/LPS-148666)
+- jhighlight.jar - [LPS-148670](https://issues.liferay.com/browse/LPS-148670)
+- jna.jar - [LPS-148671](https://issues.liferay.com/browse/LPS-148671)
+- sparse-bit-set.jar - [LPS-148757](https://issues.liferay.com/browse/LPS-148757)
+- netcdf.jar - [LPS-148925](https://issues.liferay.com/browse/LPS-148925)
+- jaxb-runtime.jar and istack-commons-runtime.jar - [LPS-148926](https://issues.liferay.com/browse/LPS-148926)
+- commons-exec.jar - [LPS-149097](https://issues.liferay.com/browse/LPS-149097)
+- commons-collections4.jar - [LPS-149099](https://issues.liferay.com/browse/LPS-149099)
+- commons-math3.jar - [LPS-149151](https://issues.liferay.com/browse/LPS-149151)
+- pdfbox.jar - [LPS-149426](https://issues.liferay.com/browse/LPS-149426)
+- rometools.jar - [LPS-150149](https://issues.liferay.com/browse/LPS-150149)
+- passwordencryptor.jar - [LPS-150150](https://issues.liferay.com/browse/LPS-150150)
+- jdom2.jar - [LPS-150423](https://issues.liferay.com/browse/LPS-150423)
+- xbean.jar - [LPS-150447](https://issues.liferay.com/browse/LPS-150447)
+- asm.jar - [LPS-151419](https://issues.liferay.com/browse/LPS-151419)
+
+### Why was this change made ?
+
+This change was made to address vulnerabilities in outdated libraries that are no longer maintained.
+
+---------------------------------------
+
+## Elasticsearch Sortable Type Mappings Were Changed from keyword to icu_collation_keyword
+
+- **Date:** 2022-May-12
+- **JIRA Ticket:** [LPS-152937](https://issues.liferay.com/browse/LPS-152937)
+
+### What changed?
+
+The Elasticsearch type mapping of localized sortable `*_<languageId>_sortable` and nested `ddmFieldArray.ddmFieldValueText_<languageId>_String_sortable` fields were changed from `keyword` to `icu_collation_keyword`.
+
+These fields' indexed information is now stored in an encoded format. For example, the `entity title` text is now stored as `MkRQOlBaBFA6UEAyARABEAA=`.
+
+This new `icu_collation_keyword` type allows sorting using the correct collation rules of each language. For more information see <https://www.elastic.co/guide/en/elasticsearch/plugins/7.17/analysis-icu-collation-keyword-field.html>.
+
+When updating an existing Liferay installation, perform a full reindex to create the new mappings.
+
+### Who is affected?
+
+If you use the `*_<languageId>_sortable` and `ddmFieldArray.ddmFieldValueText_<languageId>_String_sortable` fields,
+
+- Results are now sorted using each language's correct collation rules
+
+- Indexed information is now encoded when returned
+
+### How should I update my code?
+
+If you want to maintain the old sort behavior, you must customize the Elasticsearch mappings, removing the `icu_collation_keyword`. For more information about how to configure mappings, see https://learn.liferay.com/dxp/latest/en/using-search/installing-and-upgrading-a-search-engine/elasticsearch/advanced-configuration-of-the-liferay-elasticsearch-connector.html
+
+You can retrieve data from these fields from Elasticsearch's `_source` field (<https://www.elastic.co/guide/en/elasticsearch/reference/7.17/mapping-source-field.html>). Alternatively, remove the `icu_collation_keyword` as explained above.
+
+---------------------------------------
+
+## Upgraded MySQL Connector to 8.0.29 and Forced to Use Protocol TLSv1.2 for MySQL
+
+- **Date:** 2022-Jul-20
+- **JIRA Ticket:** [LPS-157036](https://issues.liferay.com/browse/LPS-157036), [LPS-157039](https://issues.liferay.com/browse/LPS-157039)
+
+### What changed?
+
+TLS 1.2 requires updating MySQL to 5.7.28 with MySQL Connector 8.0.29 or above.
+
+### Who is affected?
+
+Anyone using a MySQL version lower than 5.7.28, especially if they use the auto-downloaded MySQL connector on DXP U37 or higher.
+
+### How should I update my code?
+
+Upgrade MySQL to version 5.7.28 or higher, or set the protocol to TLSv1.2 manually (See https://dev.mysql.com/doc/refman/5.7/en/encrypted-connection-protocols-ciphers.html#encrypted-connection-supported-protocols).
+
+### Why was this change made?
+
+This change was made to address security vulnerabilities.
+
+---------------------------------------
+
+## Removed UtilLocator
+
+- **Date:** 2022-Nov-2
+- **JIRA Ticket:** [LPS-165363](https://issues.liferay.com/browse/LPS-165363)
+
+### What changed?
+
+`UtilLocator` is removed. Templates can no longer use `utilLocator.findUtil()` to access `*Util` classes.
+
+### Who is affected?
+
+Anyone currently using `utilLocator` within templates to access `*Util` classes.
+
+### How should I update my code?
+
+There is no replacement for this removal.
+
+The workaround is to set the environment variable `LIFERAY_TEMPLATE_PERIOD_ENGINE_PERIOD_SERVICE_PERIOD_LOCATOR_PERIOD_RESTRICT` to false and access the desired util class using `ServiceLocator` instead. However, `ServiceLocator` opens unrestricted access to all published OSGi services within templates. Proceed with caution.
+
+### Why was this change made?
+
+This change was made to address a security vulnerability.
+
+`UtilLocator` currently gives unrestricted access to all `*Util` classes in templates, exposing these classes for misuse or a malicious attack. Commonly used `Util` classes such as `StringUtil` are already included in the template context and ready to be used.
+
+---------------------------------------
+
+## Removed ConfigurationBeanDeclaration
+
+- **Date:** 2022-Nov-11
+- **JIRA Ticket:** [LPS-162830](https://issues.liferay.com/browse/LPS-162830)
+
+### What changed?
+
+Because `ConfigurationProvider` is no longer required to retrieve an annotated `*Configuration.java` interface, `ConfigurationBeanDeclaration` is removed.
+
+### Who is affected?
+
+Anyone who has implemented `ConfigurationBeanDeclaration` or references the class in their code.
+
+### How should I update my code?
+
+Delete implementations of `ConfigurationBeanDeclaration` and remove references to the class.
+
+### Why was this change made?
+
+`ConfigurationBeanDeclaration` was used to register configuration classes with the `ConfigurationProvider` framework, to be tracked by OSGi managed services. Liferay now analyzes a bundle's metatype information and registers configuration classes automatically at container registration. Now developers don't have to register configuration classes manually, because it happens in the background.
+
+---------------------------------------
+
+## Removed FieldSetGroupTag
+
+- **Date:** 2022-Nov-22
+- **JIRA Ticket:** [LPS-168309](https://issues.liferay.com/browse/LPS-168309)
+
+### What changed?
+
+`FieldSetGroupTag` was removed because `<aui:fieldset-group>` and `<liferay-frontend:fieldset-group>` are no longer needed.
+
+### Who is affected?
+
+Anyone using `<aui:fieldset-group>` or `<liferay-frontend:fieldset-group>`.
+
+### How should I update my code?
+
+Delete usages of `<liferay-frontend:fieldset-group>` and replace usages of `<aui:fieldset-group>` with `<div class="sheet"><div class="panel-group panel-group-flush">`.
+
+### Why was this change made?
+
+The tags `<aui:fieldset-group>` and `<liferay-frontend:fieldset-group>` added unnecessary markup to the page and caused accessibility issues.
+
+---------------------------------------
+
+## Removed ContainerTag
+
+- **Date:** 2022-Dec-22
+- **JIRA Ticket:** [LPS-166546](https://issues.liferay.com/browse/LPS-166546)
+
+### What changed?
+
+`ContainerTag` was removed, and with it the `<aui:container>` tag. The tag was also removed from the [AUI tld](https://learn.liferay.com/reference/latest/en/dxp/taglibs/util-taglib/aui/tld-summary.html).
+
+### Who is affected?
+
+Anyone using `<aui:container>`.
+
+### How should I update my code?
+
+Replace usages of `<aui:container>` with `<clay:container>`.
+
+### Why was this change made?
+
+The tag `<aui:container>` was deprecated in a previous version.
+
+---------------------------------------
+
+## Removed Properties for Tika Configuration and Text Extraction
+
+- **Date:** 2022-Dec-13
+- **JIRA Ticket:** [LPS-147938](https://issues.liferay.com/browse/LPS-147938) and [LPS-169760](https://issues.liferay.com/browse/LPS-169760)
+
+### What changed?
+
+The Tika library was extracted from Liferay's core to the `com.liferay.portal.tika` module, changing the way it must be configured. The system property `tika.config` was removed, as were the portal properties `text.extraction.fork.process.enabled` and `text.extraction.fork.process.mime.types`. The Tika library and text extraction are no longer configurable through properties files.
+
+As part of the extraction to a module, the removed properties are added to the module's configuration interface and are configurable using System Settings or a `.config` configuration file.
+
+### Who is affected?
+
+This affects anyone using the removed system or portal properties.
+
+### How should I update my code?
+
+No code changes are necessary.
+
+Configure the same properties in System Settings &rarr; Infrastructure &rarr; Tika Configuration.
+
+### Why was this change made?
+
+These configuration changes were made because the Tika library was extracted to the `com.liferay.portal.tika` module.
+
+---------------------------------------
+
+## Moved CTSQLModeThreadLocal to portal-kernel and Changed Package
+
+- **Date:** 2023-Apr-11
+- **JIRA Ticket:** [LPS-181233](https://issues.liferay.com/browse/LPS-181233)
+
+### What changed?
+
+The `CTSQLModeThreadLocal` class was moved from the `portal-impl` module into the `portal-kernel` module. Consequently, its package was changed from `com.liferay.portal.change.tracking.sql` to `com.liferay.portal.kernel.change.tracking.sql` to be consistent with the `portal-kernel` module's package naming scheme for the change tracking classes.
+
+### Who is affected?
+
+This affects anyone calling the `CTSQLModeThreadLocal` class from their code.
+
+### How should I update my code?
+
+1. Declare a dependency on the `portal-kernel` module.
+
+1. Modify `import` statements for the `CTSQLModeThreadLocal` class to use the new package:
+
+	```
+	import com.liferay.portal.kernel.change.tracking.sql.CTSQLModeThreadLocal;
+	```
+
+### Why was this change made?
+
+To resolve [LPS-181233](https://issues.liferay.com/browse/LPS-181233), the value of the `CTSQLModeThreadLocal` must be set from the `portal-kernel` module. Moving the class into the `portal-kernel` module allows it to be referenced as required.
+
+---------------------------------------
+
+## Removed Log4j1 Compatibility
+
+- **Date:** 2023-May-9
+- **JIRA Ticket:** [LPS-181002](https://issues.liferay.com/browse/LPS-181002)
+
+### What changed?
+
+Support for Log4j1 XML configuration syntax is removed.
+
+### Who is affected?
+
+This affects any code using Log4j1 configuration files.
+
+### How should I update my code?
+
+[Convert](https://logging.apache.org/log4j/2.x/manual/migration.html#Log4j2ConfigurationFormat) Log4j1 configuration files to use Log4j2 XML syntax.
+
+### Why was this change made?
+
+Liferay's source code has been using Log4j2 for some time, and Log4j1 reached [end of life in 2015](https://news.apache.org/foundation/entry/apache_logging_services_project_announces). After this change, all log4j configuration files must use log4j2 syntax.
+
+---------------------------------------
+
+## Removed the `verifyDB` function from Server Administration and its services
+
+- **Date:** 2023-May-10
+- **JIRA Ticket:** [LPS-184192](https://issues.liferay.com/browse/LPS-184192)
+
+### What changed?
+
+The `verifyDB()` method was removed from `ServiceComponentLocalService`. The corresponding _Verify database tables of all plugins_ functionality was removed from the Server Administration console's Verification Actions.
+
+### Who is affected?
+
+This affects anyone calling the `ServiceComponentLocalService.verifyDB()` method from their code or using the Server Administration functionality.
+
+### How should I update my code?
+
+Remove all usages of `ServiceComponentLocalService.verifyDB()`.
+
+### Why was this change made?
+
+The upgrade framework manages all modules' tables and `Release` record creation. The `verifyDB` method is non-functional.
+
+---------------------------------------
+
+## Removed 7.1 methods in PortletSharedSearchSettings from portal-search-web-api module
+
+- **Date:** 2023-May-10
+- **JIRA Ticket:** [LPS-183921](https://issues.liferay.com/browse/LPS-183921)
+
+### What changed?
+
+`PortalSharedSearchSettings` methods related to 7.1 compatibility were removed.
+
+### Who is affected?
+
+This affects anyone calling these methods: `getParameter71()`, `getParameterValues71()`, and `getPortletPreferences71()`.
+
+### How should I update my code?
+
+Replace `getParameter71()` with `getParameterOptional()`, `getParameterValues71()` with `getParameterValues()`, and `getPortletPreferences71()` with `getPortletPreferencesOptional()`.
+
+### Why was this change made?
+
+These methods were added in 7.2 for forward compatibility: see [LPS-101007](https://issues.liferay.com/browse/LPS-101007). In 7.4 they are redundant to the `Optional` and `String[]` variations.
+
+---------------------------------------
+
+## Removed S3FileCache
+- **Date:** 2023-June-1
+- **JIRA Ticket:** [LPS-176640](https://issues.liferay.com/browse/LPS-176640)
+
+### What changed?
+
+`S3FileCache` was removed. In addition, `cacheDirCleanUpExpunge` and `cacheDirCleanUpFrequency` were removed from `com.liferay.portal.store.s3.configuration.S3StoreConfiguration`.
+
+### Who is affected?
+
+This affects anyone using the S3 file store. When downloading files from S3, the data is directly forwarded to the client, and no longer cached on the Liferay server.
+
+### How should I update my code?
+
+No code changes are necessary.
+
+If using a `com.liferay.portal.store.s3.configuration.S3StoreConfiguration.config` file to configure S3 in Liferay, remove the properties `cacheDirCleanUpExpunge` and `cacheDirCleanUpFrequency`.
+
+### Why was this change made?
+
+`S3FileCache` has various design flaws, and no other cloud-based store implementation in Liferay provides caching.
+
+---------------------------------------
+
+## Removed unsupported scripting language types from file liferay-workflow-definition_7_4_0.xsd
+- **Date:** 2023-June-14
+- **JIRA Ticket:** [LPS-187594](https://issues.liferay.com/browse/LPS-187594)
+
+### What changed?
+
+These scripting languages are removed: `beanshell`, `javascript`, `python` and `ruby`. Workflow XML files cannot contain these scripting language types.
+
+### Who is affected?
+
+This affects anyone with workflow definitions containing `beanshell`, `javascript`, `python` or `ruby` scripting language types.
+
+### How should I update my code?
+
+Use `drl`, `groovy` or `java` as the scripting language type, and rewrite the script logic in your workflow definition XML files.
+
+### Why was this change made?
+
+Liferay no longer supports these scripting language types.
+
+---------------------------------------
+
+## Removed ScriptingExecutorExtender and ScriptBundleProvider
+
+- **Date:** 2023-June-19
+- **JIRA Ticket:** [LPS-169777](https://issues.liferay.com/browse/LPS-169777)
+
+### What changed?
+
+The `ScriptingExecutorExtender` class and the `ScriptBundleProvider` interface were removed.
+
+### Who is affected?
+
+This affects anyone implementing `ScriptBundleProvider` with script files in this path in the same module: `/META-INF/resources/scripts/`.
+
+### How should I update my code?
+
+Delete all implementations of `ScriptBundleProvider`, remove script files from `/META-INF/resources/scripts/`, and rewrite the logic in the script files using an immediate component.
+
+### Why was this change made?
+
+This change was made to address security vulnerabilities.
+
+---------------------------------------
+
+## Removed IndexStatusManagerInternalConfiguration
+- **Date:** 2023-June-21
+- **JIRA Ticket:** [LPS-185105](https://issues.liferay.com/browse/LPS-185105)
+
+### What changed?
+
+`IndexStatusManagerInternalConfiguration` was removed.
+
+### Who is affected?
+
+This affects anyone using this configuration.
+
+### How should I update my code?
+
+This configuration has no replacement, as it was meant for testing purposes only. Setting the index to read only should be accomplished using `IndexStatusManagerConfiguration`.
+
+### Why was this change made?
+
+The configuration was no longer required for internal testing, and the functionality is still available in `IndexStatusManagerConfiguration`.
+
+---------------------------------------
+
+## Removed support for custom SoapDescriptorBuilder
+- **Date:** 2023-June-30
+- **JIRA Ticket:** [LPS-173756](https://liferay.atlassian.net/browse/LPS-173756)
+
+### What changed?
+
+Implementing a custom `SoapDescriptorBuilder` is no longer supported.
+
+### Who is affected?
+
+This affects anyone implementing the interface `SoapDescriptorBuilder`.
+
+### How should I update my code?
+
+This removed extension point has no direct replacement.
+
+### Why was this change made?
+
+`SOAP` was deprecated in 7.3, and Liferay decided to not support this extension point.
+
+---------------------------------------
+
+## Removed `AMImageConfigurationProvider` and the `AMImageConfiguration` property `imageMaxSize`
+- **Date:** 2023-June-29
+- **JIRA Ticket:** [LPS-185768](https://issues.liferay.com/browse/LPS-185768)
+
+### What changed?
+
+The `AMImageConfiguration` property `imageMaxSize` and its provider `AMImageConfigurationProvider` were removed.
+
+### Who is affected?
+
+This affects anyone using this configuration.
+
+### How should I update my code?
+
+Replace the configuration with the `DLFileEntryConfiguration` property called `previewableProcessorMaxSize`.
+
+### Why was this change made?
+
+The `AMImageConfiguration` property `imageMaxSize` has been deprecated since 7.2.x in favor of using `DLFileEntryConfiguration.previewableProcessorMaxSize()`.
+
+---------------------------------------
+
+## Changed default value of `virtual.hosts.valid.hosts` portal property
+
+- **Date:** 2023-June-2
+- **JIRA Ticket:** [LPS-184385](https://issues.liferay.com/browse/LPS-184385)
+
+### What changed?
+
+The default value of the `virtual.hosts.valid.hosts` changed from `*` to `localhost,127.0.0.1,[::1],[0:0:0:0:0:0:0:1]` in `portal.properties`.
+
+### Who is affected?
+
+Anyone setting `virtual.hosts.valid.hosts` besides `localhost`, `127.0.0.1`, `[::1]`, or `[0:0:0:0:0:0:0:1]`.
+
+### How should I update my code?
+
+Upgrade the default value of `virtual.hosts.valid.hosts` in `portal-impl/src/portal.properties` to match the value used in your current configuration.
+
+### Why was this change made?
+
+This change was made to address security vulnerabilities.
+
+---------------------------------------
+
+## Removed extension points in `SolrClientManager`
+- **Date:** 2023-July-4
+- **JIRA Ticket:** [LPS-180691](https://liferay.atlassian.net/browse/LPS-180691)
+
+### What changed?
+
+Extension points in `SolrClientManager` were removed. For the `SolrClientFactory`, extension points for the types `CLOUD` and `REPLICATED` were removed. For `HttpClientFactory`, extension points for the types `BASIC` and `CERT` were removed.
+
+### Who is affected?
+
+This affects anyone overriding the `SolrClientFactory` and `HttpClientFactory` with the types Liferay provided.
+
+### How should I update my code?
+
+This removed extension point has no direct replacement.
+
+### Why was this change made?
+
+Liferay decided to not support these extension points.
+
+---------------------------------------
+
+## Deprecated methods from the portal-kernel interface `com.liferay.portal.kernel.search.Document`
+- **Date:** 2023-July-7
+- **JIRA Ticket:** [LPS-188914](https://liferay.atlassian.net/browse/LPS-188914)
+
+### What changed?
+
+These API methods in `com.liferay.portal.kernel.search.Document` and their implementations in `com.liferay.portal.kernel.search.DocumentImpl` are deprecated:
+
+- `addFile(String name, byte[] bytes, String fileExt)`
+- `addFile(String name, File file, String fileExt)`
+- `addFile(String name, InputStream inputStream, String fileExt)`
+- `addFile(String name, InputStream inputStream, String fileExt,int maxStringLength)`
+
+### Who is affected?
+
+This affects anyone using these API methods.
+
+### How should I update my code?
+
+Instead of using `addFile(String name, byte[] bytes, String fileExt)`,
+
+1. Get an `InputStream` from the `bytes`.
+
+1. Call `com.liferay.portal.kernel.util.TextExtractor.extractText(InputStream inputStream, int maxStringLength)` with the `inputStream` and `-1` and store its return value.
+
+1. Call `com.liferay.portal.kernel.search.Document.addText(String name, String value)` with `name` and the previous return value.
+
+Instead of using `addFile(String name, File file, String fileExt)`,
+
+1. Get an InputStream from the `file`.
+
+1. Call `com.liferay.portal.kernel.util.TextExtractor.extractText(InputStream inputStream, int maxStringLength)` with the `inputStream` and `-1` and store its return value.
+
+1. Call `com.liferay.portal.kernel.search.Document.addText(String name, String value)` with `name` and the previous return value.
+
+Instead of using `addFile(String name, InputStream inputStream, String fileExt)`,
+
+1. Call `com.liferay.portal.kernel.util.TextExtractor.extractText(InputStream inputStream, int maxStringLength)` with `inputStream` and `-1` and store its return value.
+
+1. Call `com.liferay.portal.kernel.search.Document.addText(String name, String value)` with `name` and the previous return value.
+
+Instead of using `addFile(String name, InputStream inputStream, String fileExt,int maxStringLength)`,
+
+1. Call `com.liferay.portal.kernel.util.TextExtractor.extractText(InputStream inputStream, int maxStringLength)` with `inputStream` and `maxStringLength` and store its return value.
+
+1. Call `com.liferay.portal.kernel.search.Document.addText(String name, String value)` with `name` and the previous return value.
+
+### Why was this change made?
+
+These methods are no longer called by Liferay internally.
+
+---------------------------------------
+
+## Remove interface `com.liferay.portal.kernel.security.permission.BaseModelPermissionChecker` under portal-kernel
+- **Date:** 2023-August-11
+- **JIRA Ticket:** [LPS-182671](https://liferay.atlassian.net/browse/LPS-182671)
+
+### What changed?
+The interface `com.liferay.portal.kernel.security.permission.BaseModelPermissionChecker` and related support logic was removed.
+
+### Who is affected?
+
+This affects anyone implementing this interface class.
+
+### How should I update my code?
+
+Implement `com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission` instead.
+
+### Why was this change made?
+
+The interface `com.liferay.portal.kernel.security.permission.BaseModelPermissionChecker` was deprecated in 7.1 and is no longer used by Liferay internally.
+
+---------------------------------------
+
+## Removed destination `liferay/hot_deploy`
+- **Date:** 2023-August-4
+- **JIRA Ticket:** [LPS-192680](https://liferay.atlassian.net/browse/LPS-192680)
+
+### What changed?
+
+The Message bus destination `liferay/hot_deploy` and test rule `DestinationAwaitClassTestRule` are removed.
+
+### Who is affected?
+
+Anyone who is listening to hot deploy events by registering a `com.liferay.portal.kernel.messaging.MessageListener`, and anyone who is using a custom instance of `DestinationAwaitClassTestRule`.
+
+### How should I update my code?
+
+Register a `HotDeployListener` to listen to hot deploy events. Manually implement the logic to sync with any destination.
+
+### Why was this change made?
+
+This destination is no longer used in Liferay.
+
+---------------------------------------
+
+## Removed the `unschedule` API from the scheduler engine platform
+- **Date:** 2023-August-24
+- **JIRA Ticket:** [LPS-194314](https://liferay.atlassian.net/browse/LPS-194314)
+
+### What changed?
+
+The `unschedule` method was removed from the classes `com.liferay.portal.kernel.scheduler.SchedulerEngine`, `com.liferay.portal.kernel.scheduler.SchedulerEngineHelper` and `com.liferay.portal.kernel.scheduler.SchedulerEngineHelperUtil`.
+
+### Who is affected?
+
+Anyone who is using the removed `unschedule` API method.
+
+### How should I update my code?
+
+Use the `delete` method from the same class.
+
+### Why was this change made?
+
+The `unschedule` method is not needed. Liferay always adds a new job and trigger together. Unscheduled jobs are no longer needed and should be deleted.
+
+---------------------------------------
+
+## Removal of `com.liferay.document.library.kernel.util.DLProcessor` registration support from `com.liferay.portal.deploy.hot.HookHotDeployListener`
+- **Date:** 2023-August-17
+- **JIRA Ticket:** [LPS-193926](https://liferay.atlassian.net/browse/LPS-193926)
+
+### What changed?
+
+Support for deploying a `com.liferay.document.library.kernel.util.DLProcessor` via hook was removed from `com.liferay.portal.deploy.hot.HookHotDeployListener`.
+
+### Who is affected?
+
+This affects anyone providing a `DLProcessor` implementation via hook.
+
+### How should I update my code?
+
+If you are providing your own `DLProcessor` implementation via hook, convert it to an OSGi service.
+
+### Why was this change made?
+
+This change was made to remove duplicated `DLProcessor` registration logic between `DLProcessorRegistryImpl` and `HookHotDeployListener`.
+
+---------------------------------------
+
+## Removed support for `DestinationEventListener` and `MessageBusEventListener`
+- **Date:** 2023-Sep-1
+- **JIRA Ticket:** [LPS-195116](https://liferay.atlassian.net/browse/LPS-195116)
+
+### What changed?
+
+The interfaces `DestinationEventListener` and `MessageBusEventListener` are removed, along with the support to register a listener for `MessageListener` and `Destination` registration and unregistration events.
+
+### Who is affected?
+
+This affects anyone registering such listeners to listen to these events.
+
+### How should I update my code?
+
+The removal of this extension point has no direct replacement.
+
+### Why was this change made?
+
+These listeners are not used in Liferay. Liferay decided to not support these extension points.
+
+---------------------------------------
+
+## Removed API to register/unregister `MessageListener` from `Destination`
+- **Date:** 2023-Sep-1
+- **JIRA Ticket:** [LPS-194337](https://liferay.atlassian.net/browse/LPS-194337)
+
+### What changed?
+
+The following API methods related to `MessageListener` registration have been removed from the `Destination` interface:
+- `copyMessageListeners`
+- `getMessageListenerCount`
+- `isRegistered`
+- `register`
+- `unregister`
+
+A new interface, `MessageListenerRegistry`, was added with an API to get message listeners associated with the provided destination name.
+
+### Who is affected?
+
+This affects anyone registering/unregistering such listeners directly on the `Destination` interface.
+
+### How should I update my code?
+
+Register a `MessageListener` as an OSGi service, with the property `destination.name` mapped to the corresponding destination name.
+
+### Why was this change made?
+
+This change simplifies the message bus infrastructure and usage.
+
+---------------------------------------
+
+## Moved portal property `discussion.subscribe` to instance settings
+- **Date:** 2023-September-4
+- **JIRA Ticket:** [LPS-194379](https://liferay.atlassian.net/browse/LPS-194379)
+
+### What changed?
+
+The portal property `discussion.subscribe` was moved to instance settings and removed from the `portal.properties` file.
+
+### Who is affected?
+
+This affects anyone using `discussion.subscribe` with a value different than the default.
+
+### How should I update my code?
+
+No code updates are required. Set the property in the instance settings UI.
+
+### Why was this change made?
+
+Portal properties are global and require a server restart, while instance settings can differ between instances and are made in the running portal. Moving to instance settings provides more flexibility in the system.
+
+---------------------------------------
+
+## Removed repository registration support from `com.liferay.portal.deploy.hot.HookHotDeployListener`
+- **Date:** 2023-September-4
+- **JIRA Ticket:** [LPS-194350](https://liferay.atlassian.net/browse/LPS-194350)
+
+### What changed?
+
+The support for deploying an external repository via hook was removed from the `com.liferay.portal.deploy.hot.HookHotDeployListener` class.
+
+### Who is affected?
+
+This affects anyone providing a repository implementation via hook.
+
+### How should I update my code?
+
+If you are providing your own repository implementation hook, convert it to an OSGi service.
+
+### Why was this change made?
+
+External repositories deployed via hook don't support the same feature set as those implemented as OSGi serivces.
+
+---------------------------------------
+
+## Moved portal property `discussion.comments.always.editable.by.owner` to instance settings
+- **Date:** 2023-September-13
+- **JIRA Ticket:** [LPS-195006](https://liferay.atlassian.net/browse/LPS-195006)
+
+### What changed?
+
+The portal property `discussion.comments.always.editable.by.owner` was moved to instance settings and removed from the `portal.properties` file.
+
+### Who is affected?
+
+This affects anyone using `discussion.comments.always.editable.by.owner` with a value different than the default.
+
+### How should I update my code?
+
+No code updates are required. Set the property in the instance settings UI.
+
+### Why was this change made?
+
+Portal properties are global and require a server restart, while instance settings can differ between instances and are made in the running portal. Moving to instance settings provides more flexibility in the system.
+
+--------------------------------------
+
+## Removed portal property `sql.data.max.parameters`
+- **Date:** 2023-October-2
+- **JIRA Ticket:** [LPS-189621](https://liferay.atlassian.net/browse/LPS-189621)
+
+### What changed?
+
+The property `sql.data.max.parameters` was removed from `portal.properties`.
+
+### Who is affected?
+
+This affects anyone using the `sql.data.max.parameters` property.
+
+### How should I update my code?
+
+Use the database-specific property `database.max.parameters[databse]` instead.
+
+### Why was this change made?
+
+The total parameters limit varies for each database. The new portal property allows for database-specific configuration.
+
+---------------------------------------
+
+## Removed support to disable a scheduler job by setting interval to 0 or cron expression to empty string
+- **Date:** 2023-Sep-11
+- **JIRA Ticket:** [LPS-190994](https://liferay.atlassian.net/browse/LPS-190994)
+
+### What changed?
+
+Setting an interval of `0` or an empty cron expression are no longer accepted by the scheduler framework. When these values are used, an error message will be displayed.
+
+### Who is affected?
+
+This affects anyone using the interval `0` or empty cron expression.
+
+### How should I update my code?
+
+Instead use the Component Blacklist to disable certain scheduler components. The required class names are shown in the error messages thrown when setting the interval to `0` or an empty cron expression.
+
+### Why was this change made?
+
+Now Scheduler jobs are bootstrapped by `SchedulerJobConfiguration` objects registered as OSGi services. If a job should not be bootstrapped, the configuration object must not be registered at all.

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.client.test;
@@ -21,7 +12,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -210,17 +201,17 @@ public class SecurityTest extends BaseClientTestCase {
 				Collections.singletonList(GrantType.AUTHORIZATION_CODE),
 				Collections.singletonList("everything"));
 
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationCodePKCE", null,
+			createOAuth2ApplicationWithNone(
+				defaultCompanyId, user, "oauthTestApplicationCodePKCE",
 				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
-				Collections.singletonList("http://redirecturi:8080"),
-				Collections.singletonList("everything"));
+				Collections.singletonList("http://redirecturi:8080"), false,
+				Collections.singletonList("everything"), false);
 
 			Company company = CompanyLocalServiceUtil.getCompany(
 				defaultCompanyId);
 
 			createOAuth2Application(
-				defaultCompanyId, company.getDefaultUser(),
+				defaultCompanyId, company.getGuestUser(),
 				"oauthTestApplicationDefaultUser");
 		}
 
@@ -248,7 +239,7 @@ public class SecurityTest extends BaseClientTestCase {
 					"from which state is extracted");
 		}
 
-		Map<String, String[]> parameterMap = HttpUtil.getParameterMap(
+		Map<String, String[]> parameterMap = HttpComponentsUtil.getParameterMap(
 			uri.getQuery());
 
 		if (!parameterMap.containsKey("state")) {

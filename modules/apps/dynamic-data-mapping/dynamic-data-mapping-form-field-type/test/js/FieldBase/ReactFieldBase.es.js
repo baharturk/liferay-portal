@@ -1,19 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {act, fireEvent, render} from '@testing-library/react';
-import {PageProvider} from 'data-engine-js-components-web';
+import {FormProvider, PageProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
 import '@testing-library/jest-dom/extend-expect';
@@ -23,9 +14,11 @@ import {FieldBase} from '../../../src/main/resources/META-INF/resources/FieldBas
 const spritemap = 'icons.svg';
 
 const FieldBaseWithProvider = (props) => (
-	<PageProvider value={{editingLanguageId: 'en_US'}}>
-		<FieldBase {...props} />
-	</PageProvider>
+	<FormProvider initialState={{pages: []}}>
+		<PageProvider value={{editingLanguageId: 'en_US'}}>
+			<FieldBase {...props} />
+		</PageProvider>
+	</FormProvider>
 );
 
 describe('ReactFieldBase', () => {
@@ -227,7 +220,7 @@ describe('ReactFieldBase', () => {
 
 	describe('Hide Field', () => {
 		it('renders the FieldBase with hideField markup', () => {
-			const {getByText} = render(
+			const {getAllByText, getByText} = render(
 				<FieldBaseWithProvider
 					hideField
 					label="Text"
@@ -236,16 +229,18 @@ describe('ReactFieldBase', () => {
 			);
 
 			expect(getByText('hidden')).toBeInTheDocument();
-			expect(getByText('Text')).toBeInTheDocument();
+
+			const allByText = getAllByText('Text');
+			expect(allByText).toHaveLength(2);
+			expect(allByText[0]).toBeInTheDocument();
+			expect(allByText[1]).toBeInTheDocument();
 
 			expect(getByText('hidden').parentNode).toHaveAttribute(
 				'class',
 				'label ml-1 label-secondary'
 			);
-			expect(getByText('Text')).toHaveAttribute(
-				'class',
-				'text-secondary'
-			);
+			expect(allByText[0]).toHaveAttribute('class', 'text-secondary');
+			expect(allByText[1]).toHaveAttribute('class', 'sr-only');
 		});
 
 		it('renders the FieldBase with hideField markup when the label is empty', () => {

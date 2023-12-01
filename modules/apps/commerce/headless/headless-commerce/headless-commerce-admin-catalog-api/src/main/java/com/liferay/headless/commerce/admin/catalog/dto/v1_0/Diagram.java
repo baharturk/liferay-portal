@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.dto.v1_0;
@@ -89,7 +80,7 @@ public class Diagram implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected AttachmentBase64 attachmentBase64;
 
-	@Schema
+	@Schema(example = "black")
 	public String getColor() {
 		return color;
 	}
@@ -118,7 +109,7 @@ public class Diagram implements Serializable {
 	protected String color;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "31130")
 	public Long getId() {
 		return id;
 	}
@@ -145,7 +136,7 @@ public class Diagram implements Serializable {
 	protected Long id;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "33132")
 	public Long getImageId() {
 		return imageId;
 	}
@@ -173,7 +164,7 @@ public class Diagram implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long imageId;
 
-	@Schema
+	@Schema(example = "Name 1")
 	public String getImageURL() {
 		return imageURL;
 	}
@@ -201,7 +192,7 @@ public class Diagram implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String imageURL;
 
-	@Schema
+	@Schema(example = "exampleERC")
 	public String getProductExternalReferenceCode() {
 		return productExternalReferenceCode;
 	}
@@ -234,7 +225,7 @@ public class Diagram implements Serializable {
 	protected String productExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "33131")
 	public Long getProductId() {
 		return productId;
 	}
@@ -262,7 +253,7 @@ public class Diagram implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long productId;
 
-	@Schema
+	@Schema(example = "33.54")
 	public Double getRadius() {
 		return radius;
 	}
@@ -290,7 +281,7 @@ public class Diagram implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double radius;
 
-	@Schema
+	@Schema(example = "default")
 	public String getType() {
 		return type;
 	}
@@ -543,5 +534,7 @@ public class Diagram implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

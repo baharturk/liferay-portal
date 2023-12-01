@@ -1,14 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useContext, useMemo} from 'react';
 
@@ -29,6 +24,7 @@ export default function Main({
 	author,
 	canonicalURL,
 	chartDataProviders,
+	className,
 	onSelectedLanguageClick,
 	onTrafficSourceClick,
 	pagePublishDate,
@@ -53,7 +49,7 @@ export default function Main({
 	const title = dateFormatters.formatChartTitle([firstDate, lastDate]);
 
 	return (
-		<div className="pb-3 px-3">
+		<div className={`analytics-reports-app-main pb-3 px-3 ${className}`}>
 			<BasicInformation
 				author={author}
 				canonicalURL={canonicalURL}
@@ -85,7 +81,7 @@ export default function Main({
 			<TotalCount
 				className="mb-2"
 				dataProvider={totalViewsDataProvider}
-				label={Liferay.Util.sub(Liferay.Language.get('total-views'))}
+				label={sub(Liferay.Language.get('total-views'))}
 				popoverHeader={Liferay.Language.get('total-views')}
 				popoverMessage={Liferay.Language.get(
 					'this-number-refers-to-the-total-number-of-views-since-the-content-was-published'
@@ -96,9 +92,7 @@ export default function Main({
 				<TotalCount
 					className="mb-2"
 					dataProvider={totalReadsDataProvider}
-					label={Liferay.Util.sub(
-						Liferay.Language.get('total-reads')
-					)}
+					label={sub(Liferay.Language.get('total-reads'))}
 					popoverHeader={Liferay.Language.get('total-reads')}
 					popoverMessage={Liferay.Language.get(
 						'this-number-refers-to-the-total-number-of-reads-since-the-content-was-published'
@@ -120,10 +114,17 @@ export default function Main({
 	);
 }
 
+Main.defaultProps = {
+	author: null,
+	className: '',
+	totalReadsDataProvider: null,
+};
+
 Main.propTypes = {
-	author: PropTypes.object.isRequired,
+	author: PropTypes.object,
 	canonicalURL: PropTypes.string.isRequired,
 	chartDataProviders: PropTypes.arrayOf(PropTypes.func.isRequired).isRequired,
+	className: PropTypes.string,
 	onSelectedLanguageClick: PropTypes.func.isRequired,
 	onTrafficSourceClick: PropTypes.func.isRequired,
 	pagePublishDate: PropTypes.string.isRequired,
@@ -134,7 +135,7 @@ Main.propTypes = {
 			label: PropTypes.string,
 		})
 	).isRequired,
-	totalReadsDataProvider: PropTypes.func.isRequired,
+	totalReadsDataProvider: PropTypes.func,
 	totalViewsDataProvider: PropTypes.func.isRequired,
 	trafficSourcesDataProvider: PropTypes.func.isRequired,
 	viewURLs: PropTypes.arrayOf(

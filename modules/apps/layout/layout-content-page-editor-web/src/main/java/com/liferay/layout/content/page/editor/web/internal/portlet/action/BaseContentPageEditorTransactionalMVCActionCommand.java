@@ -1,19 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
+import com.liferay.fragment.exception.FragmentCompositionDescriptionException;
+import com.liferay.fragment.exception.FragmentCompositionNameException;
+import com.liferay.layout.manager.LayoutLockManager;
+import com.liferay.portal.kernel.exception.LockedLayoutException;
 import com.liferay.portal.kernel.exception.PortletIdException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
@@ -34,6 +29,8 @@ import java.util.concurrent.Callable;
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
 
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Eudaldo Alonso
  */
@@ -48,6 +45,10 @@ public abstract class BaseContentPageEditorTransactionalMVCActionCommand
 		JSONObject jsonObject = null;
 
 		try {
+			if (isLayoutLockRequired()) {
+				layoutLockManager.getLock(actionRequest);
+			}
+
 			Callable<JSONObject> callable = () -> doTransactionalCommand(
 				actionRequest, actionResponse);
 
@@ -81,12 +82,27 @@ public abstract class BaseContentPageEditorTransactionalMVCActionCommand
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception;
 
+	protected boolean isLayoutLockRequired() {
+		return true;
+	}
+
 	protected JSONObject processException(
 		ActionRequest actionRequest, Exception exception) {
 
+		if (exception instanceof LockedLayoutException) {
+			return processLockedLayoutException(actionRequest);
+		}
+
 		String errorMessage = "an-unexpected-error-occurred";
 
-		if (exception instanceof PortletIdException) {
+		if (exception instanceof FragmentCompositionDescriptionException) {
+			errorMessage =
+				"please-enter-a-valid-fragment-composition-description";
+		}
+		else if (exception instanceof FragmentCompositionNameException) {
+			errorMessage = "please-enter-a-valid-fragment-composition-name";
+		}
+		else if (exception instanceof PortletIdException) {
 			errorMessage =
 				"noninstanceable-widgets-can-be-embedded-only-once-on-the-" +
 					"same-page";
@@ -98,6 +114,17 @@ public abstract class BaseContentPageEditorTransactionalMVCActionCommand
 		return JSONUtil.put(
 			"error", LanguageUtil.get(themeDisplay.getRequest(), errorMessage));
 	}
+
+	protected JSONObject processLockedLayoutException(
+		ActionRequest actionRequest) {
+
+		return JSONUtil.put(
+			"redirectURL",
+			() -> layoutLockManager.getLockedLayoutURL(actionRequest));
+	}
+
+	@Reference
+	protected LayoutLockManager layoutLockManager;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseContentPageEditorTransactionalMVCActionCommand.class);

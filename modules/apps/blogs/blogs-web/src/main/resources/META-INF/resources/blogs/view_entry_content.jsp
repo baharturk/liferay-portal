@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -28,7 +19,7 @@ BlogsPortletInstanceConfiguration blogsPortletInstanceConfiguration = BlogsPortl
 	<c:when test="<%= entry.isVisible() || (entry.getUserId() == user.getUserId()) || BlogsEntryPermission.contains(permissionChecker, entry, ActionKeys.UPDATE) %>">
 		<portlet:renderURL var="viewEntryURL">
 			<portlet:param name="mvcRenderCommandName" value="/blogs/view_entry" />
-			<portlet:param name="redirect" value="<%= currentURL %>" />
+			<portlet:param name="redirect" value='<%= ParamUtil.getString(request, "redirect", currentURL) %>' />
 
 			<c:choose>
 				<c:when test="<%= Validator.isNotNull(entry.getUrlTitle()) %>">
@@ -72,6 +63,7 @@ BlogsPortletInstanceConfiguration blogsPortletInstanceConfiguration = BlogsPortl
 								"trashEnabled", trashHelper.isTrashEnabled(themeDisplay.getScopeGroupId())
 							).build()
 						%>'
+						aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 						dropdownItems="<%= blogsEntryActionDropdownItemsProvider.getActionDropdownItems(entry) %>"
 						propsTransformer="blogs_admin/js/ElementsPropsTransformer"
 					/>
@@ -87,7 +79,7 @@ BlogsPortletInstanceConfiguration blogsPortletInstanceConfiguration = BlogsPortl
 
 				String entryUserURL = StringPool.BLANK;
 
-				if ((entryUser != null) && !entryUser.isDefaultUser() && !user.isDefaultUser()) {
+				if ((entryUser != null) && !entryUser.isGuestUser() && !user.isGuestUser()) {
 					entryUserURL = entryUser.getDisplayURL(themeDisplay);
 				}
 				%>
@@ -95,7 +87,7 @@ BlogsPortletInstanceConfiguration blogsPortletInstanceConfiguration = BlogsPortl
 				<clay:content-col
 					cssClass="inline-item-before"
 				>
-					<liferay-ui:user-portrait
+					<liferay-user:user-portrait
 						user="<%= entryUser %>"
 					/>
 				</clay:content-col>
@@ -112,7 +104,7 @@ BlogsPortletInstanceConfiguration blogsPortletInstanceConfiguration = BlogsPortl
 							</div>
 
 							<div class="text-secondary">
-								<span class="hide-accessible"><liferay-ui:message key="published-date" /></span><liferay-ui:message arguments="<%= LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - entry.getStatusDate().getTime(), true) %>" key="x-ago" translateArguments="<%= false %>" />
+								<span class="hide-accessible sr-only"><liferay-ui:message key="published-date" /></span><liferay-ui:message arguments="<%= LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - entry.getStatusDate().getTime(), true) %>" key="x-ago" translateArguments="<%= false %>" />
 
 								<c:if test="<%= blogsPortletInstanceConfiguration.enableReadingTime() %>">
 									- <liferay-reading-time:reading-time displayStyle="descriptive" model="<%= entry %>" />
@@ -161,7 +153,7 @@ BlogsPortletInstanceConfiguration blogsPortletInstanceConfiguration = BlogsPortl
 						%>
 
 						<p>
-							<%= StringUtil.shorten(HtmlUtil.stripHtml(summary), PropsValues.BLOGS_PAGE_ABSTRACT_LENGTH) %>
+							<%= StringUtil.shorten(StringUtil.removeSubstring(HtmlUtil.stripHtml(summary), StringPool.NEW_LINE + StringPool.SPACE), PropsValues.BLOGS_PAGE_ABSTRACT_LENGTH) %>
 						</p>
 					</c:when>
 					<c:when test="<%= blogsPortletInstanceConfiguration.displayStyle().equals(BlogsUtil.DISPLAY_STYLE_FULL_CONTENT) %>">
@@ -224,7 +216,7 @@ BlogsPortletInstanceConfiguration blogsPortletInstanceConfiguration = BlogsPortl
 
 		<%
 		if (searchContainer != null) {
-			searchContainer.setTotal(searchContainer.getTotal() - 1);
+			searchContainer.setResultsAndTotal(searchContainer::getResults, searchContainer.getTotal() - 1);
 		}
 		%>
 

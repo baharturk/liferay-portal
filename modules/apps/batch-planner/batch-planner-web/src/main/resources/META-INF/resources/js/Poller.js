@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useIsMounted} from '@liferay/frontend-js-react-web';
@@ -17,7 +8,6 @@ import {fetch} from 'frontend-js-web';
 import {useCallback, useEffect, useReducer} from 'react';
 
 import {
-	EXPORT_FILE_NAME,
 	HEADERS,
 	POLL_INTERVAL,
 	PROCESS_COMPLETED,
@@ -34,20 +24,23 @@ const STOP_LOADING = 'DOWNLOADING';
 const initialState = {
 	contentType: null,
 	errorMessage: null,
+	externalReferenceCode: null,
 	loading: false,
 	percentage: 0,
 	pollingIntervalId: null,
 	ready: false,
-	taskId: null,
 };
 
-const setError = (error) => ({
-	payload: error ?? Liferay.Language.get('unexpected-error'),
+const setError = (error, externalReferenceCode) => ({
+	payload: {
+		error: error ?? Liferay.Language.get('unexpected-error'),
+		externalReferenceCode,
+	},
 	type: ERROR,
 });
 
-const setTaskId = (contentType, taskId) => ({
-	payload: {contentType, taskId},
+const setExternalReferenceCode = (contentType, externalReferenceCode) => ({
+	payload: {contentType, externalReferenceCode},
 	type: COMPLETED,
 });
 
@@ -58,6 +51,7 @@ const setProgress = (contentType, percentage) => ({
 
 export async function startTask(formDataQuerySelector, formSubmitURL) {
 	const mainFormData = document.querySelector(formDataQuerySelector);
+
 	const formData = new FormData(mainFormData);
 
 	const response = await fetch(formSubmitURL, {
@@ -74,11 +68,11 @@ export async function startTask(formDataQuerySelector, formSubmitURL) {
 }
 
 export async function getTaskStatus({
+	externalReferenceCode,
 	onFail,
 	onProgress,
 	onSuccess,
 	requestTaskStatus,
-	taskId,
 }) {
 	try {
 		const {
@@ -87,7 +81,7 @@ export async function getTaskStatus({
 			executeStatus,
 			processedItemsCount,
 			totalItemsCount,
-		} = await requestTaskStatus(taskId);
+		} = await requestTaskStatus(externalReferenceCode);
 
 		switch (executeStatus) {
 			case PROCESS_FAILED:
@@ -131,7 +125,8 @@ const reducer = (state = initialState, {payload, type}) => {
 
 			return {
 				...state,
-				errorMessage: payload,
+				errorMessage: payload.error,
+				externalReferenceCode: payload.externalReferenceCode,
 				loading: false,
 				pollingIntervalId: null,
 			};
@@ -141,11 +136,11 @@ const reducer = (state = initialState, {payload, type}) => {
 			return {
 				...state,
 				contentType: payload.contentType,
+				externalReferenceCode: payload.externalReferenceCode,
 				loading: false,
 				percentage: 100,
 				pollingIntervalId: null,
 				ready: true,
-				taskId: payload.taskId,
 			};
 		case PROGRESS:
 			return {
@@ -169,8 +164,8 @@ const Poller = (
 	requestTaskStatus,
 	requestTaskFile
 ) => {
-	const isMounted = useIsMounted();
 	const [state, dispatch] = useReducer(reducer, initialState);
+	const isMounted = useIsMounted();
 
 	const dispatchIfMounted = useCallback(
 		(action) => {
@@ -181,29 +176,20 @@ const Poller = (
 		[dispatch, isMounted]
 	);
 
-	const download = (url, filename) => {
-		var a = document.createElement('a');
-		document.body.appendChild(a);
-		a.style.display = 'none';
-		a.href = url;
-		a.download = filename;
-		a.click();
-		window.URL.revokeObjectURL(url);
-	};
-
 	const downloadFile = useCallback(async () => {
 		dispatchIfMounted({type: LOADING});
+
 		try {
-			const blobUrl = await requestTaskFile(state.taskId);
-			download(blobUrl, EXPORT_FILE_NAME);
+			requestTaskFile(state.externalReferenceCode);
 
 			dispatchIfMounted({type: STOP_LOADING});
 		}
 		catch (error) {
 			console.error(error);
+
 			dispatchIfMounted(setError());
 		}
-	}, [dispatchIfMounted, requestTaskFile, state.taskId]);
+	}, [dispatchIfMounted, requestTaskFile, state.externalReferenceCode]);
 
 	useEffect(() => {
 		let pollingIntervalId;
@@ -212,33 +198,37 @@ const Poller = (
 			dispatchIfMounted({type: LOADING});
 
 			try {
-				const {error, exportTaskId, importTaskId} = await startTask(
+				const {error, externalReferenceCode} = await startTask(
 					formDataQuerySelector,
 					formSubmitURL
 				);
 
 				if (error) {
 					dispatchIfMounted(setError(error));
+
+					return;
 				}
 
 				pollingIntervalId = setInterval(
 					() =>
 						getTaskStatus({
+							externalReferenceCode,
 							onFail: (error) =>
-								dispatchIfMounted(setError(error)),
+								dispatchIfMounted(
+									setError(error, externalReferenceCode)
+								),
 							onProgress: (contentType, percent) =>
 								dispatchIfMounted(
 									setProgress(contentType, percent)
 								),
 							onSuccess: (contentType) =>
 								dispatchIfMounted(
-									setTaskId(
+									setExternalReferenceCode(
 										contentType,
-										exportTaskId || importTaskId
+										externalReferenceCode
 									)
 								),
 							requestTaskStatus,
-							taskId: exportTaskId || importTaskId,
 						}),
 					POLL_INTERVAL
 				);
@@ -250,6 +240,7 @@ const Poller = (
 			}
 			catch (error) {
 				console.error(error);
+
 				dispatchIfMounted(setError());
 			}
 		}
@@ -273,6 +264,7 @@ const Poller = (
 		contentType: state.contentType,
 		downloadFile,
 		errorMessage: state.errorMessage,
+		externalReferenceCode: state.externalReferenceCode,
 		loading: state.loading,
 		percentage: state.percentage,
 		ready: state.ready,

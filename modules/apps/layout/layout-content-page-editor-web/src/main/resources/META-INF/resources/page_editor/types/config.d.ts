@@ -1,26 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {LayoutTypes} from './LayoutTypes';
+import type {LayoutType} from '../app/config/constants/layoutTypes';
+import type {SidebarPanel} from './SidebarPanel';
 
 export interface Config {
+	actionableInfoItemSelectorURL: string;
 	addFragmentCompositionURL: string;
 	addFragmentEntryLinkCommentURL: string;
 	addFragmentEntryLinkURL: string;
 	addFragmentEntryLinksURL: string;
 	addItemURL: string;
 	addPortletURL: string;
+	addRuleURL: string;
 	addSegmentsExperienceURL: string;
 
 	assetCategoryTreeNodeItemSelectorURL: string;
@@ -36,8 +30,8 @@ export interface Config {
 
 	availableSegmentsEntries: {
 		[key: string]: {
-			segmentsEntryId: string;
 			name: string;
+			segmentsEntryId: string;
 		};
 	};
 
@@ -53,12 +47,12 @@ export interface Config {
 
 	changeMasterLayoutURL: string;
 	changeStyleBookEntryURL: string;
-	createLayoutPageTemplateEntryURL: string;
 	collectionSelectorURL: string;
 
 	commonStyles: Array<{
 		label: string;
 		styles: Array<{
+			cssTemplate: string;
 			dataType: string;
 			defaultValue: string | object;
 			dependencies: Array<{
@@ -76,6 +70,17 @@ export interface Config {
 		}>;
 	}>;
 
+	commonStylesFields: Record<
+		string,
+		{
+			cssTemplate: string;
+			defaultValue: string | object;
+		}
+	>;
+
+	contentPagePersonalizationLearnURL: string;
+	createLayoutPageTemplateEntryURL: string;
+
 	defaultEditorConfigurations: Record<
 		'comment' | 'rich-text' | 'text',
 		{
@@ -84,32 +89,34 @@ export interface Config {
 		}
 	>;
 
-	defaultLanguageId: string;
-	defaultStyleBookEntryName: string;
-	defaultStyleBookEntryImagePreviewURL: string;
+	defaultLanguageId: Liferay.Language.Locale;
 	defaultSegmentsEntryId: string;
 	defaultSegmentsExperienceId: string;
+	defaultStyleBookEntryImagePreviewURL: string;
+	defaultStyleBookEntryName: string;
 	deleteFragmentEntryLinkCommentURL: string;
+	deleteRuleURL: string;
 	deleteSegmentsExperienceURL: string;
 	discardDraftURL: string;
-	draft: boolean;
 	duplicateItemURL: string;
 	duplicateSegmentsExperienceURL: string;
 	editFragmentEntryLinkCommentURL: string;
 	editFragmentEntryLinkURL: string;
 	editSegmentsEntryURL: string;
 	frontendTokens: {
-		[key: string]: {
-			cssVariable: string;
-			editorType: string;
-			label: string;
-			name: string;
-			value: string;
-		};
+		getAvailableImageConfigurationsURL: string;
+		getAvailableListItemRenderersURL: string;
+		getAvailableListRenderersURL: string;
+		[key: string]:
+			| {
+					cssVariable: string;
+					editorType: string;
+					label: string;
+					name: string;
+					value: string;
+			  }
+			| string;
 	};
-	getAvailableImageConfigurationsURL: string;
-	getAvailableListRenderersURL: string;
-	getAvailableListItemRenderersURL: string;
 	getAvailableTemplatesURL: string;
 	getCollectionConfigurationURL: string;
 	getCollectionFieldURL: string;
@@ -117,22 +124,27 @@ export interface Config {
 	getCollectionItemCountURL: string;
 	getCollectionMappingFieldsURL: string;
 	getCollectionSupportedFiltersURL: string;
-	getExperienceUsedPortletsURL: string;
+	getCollectionWarningMessageURL: string;
+	getExperienceDataURL: string;
+	getFormConfigURL: string;
 	getIframeContentCssURL: string;
 	getIframeContentURL: string;
+	getInfoItemActionErrorMessageURL: string;
 	getInfoItemFieldValueURL: string;
-	getInfoItemMappingFieldsURL: string;
 	getLayoutFriendlyURL: string;
 	getLayoutPageTemplateCollectionsURL: string;
 	getPageContentsURL: string;
-	getWidgetsURL: string;
+	getPortletsURL: string;
+	getRolesURL: string;
+	getUsersURL: string;
 	imageSelectorURL: string;
 	infoItemPreviewSelectorURL: string;
 	infoItemSelectorURL: string;
+	isConversionDraft: boolean;
 	isPrivateLayoutsEnabled: boolean;
 	layoutConversionWarningMessages: string[] | null;
 	layoutItemSelectorURL: String;
-	layoutType: LayoutTypes[keyof LayoutTypes];
+	layoutType: LayoutType;
 	lookAndFeelURL: string;
 	mappingFieldsURL: string;
 	markItemForDeletionURL: string;
@@ -152,34 +164,36 @@ export interface Config {
 	plid: string;
 	pluginsRootPath: string;
 	portletNamespace: string;
-	previewPageURL: string;
 	publishURL: string;
 	redirectURL: string;
 	renderFragmentEntryURL: string;
 	restoreCollectionDisplayConfigURL: string;
 	searchContainerPageMaxDelta: number;
-	selectedSegmentsEntryId: string;
 
-	sidebarPanels: {
-		[key: string]: {
-			icon: string;
-			isLink: boolean;
+	selectedMappingTypes?: {
+		subtype: {
+			id: string;
 			label: string;
-			pluginEntryPoint?: string;
-			sidebarPanelId: string;
-			url?: string | null;
+		};
+		type: {
+			id: string;
+			label: string;
 		};
 	};
+
+	selectedSegmentsEntryId: string;
+
+	sidebarPanels: SidebarPanel[] | Record<string, SidebarPanel>;
 
 	singleSegmentsExperienceMode: boolean;
 	siteNavigationMenuItemSelectorURL: string;
 	styleBookEnabled: boolean;
-	stylebookEntryId: string;
 	styleBooks: Array<{
 		imagePreviewURL: string;
 		name: string;
 		styleBookEntryId: string;
 	}>;
+	stylebookEntryId: string;
 	themeColorCssClasses: string[];
 	toolbarId: string;
 
@@ -189,12 +203,15 @@ export interface Config {
 		toolbarPluginId: string;
 	}>;
 
-	unmarkItemForDeletionURL: string;
-	updateConfigurationValuesURL: string;
+	unmarkItemsForDeletionURL: string;
 	updateCollectionDisplayConfigURL: string;
+	updateConfigurationValuesURL: string;
+	updateFormItemConfigURL: string;
+	updateFragmentPortletSetsSortURL: string;
 	updateItemConfigURL: string;
 	updateLayoutPageTemplateDataURL: string;
 	updateRowColumnsURL: string;
+	updateRuleURL: string;
 	updateSegmentsExperiencePriorityURL: string;
 	updateSegmentsExperienceURL: string;
 	videoItemSelectorURL: string;

@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Limit search to the current site."
+		"en_US": "limit-search-to-the-current-site-description"
 	},
 	"elementDefinition": {
 		"category": "filter",
@@ -27,7 +27,8 @@
 		"uiConfiguration": {
 		}
 	},
+	"externalReferenceCode": "LIMIT_SEARCH_TO_THE_CURRENT_SITE",
 	"title_i18n": {
-		"en_US": "Limit Search to the Current Site"
+		"en_US": "limit-search-to-the-current-site"
 	}
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.dto.v1_0;
@@ -121,7 +112,7 @@ public class MappedProduct implements Serializable {
 	protected CustomField[] customFields;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "33130")
 	public Long getId() {
 		return id;
 	}
@@ -147,7 +138,7 @@ public class MappedProduct implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@Schema(example = "exampleERC")
 	public String getProductExternalReferenceCode() {
 		return productExternalReferenceCode;
 	}
@@ -180,7 +171,7 @@ public class MappedProduct implements Serializable {
 	protected String productExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "33131")
 	public Long getProductId() {
 		return productId;
 	}
@@ -208,7 +199,9 @@ public class MappedProduct implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long productId;
 
-	@Schema
+	@Schema(
+		example = "{en_US=Hand Saw, hr_HR=Product Name HR, hu_HU=Product Name HU}"
+	)
 	@Valid
 	public Map<String, String> getProductName() {
 		return productName;
@@ -239,7 +232,7 @@ public class MappedProduct implements Serializable {
 	protected Map<String, String> productName;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "1")
 	public Integer getQuantity() {
 		return quantity;
 	}
@@ -267,7 +260,7 @@ public class MappedProduct implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer quantity;
 
-	@Schema
+	@Schema(example = "1")
 	public String getSequence() {
 		return sequence;
 	}
@@ -295,7 +288,7 @@ public class MappedProduct implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String sequence;
 
-	@Schema
+	@Schema(example = "SKU01")
 	public String getSku() {
 		return sku;
 	}
@@ -321,7 +314,7 @@ public class MappedProduct implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String sku;
 
-	@Schema
+	@Schema(example = "SKU0111")
 	public String getSkuExternalReferenceCode() {
 		return skuExternalReferenceCode;
 	}
@@ -352,7 +345,7 @@ public class MappedProduct implements Serializable {
 	protected String skuExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "33135")
 	public Long getSkuId() {
 		return skuId;
 	}
@@ -378,7 +371,7 @@ public class MappedProduct implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long skuId;
 
-	@Schema
+	@Schema(example = "sku")
 	@Valid
 	public Type getType() {
 		return type;
@@ -723,5 +716,7 @@ public class MappedProduct implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.client.serdes.v1_0;
 
 import com.liferay.object.admin.rest.client.dto.v1_0.ObjectField;
+import com.liferay.object.admin.rest.client.dto.v1_0.ObjectFieldSetting;
 import com.liferay.object.admin.rest.client.json.BaseJSONParser;
 
 import java.util.Iterator;
@@ -93,6 +85,34 @@ public class ObjectFieldSerDes {
 			sb.append("\"");
 		}
 
+		if (objectField.getDefaultValue() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"defaultValue\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(objectField.getDefaultValue()));
+
+			sb.append("\"");
+		}
+
+		if (objectField.getExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(objectField.getExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
 		if (objectField.getId() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -147,6 +167,22 @@ public class ObjectFieldSerDes {
 			sb.append(_toJSON(objectField.getLabel()));
 		}
 
+		if (objectField.getListTypeDefinitionExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"listTypeDefinitionExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(
+					objectField.getListTypeDefinitionExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
 		if (objectField.getListTypeDefinitionId() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -155,6 +191,16 @@ public class ObjectFieldSerDes {
 			sb.append("\"listTypeDefinitionId\": ");
 
 			sb.append(objectField.getListTypeDefinitionId());
+		}
+
+		if (objectField.getLocalized() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"localized\": ");
+
+			sb.append(objectField.getLocalized());
 		}
 
 		if (objectField.getName() != null) {
@@ -167,6 +213,57 @@ public class ObjectFieldSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(objectField.getName()));
+
+			sb.append("\"");
+		}
+
+		if (objectField.getObjectFieldSettings() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectFieldSettings\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < objectField.getObjectFieldSettings().length;
+				 i++) {
+
+				sb.append(
+					String.valueOf(objectField.getObjectFieldSettings()[i]));
+
+				if ((i + 1) < objectField.getObjectFieldSettings().length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		if (objectField.getReadOnly() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"readOnly\": ");
+
+			sb.append("\"");
+
+			sb.append(objectField.getReadOnly());
+
+			sb.append("\"");
+		}
+
+		if (objectField.getReadOnlyConditionExpression() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"readOnlyConditionExpression\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(objectField.getReadOnlyConditionExpression()));
 
 			sb.append("\"");
 		}
@@ -195,6 +292,26 @@ public class ObjectFieldSerDes {
 			sb.append(objectField.getRequired());
 		}
 
+		if (objectField.getState() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"state\": ");
+
+			sb.append(objectField.getState());
+		}
+
+		if (objectField.getSystem() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"system\": ");
+
+			sb.append(objectField.getSystem());
+		}
+
 		if (objectField.getType() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -207,6 +324,16 @@ public class ObjectFieldSerDes {
 			sb.append(objectField.getType());
 
 			sb.append("\"");
+		}
+
+		if (objectField.getUnique() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"unique\": ");
+
+			sb.append(objectField.getUnique());
 		}
 
 		sb.append("}");
@@ -250,6 +377,23 @@ public class ObjectFieldSerDes {
 				"businessType", String.valueOf(objectField.getBusinessType()));
 		}
 
+		if (objectField.getDefaultValue() == null) {
+			map.put("defaultValue", null);
+		}
+		else {
+			map.put(
+				"defaultValue", String.valueOf(objectField.getDefaultValue()));
+		}
+
+		if (objectField.getExternalReferenceCode() == null) {
+			map.put("externalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"externalReferenceCode",
+				String.valueOf(objectField.getExternalReferenceCode()));
+		}
+
 		if (objectField.getId() == null) {
 			map.put("id", null);
 		}
@@ -289,6 +433,16 @@ public class ObjectFieldSerDes {
 			map.put("label", String.valueOf(objectField.getLabel()));
 		}
 
+		if (objectField.getListTypeDefinitionExternalReferenceCode() == null) {
+			map.put("listTypeDefinitionExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"listTypeDefinitionExternalReferenceCode",
+				String.valueOf(
+					objectField.getListTypeDefinitionExternalReferenceCode()));
+		}
+
 		if (objectField.getListTypeDefinitionId() == null) {
 			map.put("listTypeDefinitionId", null);
 		}
@@ -298,11 +452,43 @@ public class ObjectFieldSerDes {
 				String.valueOf(objectField.getListTypeDefinitionId()));
 		}
 
+		if (objectField.getLocalized() == null) {
+			map.put("localized", null);
+		}
+		else {
+			map.put("localized", String.valueOf(objectField.getLocalized()));
+		}
+
 		if (objectField.getName() == null) {
 			map.put("name", null);
 		}
 		else {
 			map.put("name", String.valueOf(objectField.getName()));
+		}
+
+		if (objectField.getObjectFieldSettings() == null) {
+			map.put("objectFieldSettings", null);
+		}
+		else {
+			map.put(
+				"objectFieldSettings",
+				String.valueOf(objectField.getObjectFieldSettings()));
+		}
+
+		if (objectField.getReadOnly() == null) {
+			map.put("readOnly", null);
+		}
+		else {
+			map.put("readOnly", String.valueOf(objectField.getReadOnly()));
+		}
+
+		if (objectField.getReadOnlyConditionExpression() == null) {
+			map.put("readOnlyConditionExpression", null);
+		}
+		else {
+			map.put(
+				"readOnlyConditionExpression",
+				String.valueOf(objectField.getReadOnlyConditionExpression()));
 		}
 
 		if (objectField.getRelationshipType() == null) {
@@ -321,11 +507,32 @@ public class ObjectFieldSerDes {
 			map.put("required", String.valueOf(objectField.getRequired()));
 		}
 
+		if (objectField.getState() == null) {
+			map.put("state", null);
+		}
+		else {
+			map.put("state", String.valueOf(objectField.getState()));
+		}
+
+		if (objectField.getSystem() == null) {
+			map.put("system", null);
+		}
+		else {
+			map.put("system", String.valueOf(objectField.getSystem()));
+		}
+
 		if (objectField.getType() == null) {
 			map.put("type", null);
 		}
 		else {
 			map.put("type", String.valueOf(objectField.getType()));
+		}
+
+		if (objectField.getUnique() == null) {
+			map.put("unique", null);
+		}
+		else {
+			map.put("unique", String.valueOf(objectField.getUnique()));
 		}
 
 		return map;
@@ -370,6 +577,19 @@ public class ObjectFieldSerDes {
 							(String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "defaultValue")) {
+				if (jsonParserFieldValue != null) {
+					objectField.setDefaultValue((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					objectField.setExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "id")) {
 				if (jsonParserFieldValue != null) {
 					objectField.setId(
@@ -401,6 +621,15 @@ public class ObjectFieldSerDes {
 				}
 			}
 			else if (Objects.equals(
+						jsonParserFieldName,
+						"listTypeDefinitionExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					objectField.setListTypeDefinitionExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
 						jsonParserFieldName, "listTypeDefinitionId")) {
 
 				if (jsonParserFieldValue != null) {
@@ -408,9 +637,49 @@ public class ObjectFieldSerDes {
 						Long.valueOf((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "localized")) {
+				if (jsonParserFieldValue != null) {
+					objectField.setLocalized((Boolean)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "name")) {
 				if (jsonParserFieldValue != null) {
 					objectField.setName((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "objectFieldSettings")) {
+
+				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					ObjectFieldSetting[] objectFieldSettingsArray =
+						new ObjectFieldSetting[jsonParserFieldValues.length];
+
+					for (int i = 0; i < objectFieldSettingsArray.length; i++) {
+						objectFieldSettingsArray[i] =
+							ObjectFieldSettingSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
+					objectField.setObjectFieldSettings(
+						objectFieldSettingsArray);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "readOnly")) {
+				if (jsonParserFieldValue != null) {
+					objectField.setReadOnly(
+						ObjectField.ReadOnly.create(
+							(String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "readOnlyConditionExpression")) {
+
+				if (jsonParserFieldValue != null) {
+					objectField.setReadOnlyConditionExpression(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "relationshipType")) {
@@ -425,10 +694,25 @@ public class ObjectFieldSerDes {
 					objectField.setRequired((Boolean)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "state")) {
+				if (jsonParserFieldValue != null) {
+					objectField.setState((Boolean)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "system")) {
+				if (jsonParserFieldValue != null) {
+					objectField.setSystem((Boolean)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "type")) {
 				if (jsonParserFieldValue != null) {
 					objectField.setType(
 						ObjectField.Type.create((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "unique")) {
+				if (jsonParserFieldValue != null) {
+					objectField.setUnique((Boolean)jsonParserFieldValue);
 				}
 			}
 		}

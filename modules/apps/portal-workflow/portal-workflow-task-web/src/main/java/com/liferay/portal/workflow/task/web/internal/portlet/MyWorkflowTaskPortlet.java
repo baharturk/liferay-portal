@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.task.web.internal.portlet;
@@ -29,9 +20,11 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.kernel.workflow.WorkflowTask;
 import com.liferay.portal.kernel.workflow.WorkflowTaskManagerUtil;
+import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
+import com.liferay.portal.workflow.manager.WorkflowLogManager;
+import com.liferay.portal.workflow.security.permission.WorkflowTaskPermission;
 import com.liferay.portal.workflow.task.web.internal.configuration.WorkflowTaskWebConfiguration;
 import com.liferay.portal.workflow.task.web.internal.display.context.WorkflowTaskDisplayContext;
-import com.liferay.portal.workflow.task.web.internal.permission.WorkflowTaskPermissionChecker;
 
 import java.io.IOException;
 
@@ -54,7 +47,6 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.workflow.task.web.internal.configuration.WorkflowTaskWebConfiguration",
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=portlet-workflow-tasks",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -72,7 +64,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.view-template=/view.jsp",
 		"javax.portlet.name=" + PortletKeys.MY_WORKFLOW_TASK,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"javax.portlet.security-role-ref=power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -162,8 +155,8 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 			workflowTask.getOptionalAttributes(), "groupId",
 			themeDisplay.getSiteGroupId());
 
-		_workflowTaskPermissionChecker.check(
-			groupId, workflowTask, themeDisplay.getPermissionChecker());
+		_workflowTaskPermission.check(
+			themeDisplay.getPermissionChecker(), workflowTask, groupId);
 	}
 
 	private void _setWorkflowTaskDisplayContextRenderRequestAttribute(
@@ -174,7 +167,8 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 			WebKeys.PORTLET_DISPLAY_CONTEXT,
 			new WorkflowTaskDisplayContext(
 				_portal.getLiferayPortletRequest(renderRequest),
-				_portal.getLiferayPortletResponse(renderResponse)));
+				_portal.getLiferayPortletResponse(renderResponse),
+				_workflowComparatorFactory, _workflowLogManager));
 	}
 
 	private void _setWorkflowTaskRenderRequestAttribute(
@@ -204,8 +198,15 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 	@Reference
 	private Portal _portal;
 
-	private final WorkflowTaskPermissionChecker _workflowTaskPermissionChecker =
-		new WorkflowTaskPermissionChecker();
+	@Reference
+	private WorkflowComparatorFactory _workflowComparatorFactory;
+
+	@Reference
+	private WorkflowLogManager _workflowLogManager;
+
+	@Reference
+	private WorkflowTaskPermission _workflowTaskPermission;
+
 	private volatile WorkflowTaskWebConfiguration _workflowTaskWebConfiguration;
 
 }

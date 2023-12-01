@@ -1,6 +1,7 @@
 @component-name = "portal-test-plugins"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property portlet.plugins.includes = "test-cache-configuration-portlet";
@@ -15,13 +16,13 @@ definition {
 	}
 
 	@ignore = "true"
-	@priority = "4"
+	@priority = 4
 	test ViewCacheConfiguration {
 		ProductMenu.gotoPortlet(
 			category = "Site Builder",
 			portlet = "Pages");
 
-		PagesAdmin.addPublicPage(pageName = "Test Cache Configuration Page");
+		PagesAdmin.addPage(pageName = "Test Cache Configuration Page");
 
 		Navigator.gotoPage(pageName = "Test Cache Configuration Page");
 

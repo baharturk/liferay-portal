@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.cache.multiple.internal.cluster.link.messaging;
 
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.cache.multiple.internal.PortalCacheClusterEvent;
 import com.liferay.portal.cache.multiple.internal.PortalCacheClusterEventType;
 import com.liferay.portal.cache.multiple.internal.constants.PortalCacheDestinationNames;
@@ -28,6 +20,7 @@ import com.liferay.portal.kernel.messaging.BaseMessageListener;
 import com.liferay.portal.kernel.messaging.Destination;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageListener;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.util.SerializableUtil;
 
 import java.io.Serializable;
@@ -42,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Shuyang Zhou
  */
 @Component(
-	enabled = false, immediate = true,
+	enabled = false,
 	property = "destination.name=" + PortalCacheDestinationNames.CACHE_REPLICATION,
 	service = MessageListener.class
 )
@@ -87,13 +80,6 @@ public class ClusterLinkPortalCacheClusterListener extends BaseMessageListener {
 		_handlePortalCacheClusterEvent(portalCacheClusterEvent);
 	}
 
-	@Reference(
-		target = "(destination.name=" + PortalCacheDestinationNames.CACHE_REPLICATION + ")",
-		unbind = "-"
-	)
-	protected void setDestination(Destination destination) {
-	}
-
 	private void _handlePortalCacheClusterEvent(
 		PortalCacheClusterEvent portalCacheClusterEvent) {
 
@@ -113,6 +99,25 @@ public class ClusterLinkPortalCacheClusterListener extends BaseMessageListener {
 		if (portalCache == null) {
 			return;
 		}
+
+		if (portalCache.isSharded()) {
+			try (SafeCloseable safeCloseable =
+					CompanyThreadLocal.setWithSafeCloseable(
+						portalCacheClusterEvent.getCompanyId())) {
+
+				_handlePortalCacheClusterEvent(
+					portalCacheClusterEvent, portalCache);
+			}
+
+			return;
+		}
+
+		_handlePortalCacheClusterEvent(portalCacheClusterEvent, portalCache);
+	}
+
+	private void _handlePortalCacheClusterEvent(
+		PortalCacheClusterEvent portalCacheClusterEvent,
+		PortalCache<Serializable, Serializable> portalCache) {
 
 		PortalCacheClusterEventType portalCacheClusterEventType =
 			portalCacheClusterEvent.getEventType();
@@ -147,6 +152,11 @@ public class ClusterLinkPortalCacheClusterListener extends BaseMessageListener {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ClusterLinkPortalCacheClusterListener.class);
+
+	@Reference(
+		target = "(destination.name=" + PortalCacheDestinationNames.CACHE_REPLICATION + ")"
+	)
+	private Destination _destination;
 
 	private ServiceTrackerMap
 		<String, PortalCacheManager<? extends Serializable, ?>>

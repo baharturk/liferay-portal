@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -25,12 +16,14 @@ import com.liferay.petra.sql.dsl.query.FromStep;
 import com.liferay.petra.sql.dsl.query.GroupByStep;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.events.StartupHelperUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.change.tracking.CTTransactionException;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.MasterLayoutException;
 import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.RequiredLayoutException;
@@ -39,6 +32,7 @@ import com.liferay.portal.kernel.exception.SitemapIncludeException;
 import com.liferay.portal.kernel.exception.SitemapPagePriorityException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.lock.LockManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.CustomizedPages;
@@ -64,6 +58,7 @@ import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.impl.VirtualLayout;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
@@ -90,6 +85,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
+import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalService;
 import com.liferay.portal.kernel.service.persistence.GroupPersistence;
 import com.liferay.portal.kernel.service.persistence.LayoutFriendlyURLPersistence;
 import com.liferay.portal.kernel.service.persistence.LayoutPrototypePersistence;
@@ -120,7 +116,6 @@ import com.liferay.portal.service.base.LayoutLocalServiceBaseImpl;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.ratings.kernel.service.RatingsStatsLocalService;
 import com.liferay.sites.kernel.util.Sites;
-import com.liferay.sites.kernel.util.SitesUtil;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -240,8 +235,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		String name = nameMap.get(LocaleUtil.getSiteDefault());
 
 		if (system &&
-			(Objects.equals(type, LayoutConstants.TYPE_ASSET_DISPLAY) ||
-			 Objects.equals(type, LayoutConstants.TYPE_COLLECTION) ||
+			(Objects.equals(type, LayoutConstants.TYPE_COLLECTION) ||
 			 Objects.equals(type, LayoutConstants.TYPE_CONTENT))) {
 
 			friendlyURLMap = _getDraftFriendlyURLMap(groupId, friendlyURLMap);
@@ -266,8 +260,8 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		}
 
 		layoutLocalServiceHelper.validate(
-			groupId, privateLayout, layoutId, parentLayoutId, name, type,
-			hidden, friendlyURLMap, serviceContext);
+			groupId, privateLayout, layoutId, parentLayoutId, classNameId,
+			classPK, name, type, friendlyURLMap, serviceContext);
 
 		Date date = new Date();
 
@@ -422,10 +416,8 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 		// Draft layout
 
-		if (!system &&
-			(Objects.equals(type, LayoutConstants.TYPE_COLLECTION) ||
-			 Objects.equals(type, LayoutConstants.TYPE_CONTENT) ||
-			 layout.isTypeAssetDisplay())) {
+		if (!layout.isDraftLayout() &&
+			(layout.isTypeAssetDisplay() || layout.isTypeContent())) {
 
 			serviceContext.setModifiedDate(date);
 
@@ -709,6 +701,45 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			description, type, hidden, false, friendlyURL, serviceContext);
 	}
 
+	public Layout copyLayout(
+			long userId, long groupId, boolean privateLayout,
+			Map<Locale, String> nameMap, boolean hidden, boolean system,
+			boolean copyPermissions, long sourcePlid,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		Layout sourceLayout = layoutLocalService.getLayout(sourcePlid);
+
+		UnicodeProperties sourceUnicodeProperties =
+			sourceLayout.getTypeSettingsProperties();
+
+		Layout targetLayout = layoutLocalService.addLayout(
+			userId, groupId, privateLayout, sourceLayout.getParentLayoutId(),
+			sourceLayout.getClassNameId(), sourceLayout.getClassPK(), nameMap,
+			sourceLayout.getTitleMap(), sourceLayout.getDescriptionMap(),
+			sourceLayout.getKeywordsMap(), sourceLayout.getRobotsMap(),
+			sourceLayout.getType(), sourceUnicodeProperties.toString(), hidden,
+			system, new HashMap<>(), sourceLayout.getMasterLayoutPlid(),
+			serviceContext);
+
+		if (copyPermissions) {
+			_resourceLocalService.deleteResource(
+				targetLayout.getCompanyId(), Layout.class.getName(),
+				ResourceConstants.SCOPE_INDIVIDUAL, targetLayout.getPlid());
+
+			_resourceLocalService.copyModelResources(
+				sourceLayout.getCompanyId(), Layout.class.getName(),
+				sourceLayout.getPlid(), targetLayout.getPlid());
+		}
+
+		UnicodeProperties targetUnicodeProperties =
+			targetLayout.getTypeSettingsProperties();
+
+		targetUnicodeProperties.put("published", Boolean.FALSE.toString());
+
+		return layoutLocalService.updateLayout(targetLayout);
+	}
+
 	/**
 	 * Deletes the layout, its child layouts, and its associated resources.
 	 *
@@ -767,6 +798,8 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		for (Layout childLayout : childLayouts) {
 			layoutLocalService.deleteLayout(childLayout, serviceContext);
 		}
+
+		LockManagerUtil.unlock(Layout.class.getName(), layout.getPlid());
 
 		// Layout friendly URLs
 
@@ -837,6 +870,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 		layout = layoutPersistence.remove(layout);
 
+		if (layout == null) {
+			return;
+		}
+
 		// Portal preferences
 
 		_resetPortalPreferences(layout);
@@ -853,6 +890,12 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			systemEventHierarchyEntry.setExtraDataValue(
 				"privateLayout", String.valueOf(layout.isPrivateLayout()));
 		}
+
+		// Workflow
+
+		_workflowInstanceLinkLocalService.deleteWorkflowInstanceLink(
+			layout.getCompanyId(), layout.getGroupId(), Layout.class.getName(),
+			layout.getPlid());
 
 		// Indexer
 
@@ -948,12 +991,8 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	@Override
 	public Layout fetchDefaultLayout(long groupId, boolean privateLayout) {
 		if (groupId > 0) {
-			List<Layout> layouts = layoutPersistence.findByG_P(
-				groupId, privateLayout, 0, 1);
-
-			if (!layouts.isEmpty()) {
-				return layouts.get(0);
-			}
+			return layoutPersistence.fetchByG_P_First(
+				groupId, privateLayout, null);
 		}
 
 		return null;
@@ -1121,12 +1160,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	@Override
 	public long getDefaultPlid(long groupId) {
 		if (groupId > 0) {
-			List<Layout> layouts = layoutPersistence.findByGroupId(
-				groupId, 0, 1);
+			Layout layout = layoutPersistence.fetchByGroupId_First(
+				groupId, null);
 
-			if (!layouts.isEmpty()) {
-				Layout layout = layouts.get(0);
-
+			if (layout != null) {
 				return layout.getPlid();
 			}
 		}
@@ -1586,10 +1623,54 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			long groupId, boolean privateLayout, String type)
 		throws PortalException {
 
+		return getLayouts(groupId, privateLayout, new String[] {type});
+	}
+
+	/**
+	 * Returns a range of all the layouts belonging to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  keywords keywords
+	 * @param  types layout types
+	 * @param  start the lower bound of the range of layouts
+	 * @param  end the upper bound of the range of layouts (not inclusive)
+	 * @param  orderByComparator the comparator to order the layouts
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+			long groupId, boolean privateLayout, String keywords,
+			String[] types, int start, int end,
+			OrderByComparator<Layout> orderByComparator)
+		throws PortalException {
+
+		return getLayouts(
+			groupId, 0, privateLayout, keywords, types, start, end,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns all the layouts that match the type and belong to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  types the layout's type (optionally {@link
+	 *         LayoutConstants#TYPE_PORTLET}). The possible types can be found
+	 *         in {@link LayoutConstants}.
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+			long groupId, boolean privateLayout, String[] types)
+		throws PortalException {
+
 		Group group = _groupPersistence.findByPrimaryKey(groupId);
 
 		List<Layout> layouts = layoutPersistence.findByG_P_T(
-			groupId, privateLayout, type);
+			groupId, privateLayout, types);
 
 		if (!group.isUser()) {
 			return layouts;
@@ -1624,31 +1705,6 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		}
 
 		return layouts;
-	}
-
-	/**
-	 * Returns a range of all the layouts belonging to the group.
-	 *
-	 * @param  groupId the primary key of the group
-	 * @param  privateLayout whether the layout is private to the group
-	 * @param  keywords keywords
-	 * @param  types layout types
-	 * @param  start the lower bound of the range of layouts
-	 * @param  end the upper bound of the range of layouts (not inclusive)
-	 * @param  orderByComparator the comparator to order the layouts
-	 * @return the matching layouts, or <code>null</code> if no matches were
-	 *         found
-	 */
-	@Override
-	public List<Layout> getLayouts(
-			long groupId, boolean privateLayout, String keywords,
-			String[] types, int start, int end,
-			OrderByComparator<Layout> orderByComparator)
-		throws PortalException {
-
-		return getLayouts(
-			groupId, 0, privateLayout, keywords, types, start, end,
-			orderByComparator);
 	}
 
 	/**
@@ -1740,7 +1796,9 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 				GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK)));
 
 			if (layout == null) {
-				indexer.delete(layout);
+				indexer.delete(
+					GetterUtil.getLong(document.get(Field.COMPANY_ID)),
+					document.getUID());
 
 				continue;
 			}
@@ -1834,7 +1892,9 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 				GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK)));
 
 			if (layout == null) {
-				indexer.delete(layout);
+				indexer.delete(
+					GetterUtil.getLong(document.get(Field.COMPANY_ID)),
+					document.getUID());
 
 				continue;
 			}
@@ -1949,6 +2009,14 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	@Override
 	public int getLayoutsCount(long groupId, boolean privateLayout) {
 		return layoutPersistence.countByG_P(groupId, privateLayout);
+	}
+
+	@Override
+	public int getLayoutsCount(
+		long groupId, boolean privateLayout, long parentLayoutId) {
+
+		return layoutPersistence.countByG_P_P(
+			groupId, privateLayout, parentLayoutId);
 	}
 
 	@Override
@@ -2075,12 +2143,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			getCounterName(groupId, privateLayout));
 
 		if (nextLayoutId == 1) {
-			List<Layout> layouts = layoutPersistence.findByG_P(
-				groupId, privateLayout, 0, 1, new LayoutComparator());
+			Layout layout = layoutPersistence.fetchByG_P_First(
+				groupId, privateLayout, new LayoutComparator());
 
-			if (!layouts.isEmpty()) {
-				Layout layout = layouts.get(0);
-
+			if (layout != null) {
 				nextLayoutId = layout.getLayoutId() + 1;
 
 				counterLocalService.reset(
@@ -2250,7 +2316,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchLayoutException, noSuchLayoutException);
+				_log.debug(noSuchLayoutException);
 			}
 		}
 
@@ -2632,8 +2698,9 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *         String)}.
 	 * @param  hasIconImage whether the icon image will be updated
 	 * @param  iconBytes the byte array of the layout's new icon image
-	 * @param  masterLayoutPlid the primary key of the master layout
 	 * @param  styleBookEntryId the primary key of the style book entrys
+	 * @param  faviconFileEntryId the file entry ID of the layout's new favicon
+	 * @param  masterLayoutPlid the primary key of the master layout
 	 * @param  serviceContext the service context to be applied. Can set the
 	 *         modification date and expando bridge attributes for the layout.
 	 *         For layouts that are linked to a layout prototype, attributes
@@ -2653,8 +2720,9 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
 			Map<Locale, String> keywordsMap, Map<Locale, String> robotsMap,
 			String type, boolean hidden, Map<Locale, String> friendlyURLMap,
-			boolean hasIconImage, byte[] iconBytes, long masterLayoutPlid,
-			long styleBookEntryId, ServiceContext serviceContext)
+			boolean hasIconImage, byte[] iconBytes, long styleBookEntryId,
+			long faviconFileEntryId, long masterLayoutPlid,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		// Layout
@@ -2662,22 +2730,29 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		parentLayoutId = layoutLocalServiceHelper.getParentLayoutId(
 			groupId, privateLayout, parentLayoutId);
 
+		Layout layout = layoutPersistence.findByG_P_L(
+			groupId, privateLayout, layoutId);
+
 		String name = nameMap.get(LocaleUtil.getSiteDefault());
+
+		if (Validator.isNull(name)) {
+			List<String> values = new ArrayList<>(nameMap.values());
+
+			name = values.get(0);
+		}
 
 		friendlyURLMap = layoutLocalServiceHelper.getFriendlyURLMap(
 			groupId, privateLayout, layoutId, name, friendlyURLMap);
 
-		String friendlyURL = friendlyURLMap.get(LocaleUtil.getSiteDefault());
-
 		layoutLocalServiceHelper.validate(
-			groupId, privateLayout, layoutId, parentLayoutId, name, type,
-			hidden, friendlyURLMap, serviceContext);
+			groupId, privateLayout, layoutId, parentLayoutId,
+			layout.getClassNameId(), layout.getClassPK(), name, type,
+			friendlyURLMap, serviceContext);
 
 		layoutLocalServiceHelper.validateParentLayoutId(
 			groupId, privateLayout, layoutId, parentLayoutId);
 
-		Layout layout = layoutPersistence.findByG_P_L(
-			groupId, privateLayout, layoutId);
+		_validateMasterLayout(masterLayoutPlid, layout.getPlid());
 
 		if (parentLayoutId != layout.getParentLayoutId()) {
 			layout.setParentPlid(
@@ -2699,12 +2774,13 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		layout.setRobotsMap(robotsMap);
 		layout.setType(type);
 		layout.setHidden(hidden);
-		layout.setFriendlyURL(friendlyURL);
+		layout.setFriendlyURL(friendlyURLMap.get(LocaleUtil.getSiteDefault()));
 
 		PortalUtil.updateImageId(
 			layout, hasIconImage, iconBytes, "iconImageId", 0, 0, 0);
 
 		layout.setStyleBookEntryId(styleBookEntryId);
+		layout.setFaviconFileEntryId(faviconFileEntryId);
 		layout.setMasterLayoutPlid(masterLayoutPlid);
 
 		boolean layoutUpdateable = ParamUtil.getBoolean(
@@ -2813,6 +2889,41 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		return layoutPersistence.update(layout);
 	}
 
+	@Override
+	public Layout updateLayout(
+			long groupId, boolean privateLayout, long layoutId,
+			String typeSettings, byte[] iconBytes, String themeId,
+			String colorSchemeId, long styleBookEntryId, String css,
+			long faviconFileEntryId, long masterLayoutPlid)
+		throws PortalException {
+
+		Layout layout = layoutPersistence.findByG_P_L(
+			groupId, privateLayout, layoutId);
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			UnicodePropertiesBuilder.fastLoad(
+				typeSettings
+			).build();
+
+		validateTypeSettingsProperties(layout, typeSettingsUnicodeProperties);
+
+		_validateMasterLayout(masterLayoutPlid, layout.getPlid());
+
+		layout.setModifiedDate(new Date());
+		layout.setTypeSettings(typeSettingsUnicodeProperties.toString());
+		layout.setThemeId(themeId);
+		layout.setColorSchemeId(colorSchemeId);
+		layout.setStyleBookEntryId(styleBookEntryId);
+		layout.setCss(css);
+		layout.setFaviconFileEntryId(faviconFileEntryId);
+		layout.setMasterLayoutPlid(masterLayoutPlid);
+
+		PortalUtil.updateImageId(
+			layout, iconBytes != null, iconBytes, "iconImageId", 0, 0, 0);
+
+		return layoutPersistence.update(layout);
+	}
+
 	/**
 	 * Updates the look and feel of the layout.
 	 *
@@ -2835,7 +2946,6 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			groupId, privateLayout, layoutId);
 
 		layout.setModifiedDate(new Date());
-
 		layout.setThemeId(themeId);
 		layout.setColorSchemeId(colorSchemeId);
 		layout.setCss(css);
@@ -2861,6 +2971,8 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 		Layout layout = layoutPersistence.findByG_P_L(
 			groupId, privateLayout, layoutId);
+
+		_validateMasterLayout(masterLayoutPlid, layout.getPlid());
 
 		layout.setMasterLayoutPlid(masterLayoutPlid);
 
@@ -3312,6 +3424,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 		Layout layout = layoutLocalService.getLayout(plid);
 
+		layout.setModifiedDate(new Date());
 		layout.setStatus(status);
 
 		User user = _userLocalService.getUser(userId);
@@ -3540,7 +3653,9 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 				layoutPrototypeUuid, layout.getCompanyId());
 
 		try {
-			SitesUtil.applyLayoutPrototype(
+			Sites sites = _sitesSnapshot.get();
+
+			sites.applyLayoutPrototype(
 				layoutPrototype, layout, layoutPrototypeLinkEnabled);
 		}
 		catch (PortalException portalException) {
@@ -3631,7 +3746,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 				// LPS-52675
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchLayoutException, noSuchLayoutException);
+					_log.debug(noSuchLayoutException);
 				}
 			}
 		}
@@ -3878,7 +3993,9 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	private boolean _mergeLayout(Layout layout, Object... arguments)
 		throws PortalException {
 
-		if (MergeLayoutPrototypesThreadLocal.isInProgress()) {
+		if (MergeLayoutPrototypesThreadLocal.isInProgress() ||
+			StartupHelperUtil.isUpgrading()) {
+
 			return false;
 		}
 
@@ -3904,10 +4021,12 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		try {
 			WorkflowThreadLocal.setEnabled(false);
 
-			SitesUtil.mergeLayoutPrototypeLayout(group, layout);
+			Sites sites = _sitesSnapshot.get();
+
+			sites.mergeLayoutPrototypeLayout(group, layout);
 
 			if (Validator.isNotNull(layout.getSourcePrototypeLayoutUuid())) {
-				SitesUtil.mergeLayoutSetPrototypeLayouts(group, layoutSet);
+				sites.mergeLayoutSetPrototypeLayouts(group, layoutSet);
 			}
 		}
 		catch (CTTransactionException | PortalException exception) {
@@ -3928,9 +4047,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	private boolean _mergeLayouts(
 		Group group, LayoutSet layoutSet, Object... arguments) {
 
-		if (MergeLayoutPrototypesThreadLocal.isMergeComplete(
+		if ((MergeLayoutPrototypesThreadLocal.isMergeComplete(
 				"getLayouts", arguments) &&
-			!group.isUser()) {
+			 !group.isUser()) ||
+			StartupHelperUtil.isUpgrading()) {
 
 			return false;
 		}
@@ -3938,10 +4058,12 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		boolean workflowEnabled = WorkflowThreadLocal.isEnabled();
 
 		try {
-			if (SitesUtil.isLayoutSetMergeable(group, layoutSet)) {
+			Sites sites = _sitesSnapshot.get();
+
+			if (sites.isLayoutSetMergeable(group, layoutSet)) {
 				WorkflowThreadLocal.setEnabled(false);
 
-				SitesUtil.mergeLayoutSetPrototypeLayouts(group, layoutSet);
+				sites.mergeLayoutSetPrototypeLayouts(group, layoutSet);
 			}
 		}
 		catch (Exception exception) {
@@ -3991,9 +4113,20 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		}
 	}
 
+	private void _validateMasterLayout(long masterLayoutPlid, long plid)
+		throws PortalException {
+
+		if (masterLayoutPlid == plid) {
+			throw new MasterLayoutException(
+				"Master page cannot point to itself");
+		}
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutLocalServiceImpl.class);
 
+	private static final Snapshot<Sites> _sitesSnapshot = new Snapshot<>(
+		LayoutLocalServiceImpl.class, Sites.class);
 	private static final ThreadLocal<Long> _virtualLayoutTargetGroupId =
 		new CentralizedThreadLocal<>(
 			LayoutLocalServiceImpl.class + "._virtualLayoutTargetGroupId",
@@ -4072,5 +4205,8 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	@BeanReference(type = WorkflowDefinitionLinkLocalService.class)
 	private WorkflowDefinitionLinkLocalService
 		_workflowDefinitionLinkLocalService;
+
+	@BeanReference(type = WorkflowInstanceLinkLocalService.class)
+	private WorkflowInstanceLinkLocalService _workflowInstanceLinkLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.info.item.provider.test;
@@ -24,16 +15,19 @@ import com.liferay.info.field.InfoField;
 import com.liferay.info.field.InfoFieldValue;
 import com.liferay.info.field.type.CategoriesInfoFieldType;
 import com.liferay.info.field.type.DateInfoFieldType;
+import com.liferay.info.field.type.DisplayPageInfoFieldType;
+import com.liferay.info.field.type.HTMLInfoFieldType;
 import com.liferay.info.field.type.ImageInfoFieldType;
+import com.liferay.info.field.type.MultiselectInfoFieldType;
 import com.liferay.info.field.type.NumberInfoFieldType;
-import com.liferay.info.field.type.SelectInfoFieldType;
 import com.liferay.info.field.type.TagsInfoFieldType;
 import com.liferay.info.field.type.TextInfoFieldType;
-import com.liferay.info.field.type.URLInfoFieldType;
 import com.liferay.info.form.InfoForm;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemFieldValues;
+import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.item.provider.InfoItemFormProvider;
 import com.liferay.info.localized.InfoLocalizedValue;
@@ -64,7 +58,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -95,13 +88,13 @@ public class JournalArticleInfoItemFormProviderTest {
 	public void testGetInfoForm() throws Exception {
 		InfoItemFormProvider<JournalArticle> infoItemFormProvider =
 			(InfoItemFormProvider<JournalArticle>)
-				_infoItemServiceTracker.getFirstInfoItemService(
+				_infoItemServiceRegistry.getFirstInfoItemService(
 					InfoItemFormProvider.class, JournalArticle.class.getName());
 
 		InfoForm infoForm = infoItemFormProvider.getInfoForm(
 			_getJournalArticle());
 
-		List<InfoField> infoFields = infoForm.getAllInfoFields();
+		List<InfoField<?>> infoFields = infoForm.getAllInfoFields();
 
 		infoFields.sort(
 			Comparator.comparing(
@@ -109,7 +102,7 @@ public class JournalArticleInfoItemFormProviderTest {
 
 		Assert.assertEquals(infoFields.toString(), 20, infoFields.size());
 
-		Iterator<InfoField> iterator = infoFields.iterator();
+		Iterator<InfoField<?>> iterator = infoFields.iterator();
 
 		InfoField infoField = iterator.next();
 
@@ -128,7 +121,7 @@ public class JournalArticleInfoItemFormProviderTest {
 		infoField = iterator.next();
 
 		Assert.assertEquals(
-			SelectInfoFieldType.INSTANCE, infoField.getInfoFieldType());
+			MultiselectInfoFieldType.INSTANCE, infoField.getInfoFieldType());
 		Assert.assertEquals("boolean", infoField.getName());
 		Assert.assertFalse(infoField.isLocalizable());
 
@@ -149,14 +142,9 @@ public class JournalArticleInfoItemFormProviderTest {
 		infoField = iterator.next();
 
 		Assert.assertEquals(
-			TextInfoFieldType.INSTANCE, infoField.getInfoFieldType());
+			HTMLInfoFieldType.INSTANCE, infoField.getInfoFieldType());
 		Assert.assertEquals("description", infoField.getName());
 		Assert.assertTrue(infoField.isLocalizable());
-
-		Optional<Boolean> htmlAttributeOptional =
-			infoField.getAttributeOptional(TextInfoFieldType.HTML);
-
-		Assert.assertTrue(htmlAttributeOptional.get());
 
 		infoField = iterator.next();
 
@@ -168,7 +156,7 @@ public class JournalArticleInfoItemFormProviderTest {
 		infoField = iterator.next();
 
 		Assert.assertEquals(
-			URLInfoFieldType.INSTANCE, infoField.getInfoFieldType());
+			DisplayPageInfoFieldType.INSTANCE, infoField.getInfoFieldType());
 		Assert.assertEquals("displayPageURL", infoField.getName());
 		Assert.assertFalse(infoField.isLocalizable());
 
@@ -182,19 +170,9 @@ public class JournalArticleInfoItemFormProviderTest {
 		infoField = iterator.next();
 
 		Assert.assertEquals(
-			TextInfoFieldType.INSTANCE, infoField.getInfoFieldType());
+			HTMLInfoFieldType.INSTANCE, infoField.getInfoFieldType());
 		Assert.assertEquals("HTML", infoField.getName());
 		Assert.assertTrue(infoField.isLocalizable());
-
-		htmlAttributeOptional = infoField.getAttributeOptional(
-			TextInfoFieldType.HTML);
-
-		Assert.assertTrue(htmlAttributeOptional.get());
-
-		Optional<Boolean> multilineAttributeOptional =
-			infoField.getAttributeOptional(TextInfoFieldType.MULTILINE);
-
-		Assert.assertTrue(multilineAttributeOptional.get());
 
 		infoField = iterator.next();
 
@@ -247,20 +225,12 @@ public class JournalArticleInfoItemFormProviderTest {
 
 		infoField = iterator.next();
 
+		Assert.assertTrue(
+			(Boolean)infoField.getAttribute(TextInfoFieldType.MULTILINE));
 		Assert.assertEquals(
 			TextInfoFieldType.INSTANCE, infoField.getInfoFieldType());
 		Assert.assertEquals("TextBox", infoField.getName());
 		Assert.assertTrue(infoField.isLocalizable());
-
-		htmlAttributeOptional = infoField.getAttributeOptional(
-			TextInfoFieldType.HTML);
-
-		Assert.assertFalse(htmlAttributeOptional.isPresent());
-
-		multilineAttributeOptional = infoField.getAttributeOptional(
-			TextInfoFieldType.MULTILINE);
-
-		Assert.assertTrue(multilineAttributeOptional.get());
 
 		infoField = iterator.next();
 
@@ -284,7 +254,7 @@ public class JournalArticleInfoItemFormProviderTest {
 		InfoItemFieldValuesProvider<JournalArticle>
 			infoItemFieldValuesProvider =
 				(InfoItemFieldValuesProvider<JournalArticle>)
-					_infoItemServiceTracker.getFirstInfoItemService(
+					_infoItemServiceRegistry.getFirstInfoItemService(
 						InfoItemFieldValuesProvider.class,
 						JournalArticle.class.getName());
 
@@ -296,9 +266,20 @@ public class JournalArticleInfoItemFormProviderTest {
 		InfoItemReference infoItemReference =
 			infoItemFieldValues.getInfoItemReference();
 
+		InfoItemIdentifier infoItemIdentifier =
+			infoItemReference.getInfoItemIdentifier();
+
+		Assert.assertTrue(
+			infoItemIdentifier instanceof ClassPKInfoItemIdentifier);
+
+		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+			(ClassPKInfoItemIdentifier)
+				infoItemReference.getInfoItemIdentifier();
+
 		Assert.assertEquals(
 			journalArticle.getResourcePrimKey(),
-			infoItemReference.getClassPK());
+			classPKInfoItemIdentifier.getClassPK());
+
 		Assert.assertEquals(
 			JournalArticle.class.getName(), infoItemReference.getClassName());
 
@@ -372,17 +353,14 @@ public class JournalArticleInfoItemFormProviderTest {
 		WebImage webImage = (WebImage)imageInfoFieldValue.getValue(
 			LocaleUtil.getDefault());
 
-		Optional<InfoLocalizedValue<String>> altInfoLocalizedValueOptional =
-			webImage.getAltInfoLocalizedValueOptional();
-
 		InfoLocalizedValue<String> altInfoLocalizedValue =
-			altInfoLocalizedValueOptional.get();
+			webImage.getAltInfoLocalizedValue();
 
 		Assert.assertEquals(
 			"alt text",
 			altInfoLocalizedValue.getValue(LocaleUtil.getDefault()));
 
-		Assert.assertNotNull(webImage.getUrl());
+		Assert.assertNotNull(webImage.getURL());
 
 		Assert.assertNotNull(infoItemFieldValues.getInfoFieldValue("integer"));
 
@@ -471,7 +449,7 @@ public class JournalArticleInfoItemFormProviderTest {
 	private Group _group;
 
 	@Inject
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Inject
 	private JournalArticleLocalService _journalArticleLocalService;

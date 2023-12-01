@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.web.internal.admin.portlet.action;
 
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
@@ -23,6 +14,7 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.CalendarUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -50,7 +42,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Gavin Wan
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
 		"mvc.command.name=/reports_admin/generate_report"
@@ -80,13 +71,13 @@ public class GenerateReportMVCActionCommand extends BaseMVCActionCommand {
 		String reportName = ParamUtil.getString(actionRequest, "reportName");
 
 		JSONArray entryReportParametersJSONArray =
-			JSONFactoryUtil.createJSONArray();
-		JSONArray reportParametersJSONArray = JSONFactoryUtil.createJSONArray();
+			_jsonFactory.createJSONArray();
+		JSONArray reportParametersJSONArray = _jsonFactory.createJSONArray();
 
 		Definition definition = _definitionService.getDefinition(definitionId);
 
 		if (Validator.isNotNull(definition.getReportParameters())) {
-			reportParametersJSONArray = JSONFactoryUtil.createJSONArray(
+			reportParametersJSONArray = _jsonFactory.createJSONArray(
 				definition.getReportParameters());
 		}
 
@@ -111,7 +102,7 @@ public class GenerateReportMVCActionCommand extends BaseMVCActionCommand {
 				DateFormat dateFormat =
 					DateFormatFactoryUtil.getSimpleDateFormat("yyyy-MM-dd");
 
-				value = dateFormat.format(calendar.getTime());
+				value = dateFormat.format(CalendarUtil.getLTDate(calendar));
 			}
 
 			entryReportParameterJSONObject.put("value", value);
@@ -134,6 +125,9 @@ public class GenerateReportMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private EntryService _entryService;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Portal _portal;

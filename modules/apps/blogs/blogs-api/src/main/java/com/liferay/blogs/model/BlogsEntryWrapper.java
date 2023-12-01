@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.model;
@@ -615,18 +606,6 @@ public class BlogsEntryWrapper
 	}
 
 	/**
-	 * Returns the trash entry created when this blogs entry was moved to the Recycle Bin. The trash entry may belong to one of the ancestors of this blogs entry.
-	 *
-	 * @return the trash entry created when this blogs entry was moved to the Recycle Bin
-	 */
-	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getTrashEntry();
-	}
-
-	/**
 	 * Returns the class primary key of the trash entry for this blogs entry.
 	 *
 	 * @return the class primary key of the trash entry for this blogs entry
@@ -634,18 +613,6 @@ public class BlogsEntryWrapper
 	@Override
 	public long getTrashEntryClassPK() {
 		return model.getTrashEntryClassPK();
-	}
-
-	/**
-	 * Returns the trash handler for this blogs entry.
-	 *
-	 * @return the trash handler for this blogs entry
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return model.getTrashHandler();
 	}
 
 	/**
@@ -786,26 +753,6 @@ public class BlogsEntryWrapper
 	@Override
 	public boolean isInTrash() {
 		return model.isInTrash();
-	}
-
-	/**
-	 * Returns <code>true</code> if the parent of this blogs entry is in the Recycle Bin.
-	 *
-	 * @return <code>true</code> if the parent of this blogs entry is in the Recycle Bin; <code>false</code> otherwise
-	 */
-	@Override
-	public boolean isInTrashContainer() {
-		return model.isInTrashContainer();
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		return model.isInTrashExplicitly();
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		return model.isInTrashImplicitly();
 	}
 
 	/**
@@ -1201,6 +1148,11 @@ public class BlogsEntryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

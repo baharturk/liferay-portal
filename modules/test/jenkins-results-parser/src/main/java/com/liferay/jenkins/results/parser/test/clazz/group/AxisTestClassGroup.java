@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz.group;
 
+import com.liferay.jenkins.results.parser.BatchHistory;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.Job;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
+import com.liferay.jenkins.results.parser.test.clazz.TestClassFactory;
 
 import java.io.File;
 
@@ -29,6 +22,63 @@ import org.json.JSONObject;
  * @author Michael Hashimoto
  */
 public class AxisTestClassGroup extends BaseTestClassGroup {
+
+	public long getAverageDuration() {
+		if (_averageDuration != null) {
+			return _averageDuration;
+		}
+
+		_averageDuration =
+			getAverageOverheadDuration() + getAverageTotalTestDuration();
+
+		if (_averageDuration <= 0L) {
+			BatchHistory batchHistory = getBatchHistory();
+
+			if (batchHistory != null) {
+				_averageDuration = batchHistory.getAverageDuration();
+			}
+		}
+
+		return _averageDuration;
+	}
+
+	public long getAverageOverheadDuration() {
+		if (_averageOverheadDuration != null) {
+			return _averageOverheadDuration;
+		}
+
+		List<TestClass> testClasses = getTestClasses();
+
+		if (testClasses.isEmpty()) {
+			return 0L;
+		}
+
+		long totalAverageOverheadDuration = 0L;
+
+		for (TestClass testClass : testClasses) {
+			totalAverageOverheadDuration +=
+				testClass.getAverageOverheadDuration();
+		}
+
+		_averageOverheadDuration =
+			totalAverageOverheadDuration / testClasses.size();
+
+		return _averageOverheadDuration;
+	}
+
+	public long getAverageTotalTestDuration() {
+		if (_averageTotalTestDuration != null) {
+			return _averageTotalTestDuration;
+		}
+
+		_averageTotalTestDuration = 0L;
+
+		for (TestClass testClass : getTestClasses()) {
+			_averageTotalTestDuration += testClass.getAverageDuration();
+		}
+
+		return _averageTotalTestDuration;
+	}
 
 	public String getAxisName() {
 		if (_segmentTestClassGroup != null) {
@@ -48,6 +98,10 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 			String.valueOf(axisTestClassGroups.indexOf(this)));
 	}
 
+	public BatchHistory getBatchHistory() {
+		return _batchTestClassGroup.getBatchHistory();
+	}
+
 	public String getBatchJobName() {
 		return _batchTestClassGroup.getBatchJobName();
 	}
@@ -60,6 +114,10 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 		return _batchTestClassGroup;
 	}
 
+	public String getDownstreamJobName() {
+		return _batchTestClassGroup.getDownstreamJobName();
+	}
+
 	@Override
 	public Job getJob() {
 		return _batchTestClassGroup.getJob();
@@ -68,7 +126,11 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 	public JSONObject getJSONObject() {
 		JSONObject jsonObject = new JSONObject();
 
-		jsonObject.put("axis_name", getAxisName());
+		jsonObject.put(
+			"average_duration", getAverageDuration()
+		).put(
+			"axis_name", getAxisName()
+		);
 
 		JSONArray testClassesJSONArray = new JSONArray();
 
@@ -122,6 +184,37 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 		setBatchTestClassGroup(batchTestClassGroup);
 	}
 
+	protected AxisTestClassGroup(
+		JSONObject jsonObject, SegmentTestClassGroup segmentTestClassGroup) {
+
+		BatchTestClassGroup batchTestClassGroup =
+			segmentTestClassGroup.getBatchTestClassGroup();
+
+		setBatchTestClassGroup(batchTestClassGroup);
+
+		setSegmentTestClassGroup(segmentTestClassGroup);
+
+		JSONArray testClassesJSONArray = jsonObject.getJSONArray(
+			"test_classes");
+
+		if ((testClassesJSONArray == null) || testClassesJSONArray.isEmpty()) {
+			return;
+		}
+
+		for (int i = 0; i < testClassesJSONArray.length(); i++) {
+			JSONObject testClassJSONObject = testClassesJSONArray.getJSONObject(
+				i);
+
+			if (testClassJSONObject == null) {
+				continue;
+			}
+
+			testClasses.add(
+				TestClassFactory.newTestClass(
+					batchTestClassGroup, testClassJSONObject));
+		}
+	}
+
 	protected void setBatchTestClassGroup(
 		BatchTestClassGroup batchTestClassGroup) {
 
@@ -134,6 +227,9 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 		_segmentTestClassGroup = segmentTestClassGroup;
 	}
 
+	private Long _averageDuration;
+	private Long _averageOverheadDuration;
+	private Long _averageTotalTestDuration;
 	private BatchTestClassGroup _batchTestClassGroup;
 	private SegmentTestClassGroup _segmentTestClassGroup;
 

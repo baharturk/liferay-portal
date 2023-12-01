@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model.impl;
@@ -78,7 +69,7 @@ public class ObjectViewColumnCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(23);
+		StringBundler sb = new StringBundler(25);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -98,6 +89,8 @@ public class ObjectViewColumnCacheModel
 		sb.append(modifiedDate);
 		sb.append(", objectViewId=");
 		sb.append(objectViewId);
+		sb.append(", label=");
+		sb.append(label);
 		sb.append(", objectFieldName=");
 		sb.append(objectFieldName);
 		sb.append(", priority=");
@@ -147,6 +140,13 @@ public class ObjectViewColumnCacheModel
 
 		objectViewColumnImpl.setObjectViewId(objectViewId);
 
+		if (label == null) {
+			objectViewColumnImpl.setLabel("");
+		}
+		else {
+			objectViewColumnImpl.setLabel(label);
+		}
+
 		if (objectFieldName == null) {
 			objectViewColumnImpl.setObjectFieldName("");
 		}
@@ -176,6 +176,7 @@ public class ObjectViewColumnCacheModel
 		modifiedDate = objectInput.readLong();
 
 		objectViewId = objectInput.readLong();
+		label = objectInput.readUTF();
 		objectFieldName = objectInput.readUTF();
 
 		priority = objectInput.readInt();
@@ -210,6 +211,13 @@ public class ObjectViewColumnCacheModel
 
 		objectOutput.writeLong(objectViewId);
 
+		if (label == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(label);
+		}
+
 		if (objectFieldName == null) {
 			objectOutput.writeUTF("");
 		}
@@ -229,6 +237,7 @@ public class ObjectViewColumnCacheModel
 	public long createDate;
 	public long modifiedDate;
 	public long objectViewId;
+	public String label;
 	public String objectFieldName;
 	public int priority;
 

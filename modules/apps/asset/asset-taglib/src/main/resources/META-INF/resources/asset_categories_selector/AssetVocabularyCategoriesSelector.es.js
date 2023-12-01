@@ -1,34 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import {useResource} from '@clayui/data-provider';
 import ClayForm, {ClayInput} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
-import ClayMultiSelect, {itemLabelFilter} from '@clayui/multi-select';
+import ClayMultiSelect from '@clayui/multi-select';
 import {usePrevious} from '@liferay/frontend-js-react-web';
 import classNames from 'classnames';
-import {openSelectionModal} from 'frontend-js-web';
+import {
+	createPortletURL,
+	fetch,
+	openSelectionModal,
+	sub,
+} from 'frontend-js-web';
 import PropTypes from 'prop-types';
-import React, {useEffect, useState} from 'react';
-
-import Lang from '../utils/lang.es';
+import React, {useEffect, useRef, useState} from 'react';
 
 function AssetVocabulariesCategoriesSelector({
 	eventName,
 	id,
 	isValid = true,
+	formGroupClassName = '',
 	groupIds = [],
 	inputName,
 	label,
@@ -36,6 +31,7 @@ function AssetVocabulariesCategoriesSelector({
 	portletURL,
 	required,
 	selectedItems = [],
+	showVocabularyLabel = true,
 	singleSelect,
 	sourceItemsVocabularyIds = [],
 	useFallbackInput,
@@ -44,36 +40,48 @@ function AssetVocabulariesCategoriesSelector({
 
 	const [invalidItems, setInvalidItems] = useState([]);
 
+	const [networkStatus, setNetworkStatus] = useState(4);
 	const {refetch, resource} = useResource({
+		fetch,
 		fetchOptions: {
-			'body': new URLSearchParams({
+			body: new URLSearchParams({
 				cmd: JSON.stringify({
 					'/assetcategory/search': {
 						'-obc': null,
 						'end': 20,
 						groupIds,
-						'name': `%${inputValue.toLowerCase()}%`,
+						'name': inputValue
+							? `%${inputValue.toLowerCase()}%`
+							: '',
 						'start': 0,
 						'vocabularyIds': sourceItemsVocabularyIds,
 					},
 				}),
 				p_auth: Liferay.authToken,
 			}),
-			'credentials': 'include',
-			'method': 'POST',
-			'x-csrf-token': Liferay.authToken,
+			method: 'POST',
 		},
-		link: `${window.location.origin}${themeDisplay.getPathContext()}
-				/api/jsonws/invoke`,
+		fetchPolicy: 'cache-first',
+		link: `${
+			window.location.origin
+		}${themeDisplay.getPathContext()}/api/jsonws/invoke`,
+		onNetworkStatusChange: setNetworkStatus,
 	});
 
 	const previousInputValue = usePrevious(inputValue);
 
 	useEffect(() => {
-		if (inputValue && inputValue !== previousInputValue) {
+		if (inputValue !== previousInputValue) {
 			refetch();
 		}
-	}, [inputValue, previousInputValue, refetch]);
+
+		// The intended `refetch` method has no reference stabilization, adding
+		// this to deps will cause a loop and we only want to invoke the
+		// `useEffect` when the value changes.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [groupIds, inputValue, previousInputValue, sourceItemsVocabularyIds]);
+
+	const selectButtonRef = useRef();
 
 	const getUnique = (array, property) => {
 		return array
@@ -132,17 +140,17 @@ function AssetVocabulariesCategoriesSelector({
 	};
 
 	const handleSelectButtonClick = () => {
-		const sub = (str, object) =>
-			str.replace(/\{([^}]+)\}/g, (_, m) => object[m]);
-
-		const url = sub(decodeURIComponent(portletURL), {
+		const url = createPortletURL(portletURL, {
+			p_p_id: Liferay.PortletKeys.ITEM_SELECTOR,
 			selectedCategories: selectedItems.map((item) => item.value).join(),
+			selectedCategoryIds: selectedItems.map((item) => item.value).join(),
 			singleSelect,
 			vocabularyIds: sourceItemsVocabularyIds.concat(),
 		});
 
 		openSelectionModal({
 			buttonAddLabel: Liferay.Language.get('done'),
+			height: '70vh',
 			iframeBodyCssClass: '',
 			multiple: true,
 			onSelect: (selectedItems) => {
@@ -152,8 +160,8 @@ function AssetVocabulariesCategoriesSelector({
 							const item = selectedItems[itemKey];
 							if (!item.unchecked) {
 								acc.push({
-									label: item.value,
-									value: item.categoryId,
+									label: item.title,
+									value: item.classPK,
 								});
 							}
 
@@ -166,19 +174,20 @@ function AssetVocabulariesCategoriesSelector({
 				}
 			},
 			selectEventName: eventName,
+			size: 'md',
 			title: label
-				? Liferay.Util.sub(Liferay.Language.get('select-x'), label)
+				? sub(Liferay.Language.get('select-x'), label)
 				: Liferay.Language.get('select-categories'),
-			url,
+			url: url.toString(),
 		});
 	};
 
 	return (
 		<div className="field-content">
 			<ClayForm.Group
-				className={classNames({
+				className={classNames(formGroupClassName, {
 					'has-error':
-						(invalidItems && invalidItems.length > 0) || !isValid,
+						(invalidItems && !!invalidItems.length) || !isValid,
 				})}
 				id={id}
 			>
@@ -191,14 +200,17 @@ function AssetVocabulariesCategoriesSelector({
 				)}
 
 				{label && (
-					<label>
+					<label
+						className={showVocabularyLabel ? '' : 'sr-only'}
+						htmlFor={inputName + '_MultiSelect'}
+					>
 						{label}
 
 						{required && (
 							<span className="inline-item inline-item-after reference-mark">
 								<ClayIcon symbol="asterisk" />
 
-								<span className="hide-accessible">
+								<span className="hide-accessible sr-only">
 									{Liferay.Language.get('required')}
 								</span>
 							</span>
@@ -209,41 +221,38 @@ function AssetVocabulariesCategoriesSelector({
 				<ClayInput.Group>
 					<ClayInput.GroupItem>
 						<ClayMultiSelect
+							id={inputName + '_MultiSelect'}
 							inputName={inputName}
-							inputValue={inputValue}
 							items={selectedItems}
+							loadingState={networkStatus}
 							onChange={setInputValue}
 							onItemsChange={handleItemsChange}
 							sourceItems={
 								resource
-									? itemLabelFilter(
-											resource.map((category) => {
-												return {
-													label:
-														category.titleCurrentValue,
-													value: category.categoryId,
-												};
-											}),
-											inputValue
-									  )
+									? resource.map((category) => {
+											return {
+												label:
+													category.titleCurrentValue,
+												value: category.categoryId,
+											};
+									  })
 									: []
 							}
+							value={inputValue}
 						/>
 
-						{invalidItems && invalidItems.length > 0 && (
+						{invalidItems && !!invalidItems.length && (
 							<ClayForm.FeedbackGroup>
-								<ClayForm.FeedbackItem>
+								<ClayForm.FeedbackItem aria-live="polite">
 									<ClayForm.FeedbackIndicator symbol="info-circle" />
 
-									{Lang.sub(
+									{sub(
 										Liferay.Language.get(
 											`category-x-does-not-exist`
 										),
-										[
-											invalidItems
-												.map((item) => item.label)
-												.join(','),
-										]
+										invalidItems
+											.map((item) => item.label)
+											.join(',')
 									)}
 								</ClayForm.FeedbackItem>
 							</ClayForm.FeedbackGroup>
@@ -266,8 +275,14 @@ function AssetVocabulariesCategoriesSelector({
 
 					<ClayInput.GroupItem shrink>
 						<ClayButton
+							aria-haspopup="dialog"
+							aria-label={sub(
+								Liferay.Language.get('select-x'),
+								label
+							)}
 							displayType="secondary"
 							onClick={handleSelectButtonClick}
+							ref={selectButtonRef}
 						>
 							{Liferay.Language.get('select')}
 						</ClayButton>

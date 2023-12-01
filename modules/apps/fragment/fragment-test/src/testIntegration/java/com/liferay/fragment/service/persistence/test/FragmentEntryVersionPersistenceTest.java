@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.persistence.test;
@@ -173,6 +164,8 @@ public class FragmentEntryVersionPersistenceTest {
 
 		newFragmentEntryVersion.setType(RandomTestUtil.nextInt());
 
+		newFragmentEntryVersion.setTypeOptions(RandomTestUtil.randomString());
+
 		newFragmentEntryVersion.setLastPublishDate(RandomTestUtil.nextDate());
 
 		newFragmentEntryVersion.setStatus(RandomTestUtil.nextInt());
@@ -265,6 +258,9 @@ public class FragmentEntryVersionPersistenceTest {
 		Assert.assertEquals(
 			existingFragmentEntryVersion.getType(),
 			newFragmentEntryVersion.getType());
+		Assert.assertEquals(
+			existingFragmentEntryVersion.getTypeOptions(),
+			newFragmentEntryVersion.getTypeOptions());
 		Assert.assertEquals(
 			Time.getShortTimestamp(
 				existingFragmentEntryVersion.getLastPublishDate()),
@@ -384,6 +380,21 @@ public class FragmentEntryVersionPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
 		_persistence.countByFragmentCollectionId_Version(0L, 0);
+	}
+
+	@Test
+	public void testCountByType() throws Exception {
+		_persistence.countByType(RandomTestUtil.nextInt());
+
+		_persistence.countByType(0);
+	}
+
+	@Test
+	public void testCountByType_Version() throws Exception {
+		_persistence.countByType_Version(
+			RandomTestUtil.nextInt(), RandomTestUtil.nextInt());
+
+		_persistence.countByType_Version(0, 0);
 	}
 
 	@Test
@@ -917,6 +928,8 @@ public class FragmentEntryVersionPersistenceTest {
 		fragmentEntryVersion.setReadOnly(RandomTestUtil.randomBoolean());
 
 		fragmentEntryVersion.setType(RandomTestUtil.nextInt());
+
+		fragmentEntryVersion.setTypeOptions(RandomTestUtil.randomString());
 
 		fragmentEntryVersion.setLastPublishDate(RandomTestUtil.nextDate());
 

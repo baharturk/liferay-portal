@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.notification;
 
 import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueRenderer;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
@@ -35,7 +26,7 @@ import com.liferay.mail.kernel.service.MailService;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -50,14 +41,15 @@ import com.liferay.portal.kernel.template.TemplateResource;
 import com.liferay.portal.kernel.template.URLTemplateResource;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PrefsPropsUtil;
 
 import java.io.Writer;
 
@@ -73,13 +65,15 @@ import java.util.function.Function;
 
 import javax.mail.internet.InternetAddress;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Rafael Praxedes
  */
-@Component(immediate = true, service = DDMFormEmailNotificationSender.class)
+@Component(service = DDMFormEmailNotificationSender.class)
 public class DDMFormEmailNotificationSender {
 
 	public void sendEmailNotification(
@@ -168,23 +162,6 @@ public class DDMFormEmailNotificationSender {
 		return fields;
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDMFormFieldTypeServicesTracker(
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker) {
-
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMailService(MailService mailService) {
-		_mailService = mailService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
 	private MailMessage _createMailMessage(
 			DDMFormInstanceRecord ddmFormInstanceRecord,
 			ServiceContext serviceContext)
@@ -228,14 +205,6 @@ public class DDMFormEmailNotificationSender {
 		return template;
 	}
 
-	private DDMForm _getDDMForm(DDMFormInstance ddmFormInstance)
-		throws Exception {
-
-		DDMStructure ddmStructure = ddmFormInstance.getStructure();
-
-		return ddmStructure.getDDMForm();
-	}
-
 	private DDMFormField _getDDMFormField(
 		List<DDMFormFieldValue> ddmFormFieldValues) {
 
@@ -269,7 +238,7 @@ public class DDMFormEmailNotificationSender {
 		DDMFormInstanceSettings formInstancetings =
 			ddmFormInstance.getSettingsModel();
 
-		String defaultEmailFromAddress = PrefsPropsUtil.getString(
+		String defaultEmailFromAddress = _prefsProps.getString(
 			ddmFormInstance.getCompanyId(), PropsKeys.ADMIN_EMAIL_FROM_ADDRESS);
 
 		return GetterUtil.getString(
@@ -282,7 +251,7 @@ public class DDMFormEmailNotificationSender {
 		DDMFormInstanceSettings formInstancetings =
 			ddmFormInstance.getSettingsModel();
 
-		String defaultEmailFromName = PrefsPropsUtil.getString(
+		String defaultEmailFromName = _prefsProps.getString(
 			ddmFormInstance.getCompanyId(), PropsKeys.ADMIN_EMAIL_FROM_NAME);
 
 		return GetterUtil.getString(
@@ -304,7 +273,7 @@ public class DDMFormEmailNotificationSender {
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		String defaultEmailSubject = LanguageUtil.format(
+		String defaultEmailSubject = _language.format(
 			resourceBundle, "new-x-form-submitted",
 			ddmFormInstance.getName(locale), false);
 
@@ -356,12 +325,17 @@ public class DDMFormEmailNotificationSender {
 		return label.getString(locale);
 	}
 
-	private Locale _getLocale(DDMFormInstance ddmFormInstance)
+	private Locale _getLocale(
+			DDMFormInstance ddmFormInstance, ServiceContext serviceContext)
 		throws Exception {
 
-		DDMForm ddmForm = _getDDMForm(ddmFormInstance);
+		HttpServletRequest httpServletRequest = serviceContext.getRequest();
 
-		return ddmForm.getDefaultLocale();
+		String languageId = GetterUtil.getString(
+			httpServletRequest.getParameter("languageId"),
+			ddmFormInstance.getDefaultLanguageId());
+
+		return LocaleUtil.fromLanguageId(languageId);
 	}
 
 	private List<Map<String, Object>> _getNestedFields(
@@ -406,7 +380,7 @@ public class DDMFormEmailNotificationSender {
 
 	private List<Object> _getPages(
 			DDMFormInstance ddmFormInstance,
-			DDMFormInstanceRecord ddmFormInstanceRecord)
+			DDMFormInstanceRecord ddmFormInstanceRecord, Locale locale)
 		throws Exception {
 
 		List<Object> pages = new ArrayList<>();
@@ -416,12 +390,10 @@ public class DDMFormEmailNotificationSender {
 		for (DDMFormLayoutPage ddmFormLayoutPage :
 				ddmFormLayout.getDDMFormLayoutPages()) {
 
-			Map<String, Object> page = _getPage(
-				ddmFormLayoutPage,
-				getDDMFormFieldValuesMap(ddmFormInstanceRecord),
-				_getLocale(ddmFormInstance));
-
-			pages.add(page);
+			pages.add(
+				_getPage(
+					ddmFormLayoutPage,
+					getDDMFormFieldValuesMap(ddmFormInstanceRecord), locale));
 		}
 
 		return pages;
@@ -434,7 +406,7 @@ public class DDMFormEmailNotificationSender {
 			return StringPool.BLANK;
 		}
 
-		return HtmlUtil.extractText(text.getString(locale));
+		return _htmlParser.extractText(text.getString(locale));
 	}
 
 	private ResourceBundle _getResourceBundle(Locale locale) {
@@ -471,7 +443,7 @@ public class DDMFormEmailNotificationSender {
 			return userName;
 		}
 
-		return LanguageUtil.get(_getResourceBundle(locale), "someone");
+		return _language.get(_getResourceBundle(locale), "someone");
 	}
 
 	private String _getViewFormEntriesURL(
@@ -531,12 +503,12 @@ public class DDMFormEmailNotificationSender {
 			DDMFormInstanceRecord ddmFormInstanceRecord)
 		throws Exception {
 
-		Locale locale = _getLocale(ddmFormInstance);
+		Locale locale = _getLocale(ddmFormInstance, serviceContext);
 
 		template.put("formName", ddmFormInstance.getName(locale));
 
 		template.put(
-			"pages", _getPages(ddmFormInstance, ddmFormInstanceRecord));
+			"pages", _getPages(ddmFormInstance, ddmFormInstanceRecord, locale));
 		template.put(
 			"siteName", _getSiteName(ddmFormInstance.getGroupId(), locale));
 		template.put("userName", _getUserName(ddmFormInstanceRecord, locale));
@@ -566,11 +538,10 @@ public class DDMFormEmailNotificationSender {
 		}
 
 		DDMFormFieldValueRenderer ddmFormFieldValueRenderer =
-			_ddmFormFieldTypeServicesTracker.getDDMFormFieldValueRenderer(
+			_ddmFormFieldTypeServicesRegistry.getDDMFormFieldValueRenderer(
 				ddmFormFieldValue.getType());
 
-		return HtmlUtil.unescape(
-			ddmFormFieldValueRenderer.render(ddmFormFieldValue, locale));
+		return ddmFormFieldValueRenderer.render(ddmFormFieldValue, locale);
 	}
 
 	private static final String _TEMPLATE_PATH =
@@ -579,16 +550,28 @@ public class DDMFormEmailNotificationSender {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormEmailNotificationSender.class);
 
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
+	@Reference
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
 
+	@Reference
+	private HtmlParser _htmlParser;
+
+	@Reference
+	private Language _language;
+
+	@Reference
 	private MailService _mailService;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference
+	private PrefsProps _prefsProps;
+
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

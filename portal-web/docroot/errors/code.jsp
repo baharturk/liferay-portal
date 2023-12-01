@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -43,6 +34,9 @@ String xRequestWith = request.getHeader(HttpHeaders.X_REQUESTED_WITH);
 %>
 
 <c:choose>
+	<c:when test="<%= GetterUtil.getBoolean(request.getAttribute(WebKeys.UNKNOWN_VIRTUAL_HOST)) %>">
+		<liferay-ui:message key="unknown-virtual-hostname" />: <%= PortalUtil.getHost(request) %>
+	</c:when>
 	<c:when test="<%= !Validator.isBlank(dynamicIncludeKey) %>">
 		<liferay-util:dynamic-include key="<%= dynamicIncludeKey %>" />
 	</c:when>
@@ -74,7 +68,7 @@ String xRequestWith = request.getHeader(HttpHeaders.X_REQUESTED_WITH);
 				<meta content="1; url=<%= HtmlUtil.escapeAttribute(redirect) %>" http-equiv="refresh" />
 			</head>
 
-			<body onload="javascript:location.replace('<%= HtmlUtil.escapeJS(redirect) %>')">
+			<body onload="javascript:location.replace('<%= HtmlUtil.escapeJS(redirect) %>');">
 
 				<!--
 				The numbers below are used to fill up space so that this works properly in IE.
@@ -93,11 +87,11 @@ String xRequestWith = request.getHeader(HttpHeaders.X_REQUESTED_WITH);
 
 		<html>
 			<head>
-				<title>Http Status <%= code %> - <%= LanguageUtil.get(request, "http-status-code[" + code + "]") %></title>
+				<title>Http Status <%= code %> - <liferay-ui:message key='<%= "http-status-code[" + code + "]" %>' /></title>
 			</head>
 
 			<body>
-				<h1>Http Status <%= code %> - <%= LanguageUtil.get(request, "http-status-code[" + code + "]") %></h1>
+				<h1>Http Status <%= code %> - <liferay-ui:message key='<%= "http-status-code[" + code + "]" %>' /></h1>
 
 				<p>
 					<liferay-ui:message key="message" />: <%= HtmlUtil.escape(msg) %>

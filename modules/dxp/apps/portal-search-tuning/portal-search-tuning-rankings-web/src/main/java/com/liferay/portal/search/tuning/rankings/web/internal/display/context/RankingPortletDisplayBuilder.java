@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.rankings.web.internal.display.context;
@@ -18,7 +9,7 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -26,12 +17,13 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
-import com.liferay.portal.kernel.util.Html;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.search.engine.SearchEngineInformation;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
@@ -47,8 +39,6 @@ import com.liferay.portal.search.tuning.rankings.web.internal.request.SearchRank
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.portlet.PortletURL;
 import javax.portlet.RenderRequest;
@@ -66,7 +56,8 @@ public class RankingPortletDisplayBuilder {
 		HttpServletRequest httpServletRequest, Language language, Portal portal,
 		Queries queries, RankingIndexNameBuilder rankingIndexNameBuilder,
 		Sorts sorts, RenderRequest renderRequest, RenderResponse renderResponse,
-		SearchEngineAdapter searchEngineAdapter) {
+		SearchEngineAdapter searchEngineAdapter,
+		SearchEngineInformation searchEngineInformation) {
 
 		_documentToRankingTranslator = documentToRankingTranslator;
 		_httpServletRequest = httpServletRequest;
@@ -78,11 +69,18 @@ public class RankingPortletDisplayBuilder {
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 		_searchEngineAdapter = searchEngineAdapter;
+		_searchEngineInformation = searchEngineInformation;
 	}
 
 	public RankingPortletDisplayContext build() {
 		RankingPortletDisplayContext rankingPortletDisplayContext =
 			new RankingPortletDisplayContext();
+
+		if (Objects.equals(
+				_searchEngineInformation.getVendorString(), "Solr")) {
+
+			return rankingPortletDisplayContext;
+		}
 
 		SearchContainer<RankingEntryDisplayContext> searchContainer = _search();
 
@@ -209,11 +207,9 @@ public class RankingPortletDisplayBuilder {
 	protected SearchContainer<RankingEntryDisplayContext> getSearchContainer(
 		String keywords) {
 
-		Html html = HtmlUtil.getHtml();
-
 		String emptyResultMessage = _language.format(
 			_httpServletRequest, "no-custom-results-yet",
-			"<strong>" + html.escape(keywords) + "</strong>", false);
+			"<strong>" + HtmlUtil.escape(keywords) + "</strong>", false);
 
 		SearchContainer<RankingEntryDisplayContext> searchContainer =
 			new SearchContainer<>(
@@ -318,8 +314,8 @@ public class RankingPortletDisplayBuilder {
 	private PortletURL _getPortletURL(String keywords) {
 		return PortletURLBuilder.createRenderURL(
 			_renderResponse
-		).setMVCPath(
-			"/view.jsp"
+		).setMVCRenderCommandName(
+			"/"
 		).setKeywords(
 			() -> {
 				if (!Validator.isBlank(keywords)) {
@@ -335,18 +331,6 @@ public class RankingPortletDisplayBuilder {
 		).setParameter(
 			"orderByType", getOrderByType()
 		).buildPortletURL();
-	}
-
-	private List<RankingEntryDisplayContext> _getRankingEntryDisplayContexts(
-		List<SearchHit> searchHits) {
-
-		Stream<SearchHit> stream = searchHits.stream();
-
-		return stream.map(
-			this::_buildDisplayContext
-		).collect(
-			Collectors.toList()
-		);
 	}
 
 	private boolean _hasResults(
@@ -381,7 +365,8 @@ public class RankingPortletDisplayBuilder {
 		SearchHits searchHits = searchRankingResponse.getSearchHits();
 
 		searchContainer.setResultsAndTotal(
-			() -> _getRankingEntryDisplayContexts(searchHits.getSearchHits()),
+			() -> TransformUtil.transform(
+				searchHits.getSearchHits(), this::_buildDisplayContext),
 			searchRankingResponse.getTotalHits());
 
 		searchContainer.setSearch(true);
@@ -404,6 +389,7 @@ public class RankingPortletDisplayBuilder {
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
 	private final SearchEngineAdapter _searchEngineAdapter;
+	private final SearchEngineInformation _searchEngineInformation;
 	private final Sorts _sorts;
 
 }

@@ -61,11 +61,9 @@ function createInfoItemElement(name, value, properties) {
 function getAxisElement(axis) {
 	let detailsElement = createDetailsElement();
 
-	detailsElement.setAttribute("open", "true");
-
 	let summaryElement = detailsElement.childNodes[0];
 
-	summaryElement.innerHTML = axis.axis_name;
+	summaryElement.innerHTML = axis.axis_name + " - " + getDurationString(axis.average_duration);
 	summaryElement.setAttribute("class", "level-4");
 
 	let divElement = detailsElement.childNodes[1];
@@ -85,31 +83,6 @@ function getAxisElement(axis) {
 	return detailsElement;
 }
 
-function getBatchAxesElement(batch) {
-	let detailsElement = createDetailsElement();
-
-	let summaryElement = detailsElement.childNodes[0];
-
-	summaryElement.innerHTML = "Axis Summaries";
-	summaryElement.setAttribute("class", "level-3");
-
-	let divElement = detailsElement.childNodes[1];
-
-	let ulElement = document.createElement("ul");
-
-	divElement.appendChild(ulElement);
-
-	for (var i = 0; i < batch.axes.length; i++) {
-		let liElement = document.createElement("li");
-
-		ulElement.appendChild(liElement);
-
-		liElement.appendChild(getAxisElement(batch.axes[i]));
-	}
-
-	return detailsElement;
-}
-
 function getBatchSummaryElement(batch) {
 	let detailsElement = createDetailsElement();
 
@@ -123,14 +96,19 @@ function getBatchSummaryElement(batch) {
 	infoBoxElement.setAttribute("class", "info-box");
 
 	infoBoxElement.appendChild(createInfoItemElement("Job Name", data.job_name));
+
+	if (batch.target_duration != undefined) {
+		infoBoxElement.appendChild(createInfoItemElement("Target Duration", getDurationString(batch.target_duration)));
+	}
+
 	infoBoxElement.appendChild(createInfoItemElement("Test Suite Name", data.test_suite_name));
 	infoBoxElement.appendChild(createInfoItemElement("Build Profile", data.build_profile));
 	infoBoxElement.appendChild(createInfoItemElement("Batch Name", batch.batch_name));
 
-	let batchPropertiesElements = getBatchPropertiesElements(batch.batch_properties);
+	let jobPropertiesElements = getJobPropertiesElements(batch.job_properties);
 
-	for (var i = 0; i < batchPropertiesElements.length; i++) {
-		infoBoxElement.appendChild(batchPropertiesElements[i]);
+	for (var i = 0; i < jobPropertiesElements.length; i++) {
+		infoBoxElement.appendChild(jobPropertiesElements[i]);
 	}
 
 	infoBoxElement.appendChild(createInfoItemElement("Batch Exclude Globs", batch.exclude_globs));
@@ -161,23 +139,63 @@ function getBatchElement(batch) {
 
 	batchSummaryLiElement.appendChild(getBatchSummaryElement(batch));
 
-	let batchAxesLiElement = document.createElement("li");
+	let batchSegmentsLiElement = document.createElement("li");
 
-	ulElement.appendChild(batchAxesLiElement);
+	ulElement.appendChild(batchSegmentsLiElement);
 
-	batchAxesLiElement.append(getBatchAxesElement(batch));
+	for (var i = 0; i < batch.segments.length; i++) {
+	    batchSegmentsLiElement.append(getSegmentElement(batch.segments[i]));
+	}
 
 	return detailsElement;
 }
 
-function getBatchPropertiesElements(batch_properties) {
-	if (batch_properties == undefined) {
+function getDurationString(duration) {
+	var string = "";
+
+	var hours = Math.floor(duration / (1000 * 60 * 60));
+
+	duration = duration % (1000 * 60 * 60);
+
+	if (hours > 0) {
+		string += hours;
+		string += "h ";
+	}
+
+	var minutes = Math.floor(duration / (1000 * 60));
+
+	duration = duration % (1000 * 60);
+
+	if (minutes > 0) {
+		string += minutes;
+		string += "m ";
+	}
+
+	var seconds = Math.floor(duration / 1000);
+
+	duration = duration % 1000;
+
+	if (seconds > 0) {
+		string += seconds;
+		string += "s ";
+	}
+
+	if (string == "") {
+		string += duration;
+		string += "ms";
+	}
+
+	return string;
+}
+
+function getJobPropertiesElements(job_properties) {
+	if (job_properties == undefined) {
 		return [];
 	}
 
-	var batchPropertiesElements = [];
+	var jobPropertiesElements = [];
 
-	for (let [file, properties] of Object.entries(batch_properties)) {
+	for (let [file, properties] of Object.entries(job_properties)) {
 		let lines = [];
 
 		for (let [name, value] of Object.entries(properties)) {
@@ -203,10 +221,10 @@ function getBatchPropertiesElements(batch_properties) {
 
 		lines.sort();
 
-		batchPropertiesElements.push(createInfoItemElement("Batch Properties (" + file + ")", lines, true));
+		jobPropertiesElements.push(createInfoItemElement("Job Properties (" + file + ")", lines, true));
 	}
 
-	return batchPropertiesElements;
+	return jobPropertiesElements;
 }
 
 function getPQLQueryLines(pql_query, balance) {
@@ -273,12 +291,39 @@ function getPQLQueryLines(pql_query, balance) {
 	return lines;
 }
 
+function getSegmentElement(segment) {
+	let detailsElement = createDetailsElement();
+
+	detailsElement.setAttribute("open", "true");
+
+	let summaryElement = detailsElement.childNodes[0];
+
+	summaryElement.innerHTML = segment.segment_name;
+	summaryElement.setAttribute("class", "level-3");
+
+	let divElement = detailsElement.childNodes[1];
+
+	let ulElement = document.createElement("ul");
+
+	divElement.appendChild(ulElement);
+
+    for (var i = 0; i < segment.axes.length; i++) {
+        let liElement = document.createElement("li");
+
+        ulElement.appendChild(liElement);
+
+        liElement.appendChild(getAxisElement(segment.axes[i]));
+    }
+
+	return detailsElement;
+}
+
 function getTestClassElement(test_class) {
 	let detailsElement = createDetailsElement();
 
 	let summaryElement = detailsElement.childNodes[0];
 
-	summaryElement.innerHTML = test_class.name;
+	summaryElement.innerHTML = test_class.name + " - " + getDurationString(test_class.average_duration);
 	summaryElement.setAttribute("class", "level-5");
 
 	let divElement = detailsElement.childNodes[1];
@@ -290,7 +335,7 @@ function getTestClassElement(test_class) {
 	for (var i = 0; i < test_class.methods.length; i++) {
 		let liElement = document.createElement("li");
 
-		liElement.innerHTML = test_class.methods[i];
+		liElement.innerHTML = test_class.methods[i].name;
 
 		ulElement.appendChild(liElement);
 	}
@@ -340,10 +385,10 @@ function updateJobSummary() {
 		}
 	}
 
-	let batchPropertiesElements = getBatchPropertiesElements(data.batch_properties);
+	let jobPropertiesElements = getJobPropertiesElements(data.job_properties);
 
-	for (var i = 0; i < batchPropertiesElements.length; i++) {
-		infoBoxElement.appendChild(batchPropertiesElements[i]);
+	for (var i = 0; i < jobPropertiesElements.length; i++) {
+		infoBoxElement.appendChild(jobPropertiesElements[i]);
 	}
 }
 

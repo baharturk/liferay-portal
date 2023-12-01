@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.content.web.internal.portlet;
 
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
+import com.liferay.fragment.processor.PortletRegistry;
+import com.liferay.item.selector.ItemSelector;
 import com.liferay.journal.constants.JournalContentPortletKeys;
 import com.liferay.journal.constants.JournalWebKeys;
 import com.liferay.journal.content.web.internal.display.context.JournalContentDisplayContext;
@@ -25,7 +18,7 @@ import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.util.ExportArticleHelper;
 import com.liferay.journal.util.JournalContent;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Release;
@@ -43,6 +36,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.trash.TrashHelper;
 import com.liferay.trash.service.TrashEntryService;
 
 import java.io.IOException;
@@ -57,16 +51,16 @@ import javax.portlet.RenderResponse;
 import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
-		"com.liferay.fragment.entry.processor.portlet.alias=web-content",
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-journal-content",
 		"com.liferay.portlet.display-category=category.cms",
@@ -88,7 +82,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT,
 		"javax.portlet.portlet-mode=application/vnd.wap.xhtml+xml;view",
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user"
+		"javax.portlet.security-role-ref=guest,power-user,user",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -133,7 +128,7 @@ public class JournalContentPortlet extends MVCPortlet {
 		}
 		else if ((articleGroupId > 0) && Validator.isNotNull(articleId)) {
 			String viewMode = ParamUtil.getString(renderRequest, "viewMode");
-			String languageId = LanguageUtil.getLanguageId(renderRequest);
+			String languageId = _language.getLanguageId(renderRequest);
 			int page = ParamUtil.getInteger(renderRequest, "page", 1);
 
 			article = _journalArticleLocalService.fetchLatestArticle(
@@ -160,7 +155,7 @@ public class JournalContentPortlet extends MVCPortlet {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 
 				renderRequest.removeAttribute(WebKeys.JOURNAL_ARTICLE);
@@ -193,11 +188,12 @@ public class JournalContentPortlet extends MVCPortlet {
 		try {
 			JournalContentDisplayContext.create(
 				renderRequest, renderResponse, _CLASS_NAME_ID,
-				_ddmTemplateModelResourcePermission);
+				_ddmTemplateModelResourcePermission, _itemSelector,
+				_trashHelper);
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -250,11 +246,12 @@ public class JournalContentPortlet extends MVCPortlet {
 			try {
 				JournalContentDisplayContext.create(
 					resourceRequest, resourceResponse, _CLASS_NAME_ID,
-					_ddmTemplateModelResourcePermission);
+					_ddmTemplateModelResourcePermission, _itemSelector,
+					_trashHelper);
 			}
 			catch (PortalException portalException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
+					_log.debug(portalException);
 				}
 			}
 
@@ -262,12 +259,18 @@ public class JournalContentPortlet extends MVCPortlet {
 		}
 	}
 
-	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.journal.content.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
-	)
-	protected void setRelease(Release release) {
+	@Activate
+	protected void activate() {
+		_portletRegistry.registerAlias(
+			_ALIAS, JournalContentPortletKeys.JOURNAL_CONTENT);
 	}
+
+	@Deactivate
+	protected void deactivate() {
+		_portletRegistry.unregisterAlias(_ALIAS);
+	}
+
+	private static final String _ALIAS = "web-content";
 
 	private static final long _CLASS_NAME_ID = PortalUtil.getClassNameId(
 		DDMStructure.class);
@@ -285,12 +288,29 @@ public class JournalContentPortlet extends MVCPortlet {
 	private ExportArticleHelper _exportArticleHelper;
 
 	@Reference
+	private ItemSelector _itemSelector;
+
+	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;
 
 	@Reference
 	private JournalContent _journalContent;
 
 	@Reference
+	private Language _language;
+
+	@Reference
+	private PortletRegistry _portletRegistry;
+
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.journal.content.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))"
+	)
+	private Release _release;
+
+	@Reference
 	private TrashEntryService _trashEntryService;
+
+	@Reference
+	private TrashHelper _trashHelper;
 
 }

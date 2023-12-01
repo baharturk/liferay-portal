@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.auto.tagger.google.cloud.natural.language.internal;
@@ -17,13 +8,13 @@ package com.liferay.asset.auto.tagger.google.cloud.natural.language.internal;
 import com.liferay.asset.auto.tagger.AssetAutoTagProvider;
 import com.liferay.asset.auto.tagger.google.cloud.natural.language.internal.configuration.GCloudNaturalLanguageAssetAutoTaggerCompanyConfiguration;
 import com.liferay.asset.auto.tagger.text.extractor.TextExtractor;
-import com.liferay.asset.auto.tagger.text.extractor.TextExtractorTracker;
+import com.liferay.asset.auto.tagger.text.extractor.TextExtractorRegistry;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
@@ -50,14 +41,14 @@ public class GCloudNaturalLanguageDocumentAssetAutoTagProvider
 			if (_isEnabled(assetEntry)) {
 				TextExtractor<Object> textExtractor =
 					(TextExtractor<Object>)
-						_textExtractorTracker.getTextExtractor(
+						_textExtractorRegistry.getTextExtractor(
 							assetEntry.getClassName());
 
 				if (textExtractor != null) {
 					Locale locale = LocaleUtil.fromLanguageId(
 						assetEntry.getDefaultLanguageId());
 
-					return _gCloudNaturalLanguageDocumentAssetAutoTaggerImpl.
+					return _gCloudNaturalLanguageDocumentAssetAutoTagger.
 						getTagNames(
 							assetEntry.getCompanyId(),
 							() -> textExtractor.extract(
@@ -68,7 +59,7 @@ public class GCloudNaturalLanguageDocumentAssetAutoTagProvider
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -85,14 +76,14 @@ public class GCloudNaturalLanguageDocumentAssetAutoTagProvider
 		throws ConfigurationException {
 
 		GCloudNaturalLanguageAssetAutoTaggerCompanyConfiguration
-			openNLPDocumentAssetAutoTagProviderCompanyConfiguration =
+			gCloudNaturalLanguageAssetAutoTaggerCompanyConfiguration =
 				_configurationProvider.getCompanyConfiguration(
 					GCloudNaturalLanguageAssetAutoTaggerCompanyConfiguration.
 						class,
 					assetEntry.getCompanyId());
 
 		return ArrayUtil.contains(
-			openNLPDocumentAssetAutoTagProviderCompanyConfiguration.
+			gCloudNaturalLanguageAssetAutoTaggerCompanyConfiguration.
 				enabledClassNames(),
 			assetEntry.getClassName());
 	}
@@ -104,10 +95,10 @@ public class GCloudNaturalLanguageDocumentAssetAutoTagProvider
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
-	private GCloudNaturalLanguageDocumentAssetAutoTaggerImpl
-		_gCloudNaturalLanguageDocumentAssetAutoTaggerImpl;
+	private GCloudNaturalLanguageDocumentAssetAutoTagger
+		_gCloudNaturalLanguageDocumentAssetAutoTagger;
 
 	@Reference
-	private TextExtractorTracker _textExtractorTracker;
+	private TextExtractorRegistry _textExtractorRegistry;
 
 }

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.document.library.kernel.exception.DuplicateDLFileEntryExternalReferenceCodeException;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
@@ -283,6 +275,26 @@ public class DLFileEntryPersistenceTest {
 			Time.getShortTimestamp(newDLFileEntry.getLastPublishDate()));
 	}
 
+	@Test(expected = DuplicateDLFileEntryExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		DLFileEntry dlFileEntry = addDLFileEntry();
+
+		DLFileEntry newDLFileEntry = addDLFileEntry();
+
+		newDLFileEntry.setGroupId(dlFileEntry.getGroupId());
+
+		newDLFileEntry = _persistence.update(newDLFileEntry);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newDLFileEntry);
+
+		newDLFileEntry.setExternalReferenceCode(
+			dlFileEntry.getExternalReferenceCode());
+
+		_persistence.update(newDLFileEntry);
+	}
+
 	@Test
 	public void testCountByUuid() throws Exception {
 		_persistence.countByUuid("");
@@ -488,12 +500,12 @@ public class DLFileEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_ERC() throws Exception {
-		_persistence.countByG_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
 
-		_persistence.countByG_ERC(0L, "null");
+		_persistence.countByERC_G("null", 0L);
 
-		_persistence.countByG_ERC(0L, (String)null);
+		_persistence.countByERC_G((String)null, 0L);
 	}
 
 	@Test
@@ -862,15 +874,15 @@ public class DLFileEntryPersistenceTest {
 				new Class<?>[] {String.class}, "title"));
 
 		Assert.assertEquals(
-			Long.valueOf(dlFileEntry.getGroupId()),
-			ReflectionTestUtil.<Long>invoke(
-				dlFileEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "groupId"));
-		Assert.assertEquals(
 			dlFileEntry.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				dlFileEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(dlFileEntry.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				dlFileEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected DLFileEntry addDLFileEntry() throws Exception {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.collection.item.selector.web.internal;
@@ -19,8 +10,9 @@ import com.liferay.fragment.collection.item.selector.criterion.FragmentCollectio
 import com.liferay.item.selector.ItemSelectorReturnType;
 import com.liferay.item.selector.ItemSelectorView;
 import com.liferay.item.selector.ItemSelectorViewDescriptorRenderer;
+import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -31,7 +23,7 @@ import com.liferay.portal.kernel.util.WebKeys;
 
 import java.io.IOException;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -72,7 +64,7 @@ public class FragmentCollectionSiteItemSelectorView
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
-		String title = LanguageUtil.get(locale, "site");
+		String title = _language.get(locale, "site");
 
 		if (serviceContext == null) {
 			return title;
@@ -90,7 +82,7 @@ public class FragmentCollectionSiteItemSelectorView
 			return scopeGroup.getDescriptiveName(locale);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return title;
 		}
@@ -116,6 +108,7 @@ public class FragmentCollectionSiteItemSelectorView
 			itemSelectedEventName, search,
 			new FragmentCollectionItemSelectorViewDescriptor(
 				fragmentCollectionItemSelectorCriterion,
+				themeDisplay.getSiteGroupId(),
 				(HttpServletRequest)servletRequest, portletURL));
 	}
 
@@ -123,12 +116,16 @@ public class FragmentCollectionSiteItemSelectorView
 		FragmentCollectionSiteItemSelectorView.class);
 
 	private static final List<ItemSelectorReturnType>
-		_supportedItemSelectorReturnTypes = Collections.singletonList(
-			new FragmentCollectionItemSelectorReturnType());
+		_supportedItemSelectorReturnTypes = Arrays.asList(
+			new FragmentCollectionItemSelectorReturnType(),
+			new UUIDItemSelectorReturnType());
 
 	@Reference
 	private ItemSelectorViewDescriptorRenderer
 		<FragmentCollectionItemSelectorCriterion>
 			_itemSelectorViewDescriptorRenderer;
+
+	@Reference
+	private Language _language;
 
 }

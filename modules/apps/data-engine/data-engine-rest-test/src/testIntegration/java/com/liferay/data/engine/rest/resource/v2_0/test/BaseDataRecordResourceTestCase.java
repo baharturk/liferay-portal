@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.resource.v2_0.test;
@@ -29,6 +20,7 @@ import com.liferay.data.engine.rest.client.pagination.Pagination;
 import com.liferay.data.engine.rest.client.resource.v2_0.DataRecordResource;
 import com.liferay.data.engine.rest.client.serdes.v2_0.DataRecordSerDes;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -43,6 +35,7 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
@@ -51,7 +44,7 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
@@ -60,18 +53,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
@@ -203,7 +194,7 @@ public abstract class BaseDataRecordResourceTestCase {
 				dataDefinitionId, null, RandomTestUtil.randomString(),
 				Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantDataDefinitionId != null) {
 			DataRecord irrelevantDataRecord =
@@ -211,15 +202,17 @@ public abstract class BaseDataRecordResourceTestCase {
 					irrelevantDataDefinitionId, randomIrrelevantDataRecord());
 
 			page = dataRecordResource.getDataDefinitionDataRecordsPage(
-				irrelevantDataDefinitionId, null, null, Pagination.of(1, 2),
-				null);
+				irrelevantDataDefinitionId, null, null,
+				Pagination.of(1, (int)totalCount + 1), null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantDataRecord),
-				(List<DataRecord>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantDataRecord, (List<DataRecord>)page.getItems());
+			assertValid(
+				page,
+				testGetDataDefinitionDataRecordsPage_getExpectedActions(
+					irrelevantDataDefinitionId));
 		}
 
 		DataRecord dataRecord1 =
@@ -233,16 +226,38 @@ public abstract class BaseDataRecordResourceTestCase {
 		page = dataRecordResource.getDataDefinitionDataRecordsPage(
 			dataDefinitionId, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(dataRecord1, dataRecord2),
-			(List<DataRecord>)page.getItems());
-		assertValid(page);
+		assertContains(dataRecord1, (List<DataRecord>)page.getItems());
+		assertContains(dataRecord2, (List<DataRecord>)page.getItems());
+		assertValid(
+			page,
+			testGetDataDefinitionDataRecordsPage_getExpectedActions(
+				dataDefinitionId));
 
 		dataRecordResource.deleteDataRecord(dataRecord1.getId());
 
 		dataRecordResource.deleteDataRecord(dataRecord2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetDataDefinitionDataRecordsPage_getExpectedActions(
+				Long dataDefinitionId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/data-engine/v2.0/data-definitions/{dataDefinitionId}/data-records/batch".
+				replace(
+					"{dataDefinitionId}", String.valueOf(dataDefinitionId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -251,6 +266,12 @@ public abstract class BaseDataRecordResourceTestCase {
 
 		Long dataDefinitionId =
 			testGetDataDefinitionDataRecordsPage_getDataDefinitionId();
+
+		Page<DataRecord> dataRecordPage =
+			dataRecordResource.getDataDefinitionDataRecordsPage(
+				dataDefinitionId, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(dataRecordPage.getTotalCount());
 
 		DataRecord dataRecord1 =
 			testGetDataDefinitionDataRecordsPage_addDataRecord(
@@ -266,17 +287,20 @@ public abstract class BaseDataRecordResourceTestCase {
 
 		Page<DataRecord> page1 =
 			dataRecordResource.getDataDefinitionDataRecordsPage(
-				dataDefinitionId, null, null, Pagination.of(1, 2), null);
+				dataDefinitionId, null, null, Pagination.of(1, totalCount + 2),
+				null);
 
 		List<DataRecord> dataRecords1 = (List<DataRecord>)page1.getItems();
 
-		Assert.assertEquals(dataRecords1.toString(), 2, dataRecords1.size());
+		Assert.assertEquals(
+			dataRecords1.toString(), totalCount + 2, dataRecords1.size());
 
 		Page<DataRecord> page2 =
 			dataRecordResource.getDataDefinitionDataRecordsPage(
-				dataDefinitionId, null, null, Pagination.of(2, 2), null);
+				dataDefinitionId, null, null, Pagination.of(2, totalCount + 2),
+				null);
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<DataRecord> dataRecords2 = (List<DataRecord>)page2.getItems();
 
@@ -284,11 +308,12 @@ public abstract class BaseDataRecordResourceTestCase {
 
 		Page<DataRecord> page3 =
 			dataRecordResource.getDataDefinitionDataRecordsPage(
-				dataDefinitionId, null, null, Pagination.of(1, 3), null);
+				dataDefinitionId, null, null,
+				Pagination.of(1, (int)totalCount + 3), null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(dataRecord1, dataRecord2, dataRecord3),
-			(List<DataRecord>)page3.getItems());
+		assertContains(dataRecord1, (List<DataRecord>)page3.getItems());
+		assertContains(dataRecord2, (List<DataRecord>)page3.getItems());
+		assertContains(dataRecord3, (List<DataRecord>)page3.getItems());
 	}
 
 	@Test
@@ -298,9 +323,23 @@ public abstract class BaseDataRecordResourceTestCase {
 		testGetDataDefinitionDataRecordsPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, dataRecord1, dataRecord2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					dataRecord1, entityField.getName(),
 					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetDataDefinitionDataRecordsPageWithSortDouble()
+		throws Exception {
+
+		testGetDataDefinitionDataRecordsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, dataRecord1, dataRecord2) -> {
+				BeanTestUtil.setProperty(
+					dataRecord1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					dataRecord2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -311,8 +350,8 @@ public abstract class BaseDataRecordResourceTestCase {
 		testGetDataDefinitionDataRecordsPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, dataRecord1, dataRecord2) -> {
-				BeanUtils.setProperty(dataRecord1, entityField.getName(), 0);
-				BeanUtils.setProperty(dataRecord2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(dataRecord1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(dataRecord2, entityField.getName(), 1);
 			});
 	}
 
@@ -327,27 +366,27 @@ public abstract class BaseDataRecordResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -355,12 +394,12 @@ public abstract class BaseDataRecordResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -397,24 +436,28 @@ public abstract class BaseDataRecordResourceTestCase {
 		dataRecord2 = testGetDataDefinitionDataRecordsPage_addDataRecord(
 			dataDefinitionId, dataRecord2);
 
+		Page<DataRecord> page =
+			dataRecordResource.getDataDefinitionDataRecordsPage(
+				dataDefinitionId, null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<DataRecord> ascPage =
 				dataRecordResource.getDataDefinitionDataRecordsPage(
-					dataDefinitionId, null, null, Pagination.of(1, 2),
+					dataDefinitionId, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(dataRecord1, dataRecord2),
-				(List<DataRecord>)ascPage.getItems());
+			assertContains(dataRecord1, (List<DataRecord>)ascPage.getItems());
+			assertContains(dataRecord2, (List<DataRecord>)ascPage.getItems());
 
 			Page<DataRecord> descPage =
 				dataRecordResource.getDataDefinitionDataRecordsPage(
-					dataDefinitionId, null, null, Pagination.of(1, 2),
+					dataDefinitionId, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(dataRecord2, dataRecord1),
-				(List<DataRecord>)descPage.getItems());
+			assertContains(dataRecord2, (List<DataRecord>)descPage.getItems());
+			assertContains(dataRecord1, (List<DataRecord>)descPage.getItems());
 		}
 	}
 
@@ -472,7 +515,7 @@ public abstract class BaseDataRecordResourceTestCase {
 				dataRecordCollectionId, null, RandomTestUtil.randomString(),
 				Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantDataRecordCollectionId != null) {
 			DataRecord irrelevantDataRecord =
@@ -482,14 +525,16 @@ public abstract class BaseDataRecordResourceTestCase {
 
 			page = dataRecordResource.getDataRecordCollectionDataRecordsPage(
 				irrelevantDataRecordCollectionId, null, null,
-				Pagination.of(1, 2), null);
+				Pagination.of(1, (int)totalCount + 1), null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantDataRecord),
-				(List<DataRecord>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantDataRecord, (List<DataRecord>)page.getItems());
+			assertValid(
+				page,
+				testGetDataRecordCollectionDataRecordsPage_getExpectedActions(
+					irrelevantDataRecordCollectionId));
 		}
 
 		DataRecord dataRecord1 =
@@ -503,16 +548,39 @@ public abstract class BaseDataRecordResourceTestCase {
 		page = dataRecordResource.getDataRecordCollectionDataRecordsPage(
 			dataRecordCollectionId, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(dataRecord1, dataRecord2),
-			(List<DataRecord>)page.getItems());
-		assertValid(page);
+		assertContains(dataRecord1, (List<DataRecord>)page.getItems());
+		assertContains(dataRecord2, (List<DataRecord>)page.getItems());
+		assertValid(
+			page,
+			testGetDataRecordCollectionDataRecordsPage_getExpectedActions(
+				dataRecordCollectionId));
 
 		dataRecordResource.deleteDataRecord(dataRecord1.getId());
 
 		dataRecordResource.deleteDataRecord(dataRecord2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetDataRecordCollectionDataRecordsPage_getExpectedActions(
+				Long dataRecordCollectionId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/data-engine/v2.0/data-record-collections/{dataRecordCollectionId}/data-records/batch".
+				replace(
+					"{dataRecordCollectionId}",
+					String.valueOf(dataRecordCollectionId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -521,6 +589,12 @@ public abstract class BaseDataRecordResourceTestCase {
 
 		Long dataRecordCollectionId =
 			testGetDataRecordCollectionDataRecordsPage_getDataRecordCollectionId();
+
+		Page<DataRecord> dataRecordPage =
+			dataRecordResource.getDataRecordCollectionDataRecordsPage(
+				dataRecordCollectionId, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(dataRecordPage.getTotalCount());
 
 		DataRecord dataRecord1 =
 			testGetDataRecordCollectionDataRecordsPage_addDataRecord(
@@ -536,17 +610,20 @@ public abstract class BaseDataRecordResourceTestCase {
 
 		Page<DataRecord> page1 =
 			dataRecordResource.getDataRecordCollectionDataRecordsPage(
-				dataRecordCollectionId, null, null, Pagination.of(1, 2), null);
+				dataRecordCollectionId, null, null,
+				Pagination.of(1, totalCount + 2), null);
 
 		List<DataRecord> dataRecords1 = (List<DataRecord>)page1.getItems();
 
-		Assert.assertEquals(dataRecords1.toString(), 2, dataRecords1.size());
+		Assert.assertEquals(
+			dataRecords1.toString(), totalCount + 2, dataRecords1.size());
 
 		Page<DataRecord> page2 =
 			dataRecordResource.getDataRecordCollectionDataRecordsPage(
-				dataRecordCollectionId, null, null, Pagination.of(2, 2), null);
+				dataRecordCollectionId, null, null,
+				Pagination.of(2, totalCount + 2), null);
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<DataRecord> dataRecords2 = (List<DataRecord>)page2.getItems();
 
@@ -554,11 +631,12 @@ public abstract class BaseDataRecordResourceTestCase {
 
 		Page<DataRecord> page3 =
 			dataRecordResource.getDataRecordCollectionDataRecordsPage(
-				dataRecordCollectionId, null, null, Pagination.of(1, 3), null);
+				dataRecordCollectionId, null, null,
+				Pagination.of(1, (int)totalCount + 3), null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(dataRecord1, dataRecord2, dataRecord3),
-			(List<DataRecord>)page3.getItems());
+		assertContains(dataRecord1, (List<DataRecord>)page3.getItems());
+		assertContains(dataRecord2, (List<DataRecord>)page3.getItems());
+		assertContains(dataRecord3, (List<DataRecord>)page3.getItems());
 	}
 
 	@Test
@@ -568,9 +646,23 @@ public abstract class BaseDataRecordResourceTestCase {
 		testGetDataRecordCollectionDataRecordsPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, dataRecord1, dataRecord2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					dataRecord1, entityField.getName(),
 					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetDataRecordCollectionDataRecordsPageWithSortDouble()
+		throws Exception {
+
+		testGetDataRecordCollectionDataRecordsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, dataRecord1, dataRecord2) -> {
+				BeanTestUtil.setProperty(
+					dataRecord1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					dataRecord2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -581,8 +673,8 @@ public abstract class BaseDataRecordResourceTestCase {
 		testGetDataRecordCollectionDataRecordsPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, dataRecord1, dataRecord2) -> {
-				BeanUtils.setProperty(dataRecord1, entityField.getName(), 0);
-				BeanUtils.setProperty(dataRecord2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(dataRecord1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(dataRecord2, entityField.getName(), 1);
 			});
 	}
 
@@ -597,27 +689,27 @@ public abstract class BaseDataRecordResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -625,12 +717,12 @@ public abstract class BaseDataRecordResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						dataRecord2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -667,24 +759,28 @@ public abstract class BaseDataRecordResourceTestCase {
 		dataRecord2 = testGetDataRecordCollectionDataRecordsPage_addDataRecord(
 			dataRecordCollectionId, dataRecord2);
 
+		Page<DataRecord> page =
+			dataRecordResource.getDataRecordCollectionDataRecordsPage(
+				dataRecordCollectionId, null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<DataRecord> ascPage =
 				dataRecordResource.getDataRecordCollectionDataRecordsPage(
-					dataRecordCollectionId, null, null, Pagination.of(1, 2),
+					dataRecordCollectionId, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(dataRecord1, dataRecord2),
-				(List<DataRecord>)ascPage.getItems());
+			assertContains(dataRecord1, (List<DataRecord>)ascPage.getItems());
+			assertContains(dataRecord2, (List<DataRecord>)ascPage.getItems());
 
 			Page<DataRecord> descPage =
 				dataRecordResource.getDataRecordCollectionDataRecordsPage(
-					dataRecordCollectionId, null, null, Pagination.of(1, 2),
+					dataRecordCollectionId, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(dataRecord2, dataRecord1),
-				(List<DataRecord>)descPage.getItems());
+			assertContains(dataRecord2, (List<DataRecord>)descPage.getItems());
+			assertContains(dataRecord1, (List<DataRecord>)descPage.getItems());
 		}
 	}
 
@@ -763,7 +859,7 @@ public abstract class BaseDataRecordResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteDataRecord() throws Exception {
-		DataRecord dataRecord = testGraphQLDataRecord_addDataRecord();
+		DataRecord dataRecord = testGraphQLDeleteDataRecord_addDataRecord();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -776,7 +872,6 @@ public abstract class BaseDataRecordResourceTestCase {
 							}
 						})),
 				"JSONObject/data", "Object/deleteDataRecord"));
-
 		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
@@ -790,6 +885,12 @@ public abstract class BaseDataRecordResourceTestCase {
 			"JSONArray/errors");
 
 		Assert.assertTrue(errorsJSONArray.length() > 0);
+	}
+
+	protected DataRecord testGraphQLDeleteDataRecord_addDataRecord()
+		throws Exception {
+
+		return testGraphQLDataRecord_addDataRecord();
 	}
 
 	@Test
@@ -810,7 +911,7 @@ public abstract class BaseDataRecordResourceTestCase {
 
 	@Test
 	public void testGraphQLGetDataRecord() throws Exception {
-		DataRecord dataRecord = testGraphQLDataRecord_addDataRecord();
+		DataRecord dataRecord = testGraphQLGetDataRecord_addDataRecord();
 
 		Assert.assertTrue(
 			equals(
@@ -849,6 +950,12 @@ public abstract class BaseDataRecordResourceTestCase {
 				"Object/code"));
 	}
 
+	protected DataRecord testGraphQLGetDataRecord_addDataRecord()
+		throws Exception {
+
+		return testGraphQLDataRecord_addDataRecord();
+	}
+
 	@Test
 	public void testPatchDataRecord() throws Exception {
 		DataRecord postDataRecord = testPatchDataRecord_addDataRecord();
@@ -861,8 +968,8 @@ public abstract class BaseDataRecordResourceTestCase {
 
 		DataRecord expectedPatchDataRecord = postDataRecord.clone();
 
-		_beanUtilsBean.copyProperties(
-			expectedPatchDataRecord, randomPatchDataRecord);
+		BeanTestUtil.copyProperties(
+			randomPatchDataRecord, expectedPatchDataRecord);
 
 		DataRecord getDataRecord = dataRecordResource.getDataRecord(
 			patchDataRecord.getId());
@@ -1019,6 +1126,13 @@ public abstract class BaseDataRecordResourceTestCase {
 	}
 
 	protected void assertValid(Page<DataRecord> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<DataRecord> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<DataRecord> dataRecords = page.getItems();
@@ -1033,6 +1147,25 @@ public abstract class BaseDataRecordResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1181,14 +1314,16 @@ public abstract class BaseDataRecordResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1205,6 +1340,10 @@ public abstract class BaseDataRecordResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1214,18 +1353,18 @@ public abstract class BaseDataRecordResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1257,8 +1396,9 @@ public abstract class BaseDataRecordResourceTestCase {
 		}
 
 		if (entityFieldName.equals("status")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(dataRecord.getStatus()));
+
+			return sb.toString();
 		}
 
 		throw new IllegalArgumentException(
@@ -1326,6 +1466,115 @@ public abstract class BaseDataRecordResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1401,18 +1650,6 @@ public abstract class BaseDataRecordResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseDataRecordResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

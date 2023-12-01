@@ -1,5 +1,5 @@
 {
-	"@generated": "bcba4b119d3cf7bdcb52b5d3d5a71d24f5290ca2",
+	"@generated": "3a00505b13f9aa030d4f581f44c8743a429d1321",
 	"@overrides": {
 	},
 	"@readonly": "** AUTO-GENERATED: DO NOT EDIT OUTSIDE @overrides **",
@@ -13,6 +13,18 @@
 		"moduleResolution": "node",
 		"outDir": "./types",
 		"paths": {
+			"@liferay/frontend-data-set-web": [
+				"../../frontend-data-set/frontend-data-set-web/src/main/resources/META-INF/resources/index.d.ts"
+			],
+			"@liferay/object-js-components-web": [
+				"../object-js-components-web/src/main/resources/META-INF/resources/index.ts"
+			],
+			"frontend-js-components-web": [
+				"../../frontend-js/frontend-js-components-web/src/main/resources/META-INF/resources/index.ts"
+			],
+			"frontend-js-web": [
+				"../../frontend-js/frontend-js-web/src/main/resources/META-INF/resources/index.d.ts"
+			]
 		},
 		"sourceMap": false,
 		"strict": true,
@@ -23,10 +35,26 @@
 			"./node_modules/@types"
 		]
 	},
+	"exclude": [
+		"test/**/*",
+		"**/__tests__/**"
+	],
 	"include": [
 		"src/**/*",
-		"test/**/*"
+		"../../../global.d.ts"
 	],
 	"references": [
+		{
+			"path": "../../frontend-data-set/frontend-data-set-web"
+		},
+		{
+			"path": "../object-js-components-web"
+		},
+		{
+			"path": "../../frontend-js/frontend-js-components-web"
+		},
+		{
+			"path": "../../frontend-js/frontend-js-web"
+		}
 	]
 }

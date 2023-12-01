@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.service.impl;
@@ -24,12 +15,9 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
-import com.liferay.search.experiences.exception.SXPBlueprintConfigurationJSONException;
 import com.liferay.search.experiences.exception.SXPBlueprintTitleException;
 import com.liferay.search.experiences.model.SXPBlueprint;
 import com.liferay.search.experiences.service.base.SXPBlueprintLocalServiceBaseImpl;
@@ -57,16 +45,18 @@ public class SXPBlueprintLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public SXPBlueprint addSXPBlueprint(
-			long userId, String configurationJSON,
+			String externalReferenceCode, long userId, String configurationJSON,
 			Map<Locale, String> descriptionMap, String elementInstancesJSON,
 			String schemaVersion, Map<Locale, String> titleMap,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		_validate(configurationJSON, titleMap, serviceContext);
+		_validate(titleMap, serviceContext);
 
 		SXPBlueprint sxpBlueprint = sxpBlueprintPersistence.create(
 			counterLocalService.increment());
+
+		sxpBlueprint.setExternalReferenceCode(externalReferenceCode);
 
 		User user = _userLocalService.getUser(userId);
 
@@ -79,15 +69,17 @@ public class SXPBlueprintLocalServiceImpl
 		sxpBlueprint.setElementInstancesJSON(elementInstancesJSON);
 		sxpBlueprint.setSchemaVersion(schemaVersion);
 		sxpBlueprint.setTitleMap(titleMap);
-		sxpBlueprint.setStatus(WorkflowConstants.STATUS_DRAFT);
+		sxpBlueprint.setVersion(
+			String.format(
+				"%.1f",
+				GetterUtil.getFloat(sxpBlueprint.getVersion(), 0.9F) + 0.1));
+		sxpBlueprint.setStatus(WorkflowConstants.STATUS_APPROVED);
 		sxpBlueprint.setStatusByUserId(user.getUserId());
 		sxpBlueprint.setStatusDate(serviceContext.getModifiedDate(null));
 
 		sxpBlueprint = sxpBlueprintPersistence.update(sxpBlueprint);
 
 		_resourceLocalService.addModelResources(sxpBlueprint, serviceContext);
-
-		_startWorkflowInstance(userId, sxpBlueprint, serviceContext);
 
 		return sxpBlueprint;
 	}
@@ -127,11 +119,12 @@ public class SXPBlueprintLocalServiceImpl
 		_resourceLocalService.deleteResource(
 			sxpBlueprint, ResourceConstants.SCOPE_INDIVIDUAL);
 
-		_workflowInstanceLinkLocalService.deleteWorkflowInstanceLinks(
-			sxpBlueprint.getCompanyId(), 0, SXPBlueprint.class.getName(),
-			sxpBlueprint.getSXPBlueprintId());
-
 		return sxpBlueprint;
+	}
+
+	@Override
+	public List<SXPBlueprint> getSXPBlueprints(long companyId) {
+		return sxpBlueprintPersistence.findByCompanyId(companyId);
 	}
 
 	@Override
@@ -168,52 +161,42 @@ public class SXPBlueprintLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public SXPBlueprint updateSXPBlueprint(
-			long userId, long sxpBlueprintId, String configurationJSON,
-			Map<Locale, String> descriptionMap, String elementInstancesJSON,
-			String schemaVersion, Map<Locale, String> titleMap,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long sxpBlueprintId,
+			String configurationJSON, Map<Locale, String> descriptionMap,
+			String elementInstancesJSON, String schemaVersion,
+			Map<Locale, String> titleMap, ServiceContext serviceContext)
 		throws PortalException {
 
-		_validate(configurationJSON, titleMap, serviceContext);
+		_validate(titleMap, serviceContext);
 
 		SXPBlueprint sxpBlueprint = sxpBlueprintPersistence.findByPrimaryKey(
 			sxpBlueprintId);
 
+		sxpBlueprint.setExternalReferenceCode(externalReferenceCode);
 		sxpBlueprint.setConfigurationJSON(configurationJSON);
 		sxpBlueprint.setDescriptionMap(descriptionMap);
 		sxpBlueprint.setElementInstancesJSON(elementInstancesJSON);
 		sxpBlueprint.setTitleMap(titleMap);
+		sxpBlueprint.setVersion(
+			String.format(
+				"%.1f",
+				GetterUtil.getFloat(sxpBlueprint.getVersion(), 0.9F) + 0.1));
 
 		return updateSXPBlueprint(sxpBlueprint);
 	}
 
-	private void _startWorkflowInstance(
-			long userId, SXPBlueprint sxpBlueprint,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		WorkflowHandlerRegistryUtil.startWorkflowInstance(
-			sxpBlueprint.getCompanyId(), 0, userId,
-			SXPBlueprint.class.getName(), sxpBlueprint.getSXPBlueprintId(),
-			sxpBlueprint, serviceContext);
-	}
-
 	private void _validate(
-			String configurationJSON, Map<Locale, String> titleMap,
-			ServiceContext serviceContext)
-		throws SXPBlueprintConfigurationJSONException,
-			   SXPBlueprintTitleException {
+			Map<Locale, String> titleMap, ServiceContext serviceContext)
+		throws SXPBlueprintTitleException {
 
-		if (!GetterUtil.getBoolean(
+		if (GetterUtil.getBoolean(
 				serviceContext.getAttribute(
 					SXPBlueprintLocalServiceImpl.class.getName() +
 						"#_validate"),
 				true)) {
 
-			return;
+			_sxpBlueprintValidator.validate(titleMap);
 		}
-
-		_sxpBlueprintValidator.validate(configurationJSON, titleMap);
 	}
 
 	@Reference
@@ -224,8 +207,5 @@ public class SXPBlueprintLocalServiceImpl
 
 	@Reference
 	private UserLocalService _userLocalService;
-
-	@Reference
-	private WorkflowInstanceLinkLocalService _workflowInstanceLinkLocalService;
 
 }

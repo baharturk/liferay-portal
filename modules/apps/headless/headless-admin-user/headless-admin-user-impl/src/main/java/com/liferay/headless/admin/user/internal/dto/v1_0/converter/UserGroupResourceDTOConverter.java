@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.internal.dto.v1_0.converter;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.UserGroup;
-import com.liferay.portal.kernel.service.UserGroupLocalService;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.UserGroupService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
@@ -30,7 +23,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = "dto.class.name=com.liferay.portal.kernel.model.UserGroup",
-	service = {DTOConverter.class, UserGroupResourceDTOConverter.class}
+	service = DTOConverter.class
 )
 public class UserGroupResourceDTOConverter
 	implements DTOConverter
@@ -40,6 +33,20 @@ public class UserGroupResourceDTOConverter
 	public String getContentType() {
 		return com.liferay.headless.admin.user.dto.v1_0.UserGroup.class.
 			getSimpleName();
+	}
+
+	@Override
+	public UserGroup getObject(String externalReferenceCode) throws Exception {
+		UserGroup userGroup =
+			_userGroupService.fetchUserGroupByExternalReferenceCode(
+				CompanyThreadLocal.getCompanyId(), externalReferenceCode);
+
+		if (userGroup == null) {
+			userGroup = _userGroupService.getUserGroup(
+				GetterUtil.getLong(externalReferenceCode));
+		}
+
+		return userGroup;
 	}
 
 	@Override
@@ -66,7 +73,7 @@ public class UserGroupResourceDTOConverter
 	}
 
 	@Reference
-	private UserGroupLocalService _userGroupLocalService;
+	private UserGroupService _userGroupService;
 
 	@Reference
 	private UserLocalService _userLocalService;

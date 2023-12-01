@@ -1,42 +1,40 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.translation.service.impl;
 
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.info.exception.NoSuchInfoItemException;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemFieldValues;
+import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
 import com.liferay.info.item.updater.InfoItemFieldValuesUpdater;
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
+import com.liferay.translation.exception.XLIFFFileException;
 import com.liferay.translation.exporter.TranslationInfoItemFieldValuesExporter;
 import com.liferay.translation.importer.TranslationInfoItemFieldValuesImporter;
 import com.liferay.translation.model.TranslationEntry;
@@ -78,9 +76,22 @@ public class TranslationEntryLocalServiceImpl
 		try {
 			infoItemReference = infoItemFieldValues.getInfoItemReference();
 
+			InfoItemIdentifier infoItemIdentifier =
+				infoItemReference.getInfoItemIdentifier();
+
+			if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
+				throw new NoSuchInfoItemException(
+					"Unable to add or update a translation entry without a " +
+						"class PK info item identifier");
+			}
+
+			ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+				(ClassPKInfoItemIdentifier)
+					infoItemReference.getInfoItemIdentifier();
+
 			return addOrUpdateTranslationEntry(
 				groupId, infoItemReference.getClassName(),
-				infoItemReference.getClassPK(),
+				classPKInfoItemIdentifier.getClassPK(),
 				StreamUtil.toString(
 					_xliffTranslationInfoItemFieldValuesExporter.
 						exportInfoItemFieldValues(
@@ -101,6 +112,8 @@ public class TranslationEntryLocalServiceImpl
 			String contentType, String languageId,
 			ServiceContext serviceContext)
 		throws PortalException {
+
+		_validateInfoItemGroup(groupId, className, classPK);
 
 		TranslationEntry translationEntry =
 			translationEntryPersistence.fetchByC_C_L(
@@ -169,9 +182,16 @@ public class TranslationEntryLocalServiceImpl
 					RestrictionsFactoryUtil.eq("classPK", classPK));
 			});
 		actionableDynamicQuery.setPerformActionMethod(
-			(TranslationEntry translationEntry) ->
+			(TranslationEntry translationEntry) -> {
 				translationEntryLocalService.deleteTranslationEntry(
-					translationEntry));
+					translationEntry);
+
+				_workflowInstanceLinkLocalService.deleteWorkflowInstanceLink(
+					translationEntry.getCompanyId(),
+					translationEntry.getGroupId(),
+					TranslationEntry.class.getName(),
+					translationEntry.getTranslationEntryId());
+			});
 
 		actionableDynamicQuery.performActions();
 	}
@@ -182,6 +202,22 @@ public class TranslationEntryLocalServiceImpl
 
 		translationEntryLocalService.deleteTranslationEntries(
 			_portal.getClassNameId(className), classPK);
+	}
+
+	@Indexable(type = IndexableType.DELETE)
+	@Override
+	public TranslationEntry deleteTranslationEntry(long translationEntryId)
+		throws PortalException {
+
+		TranslationEntry translationEntry = translationEntryPersistence.remove(
+			translationEntryId);
+
+		_workflowInstanceLinkLocalService.deleteWorkflowInstanceLink(
+			translationEntry.getCompanyId(), translationEntry.getGroupId(),
+			TranslationEntry.class.getName(),
+			translationEntry.getTranslationEntryId());
+
+		return translationEntry;
 	}
 
 	@Override
@@ -268,20 +304,22 @@ public class TranslationEntryLocalServiceImpl
 
 		try {
 			InfoItemFieldValuesUpdater<Object> infoItemFieldValuesUpdater =
-				_infoItemServiceTracker.getFirstInfoItemService(
+				_infoItemServiceRegistry.getFirstInfoItemService(
 					InfoItemFieldValuesUpdater.class,
 					translationEntry.getClassName());
 
 			InfoItemObjectProvider<Object> infoItemObjectProvider =
-				_infoItemServiceTracker.getFirstInfoItemService(
+				_infoItemServiceRegistry.getFirstInfoItemService(
 					InfoItemObjectProvider.class,
-					translationEntry.getClassName());
+					translationEntry.getClassName(),
+					ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
 			String content = translationEntry.getContent();
 
 			infoItemFieldValuesUpdater.updateFromInfoItemFieldValues(
 				infoItemObjectProvider.getInfoItem(
-					translationEntry.getClassPK()),
+					new ClassPKInfoItemIdentifier(
+						translationEntry.getClassPK())),
 				_xliffTranslationInfoItemFieldValuesImporter.
 					importInfoItemFieldValues(
 						translationEntry.getGroupId(),
@@ -299,17 +337,55 @@ public class TranslationEntryLocalServiceImpl
 		}
 	}
 
+	private void _validateInfoItemGroup(
+			long groupId, String className, long classPK)
+		throws XLIFFFileException {
+
+		try {
+			InfoItemObjectProvider<Object> infoItemObjectProvider =
+				_infoItemServiceRegistry.getFirstInfoItemService(
+					InfoItemObjectProvider.class, className);
+
+			Object object = infoItemObjectProvider.getInfoItem(
+				new ClassPKInfoItemIdentifier(classPK));
+
+			if (object == null) {
+				throw new XLIFFFileException.MustHaveValidModel(
+					"Unable to get info item for class PK " + classPK);
+			}
+
+			if (object instanceof GroupedModel) {
+				GroupedModel groupedModel = (GroupedModel)object;
+
+				if (groupedModel.getGroupId() != groupId) {
+					throw new XLIFFFileException.MustHaveValidModel(
+						StringBundler.concat(
+							"Can not import translation for a model in group ",
+							groupedModel.getGroupId(), " into group ",
+							groupId));
+				}
+			}
+		}
+		catch (NoSuchInfoItemException noSuchInfoItemException) {
+			throw new XLIFFFileException.MustHaveValidModel(
+				noSuchInfoItemException);
+		}
+	}
+
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Reference
 	private Portal _portal;
 
 	@Reference
 	private UserLocalService _userLocalService;
+
+	@Reference
+	private WorkflowInstanceLinkLocalService _workflowInstanceLinkLocalService;
 
 	@Reference(target = "(content.type=application/xliff+xml)")
 	private TranslationInfoItemFieldValuesExporter

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.notifications;
@@ -27,7 +18,7 @@ import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserNotificationEventLocalServiceUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -67,7 +58,7 @@ public abstract class BaseModelUserNotificationHandler
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -97,7 +88,7 @@ public abstract class BaseModelUserNotificationHandler
 			new String[] {
 				HtmlUtil.escape(
 					StringUtil.shorten(getBodyContent(jsonObject), 70)),
-				getTitle(jsonObject, assetRenderer, serviceContext)
+				getTitle(userNotificationEvent, serviceContext)
 			});
 	}
 
@@ -133,9 +124,9 @@ public abstract class BaseModelUserNotificationHandler
 			return StringPool.BLANK;
 		}
 
-		String entryURLDomain = HttpUtil.getDomain(entryURL);
+		String entryURLDomain = HttpComponentsUtil.getDomain(entryURL);
 
-		String portalURLDomain = HttpUtil.getDomain(
+		String portalURLDomain = HttpComponentsUtil.getDomain(
 			serviceContext.getPortalURL());
 
 		if (!entryURLDomain.equals(portalURLDomain)) {
@@ -147,8 +138,10 @@ public abstract class BaseModelUserNotificationHandler
 	}
 
 	protected String getTitle(
-		JSONObject jsonObject, AssetRenderer<?> assetRenderer,
-		ServiceContext serviceContext) {
+			JSONObject jsonObject, AssetRenderer<?> assetRenderer,
+			UserNotificationEvent userNotificationEvent,
+			ServiceContext serviceContext)
+		throws Exception {
 
 		String message = StringPool.BLANK;
 
@@ -174,6 +167,28 @@ public abstract class BaseModelUserNotificationHandler
 
 		return getFormattedMessage(
 			jsonObject, serviceContext, message, typeName);
+	}
+
+	@Override
+	protected String getTitle(
+			UserNotificationEvent userNotificationEvent,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+			userNotificationEvent.getPayload());
+
+		AssetRenderer<?> assetRenderer = getAssetRenderer(jsonObject);
+
+		if (assetRenderer == null) {
+			UserNotificationEventLocalServiceUtil.deleteUserNotificationEvent(
+				userNotificationEvent.getUserNotificationEventId());
+
+			return null;
+		}
+
+		return getTitle(
+			jsonObject, assetRenderer, userNotificationEvent, serviceContext);
 	}
 
 	private String _getUserFullName(JSONObject jsonObject) {

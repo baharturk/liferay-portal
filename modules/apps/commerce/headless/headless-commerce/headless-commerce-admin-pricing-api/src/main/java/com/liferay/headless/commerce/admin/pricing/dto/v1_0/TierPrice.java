@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.dto.v1_0;
@@ -90,7 +81,7 @@ public class TierPrice implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, ?> customFields;
 
-	@Schema
+	@Schema(example = "AB-34098-789-N")
 	public String getExternalReferenceCode() {
 		return externalReferenceCode;
 	}
@@ -119,7 +110,7 @@ public class TierPrice implements Serializable {
 	protected String externalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "31130")
 	public Long getId() {
 		return id;
 	}
@@ -146,7 +137,7 @@ public class TierPrice implements Serializable {
 	protected Long id;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "5")
 	public Integer getMinimumQuantity() {
 		return minimumQuantity;
 	}
@@ -175,7 +166,7 @@ public class TierPrice implements Serializable {
 	protected Integer minimumQuantity;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "25")
 	@Valid
 	public BigDecimal getPrice() {
 		return price;
@@ -204,7 +195,7 @@ public class TierPrice implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal price;
 
-	@Schema
+	@Schema(example = "CAB-34098-789-N")
 	public String getPriceEntryExternalReferenceCode() {
 		return priceEntryExternalReferenceCode;
 	}
@@ -237,7 +228,7 @@ public class TierPrice implements Serializable {
 	protected String priceEntryExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getPriceEntryId() {
 		return priceEntryId;
 	}
@@ -266,7 +257,7 @@ public class TierPrice implements Serializable {
 	protected Long priceEntryId;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "20")
 	@Valid
 	public BigDecimal getPromoPrice() {
 		return promoPrice;
@@ -504,5 +495,7 @@ public class TierPrice implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

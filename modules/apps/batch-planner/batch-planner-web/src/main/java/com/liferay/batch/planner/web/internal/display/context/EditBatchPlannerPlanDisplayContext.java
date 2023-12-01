@@ -1,35 +1,36 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.web.internal.display.context;
 
 import com.liferay.batch.engine.BatchEngineTaskContentType;
+import com.liferay.batch.engine.constants.CreateStrategy;
+import com.liferay.batch.engine.constants.UpdateStrategy;
+import com.liferay.batch.planner.batch.engine.task.TaskItemUtil;
 import com.liferay.batch.planner.model.BatchPlannerMapping;
 import com.liferay.batch.planner.model.BatchPlannerPlan;
-import com.liferay.batch.planner.model.BatchPlannerPolicy;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.SelectOption;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.WebKeys;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import javax.portlet.RenderRequest;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Igor Beslic
@@ -39,19 +40,22 @@ public class EditBatchPlannerPlanDisplayContext {
 
 	public EditBatchPlannerPlanDisplayContext(
 			List<BatchPlannerPlan> batchPlannerPlans,
-			Map<String, String> headlessEndpoints,
+			Map<String, String> internalClassNameKeyCategories,
+			RenderRequest renderRequest,
 			BatchPlannerPlan selectedBatchPlannerPlan)
 		throws PortalException {
 
-		_headlessEndpoints = Collections.unmodifiableMap(headlessEndpoints);
+		_httpServletRequest = PortalUtil.getHttpServletRequest(renderRequest);
+		_internalClassNameKeySelectOptions =
+			_getInternalClassNameKeySelectOptions(
+				internalClassNameKeyCategories);
 
 		if (selectedBatchPlannerPlan == null) {
 			_selectedBatchPlannerMappings = new HashMap<>();
 			_selectedBatchPlannerPlanId = 0;
 			_selectedBatchPlannerPlanName = StringPool.BLANK;
 			_selectedExternalType = StringPool.BLANK;
-			_selectedHeadlessEndpoint = StringPool.BLANK;
-			_selectedInternalClassName = StringPool.BLANK;
+			_selectedInternalClassNameKey = StringPool.BLANK;
 		}
 		else {
 			_selectedBatchPlannerMappings = _getSelectedBatchPlannerMappings(
@@ -60,13 +64,26 @@ public class EditBatchPlannerPlanDisplayContext {
 				selectedBatchPlannerPlan.getBatchPlannerPlanId();
 			_selectedBatchPlannerPlanName = selectedBatchPlannerPlan.getName();
 			_selectedExternalType = selectedBatchPlannerPlan.getExternalType();
-			_selectedHeadlessEndpoint = _getSelectedHeadlessEndpoint(
-				selectedBatchPlannerPlan);
-			_selectedInternalClassName =
-				selectedBatchPlannerPlan.getInternalClassName();
+			_selectedInternalClassNameKey =
+				TaskItemUtil.getInternalClassNameKey(
+					selectedBatchPlannerPlan.getInternalClassName(),
+					selectedBatchPlannerPlan.getTaskItemDelegateName());
 		}
 
 		_templateSelectOptions = _getTemplateSelectOptions(batchPlannerPlans);
+	}
+
+	public List<SelectOption> getCreateStrategySelectOptions() {
+		List<SelectOption> selectOptions = new ArrayList<>();
+
+		for (CreateStrategy createStrategy : CreateStrategy.values()) {
+			selectOptions.add(
+				new SelectOption(
+					LanguageUtil.get(getLocale(), createStrategy.getLabel()),
+					createStrategy.name(), createStrategy.isDefaultStrategy()));
+		}
+
+		return selectOptions;
 	}
 
 	public List<SelectOption> getExternalTypeSelectOptions() {
@@ -74,6 +91,21 @@ public class EditBatchPlannerPlanDisplayContext {
 
 		for (BatchEngineTaskContentType batchEngineTaskContentType :
 				BatchEngineTaskContentType.values()) {
+
+			if ((batchEngineTaskContentType ==
+					BatchEngineTaskContentType.CSV) &&
+				!FeatureFlagManagerUtil.isEnabled("LPS-173135")) {
+
+				continue;
+			}
+
+			if ((batchEngineTaskContentType ==
+					BatchEngineTaskContentType.XLS) ||
+				(batchEngineTaskContentType ==
+					BatchEngineTaskContentType.XLSX)) {
+
+				continue;
+			}
 
 			selectOptions.add(
 				new SelectOption(
@@ -84,8 +116,18 @@ public class EditBatchPlannerPlanDisplayContext {
 		return selectOptions;
 	}
 
-	public Map<String, String> getHeadlessEndpoints() {
-		return _headlessEndpoints;
+	public List<SelectOption> getInternalClassNameKeySelectOptions() {
+		return _internalClassNameKeySelectOptions;
+	}
+
+	public Locale getLocale() {
+		if (_locale == null) {
+			ThemeDisplay themeDisplay = getThemeDisplay();
+
+			_locale = themeDisplay.getLocale();
+		}
+
+		return _locale;
 	}
 
 	public long getSelectedBatchPlannerPlanId() {
@@ -104,35 +146,68 @@ public class EditBatchPlannerPlanDisplayContext {
 		return _selectedExternalType;
 	}
 
-	public String getSelectedHeadlessEndpoint() {
-		return _selectedHeadlessEndpoint;
-	}
-
-	public String getSelectedInternalClassName() {
-		return _selectedInternalClassName;
-	}
-
-	public List<SelectOption> getSelectOptions() {
-		Set<Map.Entry<String, String>> entries = _headlessEndpoints.entrySet();
-
-		Stream<Map.Entry<String, String>> stream = entries.stream();
-
-		List<SelectOption> selectOptions = new ArrayList<>();
-
-		selectOptions.add(new SelectOption(StringPool.BLANK, StringPool.BLANK));
-
-		selectOptions.addAll(
-			stream.map(
-				entry -> new SelectOption(entry.getKey(), entry.getValue())
-			).collect(
-				Collectors.toList()
-			));
-
-		return selectOptions;
+	public String getSelectedInternalClassNameKey() {
+		return _selectedInternalClassNameKey;
 	}
 
 	public List<SelectOption> getTemplateSelectOptions() {
 		return _templateSelectOptions;
+	}
+
+	public ThemeDisplay getThemeDisplay() {
+		if (_themeDisplay == null) {
+			_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+		}
+
+		return _themeDisplay;
+	}
+
+	public List<SelectOption> getUpdateStrategySelectOptions() {
+		List<SelectOption> selectOptions = new ArrayList<>();
+
+		for (UpdateStrategy updateStrategy : UpdateStrategy.values()) {
+			selectOptions.add(
+				new SelectOption(
+					LanguageUtil.get(getLocale(), updateStrategy.getLabel()),
+					updateStrategy.name(), updateStrategy.isDefaultStrategy()));
+		}
+
+		return selectOptions;
+	}
+
+	private List<SelectOption> _getInternalClassNameKeySelectOptions(
+		Map<String, String> internalClassNameKeyCategories) {
+
+		List<SelectOption> internalClassNameKeySelectOptions =
+			new ArrayList<>();
+
+		internalClassNameKeySelectOptions.add(
+			new SelectOption(StringPool.BLANK, StringPool.BLANK));
+
+		for (Map.Entry<String, String> entry :
+				internalClassNameKeyCategories.entrySet()) {
+
+			String internalClassNameKey = entry.getKey();
+
+			String[] internalClassNameKeyParts = StringUtil.split(
+				internalClassNameKey, StringPool.PERIOD);
+
+			internalClassNameKeySelectOptions.add(
+				new SelectOption(
+					String.format(
+						"%s (%s - %s)",
+						TaskItemUtil.getSimpleClassName(internalClassNameKey),
+						internalClassNameKeyParts
+							[internalClassNameKeyParts.length - 2],
+						entry.getValue()),
+					internalClassNameKey));
+		}
+
+		internalClassNameKeySelectOptions.sort(
+			Comparator.comparing(SelectOption::getLabel));
+
+		return internalClassNameKeySelectOptions;
 	}
 
 	private Map<String, String> _getSelectedBatchPlannerMappings(
@@ -149,16 +224,6 @@ public class EditBatchPlannerPlanDisplayContext {
 		}
 
 		return selectedBatchPlannerMappings;
-	}
-
-	private String _getSelectedHeadlessEndpoint(
-			BatchPlannerPlan batchPlannerPlan)
-		throws PortalException {
-
-		BatchPlannerPolicy batchPlannerPolicy =
-			batchPlannerPlan.getBatchPlannerPolicy("headlessEndpoint");
-
-		return batchPlannerPolicy.getValue();
 	}
 
 	private List<SelectOption> _getTemplateSelectOptions(
@@ -185,13 +250,15 @@ public class EditBatchPlannerPlanDisplayContext {
 		return templateSelectOptions;
 	}
 
-	private final Map<String, String> _headlessEndpoints;
+	private final HttpServletRequest _httpServletRequest;
+	private final List<SelectOption> _internalClassNameKeySelectOptions;
+	private Locale _locale;
 	private final Map<String, String> _selectedBatchPlannerMappings;
 	private final long _selectedBatchPlannerPlanId;
 	private final String _selectedBatchPlannerPlanName;
 	private final String _selectedExternalType;
-	private final String _selectedHeadlessEndpoint;
-	private final String _selectedInternalClassName;
+	private final String _selectedInternalClassNameKey;
 	private final List<SelectOption> _templateSelectOptions;
+	private ThemeDisplay _themeDisplay;
 
 }

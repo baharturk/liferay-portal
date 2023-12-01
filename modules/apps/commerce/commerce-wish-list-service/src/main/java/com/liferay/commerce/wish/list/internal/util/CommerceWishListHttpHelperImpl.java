@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.internal.util;
@@ -20,11 +11,12 @@ import com.liferay.commerce.wish.list.service.CommerceWishListItemService;
 import com.liferay.commerce.wish.list.service.CommerceWishListLocalService;
 import com.liferay.commerce.wish.list.util.CommerceWishListHttpHelper;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
+import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortletURLFactory;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -41,10 +33,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Andrea Di Giorgi
  */
-@Component(
-	enabled = false, immediate = true,
-	service = CommerceWishListHttpHelper.class
-)
+@Component(service = CommerceWishListHttpHelper.class)
 public class CommerceWishListHttpHelperImpl
 	implements CommerceWishListHttpHelper {
 
@@ -86,13 +75,14 @@ public class CommerceWishListHttpHelperImpl
 		User user = _portal.getUser(httpServletRequest);
 
 		if (user == null) {
-			user = _userLocalService.getDefaultUser(
+			user = _userLocalService.getGuestUser(
 				_portal.getCompanyId(httpServletRequest));
 		}
 
 		String cookieName = _getCookieName(groupId);
 
-		String guestUuid = CookieKeys.getCookie(httpServletRequest, cookieName);
+		String guestUuid = CookiesManagerUtil.getCookieValue(
+			cookieName, httpServletRequest);
 
 		CommerceWishList commerceWishList =
 			_commerceWishListLocalService.getDefaultCommerceWishList(
@@ -102,23 +92,24 @@ public class CommerceWishListHttpHelperImpl
 			return commerceWishList;
 		}
 
-		if (user.isDefaultUser()) {
+		if (user.isGuestUser()) {
 			if (Validator.isNull(guestUuid)) {
 				Cookie cookie = new Cookie(
 					cookieName, commerceWishList.getUuid());
 
-				cookie.setMaxAge(CookieKeys.MAX_AGE);
+				cookie.setMaxAge(CookiesConstants.MAX_AGE);
 				cookie.setPath(StringPool.SLASH);
 
-				CookieKeys.addCookie(
-					httpServletRequest, httpServletResponse, cookie);
+				CookiesManagerUtil.addCookie(
+					CookiesConstants.CONSENT_TYPE_NECESSARY, cookie,
+					httpServletRequest, httpServletResponse);
 			}
 		}
 		else {
 			if (Validator.isNotNull(guestUuid)) {
-				CookieKeys.deleteCookies(
-					httpServletRequest, httpServletResponse,
-					CookieKeys.getDomain(httpServletRequest), cookieName);
+				CookiesManagerUtil.deleteCookies(
+					CookiesManagerUtil.getDomain(httpServletRequest),
+					httpServletRequest, httpServletResponse, cookieName);
 			}
 		}
 

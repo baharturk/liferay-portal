@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.internal.model.listener;
@@ -27,7 +18,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Brian Wing Shun Chan
  */
-@Component(immediate = true, service = ModelListener.class)
+@Component(service = ModelListener.class)
 public class GroupModelListener extends BaseModelListener<Group> {
 
 	@Override
@@ -40,27 +31,16 @@ public class GroupModelListener extends BaseModelListener<Group> {
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setKBArticleLocalService(
-		KBArticleLocalService kbArticleLocalService) {
-
-		_kbArticleLocalService = kbArticleLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setKBTemplateLocalService(
-		KBTemplateLocalService kbTemplateLocalService) {
-
-		_kbTemplateLocalService = kbTemplateLocalService;
-	}
-
 	private void _onBeforeRemove(Group group) throws Exception {
 		_kbArticleLocalService.deleteGroupKBArticles(group.getGroupId());
 
 		_kbTemplateLocalService.deleteGroupKBTemplates(group.getGroupId());
 	}
 
+	@Reference
 	private KBArticleLocalService _kbArticleLocalService;
+
+	@Reference
 	private KBTemplateLocalService _kbTemplateLocalService;
 
 }

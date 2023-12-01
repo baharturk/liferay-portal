@@ -1,42 +1,33 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
-import com.liferay.fragment.contributor.FragmentCollectionContributorTracker;
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.exception.NoSuchEntryLinkException;
+import com.liferay.fragment.listener.FragmentEntryLinkListener;
+import com.liferay.fragment.listener.FragmentEntryLinkListenerRegistry;
 import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.fragment.processor.PortletRegistry;
-import com.liferay.fragment.renderer.FragmentRendererController;
-import com.liferay.fragment.renderer.FragmentRendererTracker;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.fragment.service.FragmentEntryLinkService;
-import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
-import com.liferay.item.selector.ItemSelector;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
 import com.liferay.layout.content.page.editor.web.internal.exception.NoninstanceablePortletException;
-import com.liferay.layout.content.page.editor.web.internal.util.FragmentEntryLinkUtil;
+import com.liferay.layout.content.page.editor.web.internal.manager.ContentManager;
+import com.liferay.layout.content.page.editor.web.internal.manager.FragmentEntryLinkManager;
 import com.liferay.layout.content.page.editor.web.internal.util.layout.structure.LayoutStructureUtil;
 import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
+import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.LockedLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.PortletPreferencesIds;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -60,11 +51,11 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.portlet.ActionRequest;
@@ -81,7 +72,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jürgen Kappler
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/duplicate_item"
@@ -109,13 +99,17 @@ public class DuplicateItemMVCActionCommand
 	protected JSONObject processException(
 		ActionRequest actionRequest, Exception exception) {
 
+		if (exception instanceof LockedLayoutException) {
+			return processLockedLayoutException(actionRequest);
+		}
+
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
 		String errorMessage = StringPool.BLANK;
 
 		if (exception instanceof NoSuchEntryLinkException) {
-			errorMessage = LanguageUtil.get(
+			errorMessage = _language.get(
 				themeDisplay.getRequest(),
 				"the-section-could-not-be-duplicated-because-it-has-been-" +
 					"deleted");
@@ -133,7 +127,7 @@ public class DuplicateItemMVCActionCommand
 
 			HttpSession httpSession = httpServletRequest.getSession();
 
-			errorMessage = LanguageUtil.format(
+			errorMessage = _language.format(
 				themeDisplay.getRequest(),
 				"the-layout-could-not-be-duplicated-because-it-contains-a-" +
 					"widget-x-that-can-only-appear-once-in-the-page",
@@ -142,7 +136,7 @@ public class DuplicateItemMVCActionCommand
 					themeDisplay.getLocale()));
 		}
 		else {
-			errorMessage = LanguageUtil.get(
+			errorMessage = _language.get(
 				themeDisplay.getRequest(), "an-unexpected-error-occurred");
 		}
 
@@ -157,56 +151,86 @@ public class DuplicateItemMVCActionCommand
 			WebKeys.THEME_DISPLAY);
 
 		long segmentsExperienceId = ParamUtil.getLong(
-			actionRequest, "segmentsExperienceId",
-			SegmentsExperienceConstants.ID_DEFAULT);
+			actionRequest, "segmentsExperienceId");
 		String itemId = ParamUtil.getString(actionRequest, "itemId");
 
-		Set<Long> duplicatedFragmentEntryLinkIds = new HashSet<>();
+		Map<Long, Long> duplicatedFragmentEntryLinkIdsMap = new HashMap<>();
 		List<String> duplicatedLayoutStructureItemIds = new ArrayList<>();
 
-		JSONObject layoutDataJSONObject =
-			LayoutStructureUtil.updateLayoutPageTemplateData(
-				themeDisplay.getScopeGroupId(), segmentsExperienceId,
-				themeDisplay.getPlid(),
-				layoutStructure -> {
-					List<LayoutStructureItem> duplicatedLayoutStructureItems =
-						layoutStructure.duplicateLayoutStructureItem(itemId);
+		LayoutStructureUtil.updateLayoutPageTemplateData(
+			themeDisplay.getScopeGroupId(), segmentsExperienceId,
+			themeDisplay.getPlid(),
+			layoutStructure -> {
+				List<LayoutStructureItem> duplicatedLayoutStructureItems =
+					layoutStructure.duplicateLayoutStructureItem(itemId);
 
-					for (LayoutStructureItem duplicatedLayoutStructureItem :
-							duplicatedLayoutStructureItems) {
+				for (LayoutStructureItem duplicatedLayoutStructureItem :
+						duplicatedLayoutStructureItems) {
 
-						duplicatedLayoutStructureItemIds.add(
-							duplicatedLayoutStructureItem.getItemId());
+					duplicatedLayoutStructureItemIds.add(
+						duplicatedLayoutStructureItem.getItemId());
 
-						if (!(duplicatedLayoutStructureItem instanceof
-								FragmentStyledLayoutStructureItem)) {
+					if (!(duplicatedLayoutStructureItem instanceof
+							FragmentStyledLayoutStructureItem)) {
 
-							continue;
-						}
-
-						FragmentStyledLayoutStructureItem
-							fragmentStyledLayoutStructureItem =
-								(FragmentStyledLayoutStructureItem)
-									duplicatedLayoutStructureItem;
-
-						long fragmentEntryLinkId = _duplicateFragmentEntryLink(
-							actionRequest,
-							fragmentStyledLayoutStructureItem.
-								getFragmentEntryLinkId());
-
-						layoutStructure.updateItemConfig(
-							JSONUtil.put(
-								"fragmentEntryLinkId", fragmentEntryLinkId),
-							duplicatedLayoutStructureItem.getItemId());
-
-						duplicatedFragmentEntryLinkIds.add(fragmentEntryLinkId);
+						continue;
 					}
-				});
+
+					FragmentStyledLayoutStructureItem
+						fragmentStyledLayoutStructureItem =
+							(FragmentStyledLayoutStructureItem)
+								duplicatedLayoutStructureItem;
+
+					long originalFragmentEntryLinkId =
+						fragmentStyledLayoutStructureItem.
+							getFragmentEntryLinkId();
+
+					long fragmentEntryLinkId = _duplicateFragmentEntryLink(
+						actionRequest, originalFragmentEntryLinkId);
+
+					layoutStructure.updateItemConfig(
+						JSONUtil.put(
+							"fragmentEntryLinkId", fragmentEntryLinkId),
+						duplicatedLayoutStructureItem.getItemId());
+
+					duplicatedFragmentEntryLinkIdsMap.put(
+						fragmentEntryLinkId, originalFragmentEntryLinkId);
+				}
+			});
+
+		for (Map.Entry<Long, Long> entry :
+				duplicatedFragmentEntryLinkIdsMap.entrySet()) {
+
+			FragmentEntryLink duplicatedFragmentEntryLink =
+				_fragmentEntryLinkLocalService.getFragmentEntryLink(
+					entry.getKey());
+
+			FragmentEntryLink originalFragmentEntryLink =
+				_fragmentEntryLinkLocalService.getFragmentEntryLink(
+					entry.getValue());
+
+			for (FragmentEntryLinkListener fragmentEntryLinkListener :
+					_fragmentEntryLinkListenerRegistry.
+						getFragmentEntryLinkListeners()) {
+
+				fragmentEntryLinkListener.onDuplicateFragmentEntryLink(
+					duplicatedFragmentEntryLink, originalFragmentEntryLink);
+			}
+		}
+
+		LayoutStructure layoutStructure =
+			LayoutStructureUtil.getLayoutStructure(
+				themeDisplay.getScopeGroupId(), themeDisplay.getPlid(),
+				segmentsExperienceId);
+
+		JSONObject layoutDataJSONObject = layoutStructure.toJSONObject();
 
 		return JSONUtil.put(
 			"duplicatedFragmentEntryLinks",
 			_getDuplicatedFragmentEntryLinksJSONArray(
-				actionRequest, actionResponse, duplicatedFragmentEntryLinkIds)
+				actionRequest, actionResponse,
+				duplicatedFragmentEntryLinkIdsMap.keySet(),
+				segmentsExperienceId, themeDisplay)
 		).put(
 			"duplicatedItemId",
 			() -> {
@@ -218,6 +242,14 @@ public class DuplicateItemMVCActionCommand
 			}
 		).put(
 			"layoutData", layoutDataJSONObject
+		).put(
+			"restrictedItemIds",
+			_contentManager.getRestrictedItemIds(
+				_portal.getHttpServletRequest(actionRequest),
+				LayoutStructureUtil.getLayoutStructure(
+					themeDisplay.getScopeGroupId(), themeDisplay.getPlid(),
+					segmentsExperienceId),
+				themeDisplay)
 		);
 	}
 
@@ -282,7 +314,7 @@ public class DuplicateItemMVCActionCommand
 			_fragmentEntryLinkLocalService.getFragmentEntryLink(
 				fragmentEntryLinkId);
 
-		JSONObject editableValuesJSONObject = JSONFactoryUtil.createJSONObject(
+		JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
 			fragmentEntryLink.getEditableValues());
 
 		String portletId = editableValuesJSONObject.getString("portletId");
@@ -313,6 +345,18 @@ public class DuplicateItemMVCActionCommand
 				namespace);
 		}
 
+		if (fragmentEntryLink.isTypeInput()) {
+			JSONObject freemarkerFragmentEntryProcessorJSONObject =
+				editableValuesJSONObject.getJSONObject(
+					FragmentEntryProcessorConstants.
+						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+
+			if (freemarkerFragmentEntryProcessorJSONObject != null) {
+				freemarkerFragmentEntryProcessorJSONObject.remove(
+					"inputFieldId");
+			}
+		}
+
 		FragmentEntryLink duplicatedFragmentEntryLink =
 			_fragmentEntryLinkService.addFragmentEntryLink(
 				fragmentEntryLink.getGroupId(),
@@ -323,61 +367,59 @@ public class DuplicateItemMVCActionCommand
 				fragmentEntryLink.getHtml(), fragmentEntryLink.getJs(),
 				fragmentEntryLink.getConfiguration(),
 				editableValuesJSONObject.toString(), namespace, 0,
-				fragmentEntryLink.getRendererKey(), serviceContext);
+				fragmentEntryLink.getRendererKey(), fragmentEntryLink.getType(),
+				serviceContext);
 
 		return duplicatedFragmentEntryLink.getFragmentEntryLinkId();
 	}
 
 	private JSONArray _getDuplicatedFragmentEntryLinksJSONArray(
 			ActionRequest actionRequest, ActionResponse actionResponse,
-			Set<Long> duplicatedFragmentEntryLinkIds)
+			Set<Long> duplicatedFragmentEntryLinkIds, long segmentsExperienceId,
+			ThemeDisplay themeDisplay)
 		throws Exception {
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
+
+		LayoutStructure layoutStructure =
+			LayoutStructureUtil.getLayoutStructure(
+				themeDisplay.getScopeGroupId(), themeDisplay.getPlid(),
+				segmentsExperienceId);
 
 		for (long fragmentEntryLinkId : duplicatedFragmentEntryLinkIds) {
-			FragmentEntryLink fragmentEntryLink =
-				_fragmentEntryLinkLocalService.getFragmentEntryLink(
-					fragmentEntryLinkId);
-
-			JSONObject editableValuesJSONObject =
-				JSONFactoryUtil.createJSONObject(
-					fragmentEntryLink.getEditableValues());
-
 			jsonArray.put(
-				FragmentEntryLinkUtil.getFragmentEntryLinkJSONObject(
-					actionRequest, actionResponse,
-					_fragmentEntryConfigurationParser, fragmentEntryLink,
-					_fragmentCollectionContributorTracker,
-					_fragmentRendererController, _fragmentRendererTracker,
-					_itemSelector,
-					editableValuesJSONObject.getString("portletId")));
+				_fragmentEntryLinkManager.getFragmentEntryLinkJSONObject(
+					_fragmentEntryLinkLocalService.getFragmentEntryLink(
+						fragmentEntryLinkId),
+					_portal.getHttpServletRequest(actionRequest),
+					_portal.getHttpServletResponse(actionResponse),
+					layoutStructure));
 		}
 
 		return jsonArray;
 	}
 
 	@Reference
-	private FragmentCollectionContributorTracker
-		_fragmentCollectionContributorTracker;
+	private ContentManager _contentManager;
 
 	@Reference
-	private FragmentEntryConfigurationParser _fragmentEntryConfigurationParser;
+	private FragmentEntryLinkListenerRegistry
+		_fragmentEntryLinkListenerRegistry;
 
 	@Reference
 	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
 
 	@Reference
+	private FragmentEntryLinkManager _fragmentEntryLinkManager;
+
+	@Reference
 	private FragmentEntryLinkService _fragmentEntryLinkService;
 
 	@Reference
-	private FragmentRendererController _fragmentRendererController;
+	private JSONFactory _jsonFactory;
 
 	@Reference
-	private FragmentRendererTracker _fragmentRendererTracker;
-
-	@Reference
-	private ItemSelector _itemSelector;
+	private Language _language;
 
 	@Reference
 	private Portal _portal;
@@ -390,9 +432,6 @@ public class DuplicateItemMVCActionCommand
 
 	@Reference
 	private PortletPreferencesLocalService _portletPreferencesLocalService;
-
-	@Reference
-	private PortletRegistry _portletRegistry;
 
 	@Reference
 	private ResourcePermissionLocalService _resourcePermissionLocalService;

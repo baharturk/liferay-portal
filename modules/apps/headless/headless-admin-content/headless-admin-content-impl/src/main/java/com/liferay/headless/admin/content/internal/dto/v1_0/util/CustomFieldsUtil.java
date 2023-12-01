@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.content.internal.dto.v1_0.util;
@@ -31,12 +22,12 @@ import java.io.Serializable;
 
 import java.lang.reflect.Array;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.TimeZone;
-import java.util.stream.Stream;
 
 /**
  * @author Javier Gamarra
@@ -47,31 +38,30 @@ public class CustomFieldsUtil {
 		boolean acceptAllLanguages, String className, long classPK,
 		long companyId, Locale locale) {
 
+		List<CustomField> customFields = new ArrayList<>();
+
 		ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(
 			companyId, className, classPK);
 
 		Map<String, Serializable> attributes = expandoBridge.getAttributes();
 
-		Set<Map.Entry<String, Serializable>> entries = attributes.entrySet();
+		for (Map.Entry<String, Serializable> entry : attributes.entrySet()) {
+			UnicodeProperties unicodeProperties =
+				expandoBridge.getAttributeProperties(entry.getKey());
 
-		Stream<Map.Entry<String, Serializable>> entriesStream =
-			entries.stream();
-
-		return entriesStream.filter(
-			entry -> {
-				UnicodeProperties unicodeProperties =
-					expandoBridge.getAttributeProperties(entry.getKey());
-
-				return !GetterUtil.getBoolean(
+			if (GetterUtil.getBoolean(
 					unicodeProperties.getProperty(
-						ExpandoColumnConstants.PROPERTY_HIDDEN));
+						ExpandoColumnConstants.PROPERTY_HIDDEN))) {
+
+				continue;
 			}
-		).map(
-			entry -> _toCustomField(
-				acceptAllLanguages, entry, expandoBridge, locale)
-		).toArray(
-			CustomField[]::new
-		);
+
+			customFields.add(
+				_toCustomField(
+					acceptAllLanguages, entry, expandoBridge, locale));
+		}
+
+		return customFields.toArray(new CustomField[0]);
 	}
 
 	private static Map<String, String> _getLocalizedValues(
@@ -98,6 +88,19 @@ public class CustomFieldsUtil {
 			return DateUtil.getDate(
 				(Date)value, "yyyy-MM-dd'T'HH:mm:ss'Z'", locale,
 				TimeZone.getTimeZone("UTC"));
+		}
+
+		return value;
+	}
+
+	private static Object _getValue(
+		Map.Entry<String, Serializable> entry, ExpandoBridge expandoBridge,
+		String key) {
+
+		Object value = entry.getValue();
+
+		if (_isEmpty(entry.getValue())) {
+			value = expandoBridge.getAttributeDefault(key);
 		}
 
 		return value;
@@ -166,15 +169,12 @@ public class CustomFieldsUtil {
 			{
 				customValue = new CustomValue() {
 					{
-						Object value = entry.getValue();
-
-						if (_isEmpty(entry.getValue())) {
-							value = expandoBridge.getAttributeDefault(key);
-						}
-
-						data = _getValue(attributeType, locale, value);
+						data = _getValue(
+							attributeType, locale,
+							_getValue(entry, expandoBridge, key));
 						data_i18n = _getLocalizedValues(
-							acceptAllLanguages, attributeType, value);
+							acceptAllLanguages, attributeType,
+							_getValue(entry, expandoBridge, key));
 					}
 				};
 				dataType = ExpandoColumnConstants.getDataType(attributeType);

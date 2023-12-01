@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {
 	generateInstanceId,
+	getField,
 	getFieldProperties,
 	localizeField,
 	updateInputMaskProperties,
@@ -92,10 +84,6 @@ const getLocalizedValue = ({
 	}
 
 	switch (type) {
-		case 'select':
-		case 'numeric': {
-			return _value;
-		}
 		case 'image': {
 			try {
 				return JSON.parse(value);
@@ -104,6 +92,12 @@ const getLocalizedValue = ({
 				return _value;
 			}
 		}
+		case 'numeric':
+		case 'select':
+		case 'text': {
+			return _value;
+		}
+
 		default:
 			try {
 				return JSON.parse(_value);
@@ -246,8 +240,6 @@ export default function languageReducer(state, action) {
 
 			const visitor = new PagesVisitor(pages ?? state.pages);
 
-			let newFocusedField = focusedField;
-
 			const newPages = visitor.mapFields(
 				({
 					localizable,
@@ -281,10 +273,6 @@ export default function languageReducer(state, action) {
 							);
 						}
 
-						if (field.fieldName === newFocusedField.fieldName) {
-							newFocusedField = newField;
-						}
-
 						return newField;
 					}
 
@@ -307,7 +295,8 @@ export default function languageReducer(state, action) {
 			return {
 				defaultLanguageId,
 				editingLanguageId,
-				focusedField: newFocusedField,
+				focusedField:
+					getField(newPages, focusedField?.fieldName) ?? focusedField,
 				pages: newPages,
 			};
 		}

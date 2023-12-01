@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.rss.internal.export;
 
+import com.liferay.normalizer.Normalizer;
 import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
@@ -39,6 +31,7 @@ import java.util.List;
 import org.jdom2.IllegalDataException;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Shuyang Zhou
@@ -58,7 +51,7 @@ public class RSSExporterImpl implements RSSExporter {
 		}
 		catch (IllegalDataException illegalDataException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(illegalDataException, illegalDataException);
+				_log.debug(illegalDataException);
 			}
 
 			// LEP-4450
@@ -77,8 +70,8 @@ public class RSSExporterImpl implements RSSExporter {
 		}
 	}
 
-	private static String _regexpStrip(String text) {
-		text = Normalizer.normalizeToAscii(text);
+	private String _regexpStrip(String text) {
+		text = _normalizer.normalizeToAscii(text);
 
 		char[] array = text.toCharArray();
 
@@ -93,9 +86,7 @@ public class RSSExporterImpl implements RSSExporter {
 		return new String(array);
 	}
 
-	private static void _regexpStrip(
-		com.rometools.rome.feed.synd.SyndFeed syndFeed) {
-
+	private void _regexpStrip(com.rometools.rome.feed.synd.SyndFeed syndFeed) {
 		syndFeed.setTitle(_regexpStrip(syndFeed.getTitle()));
 		syndFeed.setDescription(_regexpStrip(syndFeed.getDescription()));
 
@@ -226,5 +217,8 @@ public class RSSExporterImpl implements RSSExporter {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		RSSExporterImpl.class);
+
+	@Reference
+	private Normalizer _normalizer;
 
 }

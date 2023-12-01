@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -185,6 +176,8 @@ public class LayoutPersistenceTest {
 
 		newLayout.setPriority(RandomTestUtil.nextInt());
 
+		newLayout.setFaviconFileEntryId(RandomTestUtil.nextLong());
+
 		newLayout.setMasterLayoutPlid(RandomTestUtil.nextLong());
 
 		newLayout.setLayoutPrototypeUuid(RandomTestUtil.randomString());
@@ -267,6 +260,9 @@ public class LayoutPersistenceTest {
 		Assert.assertEquals(existingLayout.getCss(), newLayout.getCss());
 		Assert.assertEquals(
 			existingLayout.getPriority(), newLayout.getPriority());
+		Assert.assertEquals(
+			existingLayout.getFaviconFileEntryId(),
+			newLayout.getFaviconFileEntryId());
 		Assert.assertEquals(
 			existingLayout.getMasterLayoutPlid(),
 			newLayout.getMasterLayoutPlid());
@@ -459,6 +455,15 @@ public class LayoutPersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_P_TArrayable() throws Exception {
+		_persistence.countByG_P_T(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(),
+			new String[] {
+				RandomTestUtil.randomString(), "", "null", null, null
+			});
+	}
+
+	@Test
 	public void testCountByG_P_F() throws Exception {
 		_persistence.countByG_P_F(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "");
@@ -584,11 +589,12 @@ public class LayoutPersistenceTest {
 			"name", true, "keywords", true, "robots", true, "type", true,
 			"hidden", true, "system", true, "friendlyURL", true, "iconImageId",
 			true, "themeId", true, "colorSchemeId", true, "styleBookEntryId",
-			true, "priority", true, "masterLayoutPlid", true,
-			"layoutPrototypeUuid", true, "layoutPrototypeLinkEnabled", true,
-			"sourcePrototypeLayoutUuid", true, "publishDate", true,
-			"lastPublishDate", true, "status", true, "statusByUserId", true,
-			"statusByUserName", true, "statusDate", true);
+			true, "priority", true, "faviconFileEntryId", true,
+			"masterLayoutPlid", true, "layoutPrototypeUuid", true,
+			"layoutPrototypeLinkEnabled", true, "sourcePrototypeLayoutUuid",
+			true, "publishDate", true, "lastPublishDate", true, "status", true,
+			"statusByUserId", true, "statusByUserName", true, "statusDate",
+			true);
 	}
 
 	@Test
@@ -999,6 +1005,8 @@ public class LayoutPersistenceTest {
 		layout.setCss(RandomTestUtil.randomString());
 
 		layout.setPriority(RandomTestUtil.nextInt());
+
+		layout.setFaviconFileEntryId(RandomTestUtil.nextLong());
 
 		layout.setMasterLayoutPlid(RandomTestUtil.nextLong());
 

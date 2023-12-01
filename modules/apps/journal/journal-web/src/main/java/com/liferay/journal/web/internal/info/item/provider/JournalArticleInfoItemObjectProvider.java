@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.info.item.provider;
@@ -33,13 +24,11 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.service.GroupService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.Objects;
-import java.util.Optional;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,7 +37,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jorge Ferrer
  */
 @Component(
-	immediate = true,
 	property = {
 		"info.item.identifier=com.liferay.info.item.ClassPKInfoItemIdentifier",
 		"info.item.identifier=com.liferay.info.item.GroupKeyInfoItemIdentifier",
@@ -75,14 +63,7 @@ public class JournalArticleInfoItemObjectProvider
 
 		JournalArticle article = null;
 
-		String version = null;
-
-		Optional<String> versionOptional =
-			infoItemIdentifier.getVersionOptional();
-
-		if (versionOptional.isPresent()) {
-			version = versionOptional.get();
-		}
+		String version = infoItemIdentifier.getVersion();
 
 		try {
 			if (infoItemIdentifier instanceof ClassPKInfoItemIdentifier) {
@@ -139,21 +120,13 @@ public class JournalArticleInfoItemObjectProvider
 				"Unable to get journal article " + infoItemIdentifier);
 		}
 
-		if (article.isInTrash()) {
+		if (article.isScheduled() || article.isInTrash() ||
+			(article.isPending() && !_isSignedIn())) {
+
 			return null;
 		}
 
 		return article;
-	}
-
-	@Override
-	public JournalArticle getInfoItem(long classPK)
-		throws NoSuchInfoItemException {
-
-		InfoItemIdentifier infoItemIdentifier = new ClassPKInfoItemIdentifier(
-			classPK);
-
-		return getInfoItem(infoItemIdentifier);
 	}
 
 	private JournalArticle _getArticle(long classPK, String version)
@@ -173,14 +146,13 @@ public class JournalArticleInfoItemObjectProvider
 				articleResource.getGroupId(), articleResource.getArticleId(),
 				WorkflowConstants.STATUS_ANY);
 		}
-		else {
-			JournalArticleResource articleResource =
-				_journalArticleResourceLocalService.getArticleResource(classPK);
 
-			return _journalArticleLocalService.getArticle(
-				articleResource.getGroupId(), articleResource.getArticleId(),
-				GetterUtil.getDouble(version));
-		}
+		JournalArticleResource articleResource =
+			_journalArticleResourceLocalService.getArticleResource(classPK);
+
+		return _journalArticleLocalService.getArticle(
+			articleResource.getGroupId(), articleResource.getArticleId(),
+			GetterUtil.getDouble(version));
 	}
 
 	private JournalArticle _getArticle(
@@ -198,10 +170,9 @@ public class JournalArticleInfoItemObjectProvider
 			return _journalArticleLocalService.fetchLatestArticle(
 				groupId, articleId, WorkflowConstants.STATUS_ANY);
 		}
-		else {
-			return _journalArticleLocalService.getArticle(
-				groupId, articleId, GetterUtil.getDouble(version));
-		}
+
+		return _journalArticleLocalService.getArticle(
+			groupId, articleId, GetterUtil.getDouble(version));
 	}
 
 	private JournalArticle _getArticleByUrlTitle(
@@ -219,15 +190,14 @@ public class JournalArticleInfoItemObjectProvider
 			return _journalArticleLocalService.fetchLatestArticleByUrlTitle(
 				groupId, urlTitle, WorkflowConstants.STATUS_ANY);
 		}
-		else {
-			JournalArticle journalArticle =
-				_journalArticleLocalService.fetchLatestArticleByUrlTitle(
-					groupId, urlTitle, WorkflowConstants.STATUS_ANY);
 
-			return _journalArticleLocalService.getArticle(
-				groupId, journalArticle.getArticleId(),
-				GetterUtil.getDouble(version));
-		}
+		JournalArticle journalArticle =
+			_journalArticleLocalService.fetchLatestArticleByUrlTitle(
+				groupId, urlTitle, WorkflowConstants.STATUS_ANY);
+
+		return _journalArticleLocalService.getArticle(
+			groupId, journalArticle.getArticleId(),
+			GetterUtil.getDouble(version));
 	}
 
 	private boolean _hasPermission(JournalArticle article) {
@@ -246,7 +216,7 @@ public class JournalArticleInfoItemObjectProvider
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -266,9 +236,6 @@ public class JournalArticleInfoItemObjectProvider
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		JournalArticleInfoItemObjectProvider.class);
-
-	@Reference
-	private GroupService _groupService;
 
 	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;

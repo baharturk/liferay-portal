@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.dto.v1_0;
@@ -90,17 +81,17 @@ public class Rescore implements Serializable {
 
 	@Schema
 	@Valid
-	public Float getQueryWeight() {
+	public Object getQueryWeight() {
 		return queryWeight;
 	}
 
-	public void setQueryWeight(Float queryWeight) {
+	public void setQueryWeight(Object queryWeight) {
 		this.queryWeight = queryWeight;
 	}
 
 	@JsonIgnore
 	public void setQueryWeight(
-		UnsafeSupplier<Float, Exception> queryWeightUnsafeSupplier) {
+		UnsafeSupplier<Object, Exception> queryWeightUnsafeSupplier) {
 
 		try {
 			queryWeight = queryWeightUnsafeSupplier.get();
@@ -115,21 +106,21 @@ public class Rescore implements Serializable {
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected Float queryWeight;
+	protected Object queryWeight;
 
 	@Schema
 	@Valid
-	public Float getRescoreQueryWeight() {
+	public Object getRescoreQueryWeight() {
 		return rescoreQueryWeight;
 	}
 
-	public void setRescoreQueryWeight(Float rescoreQueryWeight) {
+	public void setRescoreQueryWeight(Object rescoreQueryWeight) {
 		this.rescoreQueryWeight = rescoreQueryWeight;
 	}
 
 	@JsonIgnore
 	public void setRescoreQueryWeight(
-		UnsafeSupplier<Float, Exception> rescoreQueryWeightUnsafeSupplier) {
+		UnsafeSupplier<Object, Exception> rescoreQueryWeightUnsafeSupplier) {
 
 		try {
 			rescoreQueryWeight = rescoreQueryWeightUnsafeSupplier.get();
@@ -144,7 +135,7 @@ public class Rescore implements Serializable {
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected Float rescoreQueryWeight;
+	protected Object rescoreQueryWeight;
 
 	@Schema
 	public String getScoreMode() {
@@ -175,17 +166,18 @@ public class Rescore implements Serializable {
 	protected String scoreMode;
 
 	@Schema
-	public Integer getWindowSize() {
+	@Valid
+	public Object getWindowSize() {
 		return windowSize;
 	}
 
-	public void setWindowSize(Integer windowSize) {
+	public void setWindowSize(Object windowSize) {
 		this.windowSize = windowSize;
 	}
 
 	@JsonIgnore
 	public void setWindowSize(
-		UnsafeSupplier<Integer, Exception> windowSizeUnsafeSupplier) {
+		UnsafeSupplier<Object, Exception> windowSizeUnsafeSupplier) {
 
 		try {
 			windowSize = windowSizeUnsafeSupplier.get();
@@ -200,7 +192,7 @@ public class Rescore implements Serializable {
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected Integer windowSize;
+	protected Object windowSize;
 
 	@Override
 	public boolean equals(Object object) {
@@ -256,7 +248,18 @@ public class Rescore implements Serializable {
 
 			sb.append("\"queryWeight\": ");
 
-			sb.append(queryWeight);
+			if (queryWeight instanceof Map) {
+				sb.append(
+					JSONFactoryUtil.createJSONObject((Map<?, ?>)queryWeight));
+			}
+			else if (queryWeight instanceof String) {
+				sb.append("\"");
+				sb.append(_escape((String)queryWeight));
+				sb.append("\"");
+			}
+			else {
+				sb.append(queryWeight);
+			}
 		}
 
 		if (rescoreQueryWeight != null) {
@@ -266,7 +269,19 @@ public class Rescore implements Serializable {
 
 			sb.append("\"rescoreQueryWeight\": ");
 
-			sb.append(rescoreQueryWeight);
+			if (rescoreQueryWeight instanceof Map) {
+				sb.append(
+					JSONFactoryUtil.createJSONObject(
+						(Map<?, ?>)rescoreQueryWeight));
+			}
+			else if (rescoreQueryWeight instanceof String) {
+				sb.append("\"");
+				sb.append(_escape((String)rescoreQueryWeight));
+				sb.append("\"");
+			}
+			else {
+				sb.append(rescoreQueryWeight);
+			}
 		}
 
 		if (scoreMode != null) {
@@ -290,7 +305,18 @@ public class Rescore implements Serializable {
 
 			sb.append("\"windowSize\": ");
 
-			sb.append(windowSize);
+			if (windowSize instanceof Map) {
+				sb.append(
+					JSONFactoryUtil.createJSONObject((Map<?, ?>)windowSize));
+			}
+			else if (windowSize instanceof String) {
+				sb.append("\"");
+				sb.append(_escape((String)windowSize));
+				sb.append("\"");
+			}
+			else {
+				sb.append(windowSize);
+			}
 		}
 
 		sb.append("}");
@@ -387,5 +413,7 @@ public class Rescore implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.model.impl;
 
 import com.liferay.commerce.notification.model.CommerceNotificationTemplateCommerceAccountGroupRel;
 import com.liferay.commerce.notification.model.CommerceNotificationTemplateCommerceAccountGroupRelModel;
-import com.liferay.commerce.notification.model.CommerceNotificationTemplateCommerceAccountGroupRelSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -36,18 +26,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -121,24 +108,6 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 	public static final String TX_MANAGER = "liferayTransactionManager";
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
@@ -158,73 +127,18 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 	public static final long CREATEDATE_COLUMN_BITMASK = 4L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CommerceNotificationTemplateCommerceAccountGroupRel toModel(
-		CommerceNotificationTemplateCommerceAccountGroupRelSoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		CommerceNotificationTemplateCommerceAccountGroupRel model =
-			new CommerceNotificationTemplateCommerceAccountGroupRelImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCommerceNotificationTemplateCommerceAccountGroupRelId(
-			soapModel.
-				getCommerceNotificationTemplateCommerceAccountGroupRelId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setCommerceNotificationTemplateId(
-			soapModel.getCommerceNotificationTemplateId());
-		model.setCommerceAccountGroupId(soapModel.getCommerceAccountGroupId());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CommerceNotificationTemplateCommerceAccountGroupRel>
-		toModels(
-			CommerceNotificationTemplateCommerceAccountGroupRelSoap[]
-				soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CommerceNotificationTemplateCommerceAccountGroupRel> models =
-			new ArrayList<CommerceNotificationTemplateCommerceAccountGroupRel>(
-				soapModels.length);
-
-		for (CommerceNotificationTemplateCommerceAccountGroupRelSoap soapModel :
-				soapModels) {
-
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.notification.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.notification.model.CommerceNotificationTemplateCommerceAccountGroupRel"));
 
 	public CommerceNotificationTemplateCommerceAccountGroupRelModelImpl() {
 	}
@@ -320,7 +234,7 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 		 Function<CommerceNotificationTemplateCommerceAccountGroupRel, Object>>
 			getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map
@@ -329,173 +243,161 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 			 <CommerceNotificationTemplateCommerceAccountGroupRel, Object>>
 				getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function
-		<InvocationHandler, CommerceNotificationTemplateCommerceAccountGroupRel>
-			_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CommerceNotificationTemplateCommerceAccountGroupRel.class.
-				getClassLoader(),
-			CommerceNotificationTemplateCommerceAccountGroupRel.class,
-			ModelWrapper.class);
-
-		try {
-			Constructor<CommerceNotificationTemplateCommerceAccountGroupRel>
-				constructor =
-					(Constructor
-						<CommerceNotificationTemplateCommerceAccountGroupRel>)
-							proxyClass.getConstructor(InvocationHandler.class);
-
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
-
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
-		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
-	}
-
-	private static final Map
-		<String,
-		 Function<CommerceNotificationTemplateCommerceAccountGroupRel, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String,
-		 BiConsumer
-			 <CommerceNotificationTemplateCommerceAccountGroupRel, Object>>
-				_attributeSetterBiConsumers;
-
-	static {
-		Map
+		private static final Map
 			<String,
 			 Function
 				 <CommerceNotificationTemplateCommerceAccountGroupRel, Object>>
-					attributeGetterFunctions =
+					_attributeGetterFunctions;
+
+		static {
+			Map
+				<String,
+				 Function
+					 <CommerceNotificationTemplateCommerceAccountGroupRel,
+					  Object>> attributeGetterFunctions =
 						new LinkedHashMap
 							<String,
 							 Function
 								 <CommerceNotificationTemplateCommerceAccountGroupRel,
 								  Object>>();
-		Map
+
+			attributeGetterFunctions.put(
+				"mvccVersion",
+				CommerceNotificationTemplateCommerceAccountGroupRel::
+					getMvccVersion);
+			attributeGetterFunctions.put(
+				"commerceNotificationTemplateCommerceAccountGroupRelId",
+				CommerceNotificationTemplateCommerceAccountGroupRel::
+					getCommerceNotificationTemplateCommerceAccountGroupRelId);
+			attributeGetterFunctions.put(
+				"groupId",
+				CommerceNotificationTemplateCommerceAccountGroupRel::
+					getGroupId);
+			attributeGetterFunctions.put(
+				"companyId",
+				CommerceNotificationTemplateCommerceAccountGroupRel::
+					getCompanyId);
+			attributeGetterFunctions.put(
+				"userId",
+				CommerceNotificationTemplateCommerceAccountGroupRel::getUserId);
+			attributeGetterFunctions.put(
+				"userName",
+				CommerceNotificationTemplateCommerceAccountGroupRel::
+					getUserName);
+			attributeGetterFunctions.put(
+				"createDate",
+				CommerceNotificationTemplateCommerceAccountGroupRel::
+					getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate",
+				CommerceNotificationTemplateCommerceAccountGroupRel::
+					getModifiedDate);
+			attributeGetterFunctions.put(
+				"commerceNotificationTemplateId",
+				CommerceNotificationTemplateCommerceAccountGroupRel::
+					getCommerceNotificationTemplateId);
+			attributeGetterFunctions.put(
+				"commerceAccountGroupId",
+				CommerceNotificationTemplateCommerceAccountGroupRel::
+					getCommerceAccountGroupId);
+
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
+		}
+
+	}
+
+	private static class AttributeSetterBiConsumersHolder {
+
+		private static final Map
 			<String,
-			 BiConsumer<CommerceNotificationTemplateCommerceAccountGroupRel, ?>>
-				attributeSetterBiConsumers =
-					new LinkedHashMap
-						<String,
-						 BiConsumer
-							 <CommerceNotificationTemplateCommerceAccountGroupRel,
-							  ?>>();
+			 BiConsumer
+				 <CommerceNotificationTemplateCommerceAccountGroupRel, Object>>
+					_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion",
-			CommerceNotificationTemplateCommerceAccountGroupRel::
-				getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer
-				<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
-					CommerceNotificationTemplateCommerceAccountGroupRel::
-						setMvccVersion);
-		attributeGetterFunctions.put(
-			"commerceNotificationTemplateCommerceAccountGroupRelId",
-			CommerceNotificationTemplateCommerceAccountGroupRel::
-				getCommerceNotificationTemplateCommerceAccountGroupRelId);
-		attributeSetterBiConsumers.put(
-			"commerceNotificationTemplateCommerceAccountGroupRelId",
-			(BiConsumer
-				<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
-					CommerceNotificationTemplateCommerceAccountGroupRel::
-						setCommerceNotificationTemplateCommerceAccountGroupRelId);
-		attributeGetterFunctions.put(
-			"groupId",
-			CommerceNotificationTemplateCommerceAccountGroupRel::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer
-				<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
-					CommerceNotificationTemplateCommerceAccountGroupRel::
-						setGroupId);
-		attributeGetterFunctions.put(
-			"companyId",
-			CommerceNotificationTemplateCommerceAccountGroupRel::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer
-				<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
-					CommerceNotificationTemplateCommerceAccountGroupRel::
-						setCompanyId);
-		attributeGetterFunctions.put(
-			"userId",
-			CommerceNotificationTemplateCommerceAccountGroupRel::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer
-				<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
-					CommerceNotificationTemplateCommerceAccountGroupRel::
-						setUserId);
-		attributeGetterFunctions.put(
-			"userName",
-			CommerceNotificationTemplateCommerceAccountGroupRel::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer
-				<CommerceNotificationTemplateCommerceAccountGroupRel, String>)
-					CommerceNotificationTemplateCommerceAccountGroupRel::
-						setUserName);
-		attributeGetterFunctions.put(
-			"createDate",
-			CommerceNotificationTemplateCommerceAccountGroupRel::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer
-				<CommerceNotificationTemplateCommerceAccountGroupRel, Date>)
-					CommerceNotificationTemplateCommerceAccountGroupRel::
-						setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate",
-			CommerceNotificationTemplateCommerceAccountGroupRel::
-				getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer
-				<CommerceNotificationTemplateCommerceAccountGroupRel, Date>)
-					CommerceNotificationTemplateCommerceAccountGroupRel::
-						setModifiedDate);
-		attributeGetterFunctions.put(
-			"commerceNotificationTemplateId",
-			CommerceNotificationTemplateCommerceAccountGroupRel::
-				getCommerceNotificationTemplateId);
-		attributeSetterBiConsumers.put(
-			"commerceNotificationTemplateId",
-			(BiConsumer
-				<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
-					CommerceNotificationTemplateCommerceAccountGroupRel::
-						setCommerceNotificationTemplateId);
-		attributeGetterFunctions.put(
-			"commerceAccountGroupId",
-			CommerceNotificationTemplateCommerceAccountGroupRel::
-				getCommerceAccountGroupId);
-		attributeSetterBiConsumers.put(
-			"commerceAccountGroupId",
-			(BiConsumer
-				<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
-					CommerceNotificationTemplateCommerceAccountGroupRel::
-						setCommerceAccountGroupId);
+		static {
+			Map
+				<String,
+				 BiConsumer
+					 <CommerceNotificationTemplateCommerceAccountGroupRel, ?>>
+						attributeSetterBiConsumers =
+							new LinkedHashMap
+								<String,
+								 BiConsumer
+									 <CommerceNotificationTemplateCommerceAccountGroupRel,
+									  ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer
+					<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
+						CommerceNotificationTemplateCommerceAccountGroupRel::
+							setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"commerceNotificationTemplateCommerceAccountGroupRelId",
+				(BiConsumer
+					<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
+						CommerceNotificationTemplateCommerceAccountGroupRel::
+							setCommerceNotificationTemplateCommerceAccountGroupRelId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer
+					<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
+						CommerceNotificationTemplateCommerceAccountGroupRel::
+							setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer
+					<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
+						CommerceNotificationTemplateCommerceAccountGroupRel::
+							setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer
+					<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
+						CommerceNotificationTemplateCommerceAccountGroupRel::
+							setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer
+					<CommerceNotificationTemplateCommerceAccountGroupRel,
+					 String>)
+						 CommerceNotificationTemplateCommerceAccountGroupRel::
+							 setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer
+					<CommerceNotificationTemplateCommerceAccountGroupRel, Date>)
+						CommerceNotificationTemplateCommerceAccountGroupRel::
+							setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer
+					<CommerceNotificationTemplateCommerceAccountGroupRel, Date>)
+						CommerceNotificationTemplateCommerceAccountGroupRel::
+							setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"commerceNotificationTemplateId",
+				(BiConsumer
+					<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
+						CommerceNotificationTemplateCommerceAccountGroupRel::
+							setCommerceNotificationTemplateId);
+			attributeSetterBiConsumers.put(
+				"commerceAccountGroupId",
+				(BiConsumer
+					<CommerceNotificationTemplateCommerceAccountGroupRel, Long>)
+						CommerceNotificationTemplateCommerceAccountGroupRel::
+							setCommerceAccountGroupId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -890,7 +792,7 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -899,7 +801,7 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -1036,53 +938,16 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map
-			<String,
-			 Function
-				 <CommerceNotificationTemplateCommerceAccountGroupRel, Object>>
-					attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry
-				<String,
-				 Function
-					 <CommerceNotificationTemplateCommerceAccountGroupRel,
-					  Object>> entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function
-				<CommerceNotificationTemplateCommerceAccountGroupRel, Object>
-					attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(CommerceNotificationTemplateCommerceAccountGroupRel)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler,
 			 CommerceNotificationTemplateCommerceAccountGroupRel>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						CommerceNotificationTemplateCommerceAccountGroupRel.
+							class,
+						ModelWrapper.class);
 
 	}
 
@@ -1102,7 +967,9 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CommerceNotificationTemplateCommerceAccountGroupRel, Object>
-			function = _attributeGetterFunctions.get(columnName);
+			function =
+				AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+					columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

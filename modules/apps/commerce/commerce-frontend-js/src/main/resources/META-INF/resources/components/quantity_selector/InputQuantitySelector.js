@@ -1,104 +1,274 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {ClayInput} from '@clayui/form';
+import ClayForm, {ClayInput} from '@clayui/form';
+import {useIsMounted} from '@liferay/frontend-js-react-web';
+import classNames from 'classnames';
 import {debounce} from 'frontend-js-web';
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {forwardRef, useEffect, useRef, useState} from 'react';
 
+import {CP_UNIT_OF_MEASURE_SELECTOR_CHANGED} from '../../utilities/eventsDefinitions';
 import {
 	getMinQuantity,
+	getNumberOfDecimals,
 	getProductMaxQuantity,
+	isMultiple,
 } from '../../utilities/quantities';
+import RulesPopover from './RulesPopover';
 
-function InputQuantitySelector({
-	className,
-	disabled,
-	maxQuantity,
-	minQuantity,
-	multipleQuantity,
-	name,
-	onUpdate,
-	quantity,
-}) {
-	const inputMax = useMemo(
-		() => getProductMaxQuantity(maxQuantity, multipleQuantity),
-		[maxQuantity, multipleQuantity]
-	);
+const getErrors = (value, min, max, step, precision = 0) => {
+	const errors = [];
 
-	const inputMin = useMemo(
-		() => getMinQuantity(minQuantity, multipleQuantity),
-		[multipleQuantity, minQuantity]
-	);
+	if (getNumberOfDecimals(value) > precision) {
+		errors.push('decimals');
+	}
 
-	const [typedQuantity, setTypedQuantity] = useState(quantity);
+	if (!value || value < min) {
+		errors.push('min');
+	}
 
-	useEffect(() => {
-		setTypedQuantity(quantity);
-	}, [quantity]);
+	if (max && value > max) {
+		errors.push('max');
+	}
 
-	const getValidInputNumber = useCallback(
-		(value) => {
-			if (!value || value < inputMin) {
-				return inputMin;
-			}
+	if (step > 0 && !isMultiple(value, step, precision)) {
+		errors.push('multiple');
+	}
 
-			if (inputMax && value > inputMax) {
-				return inputMax;
-			}
+	return errors;
+};
 
-			if (multipleQuantity > 1) {
-				return value - (value % multipleQuantity);
-			}
-
-			return value;
+const InputQuantitySelector = forwardRef(
+	(
+		{
+			alignment,
+			className,
+			disabled,
+			max,
+			min,
+			name,
+			namespace,
+			onUpdate,
+			quantity,
+			step,
+			unitOfMeasure,
 		},
-		[inputMax, inputMin, multipleQuantity]
-	);
+		inputRef
+	) => {
+		const [inputProperties, setInputProperties] = useState({
+			currentUnitOfMeasure: unitOfMeasure,
+			max: unitOfMeasure
+				? getProductMaxQuantity(
+						max,
+						unitOfMeasure.incrementalOrderQuantity,
+						unitOfMeasure.precision
+				  )
+				: getProductMaxQuantity(Math.ceil(max), Math.ceil(step)),
+			min: unitOfMeasure
+				? getMinQuantity(
+						min,
+						unitOfMeasure.incrementalOrderQuantity,
+						unitOfMeasure.precision
+				  )
+				: getMinQuantity(Math.ceil(min), Math.ceil(step)),
+			quantity,
+			step: unitOfMeasure
+				? unitOfMeasure.incrementalOrderQuantity
+				: Math.ceil(step),
+		});
+		const [showPopover, setShowPopover] = useState(false);
+		const [visibleErrors, setVisibleErrors] = useState(() =>
+			getErrors(
+				quantity,
+				unitOfMeasure ? min : Math.ceil(min),
+				unitOfMeasure ? max : Math.ceil(max),
+				unitOfMeasure
+					? unitOfMeasure.incrementalOrderQuantity
+					: Math.ceil(step)
+			)
+		);
+		const isMounted = useIsMounted();
+		const debouncedSetVisibleErrorsRef = useRef(
+			debounce((newErrors) => {
+				if (isMounted()) {
+					setVisibleErrors(newErrors);
+				}
+			}, 500)
+		);
 
-	const debouncedSetFixedValue = useMemo(() => {
-		return debounce((value) => {
-			const validInput = getValidInputNumber(Number(value));
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		const handleUOMChanged = ({resetQuantity, unitOfMeasure}) => {
+			const setStateContext = ({
+				max,
+				min,
+				precision,
+				quantity,
+				step,
+				unitOfMeasure,
+			}) => {
+				setInputProperties((inputProperties) => ({
+					...inputProperties,
+					currentUnitOfMeasure: unitOfMeasure,
+					max: getProductMaxQuantity(max, step, precision),
+					min: getMinQuantity(min, step, precision),
+					step,
+				}));
 
-			setTypedQuantity(validInput);
+				onUpdate({
+					errors: getErrors(quantity, min, max, step, precision),
+					unitOfMeasure,
+					value: quantity,
+				});
+			};
 
-			onUpdate(validInput);
-		}, 500);
-	}, [getValidInputNumber, onUpdate]);
+			if (unitOfMeasure) {
+				let quantity = inputProperties.quantity;
 
-	return (
-		<ClayInput
-			className={className}
-			disabled={disabled}
-			max={inputMax || ''}
-			min={inputMin}
-			name={name}
-			onChange={({target}) => {
-				setTypedQuantity(target.value);
+				if (resetQuantity) {
+					quantity = Number(
+						getMinQuantity(
+							min,
+							unitOfMeasure.incrementalOrderQuantity,
+							unitOfMeasure.precision
+						)
+					);
 
-				debouncedSetFixedValue(target.value);
-			}}
-			step={multipleQuantity > 1 ? multipleQuantity : ''}
-			type="number"
-			value={String(typedQuantity || '')}
-		/>
-	);
-}
+					setInputProperties((inputProperties) => ({
+						...inputProperties,
+						quantity,
+					}));
+				}
+
+				setStateContext({
+					max,
+					min,
+					precision: unitOfMeasure.precision,
+					quantity,
+					step: unitOfMeasure.incrementalOrderQuantity,
+					unitOfMeasure,
+				});
+			}
+			else {
+				setStateContext({
+					max: Math.ceil(max),
+					min: Math.ceil(min),
+					precision: 0,
+					quantity,
+					step: Math.ceil(step),
+					unitOfMeasure: null,
+				});
+			}
+		};
+
+		useEffect(() => {
+			debouncedSetVisibleErrorsRef.current(() => {
+				if (inputProperties.currentUnitOfMeasure) {
+					return getErrors(
+						inputProperties.quantity,
+						min,
+						max,
+						inputProperties.step,
+						inputProperties.currentUnitOfMeasure.precision
+					);
+				}
+				else {
+					return getErrors(
+						inputProperties.quantity,
+						Math.ceil(min),
+						Math.ceil(max),
+						Math.ceil(inputProperties.step)
+					);
+				}
+			});
+		}, [inputProperties, max, min]);
+
+		useEffect(() => {
+			Liferay.on(
+				`${namespace}${CP_UNIT_OF_MEASURE_SELECTOR_CHANGED}`,
+				handleUOMChanged
+			);
+
+			return () => {
+				Liferay.detach(
+					`${namespace}${CP_UNIT_OF_MEASURE_SELECTOR_CHANGED}`,
+					handleUOMChanged
+				);
+			};
+		}, [handleUOMChanged, namespace]);
+
+		return (
+			<ClayForm.Group
+				className={classNames({
+					'has-error': visibleErrors.length,
+					'mb-0': true,
+				})}
+			>
+				<ClayInput
+					className={className}
+					disabled={disabled}
+					max={inputProperties.max}
+					min={inputProperties.min}
+					name={name}
+					onBlur={() => {
+						setShowPopover(false);
+					}}
+					onChange={({target}) => {
+						const numValue = Number(target.value);
+
+						const errors = getErrors(
+							numValue,
+							min,
+							max,
+							inputProperties.step,
+							inputProperties.currentUnitOfMeasure?.precision
+						);
+
+						setInputProperties((inputProperties) => ({
+							...inputProperties,
+							quantity: target.value,
+						}));
+
+						onUpdate({
+							errors,
+							unitOfMeasure: inputProperties.currentUnitOfMeasure,
+							value: numValue,
+						});
+					}}
+					onFocus={() => setShowPopover(true)}
+					ref={inputRef}
+					step={inputProperties.step > 0 ? inputProperties.step : ''}
+					type="number"
+					value={String(inputProperties.quantity || '')}
+				/>
+
+				{showPopover &&
+					(inputProperties.step > 0 ||
+						min > 0 ||
+						visibleErrors.includes('max')) && (
+						<RulesPopover
+							alignment={alignment}
+							errors={visibleErrors}
+							inputRef={inputRef}
+							max={max || ''}
+							min={min}
+							multiple={inputProperties.step}
+							precision={
+								inputProperties.currentUnitOfMeasure
+									?.precision || 0
+							}
+						/>
+					)}
+			</ClayForm.Group>
+		);
+	}
+);
 
 InputQuantitySelector.defaultProps = {
-	maxQuantity: '',
-	minQuantity: 1,
-	multipleQuantity: 1,
+	max: null,
+	min: 1,
+	step: 1,
 };
 
 export default InputQuantitySelector;

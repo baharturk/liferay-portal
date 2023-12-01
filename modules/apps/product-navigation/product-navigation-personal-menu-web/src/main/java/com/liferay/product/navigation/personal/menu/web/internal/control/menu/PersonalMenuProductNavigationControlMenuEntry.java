@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.product.navigation.personal.menu.web.internal.control.menu;
@@ -25,7 +16,7 @@ import com.liferay.product.navigation.control.menu.BaseJSPProductNavigationContr
 import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.constants.ProductNavigationControlMenuCategoryKeys;
 import com.liferay.product.navigation.personal.menu.configuration.PersonalMenuConfiguration;
-import com.liferay.product.navigation.personal.menu.configuration.PersonalMenuConfigurationTracker;
+import com.liferay.product.navigation.personal.menu.configuration.PersonalMenuConfigurationRegistry;
 import com.liferay.product.navigation.personal.menu.web.internal.constants.PersonalMenuWebKeys;
 
 import java.io.IOException;
@@ -41,7 +32,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Samuel Trong Tran
  */
 @Component(
-	immediate = true,
 	property = {
 		"product.navigation.control.menu.category.key=" + ProductNavigationControlMenuCategoryKeys.USER,
 		"product.navigation.control.menu.entry.order:Integer=700"
@@ -69,7 +59,7 @@ public class PersonalMenuProductNavigationControlMenuEntry
 
 		User user = themeDisplay.getUser();
 
-		if (!user.isDefaultUser() &&
+		if (!user.isGuestUser() &&
 			(_userNotificationEventLocalService != null)) {
 
 			httpServletRequest.setAttribute(
@@ -92,8 +82,14 @@ public class PersonalMenuProductNavigationControlMenuEntry
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+		User user = themeDisplay.getUser();
+
+		if (user.isOnDemandUser()) {
+			return false;
+		}
+
 		PersonalMenuConfiguration personalMenuConfiguration =
-			_personalMenuConfigurationTracker.
+			_personalMenuConfigurationRegistry.
 				getCompanyPersonalMenuConfiguration(
 					themeDisplay.getCompanyId());
 
@@ -113,16 +109,18 @@ public class PersonalMenuProductNavigationControlMenuEntry
 	}
 
 	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.product.navigation.personal.menu.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	@Reference
-	private PersonalMenuConfigurationTracker _personalMenuConfigurationTracker;
+	private PersonalMenuConfigurationRegistry
+		_personalMenuConfigurationRegistry;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.product.navigation.personal.menu.web)"
+	)
+	private ServletContext _servletContext;
 
 	@Reference
 	private UserNotificationEventLocalService

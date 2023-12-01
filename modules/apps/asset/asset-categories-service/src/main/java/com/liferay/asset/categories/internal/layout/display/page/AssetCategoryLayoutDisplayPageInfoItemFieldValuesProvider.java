@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.internal.layout.display.page;
@@ -25,7 +16,7 @@ import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.info.localized.InfoLocalizedValue;
 import com.liferay.layout.display.page.LayoutDisplayPageInfoItemFieldValuesProvider;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -40,10 +31,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Lourdes Fernández Besada
  */
-@Component(
-	immediate = true,
-	service = LayoutDisplayPageInfoItemFieldValuesProvider.class
-)
+@Component(service = LayoutDisplayPageInfoItemFieldValuesProvider.class)
 public class AssetCategoryLayoutDisplayPageInfoItemFieldValuesProvider
 	implements LayoutDisplayPageInfoItemFieldValuesProvider<AssetCategory> {
 
@@ -74,6 +62,8 @@ public class AssetCategoryLayoutDisplayPageInfoItemFieldValuesProvider
 					InfoField.builder(
 					).infoFieldType(
 						TextInfoFieldType.INSTANCE
+					).namespace(
+						AssetCategory.class.getSimpleName()
 					).name(
 						"vocabulary"
 					).labelInfoLocalizedValue(
@@ -98,6 +88,8 @@ public class AssetCategoryLayoutDisplayPageInfoItemFieldValuesProvider
 					InfoField.builder(
 					).infoFieldType(
 						TextInfoFieldType.INSTANCE
+					).namespace(
+						AssetCategory.class.getSimpleName()
 					).name(
 						"group"
 					).labelInfoLocalizedValue(
@@ -110,7 +102,7 @@ public class AssetCategoryLayoutDisplayPageInfoItemFieldValuesProvider
 						LocaleUtil.fromLanguageId(group.getDefaultLanguageId())
 					).values(
 						HashMapBuilder.put(
-							LanguageUtil.getAvailableLocales(),
+							_language.getAvailableLocales(),
 							locale -> group.getDescriptiveName(locale)
 						).build()
 					).build()));
@@ -139,5 +131,8 @@ public class AssetCategoryLayoutDisplayPageInfoItemFieldValuesProvider
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
 
 }

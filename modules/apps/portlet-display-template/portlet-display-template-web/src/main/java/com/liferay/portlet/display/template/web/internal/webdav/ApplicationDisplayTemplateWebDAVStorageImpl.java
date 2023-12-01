@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.display.template.web.internal.webdav;
@@ -19,11 +10,11 @@ import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
 import com.liferay.dynamic.data.mapping.webdav.DDMWebDAV;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
-import com.liferay.portal.kernel.webdav.BaseWebDAVStorageImpl;
 import com.liferay.portal.kernel.webdav.Resource;
 import com.liferay.portal.kernel.webdav.WebDAVException;
 import com.liferay.portal.kernel.webdav.WebDAVRequest;
 import com.liferay.portal.kernel.webdav.WebDAVStorage;
+import com.liferay.portal.webdav.BaseWebDAVStorageImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +26,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Juan Fernández
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + PortletKeys.PORTLET_DISPLAY_TEMPLATE,
 		"webdav.storage.token=application_display_template"
@@ -88,18 +78,6 @@ public class ApplicationDisplayTemplateWebDAVStorageImpl
 			webDAVRequest, getRootPath(), getToken(), 0);
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDMTemplateLocalService(
-		DDMTemplateLocalService ddmTemplateLocalService) {
-
-		_ddmTemplateLocalService = ddmTemplateLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMWebDAV(DDMWebDAV ddmWebDAV) {
-		_ddmWebDAV = ddmWebDAV;
-	}
-
 	private List<Resource> _getFolders(WebDAVRequest webDAVRequest)
 		throws Exception {
 
@@ -127,7 +105,10 @@ public class ApplicationDisplayTemplateWebDAVStorageImpl
 		return resources;
 	}
 
+	@Reference
 	private DDMTemplateLocalService _ddmTemplateLocalService;
+
+	@Reference
 	private DDMWebDAV _ddmWebDAV;
 
 }

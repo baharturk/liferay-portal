@@ -1,8 +1,28 @@
+create table CChannelAccountEntryRel (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	CChannelAccountEntryRelId LONG not null,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	accountEntryId LONG,
+	classNameId LONG,
+	classPK LONG,
+	commerceChannelId LONG,
+	overrideEligibility BOOLEAN,
+	priority DOUBLE,
+	type_ INTEGER,
+	primary key (CChannelAccountEntryRelId, ctCollectionId)
+);
+
 create table CPAttachmentFileEntry (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	CPAttachmentFileEntryId LONG not null primary key,
+	CPAttachmentFileEntryId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -16,6 +36,7 @@ create table CPAttachmentFileEntry (
 	cdnURL STRING null,
 	displayDate DATE null,
 	expirationDate DATE null,
+	galleryEnabled BOOLEAN,
 	title STRING null,
 	json TEXT null,
 	priority DOUBLE,
@@ -24,13 +45,15 @@ create table CPAttachmentFileEntry (
 	status INTEGER,
 	statusByUserId LONG,
 	statusByUserName VARCHAR(75) null,
-	statusDate DATE null
+	statusDate DATE null,
+	primary key (CPAttachmentFileEntryId, ctCollectionId)
 );
 
 create table CPDSpecificationOptionValue (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPDSpecificationOptionValueId LONG not null primary key,
+	CPDSpecificationOptionValueId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -42,14 +65,16 @@ create table CPDSpecificationOptionValue (
 	CPOptionCategoryId LONG,
 	value STRING null,
 	priority DOUBLE,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (CPDSpecificationOptionValueId, ctCollectionId)
 );
 
 create table CPDefinition (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	defaultLanguageId VARCHAR(75) null,
-	CPDefinitionId LONG not null primary key,
+	CPDefinitionId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -92,13 +117,15 @@ create table CPDefinition (
 	status INTEGER,
 	statusByUserId LONG,
 	statusByUserName VARCHAR(75) null,
-	statusDate DATE null
+	statusDate DATE null,
+	primary key (CPDefinitionId, ctCollectionId)
 );
 
 create table CPDefinitionLink (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPDefinitionLinkId LONG not null primary key,
+	CPDefinitionLinkId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -107,13 +134,22 @@ create table CPDefinitionLink (
 	modifiedDate DATE null,
 	CPDefinitionId LONG,
 	CProductId LONG,
+	displayDate DATE null,
+	expirationDate DATE null,
 	priority DOUBLE,
-	type_ VARCHAR(75) null
+	type_ VARCHAR(75) null,
+	lastPublishDate DATE null,
+	status INTEGER,
+	statusByUserId LONG,
+	statusByUserName VARCHAR(75) null,
+	statusDate DATE null,
+	primary key (CPDefinitionLinkId, ctCollectionId)
 );
 
 create table CPDefinitionLocalization (
 	mvccVersion LONG default 0 not null,
-	cpDefinitionLocalizationId LONG not null primary key,
+	ctCollectionId LONG default 0 not null,
+	cpDefinitionLocalizationId LONG not null,
 	companyId LONG,
 	CPDefinitionId LONG,
 	languageId VARCHAR(75) null,
@@ -122,13 +158,15 @@ create table CPDefinitionLocalization (
 	description TEXT null,
 	metaTitle VARCHAR(255) null,
 	metaDescription VARCHAR(255) null,
-	metaKeywords VARCHAR(255) null
+	metaKeywords VARCHAR(255) null,
+	primary key (cpDefinitionLocalizationId, ctCollectionId)
 );
 
 create table CPDefinitionOptionRel (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPDefinitionOptionRelId LONG not null primary key,
+	CPDefinitionOptionRelId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -139,19 +177,24 @@ create table CPDefinitionOptionRel (
 	CPOptionId LONG,
 	name STRING null,
 	description STRING null,
-	DDMFormFieldTypeName VARCHAR(75) null,
+	commerceOptionTypeKey VARCHAR(75) null,
+	infoItemServiceKey VARCHAR(255) null,
 	priority DOUBLE,
+	definedExternally BOOLEAN,
 	facetable BOOLEAN,
 	required BOOLEAN,
 	skuContributor BOOLEAN,
 	key_ VARCHAR(75) null,
-	priceType VARCHAR(75) null
+	priceType VARCHAR(75) null,
+	typeSettings TEXT null,
+	primary key (CPDefinitionOptionRelId, ctCollectionId)
 );
 
 create table CPDefinitionOptionValueRel (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPDefinitionOptionValueRelId LONG not null primary key,
+	CPDefinitionOptionValueRelId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -161,18 +204,21 @@ create table CPDefinitionOptionValueRel (
 	CPDefinitionOptionRelId LONG,
 	CPInstanceUuid VARCHAR(75) null,
 	CProductId LONG,
-	name STRING null,
-	priority DOUBLE,
 	key_ VARCHAR(75) null,
-	quantity INTEGER,
+	name STRING null,
 	preselected BOOLEAN,
-	price DECIMAL(30, 16) null
+	price BIGDECIMAL null,
+	priority DOUBLE,
+	quantity BIGDECIMAL null,
+	unitOfMeasureKey VARCHAR(75) null,
+	primary key (CPDefinitionOptionValueRelId, ctCollectionId)
 );
 
 create table CPDisplayLayout (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPDisplayLayoutId LONG not null primary key,
+	CPDisplayLayoutId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -181,14 +227,17 @@ create table CPDisplayLayout (
 	modifiedDate DATE null,
 	classNameId LONG,
 	classPK LONG,
-	layoutUuid VARCHAR(75) null
+	layoutPageTemplateEntryUuid VARCHAR(75) null,
+	layoutUuid VARCHAR(75) null,
+	primary key (CPDisplayLayoutId, ctCollectionId)
 );
 
 create table CPInstance (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	CPInstanceId LONG not null primary key,
+	CPInstanceId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -205,9 +254,9 @@ create table CPInstance (
 	height DOUBLE,
 	depth DOUBLE,
 	weight DOUBLE,
-	price DECIMAL(30, 16) null,
-	promoPrice DECIMAL(30, 16) null,
-	cost DECIMAL(30, 16) null,
+	price BIGDECIMAL null,
+	promoPrice BIGDECIMAL null,
+	cost BIGDECIMAL null,
 	published BOOLEAN,
 	displayDate DATE null,
 	expirationDate DATE null,
@@ -231,13 +280,15 @@ create table CPInstance (
 	status INTEGER,
 	statusByUserId LONG,
 	statusByUserName VARCHAR(75) null,
-	statusDate DATE null
+	statusDate DATE null,
+	primary key (CPInstanceId, ctCollectionId)
 );
 
 create table CPInstanceOptionValueRel (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPInstanceOptionValueRelId LONG not null primary key,
+	CPInstanceOptionValueRelId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -246,13 +297,39 @@ create table CPInstanceOptionValueRel (
 	modifiedDate DATE null,
 	CPDefinitionOptionRelId LONG,
 	CPDefinitionOptionValueRelId LONG,
-	CPInstanceId LONG
+	CPInstanceId LONG,
+	primary key (CPInstanceOptionValueRelId, ctCollectionId)
+);
+
+create table CPInstanceUOM (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	CPInstanceUOMId LONG not null,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	CPInstanceId LONG,
+	active_ BOOLEAN,
+	incrementalOrderQuantity BIGDECIMAL null,
+	key_ VARCHAR(75) null,
+	name STRING null,
+	precision_ INTEGER,
+	primary_ BOOLEAN,
+	priority DOUBLE,
+	rate BIGDECIMAL null,
+	sku VARCHAR(75) null,
+	primary key (CPInstanceUOMId, ctCollectionId)
 );
 
 create table CPMeasurementUnit (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPMeasurementUnitId LONG not null primary key,
+	externalReferenceCode VARCHAR(75) null,
+	CPMeasurementUnitId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -265,14 +342,16 @@ create table CPMeasurementUnit (
 	primary_ BOOLEAN,
 	priority DOUBLE,
 	type_ INTEGER,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (CPMeasurementUnitId, ctCollectionId)
 );
 
 create table CPOption (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	CPOptionId LONG not null primary key,
+	CPOptionId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -280,18 +359,20 @@ create table CPOption (
 	modifiedDate DATE null,
 	name STRING null,
 	description STRING null,
-	DDMFormFieldTypeName VARCHAR(75) null,
+	commerceOptionTypeKey VARCHAR(75) null,
 	facetable BOOLEAN,
 	required BOOLEAN,
 	skuContributor BOOLEAN,
 	key_ VARCHAR(75) null,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (CPOptionId, ctCollectionId)
 );
 
 create table CPOptionCategory (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPOptionCategoryId LONG not null primary key,
+	CPOptionCategoryId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -301,14 +382,16 @@ create table CPOptionCategory (
 	description STRING null,
 	priority DOUBLE,
 	key_ VARCHAR(75) null,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (CPOptionCategoryId, ctCollectionId)
 );
 
 create table CPOptionValue (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	CPOptionValueId LONG not null primary key,
+	CPOptionValueId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -318,13 +401,15 @@ create table CPOptionValue (
 	name STRING null,
 	priority DOUBLE,
 	key_ VARCHAR(75) null,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (CPOptionValueId, ctCollectionId)
 );
 
 create table CPSpecificationOption (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPSpecificationOptionId LONG not null primary key,
+	CPSpecificationOptionId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -335,27 +420,32 @@ create table CPSpecificationOption (
 	description STRING null,
 	facetable BOOLEAN,
 	key_ VARCHAR(75) null,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (CPSpecificationOptionId, ctCollectionId)
 );
 
 create table CPTaxCategory (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	CPTaxCategoryId LONG not null primary key,
+	CPTaxCategoryId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
 	createDate DATE null,
 	modifiedDate DATE null,
 	name STRING null,
-	description STRING null
+	description STRING null,
+	primary key (CPTaxCategoryId, ctCollectionId)
 );
 
 create table CProduct (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	CProductId LONG not null primary key,
+	CProductId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
@@ -363,45 +453,55 @@ create table CProduct (
 	createDate DATE null,
 	modifiedDate DATE null,
 	publishedCPDefinitionId LONG,
-	latestVersion INTEGER
+	latestVersion INTEGER,
+	primary key (CProductId, ctCollectionId)
 );
 
 create table CommerceCatalog (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	commerceCatalogId LONG not null primary key,
+	commerceCatalogId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
 	createDate DATE null,
 	modifiedDate DATE null,
+	accountEntryId LONG,
 	name VARCHAR(75) null,
 	commerceCurrencyCode VARCHAR(75) null,
 	catalogDefaultLanguageId VARCHAR(75) null,
-	system_ BOOLEAN
+	system_ BOOLEAN,
+	primary key (commerceCatalogId, ctCollectionId)
 );
 
 create table CommerceChannel (
 	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	commerceChannelId LONG not null primary key,
+	commerceChannelId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
 	createDate DATE null,
 	modifiedDate DATE null,
+	accountEntryId LONG,
 	siteGroupId LONG,
 	name VARCHAR(75) null,
 	type_ VARCHAR(75) null,
 	typeSettings VARCHAR(75) null,
 	commerceCurrencyCode VARCHAR(75) null,
 	priceDisplayType VARCHAR(75) null,
-	discountsTargetNetPrice BOOLEAN
+	discountsTargetNetPrice BOOLEAN,
+	primary key (commerceChannelId, ctCollectionId)
 );
 
 create table CommerceChannelRel (
 	mvccVersion LONG default 0 not null,
-	commerceChannelRelId LONG not null primary key,
+	ctCollectionId LONG default 0 not null,
+	commerceChannelRelId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -409,5 +509,6 @@ create table CommerceChannelRel (
 	modifiedDate DATE null,
 	classNameId LONG,
 	classPK LONG,
-	commerceChannelId LONG
+	commerceChannelId LONG,
+	primary key (commerceChannelRelId, ctCollectionId)
 );

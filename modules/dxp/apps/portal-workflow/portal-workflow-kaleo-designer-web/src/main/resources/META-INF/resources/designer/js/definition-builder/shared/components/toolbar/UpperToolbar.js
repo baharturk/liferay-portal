@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import {ClayInput} from '@clayui/form';
-import ClayLabel from '@clayui/label';
 import ClayLayout from '@clayui/layout';
 import ClayToolbar from '@clayui/toolbar';
 import {TranslationAdminSelector} from 'frontend-js-components-web';
+import {localStorage} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useContext, useEffect, useRef, useState} from 'react';
 import {isEdge, isNode} from 'react-flow-renderer';
@@ -24,6 +17,7 @@ import {isEdge, isNode} from 'react-flow-renderer';
 import {DefinitionBuilderContext} from '../../../DefinitionBuilderContext';
 import {defaultLanguageId} from '../../../constants';
 import {xmlNamespace} from '../../../source-builder/constants';
+import DeserializeUtil from '../../../source-builder/deserializeUtil';
 import {serializeDefinition} from '../../../source-builder/serializeUtil';
 import XMLUtil from '../../../source-builder/xmlUtil';
 import {getAvailableLocalesObject} from '../../../util/availableLocales';
@@ -31,54 +25,133 @@ import {
 	publishDefinitionRequest,
 	saveDefinitionRequest,
 } from '../../../util/fetchUtil';
+import {isObjectEmpty} from '../../../util/utils';
 
 export default function UpperToolbar({
 	displayNames,
+	isView,
 	languageIds,
-	translations,
-	version,
+	portletNamespace,
 }) {
 	const {
 		active,
+		alertMessage,
+		alertType,
+		blockingErrors,
 		currentEditor,
 		definitionDescription,
-		definitionId,
+		definitionName,
 		definitionTitle,
+		definitionTitleTranslations,
 		elements,
 		selectedLanguageId,
+		setAlertMessage,
+		setAlertType,
+		setBlockingErrors,
+		setDefinitionDescription,
+		setDefinitionName,
 		setDefinitionTitle,
+		setDefinitionTitleTranslations,
 		setDeserialize,
+		setElements,
 		setSelectedLanguageId,
+		setShowAlert,
+		setShowDefinitionInfo,
 		setShowInvalidContentMessage,
 		setSourceView,
+		setVersion,
+		showAlert,
 		sourceView,
+		version,
 	} = useContext(DefinitionBuilderContext);
+
+	const [translations, setTranslations] = useState(
+		definitionTitleTranslations
+	);
+
+	function findEmptyElements(element, language) {
+		if (element.data.label && !(language in element.data.label)) {
+			return true;
+		}
+	}
+
+	function setAlert(alertMessage, alertType, showAlert) {
+		setAlertMessage(alertMessage);
+		setAlertType(alertType);
+		setShowAlert(showAlert);
+	}
+
 	const inputRef = useRef(null);
-	const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-	const [alertMessage, setAlertMessage] = useState('');
 
 	const availableLocales = getAvailableLocalesObject(
 		displayNames,
 		languageIds
 	);
 
-	const getXMLContent = (publishing = false) => {
+	const errorTitle = () => {
+		if (blockingErrors.errorType === 'duplicated') {
+			return Liferay.Language.get(
+				'you-have-the-same-name-in-two-nodes'
+			).slice(0, -1);
+		}
+		else if (blockingErrors.errorType === 'emptyField') {
+			return Liferay.Language.get('some-fields-need-to-be-filled').slice(
+				0,
+				-1
+			);
+		}
+		else if (blockingErrors.errorType === 'assignment') {
+			return Liferay.Language.get('warning');
+		}
+		else {
+			return Liferay.Language.get('error');
+		}
+	};
+
+	const getXMLContent = (exporting) => {
+		let currentDescription;
+		let currentElements;
+		let currentName;
 		let xmlContent;
 
-		if (currentEditor) {
+		if (currentEditor && !exporting) {
 			xmlContent = currentEditor.getData();
 		}
 		else {
+			if (sourceView) {
+				const deserializeUtil = new DeserializeUtil();
+				const xmlDefinition = currentEditor.getData();
+
+				deserializeUtil.updateXMLDefinition(
+					encodeURIComponent(xmlDefinition)
+				);
+
+				const metadata = deserializeUtil.getMetadata();
+
+				currentName = metadata.name;
+				setDefinitionName(currentName);
+
+				currentDescription = metadata.description;
+				setDefinitionDescription(currentDescription);
+
+				currentElements = deserializeUtil.getElements();
+				setElements(currentElements);
+			}
+			else {
+				currentDescription = definitionDescription;
+				currentElements = elements;
+			}
+
 			xmlContent = serializeDefinition(
 				xmlNamespace,
 				{
-					description: definitionDescription,
-					name: definitionTitle,
+					description: currentDescription,
+					name: currentName,
 					version,
 				},
-				elements.filter(isNode),
-				elements.filter(isEdge),
-				publishing
+				currentElements.filter(isNode),
+				currentElements.filter(isEdge),
+				exporting
 			);
 		}
 
@@ -91,66 +164,200 @@ export default function UpperToolbar({
 		}
 	};
 
-	const onInputBlur = () => {
-		if (definitionTitle && selectedLanguageId) {
-			translations[selectedLanguageId] = definitionTitle;
-		}
+	const definitionNotPublished = version === 0 || !active;
+
+	const redirectToSavedDefinition = (name, version) => {
+		const definitionURL = new URL(window.location.href);
+
+		definitionURL.searchParams.set(
+			portletNamespace + 'draftVersion',
+			Number.parseFloat(version).toFixed(1)
+		);
+		definitionURL.searchParams.set(portletNamespace + 'name', name);
+
+		window.location.replace(definitionURL);
 	};
 
-	const definitionNotPublished = version === '0' || !active;
-
 	const publishDefinition = () => {
-		let successMessage;
-
-		if (definitionNotPublished) {
-			successMessage = Liferay.Language.get(
-				'workflow-published-successfully'
+		if (!definitionTitle) {
+			setAlert(
+				Liferay.Language.get('name-workflow-before-publish'),
+				'danger',
+				true
 			);
+		}
+		else if (blockingErrors.errorType !== '') {
+			setAlert(blockingErrors.errorMessage, 'danger', true);
 		}
 		else {
-			successMessage = Liferay.Language.get(
-				'workflow-updated-successfully'
-			);
-		}
+			let alertMessage;
 
-		setAlertMessage(successMessage);
-
-		publishDefinitionRequest({
-			active,
-			content: getXMLContent(true),
-			name: definitionId,
-			title: definitionTitle,
-			version,
-		}).then((response) => {
-			if (response.ok) {
-				setShowSuccessAlert(true);
+			if (definitionNotPublished) {
+				alertMessage = Liferay.Language.get(
+					'workflow-published-successfully'
+				);
 			}
-		});
+			else {
+				alertMessage = Liferay.Language.get(
+					'workflow-updated-successfully'
+				);
+			}
+
+			publishDefinitionRequest({
+				active,
+				content: getXMLContent(true),
+				name: definitionName,
+				title: definitionTitle,
+				title_i18n: definitionTitleTranslations,
+				version,
+			}).then((response) => {
+				if (response.ok) {
+					response.json().then(({name, version}) => {
+						setDefinitionName(name);
+						setVersion(parseInt(version, 10));
+						if (version === '1') {
+							localStorage.setItem(
+								'firstPublished',
+								true,
+								localStorage.TYPES.FUNCTIONAL
+							);
+							redirectToSavedDefinition(name, version);
+						}
+						else {
+							setAlert(alertMessage, 'success', true);
+						}
+					});
+				}
+				else {
+					response.json().then(({title}) => {
+						setAlert(title, 'danger', true);
+					});
+				}
+			});
+		}
 	};
 
 	const saveDefinition = () => {
-		const successMessage = Liferay.Language.get('workflow-saved');
-
-		setAlertMessage(successMessage);
-
-		saveDefinitionRequest({
-			active,
-			content: getXMLContent(),
-			name: definitionId,
-			title: definitionTitle,
-			version,
-		}).then((response) => {
-			if (response.ok) {
-				setShowSuccessAlert(true);
-			}
-		});
+		if (blockingErrors.errorType !== '') {
+			setAlert(blockingErrors.errorMessage, 'danger', true);
+		}
+		else {
+			saveDefinitionRequest({
+				active,
+				content: getXMLContent(true),
+				name: definitionName,
+				title: definitionTitle,
+				title_i18n: definitionTitleTranslations,
+				version,
+			}).then((response) => {
+				if (response.ok) {
+					response.json().then(({name, version}) => {
+						setDefinitionName(name);
+						setVersion(parseInt(version, 10));
+						if (version === '1') {
+							localStorage.setItem(
+								'firstSaved',
+								true,
+								localStorage.TYPES.FUNCTIONAL
+							);
+							redirectToSavedDefinition(name, version);
+						}
+						else {
+							setAlert(
+								Liferay.Language.get('workflow-saved'),
+								'success',
+								true
+							);
+						}
+					});
+				}
+			});
+		}
 	};
 
 	useEffect(() => {
-		if (selectedLanguageId) {
-			setDefinitionTitle(translations[selectedLanguageId]);
+		if (isObjectEmpty(definitionTitleTranslations)) {
+			setDefinitionTitleTranslations({
+				[defaultLanguageId]: Liferay.Language.get('new-workflow'),
+			});
 		}
-	}, [selectedLanguageId, setDefinitionTitle, translations]);
+
+		if (selectedLanguageId) {
+			setDefinitionTitle(definitionTitleTranslations[selectedLanguageId]);
+		}
+	}, [
+		selectedLanguageId,
+		setDefinitionTitle,
+		setDefinitionTitleTranslations,
+		definitionTitleTranslations,
+	]);
+
+	useEffect(() => {
+		let languageId = defaultLanguageId;
+
+		if (selectedLanguageId) {
+			languageId = selectedLanguageId;
+		}
+
+		setDefinitionTitleTranslations((previous) => ({
+			...previous,
+			[languageId]: definitionTitle,
+		}));
+
+		languageIds.map((currentLanguage) => {
+			const emptyLabel = elements?.find((elements) =>
+				findEmptyElements(elements, currentLanguage)
+			);
+			if (!emptyLabel && definitionTitleTranslations[currentLanguage]) {
+				setTranslations((previous) => ({
+					...previous,
+					[currentLanguage]: true,
+				}));
+			}
+			else {
+				setTranslations((previous) => ({
+					...previous,
+					[currentLanguage]: false,
+				}));
+			}
+		});
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [definitionTitle, elements]);
+
+	useEffect(() => {
+		if (localStorage.getItem('firstSaved', localStorage.TYPES.FUNCTIONAL)) {
+			setAlert(Liferay.Language.get('workflow-saved'), 'success', true);
+			localStorage.removeItem('firstSaved');
+		}
+		else if (
+			localStorage.getItem(
+				'firstPublished',
+				localStorage.TYPES.FUNCTIONAL
+			)
+		) {
+			setAlert(
+				Liferay.Language.get('workflow-published-successfully'),
+				'success',
+				true
+			);
+			localStorage.removeItem('firstPublished');
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	useEffect(() => {
+		if (blockingErrors.errorType === 'assignment') {
+			setAlert(blockingErrors.errorMessage, 'warning', true);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [blockingErrors]);
+
+	const resetAlert = () => {
+		setShowAlert(false);
+		if (blockingErrors.errorType === 'assignment') {
+			setBlockingErrors({errorType: ''});
+		}
+	};
 
 	return (
 		<>
@@ -172,9 +379,10 @@ export default function UpperToolbar({
 
 						<ClayToolbar.Item expand>
 							<ClayInput
+								autoComplete="off"
 								className="form-control-inline"
+								disabled={isView}
 								id="definition-title"
-								onBlur={() => onInputBlur()}
 								onChange={({target: {value}}) => {
 									setDefinitionTitle(value);
 								}}
@@ -187,20 +395,17 @@ export default function UpperToolbar({
 							/>
 						</ClayToolbar.Item>
 
-						{version !== '0' && (
+						{version !== 0 && (
 							<ClayToolbar.Item>
-								<ClayLabel
-									className="version"
+								<ClayButtonWithIcon
 									displayType="secondary"
-								>
-									<div>
-										{`${Liferay.Language.get('version')}:`}
-
-										<span className="version-text">
-											{version}
-										</span>
-									</div>
-								</ClayLabel>
+									onClick={() =>
+										setShowDefinitionInfo(
+											(previous) => !previous
+										)
+									}
+									symbol="info-circle-open"
+								/>
 							</ClayToolbar.Item>
 						)}
 
@@ -218,6 +423,7 @@ export default function UpperToolbar({
 						{definitionNotPublished && (
 							<ClayToolbar.Item>
 								<ClayButton
+									disabled={isView}
 									displayType="secondary"
 									onClick={saveDefinition}
 								>
@@ -228,6 +434,7 @@ export default function UpperToolbar({
 
 						<ClayToolbar.Item>
 							<ClayButton
+								disabled={isView}
 								displayType="primary"
 								onClick={publishDefinition}
 							>
@@ -270,13 +477,17 @@ export default function UpperToolbar({
 				</ClayLayout.ContainerFluid>
 			</ClayToolbar>
 
-			{showSuccessAlert && (
+			{showAlert && (
 				<ClayAlert.ToastContainer>
 					<ClayAlert
 						autoClose={5000}
-						displayType="success"
-						onClose={() => setShowSuccessAlert(false)}
-						title={`${Liferay.Language.get('success')}:`}
+						displayType={alertType}
+						onClose={() => resetAlert()}
+						title={
+							alertType === 'success'
+								? `${Liferay.Language.get('success')}:`
+								: `${errorTitle()}:`
+						}
 					>
 						{alertMessage}
 					</ClayAlert>
@@ -287,9 +498,9 @@ export default function UpperToolbar({
 }
 
 UpperToolbar.propTypes = {
+	definitionTitleTranslations: PropTypes.object,
 	displayNames: PropTypes.arrayOf(PropTypes.string).isRequired,
 	languageIds: PropTypes.arrayOf(PropTypes.string).isRequired,
 	title: PropTypes.PropTypes.string.isRequired,
-	translations: PropTypes.object,
 	version: PropTypes.PropTypes.string.isRequired,
 };

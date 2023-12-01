@@ -1,4 +1,4 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-lima"
 definition {
 
 	property portal.acceptance = "true";
@@ -12,7 +12,7 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Test Site Name",
@@ -20,9 +20,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -31,12 +31,11 @@ definition {
 	}
 
 	@description = "This makes sure that the user can edit OG image tag."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanChangeImageTag {
 		var portalURL = PropsUtil.get("portal.url");
-
-		var siteID = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
+		var siteId = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
 
 		Navigator.openToGroupPagesPortlet(
 			groupName = "Test Site Name",
@@ -58,18 +57,17 @@ definition {
 
 		Navigator.openSpecificURL(url = "${portalURL}/web/test-site-name/test-page-name");
 
-		OpenGraph.viewOpenGraphProperties(ogPropertyList = '''"og:image" content="${portalURL}/documents/${siteID}/0/Document_2.jpg''');
+		OpenGraph.viewOpenGraphProperties(ogPropertyList = '''"og:image" content="${portalURL}/documents/${siteId}/0/Document_2.jpg''');
 	}
 
 	@description = "This makes sure that the user can change the default image for OpenGraph at the site level."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanChangeSiteImage {
 		property portal.acceptance = "true";
 
 		var portalURL = PropsUtil.get("portal.url");
-
-		var siteID = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
+		var siteId = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
 
 		for (var imageNumber : list "1,2") {
 			Site.openToSiteSettingsPages(
@@ -95,16 +93,15 @@ definition {
 
 		Navigator.openSpecificURL(url = "${portalURL}/web/test-site-name/test-page-name");
 
-		OpenGraph.viewOpenGraphProperties(ogPropertyList = '''"og:image" content="${portalURL}/documents/${siteID}/0/Document_2.jpg''');
+		OpenGraph.viewOpenGraphProperties(ogPropertyList = '''"og:image" content="${portalURL}/documents/${siteId}/0/Document_2.jpg''');
 	}
 
 	@description = "This makes sure that the previously added image can be cleared at the page level."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanClearImageAtPageLevel {
 		var portalURL = PropsUtil.get("portal.url");
-
-		var siteID = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
+		var siteId = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
 
 		Site.openToSiteSettingsPages(
 			portlet = "Open Graph",
@@ -138,16 +135,15 @@ definition {
 
 		Navigator.openSpecificURL(url = "${portalURL}/web/test-site-name/test-page-name");
 
-		OpenGraph.viewOpenGraphProperties(ogPropertyList = '''"og:image" content="${portalURL}/documents/${siteID}/0/Document_1.jpg''');
+		OpenGraph.viewOpenGraphProperties(ogPropertyList = '''"og:image" content="${portalURL}/documents/${siteId}/0/Document_1.jpg''');
 	}
 
 	@description = "This makes sure that it will apply the OG image of the page when images are set at both the site level and the page level."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanClearImageAtSiteLevel {
 		var portalURL = PropsUtil.get("portal.url");
-
-		var siteID = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
+		var siteId = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
 
 		Site.openToSiteSettingsPages(
 			portlet = "Open Graph",
@@ -191,7 +187,7 @@ definition {
 	}
 
 	@description = "This ensures that the OG image alt description configuration at page level overrides its configuration at the site level."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanConfigurePageSpecificAltDescription {
 		var portalURL = PropsUtil.get("portal.url");
@@ -232,12 +228,11 @@ definition {
 	}
 
 	@description = "This makes sure that it will apply the OG image of the page when images are set at both the site level and the page level."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanConfigurePageSpecificImage {
 		var portalURL = PropsUtil.get("portal.url");
-
-		var siteID = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
+		var siteId = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
 
 		Site.openToSiteSettingsPages(
 			portlet = "Open Graph",
@@ -269,14 +264,15 @@ definition {
 
 		Navigator.openSpecificURL(url = "${portalURL}/web/test-site-name/test-page-name");
 
-		OpenGraph.viewOpenGraphProperties(ogPropertyList = '''"og:image" content="${portalURL}/documents/${siteID}/0/Document_2.jpg''');
+		OpenGraph.viewOpenGraphProperties(ogPropertyList = '''"og:image" content="${portalURL}/documents/${siteId}/0/Document_2.jpg''');
 	}
 
 	@description = "This ensures that the OG image tags will not appear when the HTTPS user disables Open Graph."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanDisableAfterAddingImage {
-		property test.name.skip.portal.instance = "OpenGraphImages#CanDisableAfterAddingImage";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		Navigator.openSpecificURL(url = "https://localhost:8443/web/test-site-name/test-page-name");
 
@@ -303,7 +299,7 @@ definition {
 	}
 
 	@description = "This ensures that users can introduce an alternative text for the image."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanEditAltDescription {
 		property portal.acceptance = "true";
@@ -337,11 +333,12 @@ definition {
 	}
 
 	@description = "This ensures that the HTTPS users can customize OG image tags and generate special tags."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanViewImageWithMetaTags {
 		property portal.acceptance = "true";
-		property test.name.skip.portal.instance = "OpenGraphImages#CanViewImageWithMetaTags";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		Navigator.openSpecificURL(url = "https://localhost:8443/web/test-site-name/test-page-name");
 
@@ -362,7 +359,7 @@ definition {
 	}
 
 	@description = "This ensures that the users can introduce an alternative text with translated language for the image."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewTranslatedAltDescription {
 		var portalURL = PropsUtil.get("portal.url");

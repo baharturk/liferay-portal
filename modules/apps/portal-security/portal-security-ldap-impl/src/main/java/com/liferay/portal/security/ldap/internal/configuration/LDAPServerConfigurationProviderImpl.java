@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.ldap.internal.configuration;
@@ -50,7 +41,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  */
 @Component(
-	immediate = true,
 	property = "factoryPid=com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration",
 	service = ConfigurationProvider.class
 )
@@ -159,7 +149,7 @@ public class LDAPServerConfigurationProviderImpl
 			objectValuePair = objectValuePairs.get(ldapServerId);
 
 		if ((objectValuePair == null) &&
-			!MapUtil.isEmpty(defaultObjectValuePairs)) {
+			MapUtil.isNotEmpty(defaultObjectValuePairs)) {
 
 			objectValuePair = defaultObjectValuePairs.get(
 				LDAPServerConfiguration.LDAP_SERVER_ID_DEFAULT);
@@ -210,7 +200,7 @@ public class LDAPServerConfigurationProviderImpl
 			objectValuePair = objectValuePairs.get(ldapServerId);
 
 		if ((objectValuePair == null) &&
-			!MapUtil.isEmpty(defaultObjectValuePairs)) {
+			MapUtil.isNotEmpty(defaultObjectValuePairs)) {
 
 			objectValuePair = defaultObjectValuePairs.get(
 				LDAPServerConfiguration.LDAP_SERVER_ID_DEFAULT);
@@ -247,7 +237,7 @@ public class LDAPServerConfigurationProviderImpl
 		if (MapUtil.isEmpty(objectValuePairs) && useDefault) {
 			ldapServerConfigurations.add(_defaultLDAPServerConfiguration);
 		}
-		else if (!MapUtil.isEmpty(objectValuePairs)) {
+		else if (MapUtil.isNotEmpty(objectValuePairs)) {
 			List<ObjectValuePair<Configuration, LDAPServerConfiguration>>
 				objectValuePairsList = new ArrayList<>(
 					objectValuePairs.values());
@@ -267,9 +257,7 @@ public class LDAPServerConfigurationProviderImpl
 						}
 						catch (IllegalStateException illegalStateException) {
 							if (_log.isDebugEnabled()) {
-								_log.debug(
-									illegalStateException,
-									illegalStateException);
+								_log.debug(illegalStateException);
 							}
 
 							return 0L;
@@ -308,7 +296,7 @@ public class LDAPServerConfigurationProviderImpl
 			configurationsProperties.add(
 				new HashMapDictionary<String, Object>());
 		}
-		else if (!MapUtil.isEmpty(objectValuePairs)) {
+		else if (MapUtil.isNotEmpty(objectValuePairs)) {
 			for (ObjectValuePair<Configuration, LDAPServerConfiguration>
 					objectValuePair : objectValuePairs.values()) {
 
@@ -366,7 +354,9 @@ public class LDAPServerConfigurationProviderImpl
 				objectValuePairs = _configurations.get(companyId);
 			}
 
-			if ((ldapServerId != null) && !MapUtil.isEmpty(objectValuePairs)) {
+			if ((ldapServerId != null) &&
+				MapUtil.isNotEmpty(objectValuePairs)) {
+
 				objectValuePairs.remove(ldapServerId);
 			}
 		}
@@ -402,7 +392,7 @@ public class LDAPServerConfigurationProviderImpl
 			Configuration configuration = null;
 
 			if (objectValuePair == null) {
-				configuration = configurationAdmin.createFactoryConfiguration(
+				configuration = _configurationAdmin.createFactoryConfiguration(
 					getMetatypeId(), StringPool.QUESTION);
 			}
 			else {
@@ -417,16 +407,11 @@ public class LDAPServerConfigurationProviderImpl
 		}
 	}
 
-	@Override
-	@Reference(unbind = "-")
-	protected void setConfigurationAdmin(
-		ConfigurationAdmin configurationAdmin) {
-
-		super.configurationAdmin = configurationAdmin;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		LDAPServerConfigurationProviderImpl.class);
+
+	@Reference
+	private ConfigurationAdmin _configurationAdmin;
 
 	private final Map
 		<Long,

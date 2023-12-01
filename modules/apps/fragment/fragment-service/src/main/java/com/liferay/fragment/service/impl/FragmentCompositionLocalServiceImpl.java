@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.impl;
 
 import com.liferay.fragment.exception.DuplicateFragmentCompositionKeyException;
+import com.liferay.fragment.exception.FragmentCompositionDescriptionException;
 import com.liferay.fragment.exception.FragmentCompositionNameException;
 import com.liferay.fragment.model.FragmentComposition;
 import com.liferay.fragment.service.base.FragmentCompositionLocalServiceBaseImpl;
@@ -74,8 +66,10 @@ public class FragmentCompositionLocalServiceImpl
 		fragmentCompositionKey = _getFragmentCompositionKey(
 			fragmentCompositionKey);
 
-		validate(name);
-		validateFragmentCompositionKey(groupId, fragmentCompositionKey);
+		_validateFragmentCompositionKey(groupId, fragmentCompositionKey);
+
+		_validateName(name);
+		_validateDescription(description);
 
 		long fragmentCompositionId = counterLocalService.increment();
 
@@ -247,6 +241,34 @@ public class FragmentCompositionLocalServiceImpl
 	}
 
 	@Override
+	public String getUniqueFragmentCompositionName(
+		long groupId, long fragmentCollectionId, String name) {
+
+		FragmentComposition fragmentComposition =
+			fragmentCompositionPersistence.fetchByG_FCI_LikeN_First(
+				groupId, fragmentCollectionId, name, null);
+
+		if (fragmentComposition == null) {
+			return name;
+		}
+
+		int count = 1;
+
+		while (true) {
+			String newName = StringUtil.appendParentheticalSuffix(
+				name, count++);
+
+			fragmentComposition =
+				fragmentCompositionPersistence.fetchByG_FCI_LikeN_First(
+					groupId, fragmentCollectionId, newName, null);
+
+			if (fragmentComposition == null) {
+				return newName;
+			}
+		}
+	}
+
+	@Override
 	public FragmentComposition moveFragmentComposition(
 			long fragmentCompositionId, long fragmentCollectionId)
 		throws PortalException {
@@ -292,7 +314,8 @@ public class FragmentCompositionLocalServiceImpl
 			fragmentCompositionPersistence.findByPrimaryKey(
 				fragmentCompositionId);
 
-		validate(name);
+		_validateName(name);
+		_validateDescription(description);
 
 		User user = _userLocalService.getUser(userId);
 
@@ -319,14 +342,56 @@ public class FragmentCompositionLocalServiceImpl
 			fragmentCompositionPersistence.findByPrimaryKey(
 				fragmentCompositionId);
 
-		validate(name);
+		_validateName(name);
 
 		fragmentComposition.setName(name);
 
 		return fragmentCompositionPersistence.update(fragmentComposition);
 	}
 
-	protected void validate(String name) throws PortalException {
+	private String _getFragmentCompositionKey(String fragmentCompositionKey) {
+		if (fragmentCompositionKey != null) {
+			fragmentCompositionKey = fragmentCompositionKey.trim();
+
+			return StringUtil.toLowerCase(fragmentCompositionKey);
+		}
+
+		return StringPool.BLANK;
+	}
+
+	private void _validateDescription(String description)
+		throws PortalException {
+
+		if (Validator.isNull(description)) {
+			return;
+		}
+
+		int descriptionMaxLength = ModelHintsUtil.getMaxLength(
+			FragmentComposition.class.getName(), "description");
+
+		if (description.length() > descriptionMaxLength) {
+			throw new FragmentCompositionDescriptionException(
+				"Maximum length of description exceeded");
+		}
+	}
+
+	private void _validateFragmentCompositionKey(
+			long groupId, String fragmentCompositionKey)
+		throws PortalException {
+
+		fragmentCompositionKey = _getFragmentCompositionKey(
+			fragmentCompositionKey);
+
+		FragmentComposition fragmentComposition =
+			fragmentCompositionPersistence.fetchByG_FCK(
+				groupId, fragmentCompositionKey);
+
+		if (fragmentComposition != null) {
+			throw new DuplicateFragmentCompositionKeyException();
+		}
+	}
+
+	private void _validateName(String name) throws PortalException {
 		if (Validator.isNull(name)) {
 			throw new FragmentCompositionNameException("Name must not be null");
 		}
@@ -345,32 +410,6 @@ public class FragmentCompositionLocalServiceImpl
 			throw new FragmentCompositionNameException(
 				"Maximum length of name exceeded");
 		}
-	}
-
-	protected void validateFragmentCompositionKey(
-			long groupId, String fragmentCompositionKey)
-		throws PortalException {
-
-		fragmentCompositionKey = _getFragmentCompositionKey(
-			fragmentCompositionKey);
-
-		FragmentComposition fragmentComposition =
-			fragmentCompositionPersistence.fetchByG_FCK(
-				groupId, fragmentCompositionKey);
-
-		if (fragmentComposition != null) {
-			throw new DuplicateFragmentCompositionKeyException();
-		}
-	}
-
-	private String _getFragmentCompositionKey(String fragmentCompositionKey) {
-		if (fragmentCompositionKey != null) {
-			fragmentCompositionKey = fragmentCompositionKey.trim();
-
-			return StringUtil.toLowerCase(fragmentCompositionKey);
-		}
-
-		return StringPool.BLANK;
 	}
 
 	@Reference

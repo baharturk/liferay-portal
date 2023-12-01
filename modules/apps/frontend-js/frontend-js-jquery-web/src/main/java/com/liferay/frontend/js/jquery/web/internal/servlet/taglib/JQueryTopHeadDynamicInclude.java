@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.js.jquery.web.internal.servlet.taglib;
@@ -17,13 +8,14 @@ package com.liferay.frontend.js.jquery.web.internal.servlet.taglib;
 import com.liferay.frontend.js.jquery.web.internal.configuration.JSJQueryConfiguration;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
+import com.liferay.portal.url.builder.ComboRequestAbsolutePortalURLBuilder;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -45,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.frontend.js.jquery.web.internal.configuration.JSJQueryConfiguration",
-	immediate = true, service = DynamicInclude.class
+	service = DynamicInclude.class
 )
 public class JQueryTopHeadDynamicInclude extends BaseDynamicInclude {
 
@@ -72,35 +64,28 @@ public class JQueryTopHeadDynamicInclude extends BaseDynamicInclude {
 				WebKeys.THEME_DISPLAY);
 
 		if (themeDisplay.isThemeJsFastLoad()) {
-			sb.append("<script data-senna-track=\"permanent\" src=\"");
+			printWriter.print("<script");
+			printWriter.write(
+				ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+					httpServletRequest));
+			printWriter.print(" data-senna-track=\"permanent\" src=\"");
 
-			String comboPath = _portal.getStaticResourceURL(
-				httpServletRequest, "/combo", "minifierType=js", _lastModified);
+			ComboRequestAbsolutePortalURLBuilder
+				comboRequestAbsolutePortalURLBuilder =
+					absolutePortalURLBuilder.forComboRequest();
 
-			boolean cdnDynamicResourcesEnabled =
-				_portal.isCDNDynamicResourcesEnabled(
-					themeDisplay.getCompanyId());
-
-			if (!cdnDynamicResourcesEnabled) {
-				absolutePortalURLBuilder.ignoreCDNHost();
-			}
-
-			sb.append(
-				absolutePortalURLBuilder.forResource(
-					comboPath
-				).build());
-
-			if (cdnDynamicResourcesEnabled) {
-				absolutePortalURLBuilder.ignoreCDNHost();
-			}
+			comboRequestAbsolutePortalURLBuilder.setTimestamp(_lastModified);
 
 			for (String fileName : _FILE_NAMES) {
-				sb.append("&");
-				sb.append(
-					absolutePortalURLBuilder.forModuleScript(
+				comboRequestAbsolutePortalURLBuilder.addFile(
+					absolutePortalURLBuilder.forBundleScript(
 						_bundleContext.getBundle(), fileName
+					).ignoreCDNHost(
+					).ignorePathProxy(
 					).build());
 			}
+
+			sb.append(comboRequestAbsolutePortalURLBuilder.build());
 
 			sb.append("\" type=\"text/javascript\"></script>");
 		}
@@ -108,7 +93,7 @@ public class JQueryTopHeadDynamicInclude extends BaseDynamicInclude {
 			for (String fileName : _FILE_NAMES) {
 				sb.append("<script data-senna-track=\"permanent\" src=\"");
 				sb.append(
-					absolutePortalURLBuilder.forModuleScript(
+					absolutePortalURLBuilder.forBundleScript(
 						_bundleContext.getBundle(), fileName
 					).build());
 				sb.append("\" type=\"text/javascript\"></script>");
@@ -151,8 +136,5 @@ public class JQueryTopHeadDynamicInclude extends BaseDynamicInclude {
 	private volatile BundleContext _bundleContext;
 	private volatile JSJQueryConfiguration _jsJQueryConfiguration;
 	private volatile long _lastModified;
-
-	@Reference
-	private Portal _portal;
 
 }

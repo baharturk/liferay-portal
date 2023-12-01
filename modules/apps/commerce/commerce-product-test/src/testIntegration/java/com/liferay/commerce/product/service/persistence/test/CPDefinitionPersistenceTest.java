@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
@@ -127,6 +118,8 @@ public class CPDefinitionPersistenceTest {
 
 		newCPDefinition.setMvccVersion(RandomTestUtil.nextLong());
 
+		newCPDefinition.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCPDefinition.setUuid(RandomTestUtil.randomString());
 
 		newCPDefinition.setDefaultLanguageId(RandomTestUtil.randomString());
@@ -233,6 +226,9 @@ public class CPDefinitionPersistenceTest {
 		Assert.assertEquals(
 			existingCPDefinition.getMvccVersion(),
 			newCPDefinition.getMvccVersion());
+		Assert.assertEquals(
+			existingCPDefinition.getCtCollectionId(),
+			newCPDefinition.getCtCollectionId());
 		Assert.assertEquals(
 			existingCPDefinition.getUuid(), newCPDefinition.getUuid());
 		Assert.assertEquals(
@@ -402,6 +398,13 @@ public class CPDefinitionPersistenceTest {
 	}
 
 	@Test
+	public void testCountByCProductId() throws Exception {
+		_persistence.countByCProductId(RandomTestUtil.nextLong());
+
+		_persistence.countByCProductId(0L);
+	}
+
+	@Test
 	public void testCountByCPTaxCategoryId() throws Exception {
 		_persistence.countByCPTaxCategoryId(RandomTestUtil.nextLong());
 
@@ -471,23 +474,30 @@ public class CPDefinitionPersistenceTest {
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
 
+	@Test
+	public void testFilterFindByGroupId() throws Exception {
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
+	}
+
 	protected OrderByComparator<CPDefinition> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CPDefinition", "mvccVersion", true, "uuid", true,
-			"defaultLanguageId", true, "CPDefinitionId", true, "groupId", true,
-			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "modifiedDate", true, "CProductId", true, "CPTaxCategoryId",
-			true, "productTypeName", true, "availableIndividually", true,
-			"ignoreSKUCombinations", true, "shippable", true, "freeShipping",
-			true, "shipSeparately", true, "shippingExtraPrice", true, "width",
-			true, "height", true, "depth", true, "weight", true, "taxExempt",
-			true, "telcoOrElectronics", true, "DDMStructureKey", true,
-			"published", true, "displayDate", true, "expirationDate", true,
-			"lastPublishDate", true, "subscriptionEnabled", true,
-			"subscriptionLength", true, "subscriptionType", true,
-			"maxSubscriptionCycles", true, "deliverySubscriptionEnabled", true,
-			"deliverySubscriptionLength", true, "deliverySubscriptionType",
-			true, "deliverySubscriptionTypeSettings", true,
+			"CPDefinition", "mvccVersion", true, "ctCollectionId", true, "uuid",
+			true, "defaultLanguageId", true, "CPDefinitionId", true, "groupId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"createDate", true, "modifiedDate", true, "CProductId", true,
+			"CPTaxCategoryId", true, "productTypeName", true,
+			"availableIndividually", true, "ignoreSKUCombinations", true,
+			"shippable", true, "freeShipping", true, "shipSeparately", true,
+			"shippingExtraPrice", true, "width", true, "height", true, "depth",
+			true, "weight", true, "taxExempt", true, "telcoOrElectronics", true,
+			"DDMStructureKey", true, "published", true, "displayDate", true,
+			"expirationDate", true, "lastPublishDate", true,
+			"subscriptionEnabled", true, "subscriptionLength", true,
+			"subscriptionType", true, "maxSubscriptionCycles", true,
+			"deliverySubscriptionEnabled", true, "deliverySubscriptionLength",
+			true, "deliverySubscriptionType", true,
+			"deliverySubscriptionTypeSettings", true,
 			"deliveryMaxSubscriptionCycles", true, "accountGroupFilterEnabled",
 			true, "channelFilterEnabled", true, "version", true, "status", true,
 			"statusByUserId", true, "statusByUserName", true, "statusDate",
@@ -787,6 +797,8 @@ public class CPDefinitionPersistenceTest {
 		CPDefinition cpDefinition = _persistence.create(pk);
 
 		cpDefinition.setMvccVersion(RandomTestUtil.nextLong());
+
+		cpDefinition.setCtCollectionId(RandomTestUtil.nextLong());
 
 		cpDefinition.setUuid(RandomTestUtil.randomString());
 

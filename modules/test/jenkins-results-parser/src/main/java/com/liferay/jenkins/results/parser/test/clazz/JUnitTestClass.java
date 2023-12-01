@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz;
@@ -24,10 +15,39 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.json.JSONObject;
+
 /**
  * @author Michael Hashimoto
  */
 public class JUnitTestClass extends BaseTestClass {
+
+	@Override
+	public JSONObject getJSONObject() {
+		JSONObject jsonObject = super.getJSONObject();
+
+		if ((_testPropertiesFile != null) && _testPropertiesFile.exists()) {
+			jsonObject.put("test_properties_file", _testPropertiesFile);
+		}
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(
+				_testrayMainComponentName)) {
+
+			jsonObject.put(
+				"testray_main_component_name", _testrayMainComponentName);
+		}
+
+		return jsonObject;
+	}
+
+	public String getTestClassName() {
+		return JenkinsResultsParserUtil.combine(
+			_getPackageName(), ".", _getClassName());
+	}
+
+	public String getTestrayMainComponentName() {
+		return _testrayMainComponentName;
+	}
 
 	@Override
 	public boolean isIgnored() {
@@ -39,22 +59,58 @@ public class JUnitTestClass extends BaseTestClass {
 
 		super(batchTestClassGroup, testClassFile);
 
+		File testPropertiesBaseDir = _getTestPropertiesBaseDir(
+			getTestClassFile());
+
+		if ((testPropertiesBaseDir != null) && testPropertiesBaseDir.exists()) {
+			_testPropertiesFile = new File(
+				testPropertiesBaseDir, "test.properties");
+
+			_testrayMainComponentName = JenkinsResultsParserUtil.getProperty(
+				JenkinsResultsParserUtil.getProperties(_testPropertiesFile),
+				"testray.main.component.name");
+		}
+		else {
+			_testPropertiesFile = null;
+			_testrayMainComponentName = null;
+		}
+
 		String testClassFileName = testClassFile.getName();
 
 		if (!testClassFileName.endsWith(".java")) {
-			_fileContent = "";
-
 			return;
 		}
 
 		try {
-			_fileContent = JenkinsResultsParserUtil.read(getTestClassFile());
-
-			_initTestClassMethods();
+			_initTestClassMethods(
+				JenkinsResultsParserUtil.read(getTestClassFile()));
 		}
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
 		}
+	}
+
+	protected JUnitTestClass(
+		BatchTestClassGroup batchTestClassGroup, JSONObject jsonObject) {
+
+		super(batchTestClassGroup, jsonObject);
+
+		_classIgnored = jsonObject.getBoolean("ignored");
+
+		if (jsonObject.has("test_properties_file")) {
+			_testPropertiesFile = new File(
+				jsonObject.getString("test_properties_file"));
+		}
+		else {
+			_testPropertiesFile = null;
+		}
+
+		_testrayMainComponentName = jsonObject.optString(
+			"testray_main_component_name");
+	}
+
+	protected String getTestName() {
+		return _getPackageName() + "." + _getClassName();
 	}
 
 	private String _getClassName() {
@@ -78,14 +134,14 @@ public class JUnitTestClass extends BaseTestClass {
 		return testClassFilePath.replaceAll("/", ".");
 	}
 
-	private String _getParentClassName() {
+	private String _getParentClassName(String fileContent) {
 		Pattern classHeaderPattern = Pattern.compile(
 			JenkinsResultsParserUtil.combine(
 				"public\\s+(abstract\\s+)?(class|interface)\\s+",
 				_getClassName(),
 				"(\\<[^\\<]+\\>)?(?<classHeaderEntities>[^\\{]+)\\{"));
 
-		Matcher classHeaderMatcher = classHeaderPattern.matcher(_fileContent);
+		Matcher classHeaderMatcher = classHeaderPattern.matcher(fileContent);
 
 		if (!classHeaderMatcher.find()) {
 			throw new RuntimeException(
@@ -109,8 +165,8 @@ public class JUnitTestClass extends BaseTestClass {
 		return null;
 	}
 
-	private String _getParentFullClassName() {
-		String parentClassName = _getParentClassName();
+	private String _getParentFullClassName(String fileContent) {
+		String parentClassName = _getParentClassName(fileContent);
 
 		if (parentClassName == null) {
 			return null;
@@ -126,7 +182,8 @@ public class JUnitTestClass extends BaseTestClass {
 			return parentClassName;
 		}
 
-		String parentPackageName = _getParentPackageName(parentClassName);
+		String parentPackageName = _getParentPackageName(
+			fileContent, parentClassName);
 
 		if (parentPackageName == null) {
 			return null;
@@ -135,14 +192,16 @@ public class JUnitTestClass extends BaseTestClass {
 		return parentPackageName + "." + parentClassName;
 	}
 
-	private String _getParentPackageName(String parentClassName) {
+	private String _getParentPackageName(
+		String fileContent, String parentClassName) {
+
 		Pattern parentImportClassPattern = Pattern.compile(
 			JenkinsResultsParserUtil.combine(
 				"import\\s+(?<parentPackageName>[^;]+)\\.", parentClassName,
 				";"));
 
 		Matcher parentImportClassMatcher = parentImportClassPattern.matcher(
-			_fileContent);
+			fileContent);
 
 		if (parentImportClassMatcher.find()) {
 			String parentPackageName = parentImportClassMatcher.group(
@@ -158,8 +217,34 @@ public class JUnitTestClass extends BaseTestClass {
 		return _getPackageName();
 	}
 
-	private void _initTestClassMethods() {
-		Matcher classHeaderMatcher = _classHeaderPattern.matcher(_fileContent);
+	private File _getTestPropertiesBaseDir(File file) {
+		if (file == null) {
+			return null;
+		}
+
+		File canonicalFile = JenkinsResultsParserUtil.getCanonicalFile(file);
+
+		File parentFile = canonicalFile.getParentFile();
+
+		if ((parentFile == null) || !parentFile.exists()) {
+			return file;
+		}
+
+		if (!canonicalFile.isDirectory()) {
+			return _getTestPropertiesBaseDir(parentFile);
+		}
+
+		File testPropertiesFile = new File(canonicalFile, "test.properties");
+
+		if (!testPropertiesFile.exists()) {
+			return _getTestPropertiesBaseDir(parentFile);
+		}
+
+		return canonicalFile;
+	}
+
+	private void _initTestClassMethods(String fileContent) {
+		Matcher classHeaderMatcher = _classHeaderPattern.matcher(fileContent);
 
 		_classIgnored = false;
 
@@ -171,8 +256,7 @@ public class JUnitTestClass extends BaseTestClass {
 			}
 		}
 
-		Matcher methodHeaderMatcher = _methodHeaderPattern.matcher(
-			_fileContent);
+		Matcher methodHeaderMatcher = _methodHeaderPattern.matcher(fileContent);
 
 		while (methodHeaderMatcher.find()) {
 			String annotations = methodHeaderMatcher.group("annotations");
@@ -190,7 +274,7 @@ public class JUnitTestClass extends BaseTestClass {
 			}
 		}
 
-		String parentFullClassName = _getParentFullClassName();
+		String parentFullClassName = _getParentFullClassName(fileContent);
 
 		if (parentFullClassName == null) {
 			return;
@@ -234,6 +318,7 @@ public class JUnitTestClass extends BaseTestClass {
 			"(?<methodName>[^\\(\\s]+)"));
 
 	private boolean _classIgnored;
-	private final String _fileContent;
+	private final File _testPropertiesFile;
+	private final String _testrayMainComponentName;
 
 }

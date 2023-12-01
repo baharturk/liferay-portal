@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 function isIdDuplicated(elements, id) {
@@ -22,6 +16,30 @@ function isIdDuplicated(elements, id) {
 }
 
 function getModalInfo(itemType) {
+	if (itemType === 'actions') {
+		return {
+			message: Liferay.Language.get(
+				'are-you-sure-you-want-to-delete-all-actions-and-their-settings'
+			),
+			title: Liferay.Language.get('delete-actions'),
+		};
+	}
+	if (itemType === 'assignments') {
+		return {
+			message: Liferay.Language.get(
+				'are-you-sure-you-want-to-delete-all-assignments-and-their-settings'
+			),
+			title: Liferay.Language.get('delete-assignments'),
+		};
+	}
+	if (itemType === 'condition') {
+		return {
+			message: Liferay.Language.get(
+				'are-you-sure-you-want-to-delete-the-selected-condition-node'
+			),
+			title: Liferay.Language.get('delete-condition-node'),
+		};
+	}
 	if (itemType === 'end') {
 		return {
 			message: Liferay.Language.get(
@@ -30,7 +48,7 @@ function getModalInfo(itemType) {
 			title: Liferay.Language.get('delete-end-node'),
 		};
 	}
-	else if (itemType === 'fork') {
+	if (itemType === 'fork') {
 		return {
 			message: Liferay.Language.get(
 				'are-you-sure-you-want-to-delete-the-selected-fork-node'
@@ -38,7 +56,7 @@ function getModalInfo(itemType) {
 			title: Liferay.Language.get('delete-fork-node'),
 		};
 	}
-	else if (itemType === 'join') {
+	if (itemType === 'join') {
 		return {
 			message: Liferay.Language.get(
 				'are-you-sure-you-want-to-delete-the-selected-join-node'
@@ -46,7 +64,7 @@ function getModalInfo(itemType) {
 			title: Liferay.Language.get('delete-join-node'),
 		};
 	}
-	else if (itemType === 'join-xor') {
+	if (itemType === 'join-xor') {
 		return {
 			message: Liferay.Language.get(
 				'are-you-sure-you-want-to-delete-the-selected-join-xor-node'
@@ -54,7 +72,15 @@ function getModalInfo(itemType) {
 			title: Liferay.Language.get('delete-join-xor-node'),
 		};
 	}
-	else if (itemType === 'start') {
+	if (itemType === 'notifications') {
+		return {
+			message: Liferay.Language.get(
+				'are-you-sure-you-want-to-delete-all-notifications-and-their-settings'
+			),
+			title: Liferay.Language.get('delete-notifications'),
+		};
+	}
+	if (itemType === 'start') {
 		return {
 			message: Liferay.Language.get(
 				'are-you-sure-you-want-to-delete-the-selected-start-node'
@@ -62,7 +88,7 @@ function getModalInfo(itemType) {
 			title: Liferay.Language.get('delete-start-node'),
 		};
 	}
-	else if (itemType === 'state') {
+	if (itemType === 'state') {
 		return {
 			message: Liferay.Language.get(
 				'are-you-sure-you-want-to-delete-the-selected-state-node'
@@ -70,7 +96,7 @@ function getModalInfo(itemType) {
 			title: Liferay.Language.get('delete-state-node'),
 		};
 	}
-	else if (itemType === 'task') {
+	if (itemType === 'task') {
 		return {
 			message: Liferay.Language.get(
 				'are-you-sure-you-want-to-delete-the-selected-task-node'
@@ -78,7 +104,15 @@ function getModalInfo(itemType) {
 			title: Liferay.Language.get('delete-task-node'),
 		};
 	}
-	else if (itemType === 'transition') {
+	if (itemType === 'timers') {
+		return {
+			message: Liferay.Language.get(
+				'are-you-sure-you-want-to-delete-all-timers-and-their-settings'
+			),
+			title: Liferay.Language.get('delete-timers'),
+		};
+	}
+	if (itemType === 'transition') {
 		return {
 			message: Liferay.Language.get(
 				'are-you-sure-you-want-to-delete-the-selected-transition'
@@ -86,9 +120,8 @@ function getModalInfo(itemType) {
 			title: Liferay.Language.get('delete-transition'),
 		};
 	}
-	else {
-		return {};
-	}
+
+	return {};
 }
 
 export {getModalInfo, isIdDuplicated};

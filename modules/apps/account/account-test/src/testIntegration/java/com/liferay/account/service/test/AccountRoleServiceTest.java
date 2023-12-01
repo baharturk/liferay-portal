@@ -1,37 +1,39 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.test;
 
 import com.liferay.account.constants.AccountActionKeys;
+import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountRole;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.account.service.AccountRoleService;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.account.service.test.util.UserRoleTestUtil;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -54,8 +56,7 @@ public class AccountRoleServiceTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_accountEntry = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+		_accountEntry = AccountEntryTestUtil.addAccountEntry();
 
 		_user = UserTestUtil.addUser();
 
@@ -140,9 +141,80 @@ public class AccountRoleServiceTest {
 		_accountRoleService.deleteAccountRole(accountRole);
 	}
 
+	@Test
+	public void testSearchAccountRoles() throws Exception {
+		AccountRole accountRole = _addAccountRole();
+
+		_addAccountRole();
+
+		_accountEntryUserRelLocalService.addAccountEntryUserRel(
+			_accountEntry.getAccountEntryId(), _user.getUserId());
+
+		Role role = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+
+		_userLocalService.addRoleUser(role.getRoleId(), _user.getUserId());
+
+		ResourcePermissionLocalServiceUtil.setResourcePermissions(
+			accountRole.getCompanyId(), Role.class.getName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(accountRole.getRoleId()), role.getRoleId(),
+			new String[] {ActionKeys.VIEW});
+
+		BaseModelSearchResult<AccountRole> baseModelSearchResult =
+			_accountRoleService.searchAccountRoles(
+				_accountEntry.getCompanyId(),
+				new long[] {_accountEntry.getAccountEntryId()},
+				StringPool.BLANK, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
+
+		Assert.assertEquals(1, baseModelSearchResult.getLength());
+
+		List<AccountRole> accountRoles = baseModelSearchResult.getBaseModels();
+
+		Assert.assertEquals(accountRole, accountRoles.get(0));
+	}
+
+	@Test
+	public void testSearchAccountRolesWithDefaultAccountEntryId()
+		throws Exception {
+
+		AccountRole accountRoleWithViewPermissions = _addAccountRole(
+			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT);
+		AccountRole accountRoleWithoutViewPermissions = _addAccountRole(
+			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT);
+
+		Role role = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+
+		_userLocalService.addRoleUser(role.getRoleId(), _user.getUserId());
+
+		ResourcePermissionLocalServiceUtil.setResourcePermissions(
+			accountRoleWithViewPermissions.getCompanyId(), Role.class.getName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(accountRoleWithViewPermissions.getRoleId()),
+			role.getRoleId(), new String[] {ActionKeys.VIEW});
+
+		BaseModelSearchResult<AccountRole> baseModelSearchResult =
+			_accountRoleService.searchAccountRoles(
+				_accountEntry.getCompanyId(),
+				new long[] {AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT},
+				StringPool.BLANK, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
+
+		List<AccountRole> accountRoles = baseModelSearchResult.getBaseModels();
+
+		Assert.assertTrue(
+			accountRoles.contains(accountRoleWithViewPermissions));
+		Assert.assertFalse(
+			accountRoles.contains(accountRoleWithoutViewPermissions));
+	}
+
 	private AccountRole _addAccountRole() throws Exception {
+		return _addAccountRole(_accountEntry.getAccountEntryId());
+	}
+
+	private AccountRole _addAccountRole(long accountEntryId) throws Exception {
 		return _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(), _accountEntry.getAccountEntryId(),
+			TestPropsValues.getUserId(), accountEntryId,
 			RandomTestUtil.randomString(),
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomLocaleStringMap());
@@ -161,9 +233,6 @@ public class AccountRoleServiceTest {
 	private AccountEntry _accountEntry;
 
 	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
-
-	@Inject
 	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
 
 	@Inject
@@ -173,5 +242,8 @@ public class AccountRoleServiceTest {
 	private AccountRoleService _accountRoleService;
 
 	private User _user;
+
+	@Inject
+	private UserLocalService _userLocalService;
 
 }

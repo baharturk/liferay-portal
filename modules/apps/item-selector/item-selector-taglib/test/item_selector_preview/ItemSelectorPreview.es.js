@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {cleanup, fireEvent, render} from '@testing-library/react';
@@ -42,6 +33,7 @@ const headerTitle = 'Images';
 const items = [
 	{
 		metadata: JSON.stringify(basicMetadata),
+		mimeType: 'image/jpeg',
 		returntype: 'returntype',
 		title: item1Title,
 		url: itemUrl,
@@ -49,6 +41,7 @@ const items = [
 	},
 	{
 		metadata: JSON.stringify(basicMetadata),
+		mimeType: 'image/jpeg',
 		returntype: 'returntype',
 		title: item2Title,
 		url: itemUrl,
@@ -57,7 +50,6 @@ const items = [
 ];
 
 const previewProps = {
-	container: document.createElement('div'),
 	handleSelectedItem: jest.fn(),
 	headerTitle,
 	items,
@@ -69,16 +61,21 @@ const renderPreviewComponent = (props) =>
 describe('ItemSelectorPreview', () => {
 	beforeAll(() => {
 		Liferay.component = jest.fn();
-		Liferay.SideNavigation = jest.fn();
-		Liferay.SideNavigation.initialize = jest.fn();
+		Liferay.SideNavigation = {
+			destroy: jest.fn(),
+			initialize: jest.fn(),
+		};
 	});
 
 	afterEach(cleanup);
 
-	it('initialize the sidebar only once', () => {
+	it('initialize/destroy the sidebar properly', () => {
 		renderPreviewComponent(previewProps);
 
-		expect(Liferay.SideNavigation.initialize).toHaveBeenCalledTimes(1);
+		expect(
+			Liferay.SideNavigation.initialize.mock.calls.length -
+				Liferay.SideNavigation.destroy.mock.calls.length
+		).toBe(1);
 	});
 
 	it('renders the ItemSelectorPreview component with the fullscreen class', () => {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.web.internal.portlet.action;
@@ -30,6 +21,7 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
 import java.util.Map;
@@ -48,7 +40,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Leonardo Barros
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING,
 		"mvc.command.name=/dynamic_data_mapping/render_structure_field"
@@ -87,13 +78,6 @@ public class RenderStructureFieldMVCResourceCommand
 		ServletResponseUtil.write(httpServletResponse, ddmFormFieldHTML);
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDMFormFieldRendererRegistry(
-		DDMFormFieldRendererRegistry ddmFormFieldRendererRegistry) {
-
-		_ddmFormFieldRendererRegistry = ddmFormFieldRendererRegistry;
-	}
-
 	private DDMFormFieldRenderingContext _createDDMFormFieldRenderingContext(
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse) {
@@ -104,12 +88,17 @@ public class RenderStructureFieldMVCResourceCommand
 
 		String mode = ParamUtil.getString(httpServletRequest, "mode");
 		String namespace = ParamUtil.getString(httpServletRequest, "namespace");
+		String portletId = ParamUtil.getString(httpServletRequest, "portletId");
 		String portletNamespace = ParamUtil.getString(
 			httpServletRequest, "portletNamespace");
 		boolean readOnly = ParamUtil.getBoolean(httpServletRequest, "readOnly");
 
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext =
 			new DDMFormFieldRenderingContext();
+
+		if (Validator.isNotNull(portletId)) {
+			httpServletRequest.setAttribute(WebKeys.PORTLET_ID, portletId);
+		}
 
 		httpServletRequest.setAttribute(
 			"aui:form:portletNamespace", portletNamespace);
@@ -150,6 +139,7 @@ public class RenderStructureFieldMVCResourceCommand
 		return ddmFormFieldsMap.get(fieldName);
 	}
 
+	@Reference
 	private DDMFormFieldRendererRegistry _ddmFormFieldRendererRegistry;
 
 	@Reference(target = "(ddm.form.deserializer.type=json)")

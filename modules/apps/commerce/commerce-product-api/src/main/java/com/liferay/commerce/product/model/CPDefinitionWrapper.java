@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model;
@@ -21,6 +12,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -44,6 +37,7 @@ public class CPDefinitionWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("defaultLanguageId", getDefaultLanguageId());
 		attributes.put("CPDefinitionId", getCPDefinitionId());
@@ -109,6 +103,12 @@ public class CPDefinitionWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
 		}
 
 		String uuid = (String)attributes.get("uuid");
@@ -549,6 +549,16 @@ public class CPDefinitionWrapper
 	}
 
 	/**
+	 * Returns the ct collection ID of this cp definition.
+	 *
+	 * @return the ct collection ID of this cp definition
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
+	}
+
+	/**
 	 * Returns the ddm structure key of this cp definition.
 	 *
 	 * @return the ddm structure key of this cp definition
@@ -627,9 +637,9 @@ public class CPDefinitionWrapper
 
 	@Override
 	public com.liferay.portal.kernel.util.UnicodeProperties
-		getDeliverySubscriptionTypeSettingsProperties() {
+		getDeliverySubscriptionTypeSettingsUnicodeProperties() {
 
-		return model.getDeliverySubscriptionTypeSettingsProperties();
+		return model.getDeliverySubscriptionTypeSettingsUnicodeProperties();
 	}
 
 	/**
@@ -1079,9 +1089,9 @@ public class CPDefinitionWrapper
 
 	@Override
 	public com.liferay.portal.kernel.util.UnicodeProperties
-		getSubscriptionTypeSettingsProperties() {
+		getSubscriptionTypeSettingsUnicodeProperties() {
 
-		return model.getSubscriptionTypeSettingsProperties();
+		return model.getSubscriptionTypeSettingsUnicodeProperties();
 	}
 
 	/**
@@ -1477,6 +1487,16 @@ public class CPDefinitionWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this cp definition.
+	 *
+	 * @param ctCollectionId the ct collection ID of this cp definition
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
 	 * Sets the ddm structure key of this cp definition.
 	 *
 	 * @param DDMStructureKey the ddm structure key of this cp definition
@@ -1554,11 +1574,11 @@ public class CPDefinitionWrapper
 	}
 
 	@Override
-	public void setDeliverySubscriptionTypeSettingsProperties(
+	public void setDeliverySubscriptionTypeSettingsUnicodeProperties(
 		com.liferay.portal.kernel.util.UnicodeProperties
 			deliverySubscriptionTypeSettingsUnicodeProperties) {
 
-		model.setDeliverySubscriptionTypeSettingsProperties(
+		model.setDeliverySubscriptionTypeSettingsUnicodeProperties(
 			deliverySubscriptionTypeSettingsUnicodeProperties);
 	}
 
@@ -1842,11 +1862,11 @@ public class CPDefinitionWrapper
 	}
 
 	@Override
-	public void setSubscriptionTypeSettingsProperties(
+	public void setSubscriptionTypeSettingsUnicodeProperties(
 		com.liferay.portal.kernel.util.UnicodeProperties
 			subscriptionTypeSettingsUnicodeProperties) {
 
-		model.setSubscriptionTypeSettingsProperties(
+		model.setSubscriptionTypeSettingsUnicodeProperties(
 			subscriptionTypeSettingsUnicodeProperties);
 	}
 
@@ -1943,6 +1963,25 @@ public class CPDefinitionWrapper
 	@Override
 	public void setWidth(double width) {
 		model.setWidth(width);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CPDefinition, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CPDefinition, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

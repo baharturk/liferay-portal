@@ -1,6 +1,7 @@
 @component-name = "portal-wcm"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Fragments";
@@ -13,7 +14,7 @@ definition {
 		}
 
 		task ("Add a site") {
-			JSONGroup.addGroup(groupName = "Test Site Name");
+			HeadlessSite.addSite(siteName = "Test Site Name");
 		}
 
 		task ("Add a content page") {
@@ -25,9 +26,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -36,7 +37,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-98241 and LPS-128667 and LPS-106776. The user could configure the Button fragment in page editor."
-	@priority = "4"
+	@priority = 4
 	test ConfigureBasicComponentButton {
 		task ("Add a widget page") {
 			JSONLayout.addPublicLayout(
@@ -68,21 +69,21 @@ definition {
 		task ("Configure the Button fragment") {
 			PageEditor.gotoConfiguration(fragmentName = "Button");
 
-			PageEditor.configureFragment(type = "Link");
+			PageEditor.configureFragment(
+				size = "Large",
+				style = "Link");
 
 			PageEditor.gotoStyle(fragmentName = "Button");
 
-			PageEditor.configureFragment(
-				alignment = "Center",
-				size = "Large");
+			PageEditor.configureFragment(alignment = "Align Center");
 		}
 
 		task ("View the Button styles") {
 			PageEditor.viewFragmentStyle(
 				alignment = "center",
-				fragmentName = "button",
+				fragmentName = "Button",
 				size = "lg",
-				type = "link");
+				style = "link");
 		}
 
 		task ("Remove the Button") {
@@ -106,7 +107,7 @@ definition {
 		task ("View selected page is linked to Button fragment") {
 			AssertVisible(
 				key_append = "/parent::div[contains(@class,'component-button')]",
-				key_URL = "/web/test-site-name/test-widget-page-name",
+				key_url = "/web/test-site-name/test-widget-page-name",
 				locator1 = "Fragment#FRAGMENT_LINK");
 		}
 
@@ -127,7 +128,7 @@ definition {
 		task ("View selected page is linked to Button fragment") {
 			AssertVisible(
 				key_append = "/parent::div[contains(@class,'component-button')]",
-				key_URL = "/web/test-site-name/test-content-page-name",
+				key_url = "/web/test-site-name/test-content-page-name",
 				locator1 = "Fragment#FRAGMENT_LINK");
 		}
 
@@ -147,16 +148,16 @@ definition {
 		task ("View the default link is shown in Button fragment") {
 			AssertVisible(
 				key_append = "/parent::div[contains(@class,'component-button')]",
-				key_URL = "#",
+				key_url = "#",
 				locator1 = "Fragment#FRAGMENT_LINK");
 		}
 
 		task ("View the text placeholder is shown in Page field") {
 			AssertAttributeValue(
-				attribute1 = "placeholder",
 				key_fieldLabel = "Page",
 				locator1 = "PageEditor#ITEM_SELECTOR_CONTENT_INPUT",
-				value1 = "Select Page");
+				value1 = "placeholder",
+				value2 = "No Page Selected");
 		}
 
 		task ("Duplicate the Button") {
@@ -171,7 +172,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-98241 and LPS-99749. The user could configure the Card fragment in page editor."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureBasicComponentCard {
 		property portal.acceptance = "true";
@@ -187,14 +188,17 @@ definition {
 		}
 
 		task ("Configure the Card fragment") {
+			PageEditor.gotoConfiguration(fragmentName = "Card");
+
+			PageEditor.configureFragment(imageSize = "Fit");
+
 			PageEditor.gotoStyle(fragmentName = "Card");
 
 			PageEditor.configureFragment(
-				alignment = "Center",
+				alignment = "Align Center",
 				borderRadius = "Border Radius Small",
 				boxShadow = "Box Shadow Large",
-				imageSize = "Fit",
-				marginBottom = "5");
+				marginBottom = 5);
 		}
 
 		task ("View the Card styles") {
@@ -202,9 +206,9 @@ definition {
 				alignment = "center",
 				borderRadius = "border-radius-sm",
 				boxShadow = "box-shadow-lg",
-				fragmentName = "card",
-				imageSize = "100",
-				marginBottom = "5");
+				fragmentName = "Card",
+				imageSize = 100,
+				marginBottom = 5);
 		}
 
 		task ("Remove the Card") {
@@ -228,9 +232,11 @@ definition {
 		}
 	}
 
-	@description = "This is a test for LPS-98241 and LPS-115224. The user could configure the Heading fragment in page editor."
-	@priority = "4"
+	@description = "This is a test for LPS-98241, LPS-115224 and LPS-141412. The user could configure the Heading fragment in page editor."
+	@priority = 5
 	test ConfigureBasicComponentHeading {
+		property portal.acceptance = "true";
+
 		task ("Add a Heading fragment to page") {
 			ContentPagesNavigator.openEditContentPage(
 				pageName = "Test Page Name",
@@ -245,7 +251,15 @@ definition {
 			PageEditor.gotoStyle(fragmentName = "Heading");
 
 			PageEditor.configureFragment(
-				alignment = "Right",
+				alignment = "Align Right",
+				marginBottom = 2,
+				marginLeft = 2,
+				marginRight = 2,
+				marginTop = 2,
+				paddingBottom = 2,
+				paddingLeft = 2,
+				paddingRight = 2,
+				paddingTop = 2,
 				textColor = "Blockquote Small Color");
 
 			PageEditor.gotoConfiguration(fragmentName = "Heading");
@@ -256,11 +270,19 @@ definition {
 		task ("View the Heading styles in page editor") {
 			PageEditor.viewFragmentStyle(
 				alignment = "right",
-				fragmentName = "heading",
+				fragmentName = "Heading",
 				headingLevel = "h2",
+				marginBottom = 2,
+				marginLeft = 2,
+				marginRight = 2,
+				marginTop = 2,
+				paddingBottom = 2,
+				paddingLeft = 2,
+				paddingRight = 2,
+				paddingTop = 2,
 				textColor = "blockquote-small-color");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("View the Heading styles at view mode") {
@@ -268,12 +290,15 @@ definition {
 				pageName = "Test Page Name",
 				siteName = "Test Site Name");
 
-			AssertVisible(locator1 = "//div[contains(@class,'text-right')][//h2[contains(@class,'component-heading')]]");
+			ContentPages.viewFragmentCommonStyle(
+				fragmentName = "heading",
+				styleName = "textAlign",
+				styleValue = "right");
 
-			AssertCssValue(
-				locator1 = "//div[contains(@class,'text-right')][//h2[contains(@class,'component-heading')]]",
-				locator2 = "color",
-				value1 = "rgba(107, 108, 126, 1)");
+			ContentPages.viewFragmentCommonStyle(
+				fragmentName = "heading",
+				styleName = "color",
+				styleValue = "blockquote-small-color");
 		}
 
 		task ("Remove the Heading") {
@@ -299,8 +324,8 @@ definition {
 		}
 	}
 
-	@description = "This is a test for LPS-98241 and LPS-128667. The user could configure the Image fragment in page editor."
-	@priority = "5"
+	@description = "This is a test for LPS-98241, LPS-128667 and LPS-158084. The user could configure the Image fragment in page editor."
+	@priority = 5
 	@uitest
 	test ConfigureBasicComponentImage {
 		property portal.acceptance = "true";
@@ -315,21 +340,36 @@ definition {
 				fragmentName = "Image");
 		}
 
+		task ("Select editable field of Image fragment") {
+			PageEditor.clickEditableField(
+				fragmentName = "Image",
+				id = "image-square");
+		}
+
+		task ("View the help information") {
+			Tooltip.viewHelpInformation(
+				header = "Image Description",
+				info = "This value is used as ALT text.");
+		}
+
 		task ("Configure the Image") {
+			PageEditor.gotoConfiguration(fragmentName = "Image");
+
+			PageEditor.configureFragment(imageSize = "Original Size");
+
 			PageEditor.gotoStyle(fragmentName = "Image");
 
 			PageEditor.configureFragment(
-				alignment = "Center",
-				imageSize = "Original Size",
-				marginBottom = "2");
+				alignment = "Align Center",
+				marginBottom = 2);
 		}
 
 		task ("View the Image styles") {
 			PageEditor.viewFragmentStyle(
 				alignment = "center",
-				fragmentName = "image",
-				imageSize = "0",
-				marginBottom = "2");
+				fragmentName = "Image",
+				imageSize = 0,
+				marginBottom = 2);
 		}
 
 		task ("Remove the Image") {
@@ -353,7 +393,7 @@ definition {
 			PageEditor.viewFragmentEditableImage(
 				id = "image-square",
 				imageDescription = "",
-				imageFileName = "Document_1.jpg");
+				imageFileName = "document_1-jpg");
 		}
 
 		task ("Directly select another Image in Image fragment") {
@@ -367,7 +407,7 @@ definition {
 			PageEditor.viewFragmentEditableImage(
 				id = "image-square",
 				imageDescription = "",
-				imageFileName = "Document_2.jpg");
+				imageFileName = "document_2-jpg");
 		}
 
 		task ("Clear the selection") {
@@ -383,10 +423,10 @@ definition {
 
 		task ("View the text placeholder is shown in Image field") {
 			AssertAttributeValue(
-				attribute1 = "placeholder",
 				key_fieldLabel = "Image",
 				locator1 = "PageEditor#ITEM_SELECTOR_CONTENT_INPUT",
-				value1 = "Select Image");
+				value1 = "placeholder",
+				value2 = "No Image Selected");
 		}
 
 		task ("Duplicate the Image") {
@@ -401,7 +441,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-98241 and LPS-128667. The user could configure the Paragraph fragment in page editor."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test ConfigureBasicComponentParagraph {
 		property portal.acceptance = "true";
@@ -420,14 +460,14 @@ definition {
 			PageEditor.gotoStyle(fragmentName = "Paragraph");
 
 			PageEditor.configureFragment(
-				alignment = "Right",
+				alignment = "Align Right",
 				textColor = "Warning");
 		}
 
 		task ("View the Paragraph styles") {
 			PageEditor.viewFragmentStyle(
 				alignment = "right",
-				fragmentName = "paragraph",
+				fragmentName = "Paragraph",
 				textColor = "warning");
 		}
 
@@ -437,7 +477,7 @@ definition {
 
 		task ("View the Text Color of Paragraph") {
 			PageEditor.viewFragmentStyle(
-				fragmentName = "paragraph",
+				fragmentName = "Paragraph",
 				textColor = "success");
 		}
 
@@ -449,17 +489,17 @@ definition {
 			AssertCssValue(
 				fragmentName = "paragraph",
 				id = "element-text",
-				index = "1",
+				index = 1,
 				locator1 = "Fragment#CONTRIBUTED_FRAGMENT_TEXT",
 				locator2 = "color",
 				value1 = "rgba(39, 40, 51, 1)");
 		}
 
-		task ("View the Default is shown in Text Color field") {
+		task ("View the Inherited value is shown in Text Color field") {
 			AssertTextEquals(
-				key_text = "Text Color",
-				locator1 = "TextInput#ANY",
-				value1 = "Default");
+				key_fieldLabel = "Text Color",
+				locator1 = "Button#COLOR_PICKER",
+				value1 = "#272833");
 		}
 
 		task ("Remove the Paragraph") {
@@ -484,7 +524,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-98241. The user could configure the Separator fragment in page editor."
-	@priority = "4"
+	@priority = 4
 	test ConfigureBasicComponentSeparator {
 		task ("Add a basic component") {
 			ContentPagesNavigator.openEditContentPage(
@@ -501,15 +541,15 @@ definition {
 
 			PageEditor.configureFragment(
 				borderColor = "Gray 100",
-				bottomSpacing = "1",
+				bottomSpacing = 1,
 				separatorColor = "danger");
 		}
 
 		task ("View the Separator styles") {
 			PageEditor.viewFragmentStyle(
 				borderColor = "gray-100",
-				bottomSpacing = "1",
-				fragmentName = "separator",
+				bottomSpacing = 1,
+				fragmentName = "Separator",
 				separatorColor = "danger");
 		}
 
@@ -535,7 +575,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-98241. The user could configure the Spacer fragment in page editor."
-	@priority = "4"
+	@priority = 4
 	test ConfigureBasicComponentSpacer {
 		task ("Add a Spacer fragment to page") {
 			ContentPagesNavigator.openEditContentPage(
@@ -548,13 +588,13 @@ definition {
 		}
 
 		task ("Configure the Spacer") {
-			PageEditor.gotoStyle(fragmentName = "Spacer");
+			PageEditor.gotoConfiguration(fragmentName = "Spacer");
 
-			PageEditor.configureFragment(height = "4");
+			PageEditor.configureFragment(height = 4);
 		}
 
 		task ("View the Spacer styles") {
-			PageEditor.viewFragmentStyle(height = "4");
+			PageEditor.viewFragmentStyle(height = 4);
 		}
 
 		task ("Remove the Spacer") {

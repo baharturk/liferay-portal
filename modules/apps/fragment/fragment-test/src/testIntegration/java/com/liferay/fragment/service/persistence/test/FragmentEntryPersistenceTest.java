@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.persistence.test;
@@ -168,6 +159,8 @@ public class FragmentEntryPersistenceTest {
 
 		newFragmentEntry.setType(RandomTestUtil.nextInt());
 
+		newFragmentEntry.setTypeOptions(RandomTestUtil.randomString());
+
 		newFragmentEntry.setLastPublishDate(RandomTestUtil.nextDate());
 
 		newFragmentEntry.setStatus(RandomTestUtil.nextInt());
@@ -241,6 +234,9 @@ public class FragmentEntryPersistenceTest {
 			existingFragmentEntry.isReadOnly(), newFragmentEntry.isReadOnly());
 		Assert.assertEquals(
 			existingFragmentEntry.getType(), newFragmentEntry.getType());
+		Assert.assertEquals(
+			existingFragmentEntry.getTypeOptions(),
+			newFragmentEntry.getTypeOptions());
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingFragmentEntry.getLastPublishDate()),
 			Time.getShortTimestamp(newFragmentEntry.getLastPublishDate()));
@@ -347,6 +343,21 @@ public class FragmentEntryPersistenceTest {
 
 		_persistence.countByFragmentCollectionId_Head(
 			0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByType() throws Exception {
+		_persistence.countByType(RandomTestUtil.nextInt());
+
+		_persistence.countByType(0);
+	}
+
+	@Test
+	public void testCountByType_Head() throws Exception {
+		_persistence.countByType_Head(
+			RandomTestUtil.nextInt(), RandomTestUtil.randomBoolean());
+
+		_persistence.countByType_Head(0, RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -875,6 +886,8 @@ public class FragmentEntryPersistenceTest {
 		fragmentEntry.setReadOnly(RandomTestUtil.randomBoolean());
 
 		fragmentEntry.setType(RandomTestUtil.nextInt());
+
+		fragmentEntry.setTypeOptions(RandomTestUtil.randomString());
 
 		fragmentEntry.setLastPublishDate(RandomTestUtil.nextDate());
 

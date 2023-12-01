@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React, {useEffect, useMemo} from 'react';
@@ -22,7 +13,7 @@ import ExperienceSelector from './ExperienceSelector';
 
 // TODO: show how to colocate CSS with plugins (may use loaders)
 
-export default function ExperienceToolbarSection({selectId}) {
+export default function ExperienceToolbarSection() {
 	const availableSegmentsExperiences = useSelector(
 		(state) => state.availableSegmentsExperiences
 	);
@@ -76,15 +67,17 @@ export default function ExperienceToolbarSection({selectId}) {
 
 	return (
 		<div className="page-editor__toolbar-experience">
-			<label className="d-lg-block d-none mr-2" htmlFor={selectId}>
+			<span
+				aria-hidden
+				className="d-lg-block d-none font-weight-bold mr-2"
+			>
 				{Liferay.Language.get('experience')}
-			</label>
+			</span>
 
 			<ExperienceSelector
 				editSegmentsEntryURL={config.editSegmentsEntryURL}
 				experiences={experiences}
 				segments={segments}
-				selectId={selectId}
 				selectedExperience={selectedExperience}
 			/>
 		</div>

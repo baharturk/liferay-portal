@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.internal.exporter;
@@ -21,17 +12,17 @@ import com.liferay.dynamic.data.lists.model.DDLRecordVersion;
 import com.liferay.dynamic.data.lists.service.DDLRecordLocalService;
 import com.liferay.dynamic.data.lists.service.DDLRecordSetService;
 import com.liferay.dynamic.data.lists.service.DDLRecordSetVersionService;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldValueRendererRegistry;
-import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.StorageEngine;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.ByteArrayOutputStream;
@@ -60,7 +51,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Leonardo Barros
  */
-@Component(immediate = true, service = DDLExporter.class)
+@Component(service = DDLExporter.class)
 public class DDLXLSExporter extends BaseDDLExporter {
 
 	@Override
@@ -104,13 +95,12 @@ public class DDLXLSExporter extends BaseDDLExporter {
 
 				DDLRecordVersion recordVersion = record.getRecordVersion();
 
-				DDMFormValues ddmFormValues = _storageEngine.getDDMFormValues(
-					recordVersion.getDDMStorageId());
-
 				Map<String, DDMFormFieldRenderedValue> values =
 					getRenderedValues(
 						recordSet.getScope(), ddmFormFields.values(),
-						ddmFormValues);
+						_ddmStorageEngineManager.getDDMFormValues(
+							recordVersion.getDDMStorageId()),
+						_htmlParser);
 
 				_createDataRow(
 					rowIndex++, sheet, dateTimeFormatter,
@@ -126,7 +116,7 @@ public class DDLXLSExporter extends BaseDDLExporter {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return new byte[0];
@@ -139,10 +129,10 @@ public class DDLXLSExporter extends BaseDDLExporter {
 	}
 
 	@Override
-	protected DDMFormFieldTypeServicesTracker
-		getDDMFormFieldTypeServicesTracker() {
+	protected DDMFormFieldTypeServicesRegistry
+		getDDMFormFieldTypeServicesRegistry() {
 
-		return _ddmFormFieldTypeServicesTracker;
+		return _ddmFormFieldTypeServicesRegistry;
 	}
 
 	@Override
@@ -150,46 +140,6 @@ public class DDLXLSExporter extends BaseDDLExporter {
 		getDDMFormFieldValueRendererRegistry() {
 
 		return _ddmFormFieldValueRendererRegistry;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDLRecordLocalService(
-		DDLRecordLocalService ddlRecordLocalService) {
-
-		_ddlRecordLocalService = ddlRecordLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDLRecordSetService(
-		DDLRecordSetService ddlRecordSetService) {
-
-		_ddlRecordSetService = ddlRecordSetService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDLRecordSetVersionService(
-		DDLRecordSetVersionService ddlRecordSetVersionService) {
-
-		_ddlRecordSetVersionService = ddlRecordSetVersionService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMFormFieldTypeServicesTracker(
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker) {
-
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMFormFieldValueRendererRegistry(
-		DDMFormFieldValueRendererRegistry ddmFormFieldValueRendererRegistry) {
-
-		_ddmFormFieldValueRendererRegistry = ddmFormFieldValueRendererRegistry;
-	}
-
-	@Reference(unbind = "-")
-	protected void setStorageEngine(StorageEngine storageEngine) {
-		_storageEngine = storageEngine;
 	}
 
 	private CellStyle _createCellStyle(
@@ -219,7 +169,7 @@ public class DDLXLSExporter extends BaseDDLExporter {
 
 		int cellIndex = 0;
 
-		Cell cell = null;
+		Cell cell;
 
 		for (Map.Entry<String, DDMFormField> entry : ddmFormFields.entrySet()) {
 			cell = row.createCell(cellIndex++, CellType.STRING);
@@ -265,7 +215,7 @@ public class DDLXLSExporter extends BaseDDLExporter {
 
 		int cellIndex = 0;
 
-		Cell cell = null;
+		Cell cell;
 
 		Locale locale = getLocale();
 
@@ -281,27 +231,44 @@ public class DDLXLSExporter extends BaseDDLExporter {
 		cell = row.createCell(cellIndex++, CellType.STRING);
 
 		cell.setCellStyle(cellStyle);
-		cell.setCellValue(LanguageUtil.get(locale, "status"));
+		cell.setCellValue(_language.get(locale, "status"));
 
 		cell = row.createCell(cellIndex++, CellType.STRING);
 
 		cell.setCellStyle(cellStyle);
-		cell.setCellValue(LanguageUtil.get(locale, "modified-date"));
+		cell.setCellValue(_language.get(locale, "modified-date"));
 
 		cell = row.createCell(cellIndex++, CellType.STRING);
 
 		cell.setCellStyle(cellStyle);
-		cell.setCellValue(LanguageUtil.get(locale, "author"));
+		cell.setCellValue(_language.get(locale, "author"));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(DDLXLSExporter.class);
 
+	@Reference
 	private DDLRecordLocalService _ddlRecordLocalService;
+
+	@Reference
 	private DDLRecordSetService _ddlRecordSetService;
+
+	@Reference
 	private DDLRecordSetVersionService _ddlRecordSetVersionService;
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
+
+	@Reference
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
+
+	@Reference
 	private DDMFormFieldValueRendererRegistry
 		_ddmFormFieldValueRendererRegistry;
-	private StorageEngine _storageEngine;
+
+	@Reference
+	private DDMStorageEngineManager _ddmStorageEngineManager;
+
+	@Reference
+	private HtmlParser _htmlParser;
+
+	@Reference
+	private Language _language;
 
 }

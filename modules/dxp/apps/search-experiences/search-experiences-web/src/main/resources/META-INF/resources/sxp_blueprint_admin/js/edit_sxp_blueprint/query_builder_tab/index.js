@@ -1,20 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayLayout from '@clayui/layout';
 import {ClayVerticalNav} from '@clayui/nav';
 import {PropTypes} from 'prop-types';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
-import {SIDEBARS} from '../../utils/constants';
+import {
+	SIDEBAR_STATE,
+	getStorageAddSXPElementSidebar,
+} from '../../utils/sessionStorage';
+import {SIDEBAR_TYPES} from '../../utils/types/sidebarTypes';
 import QuerySXPElements from './QuerySXPElements';
 import QuerySettings from './QuerySettings';
 
@@ -32,10 +30,12 @@ function QueryBuilderTab({
 	frameworkConfig = {},
 	isSubmitting,
 	indexFields,
+	isIndexCompany,
 	onApplyIndexerClausesChange,
 	onBlur,
 	onChange,
 	onDeleteSXPElement,
+	onFetchSearchableTypes,
 	onFrameworkConfigChange,
 	searchableTypes = [],
 	setFieldTouched,
@@ -49,9 +49,22 @@ function QueryBuilderTab({
 	);
 
 	/**
+	 * Opens the add sxp element sidebar if it was previously open.
+	 */
+	useEffect(() => {
+		if (
+			activeVerticalNavKey === VERTICAL_NAV_KEYS.QUERY_SXP_ELEMENTS &&
+			!openSidebar &&
+			getStorageAddSXPElementSidebar() === SIDEBAR_STATE.OPEN
+		) {
+			setOpenSidebar(SIDEBAR_TYPES.ADD_SXP_ELEMENT);
+		}
+	}, [activeVerticalNavKey, openSidebar, setOpenSidebar]);
+
+	/**
 	 * Handles sidebar visibility. If 'visible' is not provided, sidebar
 	 * will toggle between open or closed.
-	 * @param {string} type A `SIDEBARS` value.
+	 * @param {string} type A `SIDEBAR_TYPES` value.
 	 * @param {visible} boolean Defaults to false if sidebar is open.
 	 */
 	const _handleChangeSidebarVisibility = (type) => (
@@ -75,9 +88,11 @@ function QueryBuilderTab({
 
 		if (
 			(verticalNavKey === VERTICAL_NAV_KEYS.QUERY_SXP_ELEMENTS &&
-				openSidebar === SIDEBARS.CLAUSE_CONTRIBUTORS) ||
+				openSidebar === SIDEBAR_TYPES.CLAUSE_CONTRIBUTORS) ||
+			(verticalNavKey === VERTICAL_NAV_KEYS.QUERY_SXP_ELEMENTS &&
+				openSidebar === SIDEBAR_TYPES.INDEXER_CLAUSES) ||
 			(verticalNavKey === VERTICAL_NAV_KEYS.QUERY_SETTINGS &&
-				openSidebar === SIDEBARS.ADD_SXP_ELEMENT)
+				openSidebar === SIDEBAR_TYPES.ADD_SXP_ELEMENT)
 		) {
 			setOpenSidebar('');
 		}
@@ -85,10 +100,10 @@ function QueryBuilderTab({
 
 	return (
 		<ClayLayout.ContainerFluid
-			className="builder query-builder-tab"
+			className="layout-section-main query-builder-tab"
 			size="xl"
 		>
-			<div className="builder-content-shift">
+			<div className="layout-section-main-shift">
 				<ClayLayout.Row>
 					<ClayLayout.Col md={3} sm={12}>
 						<ClayVerticalNav
@@ -128,11 +143,12 @@ function QueryBuilderTab({
 									entityJSON={entityJSON}
 									errors={errors}
 									indexFields={indexFields}
+									isIndexCompany={isIndexCompany}
 									isSubmitting={isSubmitting}
 									onBlur={onBlur}
 									onChange={onChange}
 									onChangeAddSXPElementVisibility={_handleChangeSidebarVisibility(
-										SIDEBARS.ADD_SXP_ELEMENT
+										SIDEBAR_TYPES.ADD_SXP_ELEMENT
 									)}
 									onDeleteSXPElement={onDeleteSXPElement}
 									searchableTypes={searchableTypes}
@@ -154,8 +170,14 @@ function QueryBuilderTab({
 										onApplyIndexerClausesChange
 									}
 									onChangeClauseContributorsVisibility={_handleChangeSidebarVisibility(
-										SIDEBARS.CLAUSE_CONTRIBUTORS
+										SIDEBAR_TYPES.CLAUSE_CONTRIBUTORS
 									)}
+									onChangeIndexerClausesVisibility={_handleChangeSidebarVisibility(
+										SIDEBAR_TYPES.INDEXER_CLAUSES
+									)}
+									onFetchSearchableTypes={
+										onFetchSearchableTypes
+									}
 									onFrameworkConfigChange={
 										onFrameworkConfigChange
 									}
@@ -178,11 +200,13 @@ QueryBuilderTab.propTypes = {
 	errors: PropTypes.arrayOf(PropTypes.object),
 	frameworkConfig: PropTypes.object,
 	indexFields: PropTypes.arrayOf(PropTypes.object),
+	isIndexCompany: PropTypes.bool,
 	isSubmitting: PropTypes.bool,
 	onApplyIndexerClausesChange: PropTypes.func,
 	onBlur: PropTypes.func,
 	onChange: PropTypes.func,
 	onDeleteSXPElement: PropTypes.func,
+	onFetchSearchableTypes: PropTypes.func,
 	onFrameworkConfigChange: PropTypes.func,
 	openSidebar: PropTypes.string,
 	searchableTypes: PropTypes.arrayOf(PropTypes.object),

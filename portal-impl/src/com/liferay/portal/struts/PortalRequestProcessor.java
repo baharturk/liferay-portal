@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.struts;
@@ -32,7 +23,6 @@ import com.liferay.portal.kernel.model.UserTrackerPath;
 import com.liferay.portal.kernel.portlet.FriendlyURLMapper;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
-import com.liferay.portal.kernel.security.auth.InterruptedPortletRequestWhitelistUtil;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -44,7 +34,7 @@ import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.struts.LastPath;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -52,6 +42,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.liveusers.LiveUsers;
+import com.liferay.portal.security.auth.InterruptedPortletRequestWhitelistUtil;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
 import com.liferay.portal.struts.model.ModuleConfig;
@@ -469,7 +460,7 @@ public class PortalRequestProcessor {
 				}
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 
 			String fullPathWithoutQueryString = fullPath;
@@ -514,7 +505,7 @@ public class PortalRequestProcessor {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -546,11 +537,17 @@ public class PortalRequestProcessor {
 				if (lastPath == null) {
 					lastPath = new LastPath(
 						themeDisplay.getPathMain(), path,
-						HttpUtil.parameterMapToString(
+						HttpComponentsUtil.parameterMapToString(
 							httpServletRequest.getParameterMap()));
 				}
 
-				httpSession.setAttribute(WebKeys.LAST_PATH, lastPath);
+				String lastPathPath = lastPath.getPath();
+
+				// Ignore files that end with .map. See LPS-141963.
+
+				if (!lastPathPath.endsWith(".map")) {
+					httpSession.setAttribute(WebKeys.LAST_PATH, lastPath);
+				}
 			}
 		}
 
@@ -655,7 +652,7 @@ public class PortalRequestProcessor {
 						}
 					}
 					catch (Exception exception) {
-						_log.error(exception, exception);
+						_log.error(exception);
 
 						return _PATH_PORTAL_UPDATE_PASSWORD;
 					}
@@ -672,7 +669,7 @@ public class PortalRequestProcessor {
 
 				// Authenticated users should have a reminder query
 
-				if (!user.isDefaultUser() && !user.isReminderQueryComplete()) {
+				if (!user.isGuestUser() && !user.isReminderQueryComplete()) {
 					return _PATH_PORTAL_UPDATE_REMINDER_QUERY;
 				}
 			}
@@ -718,7 +715,7 @@ public class PortalRequestProcessor {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -784,7 +781,7 @@ public class PortalRequestProcessor {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 
 				SessionErrors.add(

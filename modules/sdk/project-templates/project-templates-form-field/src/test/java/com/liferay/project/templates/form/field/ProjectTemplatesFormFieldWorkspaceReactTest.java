@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates.form.field;
@@ -27,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.junit.Assert;
@@ -50,7 +42,7 @@ public class ProjectTemplatesFormFieldWorkspaceReactTest
 
 	@Parameterized.Parameters(name = "Testcase-{index}: testing {0}")
 	public static Iterable<Object[]> data() {
-		return Arrays.asList(new Object[][] {{"7.3.7"}, {"7.4.1-1"}});
+		return Arrays.asList(new Object[][] {{"7.3.7"}, {"7.4.3.56"}});
 	}
 
 	@BeforeClass
@@ -81,19 +73,40 @@ public class ProjectTemplatesFormFieldWorkspaceReactTest
 			temporaryFolder, "gradle", "gradleWS", _liferayVersion,
 			mavenExecutor);
 
+		String liferayWorkspaceProduct = getLiferayWorkspaceProduct(
+			_liferayVersion);
+
+		if (liferayWorkspaceProduct != null) {
+			writeGradlePropertiesInWorkspace(
+				workspaceDir,
+				"liferay.workspace.product=" + liferayWorkspaceProduct);
+		}
+
 		File gradleProjectDir = buildTemplateWithGradle(
 			new File(workspaceDir, "modules"), "form-field", name,
-			"--liferay-version", _liferayVersion, "--js-framework", "react");
+			"--js-framework", "react", "--liferay-version", _liferayVersion);
 
-		testContains(
-			gradleProjectDir, "build.gradle",
-			"compileOnly group: \"com.liferay\", name: " +
-				"\"com.liferay.dynamic.data.mapping.api\"",
-			"compileOnly group: \"com.liferay\", name: " +
-				"\"com.liferay.frontend.js.loader.modules.extender.api\"",
-			"jsCompile group: \"com.liferay\", name: " +
-				"\"com.liferay.dynamic.data.mapping.form.field.type\"",
-			DEPENDENCY_PORTAL_KERNEL);
+		if (Objects.equals(_liferayVersion, "7.2.1-1")) {
+			testContains(
+				gradleProjectDir, "build.gradle",
+				"compileOnly group: \"com.liferay\", name: " +
+					"\"com.liferay.dynamic.data.mapping.api\"",
+				"compileOnly group: \"com.liferay\", name: " +
+					"\"com.liferay.frontend.js.loader.modules.extender.api\"",
+				"jsCompile group: \"com.liferay\", name: " +
+					"\"com.liferay.dynamic.data.mapping.form.field.type\"",
+				DEPENDENCY_PORTAL_KERNEL);
+		}
+		else {
+			testContains(
+				gradleProjectDir, "build.gradle",
+				"compileOnly group: \"com.liferay.portal\", name: " +
+					"\"release.portal.api\"",
+				"jsCompile group: \"com.liferay\", name: " +
+					"\"com.liferay.dynamic.data.mapping.form.field.type\"",
+				DEPENDENCY_RELEASE_PORTAL_API);
+		}
+
 		testContains(
 			gradleProjectDir, "package.json", "\"@babel/cli\": \"^7.2.3\"",
 			"\"@liferay/portal-" + _liferayVersion.substring(0, 3) +

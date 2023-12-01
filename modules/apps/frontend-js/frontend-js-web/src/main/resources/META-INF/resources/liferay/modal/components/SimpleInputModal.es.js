@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
-import {ClayCheckbox} from '@clayui/form';
+import {ClayCheckbox, ClayInput} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import ClayModal, {useModal} from '@clayui/modal';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
@@ -28,6 +19,8 @@ import navigate from '../../util/navigate.es';
  */
 const SimpleInputModal = ({
 	alert,
+	buttonSubmitLabel = Liferay.Language.get('save'),
+	center,
 	checkboxFieldLabel,
 	checkboxFieldName,
 	checkboxFieldValue,
@@ -37,21 +30,34 @@ const SimpleInputModal = ({
 	idFieldName,
 	idFieldValue,
 	initialVisible,
+	mainFieldComponent,
 	mainFieldLabel,
 	mainFieldName,
+	mainFieldValue = '',
+	method = 'POST',
 	namespace,
 	onFormSuccess,
 	placeholder,
+	required = true,
+	size = 'md',
 }) => {
 	const isMounted = useIsMounted();
 	const [errorMessage, setErrorMessage] = useState();
+	const [highlighted, setHighlighted] = useState(false);
 	const [loadingResponse, setLoadingResponse] = useState(false);
 	const [visible, setVisible] = useState(initialVisible);
-	const [inputValue, setInputValue] = useState('');
+	const [inputValue, setInputValue] = useState(mainFieldValue);
 	const [isChecked, setChecked] = useState(checkboxFieldValue);
 
 	const handleFormError = (responseContent) => {
 		setErrorMessage(responseContent.error || '');
+	};
+
+	const handleMainFieldRef = (mainFieldElement) => {
+		if (mainFieldElement && mainFieldValue && !highlighted) {
+			mainFieldElement.setSelectionRange(0, mainFieldValue.length);
+			setHighlighted(true);
+		}
 	};
 
 	const _handleSubmit = (event) => {
@@ -63,7 +69,7 @@ const SimpleInputModal = ({
 
 		fetch(formSubmitURL, {
 			body: formData,
-			method: 'POST',
+			method,
 		})
 			.then((response) => response.json())
 			.then((responseContent) => {
@@ -110,7 +116,7 @@ const SimpleInputModal = ({
 
 	return (
 		visible && (
-			<ClayModal observer={observer} size="md">
+			<ClayModal center={center} observer={observer} size={size}>
 				<ClayModal.Header>{dialogTitle}</ClayModal.Header>
 
 				<form id={`${namespace}form`} onSubmit={_handleSubmit}>
@@ -141,14 +147,17 @@ const SimpleInputModal = ({
 							>
 								{mainFieldLabel}
 
-								<span className="reference-mark">
-									<ClayIcon symbol="asterisk" />
-								</span>
+								{required ? (
+									<span className="reference-mark">
+										<ClayIcon symbol="asterisk" />
+									</span>
+								) : null}
 							</label>
 
-							<input
+							<ClayInput
 								autoFocus
 								className="form-control"
+								component={mainFieldComponent}
 								disabled={loadingResponse}
 								id={`${namespace}${mainFieldName}`}
 								name={`${namespace}${mainFieldName}`}
@@ -156,7 +165,8 @@ const SimpleInputModal = ({
 									setInputValue(event.target.value)
 								}
 								placeholder={placeholder}
-								required
+								ref={handleMainFieldRef}
+								required={required}
 								type="text"
 								value={inputValue}
 							/>
@@ -213,7 +223,7 @@ const SimpleInputModal = ({
 										</span>
 									)}
 
-									{Liferay.Language.get('save')}
+									{buttonSubmitLabel}
 								</ClayButton>
 							</ClayButton.Group>
 						}

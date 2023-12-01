@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.collection.item.selector.web.internal;
@@ -18,6 +9,7 @@ import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.item.selector.ItemSelectorViewDescriptor;
 import com.liferay.portal.kernel.json.JSONUtil;
 
+import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -43,8 +35,16 @@ public class FragmentCollectionItemDescriptor
 	}
 
 	@Override
+	public Date getModifiedDate() {
+		return _fragmentCollection.getModifiedDate();
+	}
+
+	@Override
 	public String getPayload() {
 		return JSONUtil.put(
+			"fragmentCollectionId",
+			_fragmentCollection.getFragmentCollectionId()
+		).put(
 			"fragmentCollectionKey",
 			_fragmentCollection.getFragmentCollectionKey()
 		).put(
@@ -62,6 +62,21 @@ public class FragmentCollectionItemDescriptor
 	@Override
 	public String getTitle(Locale locale) {
 		return _fragmentCollection.getName();
+	}
+
+	@Override
+	public long getUserId() {
+		return _fragmentCollection.getUserId();
+	}
+
+	@Override
+	public String getUserName() {
+		return _fragmentCollection.getUserName();
+	}
+
+	@Override
+	public boolean isCompact() {
+		return true;
 	}
 
 	private final FragmentCollection _fragmentCollection;

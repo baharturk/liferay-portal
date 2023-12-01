@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.service.test;
@@ -33,8 +24,10 @@ import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.ProgressTracker;
 import com.liferay.portal.kernel.util.ProgressTrackerThreadLocal;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.wiki.exception.DuplicateNodeExternalReferenceCodeException;
+import com.liferay.wiki.exception.DuplicateWikiNodeExternalReferenceCodeException;
 import com.liferay.wiki.model.WikiNode;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiNodeLocalServiceUtil;
@@ -63,7 +56,7 @@ public class WikiNodeLocalServiceTest {
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
 
-	@Test(expected = DuplicateNodeExternalReferenceCodeException.class)
+	@Test(expected = DuplicateWikiNodeExternalReferenceCodeException.class)
 	public void testAddNodeWithExistingExternalReferenceCode()
 		throws Exception {
 
@@ -100,14 +93,20 @@ public class WikiNodeLocalServiceTest {
 
 		User user = TestPropsValues.getUser();
 
-		WikiNode wikiNode = WikiNodeLocalServiceUtil.addNode(
+		WikiNode wikiNode1 = WikiNodeLocalServiceUtil.addNode(
 			user.getUserId(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(),
 			ServiceContextTestUtil.getServiceContext());
 
-		Assert.assertEquals(
-			wikiNode.getExternalReferenceCode(),
-			String.valueOf(wikiNode.getNodeId()));
+		String externalReferenceCode = wikiNode1.getExternalReferenceCode();
+
+		Assert.assertEquals(externalReferenceCode, wikiNode1.getUuid());
+
+		WikiNode wikiNode2 =
+			WikiNodeLocalServiceUtil.getWikiNodeByExternalReferenceCode(
+				externalReferenceCode, TestPropsValues.getGroupId());
+
+		Assert.assertEquals(wikiNode1, wikiNode2);
 	}
 
 	@Test
@@ -126,10 +125,15 @@ public class WikiNodeLocalServiceTest {
 
 		InputStream inputStream = new ByteArrayInputStream(bytes);
 
-		WikiNodeLocalServiceUtil.importPages(
-			TestPropsValues.getUserId(), _node.getNodeId(), "MediaWiki",
-			new InputStream[] {inputStream, null, null},
-			Collections.<String, String[]>emptyMap());
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"org.apache.xmlbeans.impl.common.SAXHelper",
+				LoggerTestUtil.WARN)) {
+
+			WikiNodeLocalServiceUtil.importPages(
+				TestPropsValues.getUserId(), _node.getNodeId(),
+				new InputStream[] {inputStream, null, null},
+				Collections.<String, String[]>emptyMap());
+		}
 
 		WikiPage importedPage = WikiPageLocalServiceUtil.fetchPage(
 			_node.getNodeId(), "Liferay");
@@ -158,10 +162,15 @@ public class WikiNodeLocalServiceTest {
 
 		InputStream filesInputStream = new ByteArrayInputStream(filesBytes);
 
-		WikiNodeLocalServiceUtil.importPages(
-			TestPropsValues.getUserId(), _node.getNodeId(), "MediaWiki",
-			new InputStream[] {pagesInputStream, null, filesInputStream},
-			Collections.<String, String[]>emptyMap());
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"org.apache.xmlbeans.impl.common.SAXHelper",
+				LoggerTestUtil.WARN)) {
+
+			WikiNodeLocalServiceUtil.importPages(
+				TestPropsValues.getUserId(), _node.getNodeId(),
+				new InputStream[] {pagesInputStream, null, filesInputStream},
+				Collections.<String, String[]>emptyMap());
+		}
 
 		WikiPage importedPage = WikiPageLocalServiceUtil.fetchPage(
 			_node.getNodeId(), "Media link migration test");

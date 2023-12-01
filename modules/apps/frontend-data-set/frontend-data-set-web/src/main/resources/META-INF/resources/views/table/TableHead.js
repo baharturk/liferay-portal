@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayCheckbox} from '@clayui/form';
@@ -29,11 +20,7 @@ function TableHead({
 	selectedItemsKey,
 	selectedItemsValue,
 	selectionType,
-	sorting,
-	updateSorting,
 }) {
-	const expandableColumns = fields.some((field) => field.expand);
-
 	function handleCheckboxClick() {
 		if (selectedItemsValue.length === items.length) {
 			return selectItems([]);
@@ -60,24 +47,26 @@ function TableHead({
 								}
 								name="table-head-selector"
 								onChange={handleCheckboxClick}
+								title={
+									items.length !== selectedItemsValue.length
+										? Liferay.Language.get('select-items')
+										: Liferay.Language.get(
+												'clear-selection'
+										  )
+								}
 							/>
 						) : null}
 					</DndTable.Cell>
 				)}
 
 				{fields.map((field) => (
-					<TableHeadCell
-						{...field}
-						expandableColumns={expandableColumns}
-						key={field.label}
-						sorting={sorting}
-						updateSorting={updateSorting}
-					/>
+					<TableHeadCell {...field} key={field.label} />
 				))}
 
 				<DndTable.Cell
 					className="item-actions"
 					columnName="item-actions"
+					defaultWidth="44px"
 					heading
 				>
 					<FieldsSelectorDropdown fields={schema.fields} />
@@ -88,11 +77,7 @@ function TableHead({
 }
 
 TableHead.propTypes = {
-	fields: PropTypes.arrayOf(
-		PropTypes.shape({
-			expand: PropTypes.bool,
-		})
-	),
+	fields: PropTypes.array,
 	items: PropTypes.array,
 	schema: PropTypes.shape({
 		fields: PropTypes.any,
@@ -104,8 +89,6 @@ TableHead.propTypes = {
 		PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 	),
 	selectionType: PropTypes.oneOf(['single', 'multiple']),
-	sorting: PropTypes.any,
-	updateSorting: PropTypes.func.isRequired,
 };
 
 export default TableHead;

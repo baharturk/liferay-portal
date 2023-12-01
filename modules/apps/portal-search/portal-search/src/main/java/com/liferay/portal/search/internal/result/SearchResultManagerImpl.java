@@ -1,19 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.result;
 
+import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapperFactory;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.search.Document;
@@ -26,37 +20,23 @@ import com.liferay.portal.kernel.search.result.SearchResultContributor;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 
-import java.util.HashMap;
 import java.util.Locale;
 
 import javax.portlet.PortletRequest;
 import javax.portlet.PortletResponse;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Adolfo Pérez
  * @author André de Oliveira
  */
-@Component(immediate = true, service = SearchResultManager.class)
+@Component(service = SearchResultManager.class)
 public class SearchResultManagerImpl implements SearchResultManager {
-
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	public void addSearchResultContributor(
-		SearchResultContributor searchResultContributor) {
-
-		_searchResultContributors.put(
-			searchResultContributor.getEntryClassName(),
-			searchResultContributor);
-	}
 
 	@Override
 	public SearchResult createSearchResult(Document document)
@@ -74,25 +54,6 @@ public class SearchResultManagerImpl implements SearchResultManager {
 		}
 
 		return _createSearchResultWithEntryClass(document);
-	}
-
-	public void removeSearchResultContributor(
-		SearchResultContributor searchResultContributor) {
-
-		_searchResultContributors.remove(
-			searchResultContributor.getEntryClassName());
-	}
-
-	@Reference(unbind = "-")
-	public void setClassNameLocalService(
-		ClassNameLocalService classNameLocalService) {
-
-		_classNameLocalService = classNameLocalService;
-	}
-
-	@Reference(unbind = "-")
-	public void setSummaryFactory(SummaryFactory newSummaryFactory) {
-		_summaryFactory = newSummaryFactory;
 	}
 
 	@Override
@@ -120,6 +81,21 @@ public class SearchResultManagerImpl implements SearchResultManager {
 		searchResult.setSummary(
 			_getSummaryWithEntryClass(
 				document, locale, portletRequest, portletResponse));
+	}
+
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, SearchResultContributor.class, null,
+			ServiceReferenceMapperFactory.create(
+				bundleContext,
+				(searchResultContributor, emitter) -> emitter.emit(
+					searchResultContributor.getEntryClassName())));
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerMap.close();
 	}
 
 	private SearchResult _createSearchResultWithClass(Document document)
@@ -155,7 +131,7 @@ public class SearchResultManagerImpl implements SearchResultManager {
 		String entryClassName = GetterUtil.getString(
 			document.get(Field.ENTRY_CLASS_NAME));
 
-		return _searchResultContributors.get(entryClassName);
+		return _serviceTrackerMap.getService(entryClassName);
 	}
 
 	private Summary _getSummaryWithClass(
@@ -193,9 +169,13 @@ public class SearchResultManagerImpl implements SearchResultManager {
 		return false;
 	}
 
+	@Reference
 	private ClassNameLocalService _classNameLocalService;
-	private final HashMap<String, SearchResultContributor>
-		_searchResultContributors = new HashMap<>();
+
+	private ServiceTrackerMap<String, SearchResultContributor>
+		_serviceTrackerMap;
+
+	@Reference
 	private SummaryFactory _summaryFactory;
 
 }

@@ -20,9 +20,9 @@ LPS-30525.
 
 <#if themeDisplay??>
 	<#assign
-		css_main_file = htmlUtil.escape(portalUtil.getStaticResourceURL(request, "${themeDisplay.getPathThemeCss()}/main.css"))
+		css_main_file = htmlUtil.escape(themeDisplay.getMainCSSURL())
 		is_signed_in = themeDisplay.isSignedIn()
-		js_main_file = htmlUtil.escape(portalUtil.getStaticResourceURL(request, "${themeDisplay.getPathThemeJavaScript()}/main.js"))
+		js_main_file = htmlUtil.escape(themeDisplay.getMainJSURL())
 	/>
 
 	<#if !is_setup_complete>
@@ -81,9 +81,9 @@ ${dateUtil.getCurrentDate(format, locale)}</#macro>
 	file_name
 >
 	<#if file_name == js_main_file>
-		<script id="mainLiferayThemeJavaScript" src="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" type="text/javascript"></script>
+		<script ${nonceAttribute} id="mainLiferayThemeJavaScript" src="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" type="text/javascript"></script>
 	<#else>
-		<script src="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" type="text/javascript"></script>
+		<script ${nonceAttribute} src="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" type="text/javascript"></script>
 	</#if>
 </#macro>
 

@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.internal.verify;
 
+import com.liferay.document.library.constants.DLPortletKeys;
+import com.liferay.document.library.internal.util.DDMFormUtil;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.document.library.kernel.model.DLFileVersion;
@@ -24,24 +17,42 @@ import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalServi
 import com.liferay.document.library.kernel.service.DLFileVersionLocalService;
 import com.liferay.document.library.kernel.service.DLFolderLocalService;
 import com.liferay.document.library.kernel.util.DLUtil;
+import com.liferay.document.library.kernel.util.RawMetadataProcessor;
+import com.liferay.dynamic.data.mapping.io.DDMFormSerializer;
+import com.liferay.dynamic.data.mapping.io.DDMFormSerializerSerializeRequest;
+import com.liferay.dynamic.data.mapping.io.DDMFormSerializerSerializeResponse;
+import com.liferay.dynamic.data.mapping.model.DDMForm;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
+import com.liferay.exportimport.kernel.staging.Staging;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.change.tracking.store.CTStoreFactory;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Criterion;
+import com.liferay.portal.kernel.dao.orm.Property;
+import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.metadata.RawMetadataProcessorUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFileVersion;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFolder;
@@ -56,67 +67,100 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
- * @author     Raymond Augé
- * @author     Douglas Wong
- * @author     Alexander Chow
- * @deprecated As of Mueller (7.2.x), with no direct replacement
+ * @author Raymond Augé
+ * @author Douglas Wong
+ * @author Alexander Chow
  */
-@Component(
-	property = "verify.process.name=com.liferay.document.library.service",
-	service = VerifyProcess.class
-)
-@Deprecated
+@Component(service = VerifyProcess.class)
 public class DLServiceVerifyProcess extends VerifyProcess {
 
 	@Override
 	protected void doVerify() throws Exception {
 		_checkDLFileEntryMetadata();
+		_checkDDMStructureDefinition();
 		_checkMimeTypes();
 		_updateClassNameId();
 		_updateFileEntryAssets();
 		_updateFolderAssets();
+
+		if (FeatureFlagManagerUtil.isEnabled("LPS-157670")) {
+			updateStagedPortletNames();
+		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setDLAppHelperLocalService(
-		DLAppHelperLocalService dlAppHelperLocalService) {
+	protected void updateStagedPortletNames() throws PortalException {
+		ActionableDynamicQuery groupActionableDynamicQuery =
+			_groupLocalService.getActionableDynamicQuery();
 
-		_dlAppHelperLocalService = dlAppHelperLocalService;
+		groupActionableDynamicQuery.setAddCriteriaMethod(
+			dynamicQuery -> {
+				Property siteProperty = PropertyFactoryUtil.forName("site");
+
+				dynamicQuery.add(siteProperty.eq(Boolean.TRUE));
+			});
+		groupActionableDynamicQuery.setPerformActionMethod(
+			(ActionableDynamicQuery.PerformActionMethod<Group>)group -> {
+				UnicodeProperties typeSettingsUnicodeProperties =
+					group.getTypeSettingsProperties();
+
+				if (typeSettingsUnicodeProperties == null) {
+					return;
+				}
+
+				String propertyKey = _staging.getStagedPortletId(
+					DLPortletKeys.DOCUMENT_LIBRARY);
+
+				String propertyValue =
+					typeSettingsUnicodeProperties.getProperty(propertyKey);
+
+				if (Validator.isNull(propertyValue)) {
+					return;
+				}
+
+				typeSettingsUnicodeProperties.remove(propertyKey);
+
+				propertyKey = _staging.getStagedPortletId(
+					DLPortletKeys.DOCUMENT_LIBRARY_ADMIN);
+
+				typeSettingsUnicodeProperties.put(propertyKey, propertyValue);
+
+				group.setTypeSettingsProperties(typeSettingsUnicodeProperties);
+
+				_groupLocalService.updateGroup(group);
+			});
+
+		groupActionableDynamicQuery.performActions();
 	}
 
-	@Reference(unbind = "-")
-	protected void setDLFileEntryLocalService(
-		DLFileEntryLocalService dlFileEntryLocalService) {
+	private void _checkDDMStructureDefinition() throws Exception {
+		_companyLocalService.forEachCompanyId(
+			companyId -> {
+				Group group = _groupLocalService.getCompanyGroup(companyId);
+				String name =
+					com.liferay.portal.kernel.metadata.RawMetadataProcessor.
+						TIKA_RAW_METADATA;
 
-		_dlFileEntryLocalService = dlFileEntryLocalService;
-	}
+				DDMStructure ddmStructure =
+					_ddmStructureLocalService.fetchStructure(
+						group.getGroupId(),
+						_portal.getClassNameId(RawMetadataProcessor.class),
+						name);
 
-	@Reference(unbind = "-")
-	protected void setDLFileEntryMetadataLocalService(
-		DLFileEntryMetadataLocalService dlFileEntryMetadataLocalService) {
+				if (ddmStructure != null) {
+					DDMForm ddmForm = DDMFormUtil.buildDDMForm(
+						RawMetadataProcessorUtil.getFieldNames(),
+						_portal.getSiteDefaultLocale(group.getGroupId()));
 
-		_dlFileEntryMetadataLocalService = dlFileEntryMetadataLocalService;
-	}
+					String definition = _serializeJSONDDMForm(ddmForm);
 
-	@Reference(unbind = "-")
-	protected void setDLFileVersionLocalService(
-		DLFileVersionLocalService dlFileVersionLocalService) {
+					if (!definition.equals(ddmStructure.getDefinition())) {
+						ddmStructure.setDDMForm(ddmForm);
 
-		_dlFileVersionLocalService = dlFileVersionLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDLFolderLocalService(
-		DLFolderLocalService dlFolderLocalService) {
-
-		_dlFolderLocalService = dlFolderLocalService;
-	}
-
-	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.document.library.service)(&(release.schema.version>=3.0.0)(!(release.schema.version>=4.0.0))))",
-		unbind = "-"
-	)
-	protected void setRelease(Release release) {
+						_ddmStructureLocalService.updateDDMStructure(
+							ddmStructure);
+					}
+				}
+			});
 	}
 
 	private void _checkDLFileEntryMetadata() throws Exception {
@@ -197,8 +241,9 @@ public class DLServiceVerifyProcess extends VerifyProcess {
 
 					dlFileVersion.setMimeType(mimeType);
 
-					_dlFileVersionLocalService.updateDLFileVersion(
-						dlFileVersion);
+					dlFileVersion =
+						_dlFileVersionLocalService.updateDLFileVersion(
+							dlFileVersion);
 
 					try {
 						DLFileEntry dlFileEntry = dlFileVersion.getFileEntry();
@@ -281,6 +326,16 @@ public class DLServiceVerifyProcess extends VerifyProcess {
 			dlFileEntryMetadata);
 	}
 
+	private String _serializeJSONDDMForm(DDMForm ddmForm) {
+		DDMFormSerializerSerializeRequest.Builder builder =
+			DDMFormSerializerSerializeRequest.Builder.newBuilder(ddmForm);
+
+		DDMFormSerializerSerializeResponse ddmFormSerializerSerializeResponse =
+			_jsonDDMFormSerializer.serialize(builder.build());
+
+		return ddmFormSerializerSerializeResponse.getContent();
+	}
+
 	private void _updateClassNameId() {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			runSQL(
@@ -314,8 +369,8 @@ public class DLServiceVerifyProcess extends VerifyProcess {
 
 				try {
 					_dlAppHelperLocalService.updateAsset(
-						dlFileEntry.getUserId(), fileEntry, fileVersion, null,
-						null, null);
+						dlFileEntry.getUserId(), fileEntry, fileVersion,
+						new ServiceContext());
 				}
 				catch (Exception exception) {
 					if (_log.isWarnEnabled()) {
@@ -376,15 +431,44 @@ public class DLServiceVerifyProcess extends VerifyProcess {
 		DLServiceVerifyProcess.class);
 
 	@Reference
+	private CompanyLocalService _companyLocalService;
+
+	@Reference
 	private CTStoreFactory _ctStoreFactory;
 
 	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;
 
+	@Reference
 	private DLAppHelperLocalService _dlAppHelperLocalService;
+
+	@Reference
 	private DLFileEntryLocalService _dlFileEntryLocalService;
+
+	@Reference
 	private DLFileEntryMetadataLocalService _dlFileEntryMetadataLocalService;
+
+	@Reference
 	private DLFileVersionLocalService _dlFileVersionLocalService;
+
+	@Reference
 	private DLFolderLocalService _dlFolderLocalService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference(target = "(ddm.form.serializer.type=json)")
+	private DDMFormSerializer _jsonDDMFormSerializer;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.document.library.service)(&(release.schema.version>=3.0.0)(!(release.schema.version>=4.0.0))))"
+	)
+	private Release _release;
+
+	@Reference
+	private Staging _staging;
 
 }

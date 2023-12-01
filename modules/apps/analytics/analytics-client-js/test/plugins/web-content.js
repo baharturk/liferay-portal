@@ -1,31 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import userEvent from '@testing-library/user-event';
 import fetchMock from 'fetch-mock';
 
 import AnalyticsClient from '../../src/analytics';
+import {wait} from '../helpers';
 
 const applicationId = 'WebContent';
 
 const googleUrl = 'http://google.com/';
 
-const createWebContentElement = () => {
+const createWebContentElement = (assetId, assetTitle) => {
 	const webContentElement = document.createElement('div');
 
-	webContentElement.dataset.analyticsAssetId = 'assetId';
-	webContentElement.dataset.analyticsAssetTitle = 'Web Content Title 1';
+	webContentElement.dataset.analyticsAssetId = assetId || 'assetId';
+	webContentElement.dataset.analyticsAssetTitle =
+		assetTitle || 'Web Content Title 1';
 	webContentElement.dataset.analyticsAssetType = 'web-content';
 	webContentElement.innerText =
 		'Lorem ipsum dolor, sit amet consectetur adipisicing elit.';
@@ -34,6 +27,29 @@ const createWebContentElement = () => {
 
 	return webContentElement;
 };
+
+function createDynamicWebContentElement(attrs) {
+	const element = document.createElement('div');
+
+	for (let index = 0; index < Object.keys(attrs).length; index++) {
+		element.dataset[Object.keys(attrs)[index]] = attrs[index];
+	}
+
+	element.innerText =
+		'Lorem ipsum dolor, sit amet consectetur adipisicing elit.';
+
+	document.body.appendChild(element);
+
+	const paragraph = document.createElement('p');
+
+	paragraph.href = googleUrl;
+
+	setInnerHTML(paragraph, 'Paragraph inside a Web Content');
+
+	element.appendChild(paragraph);
+
+	return [element, paragraph];
+}
 
 describe('WebContent Plugin', () => {
 	let Analytics;
@@ -60,12 +76,26 @@ describe('WebContent Plugin', () => {
 	});
 
 	describe('webContentViewed event', () => {
-		it('is fired for every webContent on the page', async () => {
+		it('is fired when web-content is in viewport', async () => {
 			const webContentElement = createWebContentElement();
+
+			jest.spyOn(
+				webContentElement,
+				'getBoundingClientRect'
+			).mockImplementation(() => ({
+				bottom: 500,
+				height: 500,
+				left: 0,
+				right: 500,
+				top: 0,
+				width: 500,
+			}));
 
 			const domContentLoaded = new Event('DOMContentLoaded');
 
 			await document.dispatchEvent(domContentLoaded);
+
+			await wait(250);
 
 			const events = Analytics.getEvents().filter(
 				({eventId}) => eventId === 'webContentViewed'
@@ -79,6 +109,80 @@ describe('WebContent Plugin', () => {
 					eventId: 'webContentViewed',
 					properties: expect.objectContaining({
 						articleId: 'assetId',
+					}),
+				})
+			);
+
+			document.body.removeChild(webContentElement);
+		});
+
+		it('is not fired when web-content is not in viewport', async () => {
+			const webContentElement = createWebContentElement();
+
+			jest.spyOn(
+				webContentElement,
+				'getBoundingClientRect'
+			).mockImplementation(() => ({
+				bottom: 1500,
+				height: 500,
+				left: 0,
+				right: 500,
+				top: 1000,
+				width: 500,
+			}));
+
+			const domContentLoaded = new Event('DOMContentLoaded');
+
+			await document.dispatchEvent(domContentLoaded);
+
+			await wait(250);
+
+			const events = Analytics.getEvents().filter(
+				({eventId}) => eventId === 'webContentViewed'
+			);
+
+			expect(events.length).toBeGreaterThanOrEqual(0);
+
+			document.body.removeChild(webContentElement);
+		});
+
+		it('remove spaces between assetTitle and assetId', async () => {
+			const webContentElement = createWebContentElement(
+				' myAssetId ',
+				' my asset title '
+			);
+
+			jest.spyOn(
+				webContentElement,
+				'getBoundingClientRect'
+			).mockImplementation(() => ({
+				bottom: 500,
+				height: 500,
+				left: 0,
+				right: 500,
+				top: 0,
+				width: 500,
+			}));
+
+			const domContentLoaded = new Event('DOMContentLoaded');
+
+			await document.dispatchEvent(domContentLoaded);
+
+			await wait(250);
+
+			const events = Analytics.getEvents().filter(
+				({eventId}) => eventId === 'webContentViewed'
+			);
+
+			expect(events.length).toBeGreaterThanOrEqual(1);
+
+			expect(events[0]).toEqual(
+				expect.objectContaining({
+					applicationId,
+					eventId: 'webContentViewed',
+					properties: expect.objectContaining({
+						articleId: 'myAssetId',
+						title: 'my asset title',
 					}),
 				})
 			);
@@ -174,5 +278,45 @@ describe('WebContent Plugin', () => {
 
 			document.body.removeChild(webContentElement);
 		});
+	});
+
+	describe('webContentClicked required attributes', () => {
+		it.each([
+			[
+				'assetId',
+				{
+					analyticsAssetTitle: 'assetTitle',
+					analyticsAssetType: 'blog',
+				},
+			],
+			[
+				'assetTitle',
+				{
+					analyticsAssetId: 'assetId',
+					analyticsAssetType: 'blog',
+				},
+			],
+			[
+				'assetType',
+				{
+					analyticsAssetId: 'assetId',
+					analyticsAssetType: 'assetTitle',
+				},
+			],
+		])(
+			'is not fired if asset missing %s attribute',
+			async (label, attrs) => {
+				const [
+					element,
+					paragraph,
+				] = await createDynamicWebContentElement(attrs);
+
+				await userEvent.click(paragraph);
+
+				expect(Analytics.getEvents()).toEqual([]);
+
+				document.body.removeChild(element);
+			}
+		);
 	});
 });

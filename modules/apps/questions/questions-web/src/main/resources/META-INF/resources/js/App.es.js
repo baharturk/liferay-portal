@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClientContext} from 'graphql-hooks';
@@ -33,6 +24,8 @@ export default function App(props) {
 
 	const packageName = props.npmResolvedPackageName;
 
+	const questionsComponent = `${packageName}/js/pages/questions/Questions.es`;
+
 	let path = props.historyRouterBasePath;
 
 	if (path && props.i18nPath) {
@@ -47,8 +40,8 @@ export default function App(props) {
 	}
 
 	return (
-		<AppContextProvider {...props}>
-			<ClientContext.Provider value={client}>
+		<ClientContext.Provider value={client}>
+			<AppContextProvider {...props}>
 				<Router basename={path}>
 					<ErrorBoundary>
 						<div>
@@ -59,7 +52,7 @@ export default function App(props) {
 									component={(props) => (
 										<Component
 											module={`${packageName}/js/pages/home/Home`}
-											props={props}
+											props={{...props, isHomePath: true}}
 										/>
 									)}
 									exact
@@ -113,7 +106,7 @@ export default function App(props) {
 								<Route
 									component={(props) => (
 										<Component
-											module={`${packageName}/js/pages/questions/Questions.es`}
+											module={questionsComponent}
 											props={props}
 										/>
 									)}
@@ -151,7 +144,9 @@ export default function App(props) {
 												<Route
 													component={(props) => (
 														<Component
-															module={`${packageName}/js/pages/questions/Questions.es`}
+															module={
+																questionsComponent
+															}
 															props={props}
 														/>
 													)}
@@ -162,7 +157,9 @@ export default function App(props) {
 												<Route
 													component={(props) => (
 														<Component
-															module={`${packageName}/js/pages/questions/Questions.es`}
+															module={
+																questionsComponent
+															}
 															props={props}
 														/>
 													)}
@@ -206,7 +203,9 @@ export default function App(props) {
 												<Route
 													component={(props) => (
 														<Component
-															module={`${packageName}/js/pages/questions/Questions.es`}
+															module={
+																questionsComponent
+															}
 															props={props}
 														/>
 													)}
@@ -221,8 +220,8 @@ export default function App(props) {
 						</div>
 					</ErrorBoundary>
 				</Router>
-			</ClientContext.Provider>
-		</AppContextProvider>
+			</AppContextProvider>
+		</ClientContext.Provider>
 	);
 
 	function redirectForNotifications(props) {

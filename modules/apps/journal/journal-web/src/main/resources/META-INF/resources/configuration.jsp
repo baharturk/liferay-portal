@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -30,56 +21,48 @@ String emailFromName = ParamUtil.getString(request, "preferences--emailFromName-
 
 <liferay-frontend:edit-form
 	action="<%= configurationActionURL %>"
+	fluid="<%= true %>"
 	method="post"
 	name="fm"
 >
 	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
 	<aui:input name="redirect" type="hidden" value="<%= configurationRenderURL %>" />
 
-	<%
-	String tabs1Names = "email-from,web-content-added-email,web-content-moved-from-folder-email,web-content-moved-to-folder-email,web-content-review-email,web-content-updated-email";
-
-	if (WorkflowDefinitionLinkLocalServiceUtil.getWorkflowDefinitionLinksCount(themeDisplay.getCompanyId(), scopeGroupId, JournalFolder.class.getName()) > 0) {
-		tabs1Names = tabs1Names.concat(",web-content-approval-denied-email,web-content-approval-granted-email,web-content-approval-requested-email");
-	}
-	%>
+	<liferay-ui:error key="emailFromAddress" message="please-enter-a-valid-email-address" />
+	<liferay-ui:error key="emailFromName" message="please-enter-a-valid-name" />
+	<liferay-ui:error key="emailArticleAddedBody" message="please-enter-a-valid-body" />
+	<liferay-ui:error key="emailArticleAddedSubject" message="please-enter-a-valid-subject" />
+	<liferay-ui:error key="emailArticleApprovalDeniedBody" message="please-enter-a-valid-body" />
+	<liferay-ui:error key="emailArticleApprovalDeniedSubject" message="please-enter-a-valid-subject" />
+	<liferay-ui:error key="emailArticleApprovalGrantedBody" message="please-enter-a-valid-body" />
+	<liferay-ui:error key="emailArticleApprovalGrantedSubject" message="please-enter-a-valid-subject" />
+	<liferay-ui:error key="emailArticleApprovalRequestedBody" message="please-enter-a-valid-body" />
+	<liferay-ui:error key="emailArticleApprovalRequestedSubject" message="please-enter-a-valid-subject" />
+	<liferay-ui:error key="emailArticleExpiredBody" message="please-enter-a-valid-body" />
+	<liferay-ui:error key="emailArticleExpiredSubject" message="please-enter-a-valid-subject" />
+	<liferay-ui:error key="emailArticleReviewBody" message="please-enter-a-valid-body" />
+	<liferay-ui:error key="emailArticleReviewSubject" message="please-enter-a-valid-subject" />
+	<liferay-ui:error key="emailArticleUpdatedBody" message="please-enter-a-valid-body" />
+	<liferay-ui:error key="emailArticleUpdatedSubject" message="please-enter-a-valid-subject" />
 
 	<liferay-frontend:edit-form-body>
-		<liferay-ui:tabs
-			names="<%= tabs1Names %>"
-			refresh="<%= false %>"
-		>
-			<liferay-ui:error key="emailFromAddress" message="please-enter-a-valid-email-address" />
-			<liferay-ui:error key="emailFromName" message="please-enter-a-valid-name" />
-			<liferay-ui:error key="emailArticleAddedBody" message="please-enter-a-valid-body" />
-			<liferay-ui:error key="emailArticleAddedSubject" message="please-enter-a-valid-subject" />
-			<liferay-ui:error key="emailArticleApprovalDeniedBody" message="please-enter-a-valid-body" />
-			<liferay-ui:error key="emailArticleApprovalDeniedSubject" message="please-enter-a-valid-subject" />
-			<liferay-ui:error key="emailArticleApprovalGrantedBody" message="please-enter-a-valid-body" />
-			<liferay-ui:error key="emailArticleApprovalGrantedSubject" message="please-enter-a-valid-subject" />
-			<liferay-ui:error key="emailArticleApprovalRequestedBody" message="please-enter-a-valid-body" />
-			<liferay-ui:error key="emailArticleApprovalRequestedSubject" message="please-enter-a-valid-subject" />
-			<liferay-ui:error key="emailArticleReviewBody" message="please-enter-a-valid-body" />
-			<liferay-ui:error key="emailArticleReviewSubject" message="please-enter-a-valid-subject" />
-			<liferay-ui:error key="emailArticleUpdatedBody" message="please-enter-a-valid-body" />
-			<liferay-ui:error key="emailArticleUpdatedSubject" message="please-enter-a-valid-subject" />
-
-			<liferay-ui:section>
-				<liferay-frontend:fieldset-group>
+		<div class="sheet-row">
+			<clay:tabs
+				tabsItems="<%= journalDisplayContext.getConfigurationTabsItems() %>"
+			>
+				<clay:tabs-panel>
 					<liferay-frontend:fieldset>
 						<aui:input cssClass="lfr-input-text-container" label="name" name="preferences--emailFromName--" type="text" value="<%= emailFromName %>" />
 
 						<aui:input cssClass="lfr-input-text-container" label="address" name="preferences--emailFromAddress--" type="text" value="<%= emailFromAddress %>" />
 					</liferay-frontend:fieldset>
-				</liferay-frontend:fieldset-group>
-			</liferay-ui:section>
+				</clay:tabs-panel>
 
-			<%
-			Map<String, String> emailDefinitionTerms = JournalUtil.getEmailDefinitionTerms(renderRequest, emailFromAddress, emailFromName);
-			%>
+				<%
+				Map<String, String> emailDefinitionTerms = JournalUtil.getEmailDefinitionTerms(renderRequest, emailFromAddress, emailFromName);
+				%>
 
-			<liferay-ui:section>
-				<liferay-frontend:fieldset-group>
+				<clay:tabs-panel>
 					<liferay-frontend:email-notification-settings
 						emailBodyLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleAddedBody() %>"
 						emailDefinitionTerms="<%= emailDefinitionTerms %>"
@@ -87,11 +70,19 @@ String emailFromName = ParamUtil.getString(request, "preferences--emailFromName-
 						emailParam="emailArticleAdded"
 						emailSubjectLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleAddedSubject() %>"
 					/>
-				</liferay-frontend:fieldset-group>
-			</liferay-ui:section>
+				</clay:tabs-panel>
 
-			<liferay-ui:section>
-				<liferay-frontend:fieldset-group>
+				<clay:tabs-panel>
+					<liferay-frontend:email-notification-settings
+						emailBodyLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleExpiredBody() %>"
+						emailDefinitionTerms="<%= emailDefinitionTerms %>"
+						emailEnabled="<%= journalGroupServiceConfiguration.emailArticleExpiredEnabled() %>"
+						emailParam="emailArticleExpired"
+						emailSubjectLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleExpiredSubject() %>"
+					/>
+				</clay:tabs-panel>
+
+				<clay:tabs-panel>
 					<liferay-frontend:email-notification-settings
 						emailBodyLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleMovedFromFolderBody() %>"
 						emailDefinitionTerms="<%= emailDefinitionTerms %>"
@@ -99,11 +90,9 @@ String emailFromName = ParamUtil.getString(request, "preferences--emailFromName-
 						emailParam="emailArticleMovedFromFolder"
 						emailSubjectLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleMovedFromFolderSubject() %>"
 					/>
-				</liferay-frontend:fieldset-group>
-			</liferay-ui:section>
+				</clay:tabs-panel>
 
-			<liferay-ui:section>
-				<liferay-frontend:fieldset-group>
+				<clay:tabs-panel>
 					<liferay-frontend:email-notification-settings
 						emailBodyLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleMovedToFolderBody() %>"
 						emailDefinitionTerms="<%= emailDefinitionTerms %>"
@@ -111,11 +100,9 @@ String emailFromName = ParamUtil.getString(request, "preferences--emailFromName-
 						emailParam="emailArticleMovedToFolder"
 						emailSubjectLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleMovedToFolderSubject() %>"
 					/>
-				</liferay-frontend:fieldset-group>
-			</liferay-ui:section>
+				</clay:tabs-panel>
 
-			<liferay-ui:section>
-				<liferay-frontend:fieldset-group>
+				<clay:tabs-panel>
 					<liferay-frontend:email-notification-settings
 						emailBodyLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleReviewBody() %>"
 						emailDefinitionTerms="<%= emailDefinitionTerms %>"
@@ -123,11 +110,9 @@ String emailFromName = ParamUtil.getString(request, "preferences--emailFromName-
 						emailParam="emailArticleReview"
 						emailSubjectLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleReviewSubject() %>"
 					/>
-				</liferay-frontend:fieldset-group>
-			</liferay-ui:section>
+				</clay:tabs-panel>
 
-			<liferay-ui:section>
-				<liferay-frontend:fieldset-group>
+				<clay:tabs-panel>
 					<liferay-frontend:email-notification-settings
 						emailBodyLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleUpdatedBody() %>"
 						emailDefinitionTerms="<%= emailDefinitionTerms %>"
@@ -135,12 +120,10 @@ String emailFromName = ParamUtil.getString(request, "preferences--emailFromName-
 						emailParam="emailArticleUpdated"
 						emailSubjectLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleUpdatedSubject() %>"
 					/>
-				</liferay-frontend:fieldset-group>
-			</liferay-ui:section>
+				</clay:tabs-panel>
 
-			<c:if test="<%= WorkflowDefinitionLinkLocalServiceUtil.getWorkflowDefinitionLinksCount(themeDisplay.getCompanyId(), scopeGroupId, JournalFolder.class.getName()) > 0 %>">
-				<liferay-ui:section>
-					<liferay-frontend:fieldset-group>
+				<c:if test="<%= JournalUtil.hasWorkflowDefinitionsLinks(themeDisplay) %>">
+					<clay:tabs-panel>
 						<liferay-frontend:email-notification-settings
 							emailBodyLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleApprovalDeniedBody() %>"
 							emailDefinitionTerms="<%= emailDefinitionTerms %>"
@@ -148,11 +131,9 @@ String emailFromName = ParamUtil.getString(request, "preferences--emailFromName-
 							emailParam="emailArticleApprovalDenied"
 							emailSubjectLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleApprovalDeniedSubject() %>"
 						/>
-					</liferay-frontend:fieldset-group>
-				</liferay-ui:section>
+					</clay:tabs-panel>
 
-				<liferay-ui:section>
-					<liferay-frontend:fieldset-group>
+					<clay:tabs-panel>
 						<liferay-frontend:email-notification-settings
 							emailBodyLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleApprovalGrantedBody() %>"
 							emailDefinitionTerms="<%= emailDefinitionTerms %>"
@@ -160,11 +141,9 @@ String emailFromName = ParamUtil.getString(request, "preferences--emailFromName-
 							emailParam="emailArticleApprovalGranted"
 							emailSubjectLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleApprovalGrantedSubject() %>"
 						/>
-					</liferay-frontend:fieldset-group>
-				</liferay-ui:section>
+					</clay:tabs-panel>
 
-				<liferay-ui:section>
-					<liferay-frontend:fieldset-group>
+					<clay:tabs-panel>
 						<liferay-frontend:email-notification-settings
 							emailBodyLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleApprovalRequestedBody() %>"
 							emailDefinitionTerms='<%= JournalUtil.getEmailDefinitionTerms(renderRequest, emailFromAddress, emailFromName, "requested") %>'
@@ -172,15 +151,13 @@ String emailFromName = ParamUtil.getString(request, "preferences--emailFromName-
 							emailParam="emailArticleApprovalRequested"
 							emailSubjectLocalizedValuesMap="<%= journalGroupServiceConfiguration.emailArticleApprovalRequestedSubject() %>"
 						/>
-					</liferay-frontend:fieldset-group>
-				</liferay-ui:section>
-			</c:if>
-		</liferay-ui:tabs>
+					</clay:tabs-panel>
+				</c:if>
+			</clay:tabs>
+		</div>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button type="cancel" />
+		<liferay-frontend:edit-form-buttons />
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>

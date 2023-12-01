@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-search-custom-filter',
 	(A) => {
-		var FacetUtil = Liferay.Search.FacetUtil;
+		const FacetUtil = Liferay.Search.FacetUtil;
 
-		var CustomFilter = function (form) {
+		const CustomFilter = function (form) {
 			if (!form) {
 				return;
 			}
 
-			var instance = this;
+			const instance = this;
 
 			instance.form = form;
 
@@ -32,7 +23,9 @@ AUI.add(
 				'.custom-filter-value-input'
 			);
 
-			var applyButton = instance.form.one('.custom-filter-apply-button');
+			const applyButton = instance.form.one(
+				'.custom-filter-apply-button'
+			);
 
 			if (applyButton) {
 				applyButton.on('click', A.bind(instance._onClick, instance));
@@ -41,13 +34,13 @@ AUI.add(
 
 		A.mix(CustomFilter.prototype, {
 			_onClick() {
-				var instance = this;
+				const instance = this;
 
 				instance.search();
 			},
 
 			_onSubmit(event) {
-				var instance = this;
+				const instance = this;
 
 				event.stopPropagation();
 
@@ -55,19 +48,19 @@ AUI.add(
 			},
 
 			getFilterValue() {
-				var instance = this;
+				const instance = this;
 
-				var filterValue = instance.filterValueInput.val();
+				const filterValue = instance.filterValueInput.val();
 
 				return filterValue;
 			},
 
 			search() {
-				var instance = this;
+				const instance = this;
 
-				var searchURL = instance.form.get('action');
+				const searchURL = instance.form.get('action');
 
-				var queryString = instance.updateQueryString(
+				const queryString = instance.updateQueryString(
 					document.location.search
 				);
 
@@ -75,9 +68,9 @@ AUI.add(
 			},
 
 			updateQueryString(queryString) {
-				var instance = this;
+				const instance = this;
 
-				var hasQuestionMark = false;
+				let hasQuestionMark = false;
 
 				if (queryString[0] === '?') {
 					hasQuestionMark = true;

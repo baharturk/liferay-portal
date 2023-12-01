@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.resource.v1_0.test;
@@ -22,11 +13,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.delivery.client.dto.v1_0.Field;
 import com.liferay.headless.delivery.client.dto.v1_0.MessageBoardAttachment;
 import com.liferay.headless.delivery.client.http.HttpInvoker;
 import com.liferay.headless.delivery.client.pagination.Page;
 import com.liferay.headless.delivery.client.resource.v1_0.MessageBoardAttachmentResource;
 import com.liferay.headless.delivery.client.serdes.v1_0.MessageBoardAttachmentSerDes;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -51,24 +44,24 @@ import com.liferay.portal.vulcan.resource.EntityModelResource;
 
 import java.io.File;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtilsBean;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -190,6 +183,7 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 		messageBoardAttachment.setContentUrl(regex);
 		messageBoardAttachment.setContentValue(regex);
 		messageBoardAttachment.setEncodingFormat(regex);
+		messageBoardAttachment.setExternalReferenceCode(regex);
 		messageBoardAttachment.setFileExtension(regex);
 		messageBoardAttachment.setTitle(regex);
 
@@ -203,6 +197,8 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 		Assert.assertEquals(regex, messageBoardAttachment.getContentUrl());
 		Assert.assertEquals(regex, messageBoardAttachment.getContentValue());
 		Assert.assertEquals(regex, messageBoardAttachment.getEncodingFormat());
+		Assert.assertEquals(
+			regex, messageBoardAttachment.getExternalReferenceCode());
 		Assert.assertEquals(regex, messageBoardAttachment.getFileExtension());
 		Assert.assertEquals(regex, messageBoardAttachment.getTitle());
 	}
@@ -242,7 +238,7 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 	@Test
 	public void testGraphQLDeleteMessageBoardAttachment() throws Exception {
 		MessageBoardAttachment messageBoardAttachment =
-			testGraphQLMessageBoardAttachment_addMessageBoardAttachment();
+			testGraphQLDeleteMessageBoardAttachment_addMessageBoardAttachment();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -257,7 +253,6 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 							}
 						})),
 				"JSONObject/data", "Object/deleteMessageBoardAttachment"));
-
 		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
@@ -273,6 +268,13 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 			"JSONArray/errors");
 
 		Assert.assertTrue(errorsJSONArray.length() > 0);
+	}
+
+	protected MessageBoardAttachment
+			testGraphQLDeleteMessageBoardAttachment_addMessageBoardAttachment()
+		throws Exception {
+
+		return testGraphQLMessageBoardAttachment_addMessageBoardAttachment();
 	}
 
 	@Test
@@ -299,7 +301,7 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 	@Test
 	public void testGraphQLGetMessageBoardAttachment() throws Exception {
 		MessageBoardAttachment messageBoardAttachment =
-			testGraphQLMessageBoardAttachment_addMessageBoardAttachment();
+			testGraphQLGetMessageBoardAttachment_addMessageBoardAttachment();
 
 		Assert.assertTrue(
 			equals(
@@ -344,6 +346,13 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 				"Object/code"));
 	}
 
+	protected MessageBoardAttachment
+			testGraphQLGetMessageBoardAttachment_addMessageBoardAttachment()
+		throws Exception {
+
+		return testGraphQLMessageBoardAttachment_addMessageBoardAttachment();
+	}
+
 	@Test
 	public void testGetMessageBoardMessageMessageBoardAttachmentsPage()
 		throws Exception {
@@ -358,7 +367,7 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 				getMessageBoardMessageMessageBoardAttachmentsPage(
 					messageBoardMessageId);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantMessageBoardMessageId != null) {
 			MessageBoardAttachment irrelevantMessageBoardAttachment =
@@ -371,12 +380,15 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 					getMessageBoardMessageMessageBoardAttachmentsPage(
 						irrelevantMessageBoardMessageId);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantMessageBoardAttachment),
+			assertContains(
+				irrelevantMessageBoardAttachment,
 				(List<MessageBoardAttachment>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetMessageBoardMessageMessageBoardAttachmentsPage_getExpectedActions(
+					irrelevantMessageBoardMessageId));
 		}
 
 		MessageBoardAttachment messageBoardAttachment1 =
@@ -392,18 +404,45 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 				getMessageBoardMessageMessageBoardAttachmentsPage(
 					messageBoardMessageId);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(messageBoardAttachment1, messageBoardAttachment2),
+		assertContains(
+			messageBoardAttachment1,
 			(List<MessageBoardAttachment>)page.getItems());
-		assertValid(page);
+		assertContains(
+			messageBoardAttachment2,
+			(List<MessageBoardAttachment>)page.getItems());
+		assertValid(
+			page,
+			testGetMessageBoardMessageMessageBoardAttachmentsPage_getExpectedActions(
+				messageBoardMessageId));
 
 		messageBoardAttachmentResource.deleteMessageBoardAttachment(
 			messageBoardAttachment1.getId());
 
 		messageBoardAttachmentResource.deleteMessageBoardAttachment(
 			messageBoardAttachment2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetMessageBoardMessageMessageBoardAttachmentsPage_getExpectedActions(
+				Long messageBoardMessageId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/message-board-messages/{messageBoardMessageId}/message-board-attachments/batch".
+				replace(
+					"{messageBoardMessageId}",
+					String.valueOf(messageBoardMessageId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	protected MessageBoardAttachment
@@ -478,7 +517,7 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 				getMessageBoardThreadMessageBoardAttachmentsPage(
 					messageBoardThreadId);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantMessageBoardThreadId != null) {
 			MessageBoardAttachment irrelevantMessageBoardAttachment =
@@ -491,12 +530,15 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 					getMessageBoardThreadMessageBoardAttachmentsPage(
 						irrelevantMessageBoardThreadId);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantMessageBoardAttachment),
+			assertContains(
+				irrelevantMessageBoardAttachment,
 				(List<MessageBoardAttachment>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetMessageBoardThreadMessageBoardAttachmentsPage_getExpectedActions(
+					irrelevantMessageBoardThreadId));
 		}
 
 		MessageBoardAttachment messageBoardAttachment1 =
@@ -512,18 +554,45 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 				getMessageBoardThreadMessageBoardAttachmentsPage(
 					messageBoardThreadId);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(messageBoardAttachment1, messageBoardAttachment2),
+		assertContains(
+			messageBoardAttachment1,
 			(List<MessageBoardAttachment>)page.getItems());
-		assertValid(page);
+		assertContains(
+			messageBoardAttachment2,
+			(List<MessageBoardAttachment>)page.getItems());
+		assertValid(
+			page,
+			testGetMessageBoardThreadMessageBoardAttachmentsPage_getExpectedActions(
+				messageBoardThreadId));
 
 		messageBoardAttachmentResource.deleteMessageBoardAttachment(
 			messageBoardAttachment1.getId());
 
 		messageBoardAttachmentResource.deleteMessageBoardAttachment(
 			messageBoardAttachment2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetMessageBoardThreadMessageBoardAttachmentsPage_getExpectedActions(
+				Long messageBoardThreadId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/message-board-threads/{messageBoardThreadId}/message-board-attachments/batch".
+				replace(
+					"{messageBoardThreadId}",
+					String.valueOf(messageBoardThreadId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	protected MessageBoardAttachment
@@ -582,6 +651,203 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 			postMessageBoardThreadMessageBoardAttachment(
 				testGetMessageBoardThreadMessageBoardAttachmentsPage_getMessageBoardThreadId(),
 				messageBoardAttachment, multipartFiles);
+	}
+
+	@Test
+	public void testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode()
+		throws Exception {
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		MessageBoardAttachment messageBoardAttachment =
+			testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_addMessageBoardAttachment();
+
+		assertHttpResponseStatusCode(
+			204,
+			messageBoardAttachmentResource.
+				deleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getMessageBoardMessageExternalReferenceCode(),
+					messageBoardAttachment.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			messageBoardAttachmentResource.
+				getSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getMessageBoardMessageExternalReferenceCode(),
+					messageBoardAttachment.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			messageBoardAttachmentResource.
+				getSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getMessageBoardMessageExternalReferenceCode(),
+					messageBoardAttachment.getExternalReferenceCode()));
+	}
+
+	protected Long
+			testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getMessageBoardMessageExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected MessageBoardAttachment
+			testDeleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_addMessageBoardAttachment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode()
+		throws Exception {
+
+		MessageBoardAttachment postMessageBoardAttachment =
+			testGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_addMessageBoardAttachment();
+
+		MessageBoardAttachment getMessageBoardAttachment =
+			messageBoardAttachmentResource.
+				getSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode(
+					testGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId(),
+					testGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getMessageBoardMessageExternalReferenceCode(),
+					postMessageBoardAttachment.getExternalReferenceCode());
+
+		assertEquals(postMessageBoardAttachment, getMessageBoardAttachment);
+		assertValid(getMessageBoardAttachment);
+	}
+
+	protected Long
+			testGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getMessageBoardMessageExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected MessageBoardAttachment
+			testGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_addMessageBoardAttachment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode()
+		throws Exception {
+
+		MessageBoardAttachment messageBoardAttachment =
+			testGraphQLGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_addMessageBoardAttachment();
+
+		Assert.assertTrue(
+			equals(
+				messageBoardAttachment,
+				MessageBoardAttachmentSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"messageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"siteKey",
+											"\"" +
+												testGraphQLGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId() +
+													"\"");
+
+										put(
+											"messageBoardMessageExternalReferenceCode",
+											"\"" +
+												testGraphQLGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getMessageBoardMessageExternalReferenceCode() +
+													"\"");
+
+										put(
+											"externalReferenceCode",
+											"\"" +
+												messageBoardAttachment.
+													getExternalReferenceCode() +
+														"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/messageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode"))));
+	}
+
+	protected Long
+			testGraphQLGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGraphQLGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_getMessageBoardMessageExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCodeNotFound()
+		throws Exception {
+
+		String irrelevantMessageBoardMessageExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+		String irrelevantExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"messageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" + irrelevantGroup.getGroupId() + "\"");
+								put(
+									"messageBoardMessageExternalReferenceCode",
+									irrelevantMessageBoardMessageExternalReferenceCode);
+								put(
+									"externalReferenceCode",
+									irrelevantExternalReferenceCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected MessageBoardAttachment
+			testGraphQLGetSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode_addMessageBoardAttachment()
+		throws Exception {
+
+		return testGraphQLMessageBoardAttachment_addMessageBoardAttachment();
 	}
 
 	protected MessageBoardAttachment
@@ -688,6 +954,14 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 		for (String additionalAssertFieldName :
 				getAdditionalAssertFieldNames()) {
 
+			if (Objects.equals("actions", additionalAssertFieldName)) {
+				if (messageBoardAttachment.getActions() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("contentUrl", additionalAssertFieldName)) {
 				if (messageBoardAttachment.getContentUrl() == null) {
 					valid = false;
@@ -706,6 +980,16 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 
 			if (Objects.equals("encodingFormat", additionalAssertFieldName)) {
 				if (messageBoardAttachment.getEncodingFormat() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (messageBoardAttachment.getExternalReferenceCode() == null) {
 					valid = false;
 				}
 
@@ -754,6 +1038,13 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 	}
 
 	protected void assertValid(Page<MessageBoardAttachment> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<MessageBoardAttachment> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<MessageBoardAttachment> messageBoardAttachments =
@@ -769,6 +1060,25 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -840,6 +1150,17 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 		for (String additionalAssertFieldName :
 				getAdditionalAssertFieldNames()) {
 
+			if (Objects.equals("actions", additionalAssertFieldName)) {
+				if (!equals(
+						(Map)messageBoardAttachment1.getActions(),
+						(Map)messageBoardAttachment2.getActions())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("contentUrl", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						messageBoardAttachment1.getContentUrl(),
@@ -866,6 +1187,19 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 				if (!Objects.deepEquals(
 						messageBoardAttachment1.getEncodingFormat(),
 						messageBoardAttachment2.getEncodingFormat())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						messageBoardAttachment1.getExternalReferenceCode(),
+						messageBoardAttachment2.getExternalReferenceCode())) {
 
 					return false;
 				}
@@ -954,14 +1288,16 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -978,6 +1314,10 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -987,18 +1327,18 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1015,36 +1355,237 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 		sb.append(operator);
 		sb.append(" ");
 
+		if (entityFieldName.equals("actions")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("contentUrl")) {
-			sb.append("'");
-			sb.append(String.valueOf(messageBoardAttachment.getContentUrl()));
-			sb.append("'");
+			Object object = messageBoardAttachment.getContentUrl();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("contentValue")) {
-			sb.append("'");
-			sb.append(String.valueOf(messageBoardAttachment.getContentValue()));
-			sb.append("'");
+			Object object = messageBoardAttachment.getContentValue();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("encodingFormat")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(messageBoardAttachment.getEncodingFormat()));
-			sb.append("'");
+			Object object = messageBoardAttachment.getEncodingFormat();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("externalReferenceCode")) {
+			Object object = messageBoardAttachment.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("fileExtension")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(messageBoardAttachment.getFileExtension()));
-			sb.append("'");
+			Object object = messageBoardAttachment.getFileExtension();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1060,9 +1601,47 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 		}
 
 		if (entityFieldName.equals("title")) {
-			sb.append("'");
-			sb.append(String.valueOf(messageBoardAttachment.getTitle()));
-			sb.append("'");
+			Object object = messageBoardAttachment.getTitle();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1124,6 +1703,8 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 					RandomTestUtil.randomString());
 				encodingFormat = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
+				externalReferenceCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				fileExtension = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
@@ -1152,6 +1733,115 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1227,18 +1917,6 @@ public abstract class BaseMessageBoardAttachmentResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseMessageBoardAttachmentResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

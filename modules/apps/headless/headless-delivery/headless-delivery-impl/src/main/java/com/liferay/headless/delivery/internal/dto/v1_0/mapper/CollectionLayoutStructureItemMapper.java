@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.mapper;
@@ -17,15 +8,28 @@ package com.liferay.headless.delivery.internal.dto.v1_0.mapper;
 import com.liferay.headless.delivery.dto.v1_0.ClassNameReference;
 import com.liferay.headless.delivery.dto.v1_0.ClassPKReference;
 import com.liferay.headless.delivery.dto.v1_0.CollectionConfig;
+import com.liferay.headless.delivery.dto.v1_0.CollectionViewport;
+import com.liferay.headless.delivery.dto.v1_0.CollectionViewportDefinition;
+import com.liferay.headless.delivery.dto.v1_0.EmptyCollectionConfig;
+import com.liferay.headless.delivery.dto.v1_0.Layout;
 import com.liferay.headless.delivery.dto.v1_0.PageCollectionDefinition;
 import com.liferay.headless.delivery.dto.v1_0.PageElement;
 import com.liferay.info.list.provider.item.selector.criterion.InfoListProviderItemSelectorReturnType;
 import com.liferay.item.selector.criteria.InfoListItemSelectorReturnType;
+import com.liferay.layout.converter.AlignConverter;
+import com.liferay.layout.converter.FlexWrapConverter;
+import com.liferay.layout.converter.JustifyConverter;
+import com.liferay.layout.responsive.ViewportSize;
 import com.liferay.layout.util.structure.CollectionStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructureItem;
+import com.liferay.layout.util.structure.collection.EmptyCollectionOptions;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
@@ -33,14 +37,12 @@ import org.osgi.service.component.annotations.Component;
 /**
  * @author Jürgen Kappler
  */
-@Component(service = LayoutStructureItemMapper.class)
+@Component(
+	property = "class.name=com.liferay.layout.util.structure.CollectionStyledLayoutStructureItem",
+	service = LayoutStructureItemMapper.class
+)
 public class CollectionLayoutStructureItemMapper
 	extends BaseStyledLayoutStructureItemMapper {
-
-	@Override
-	public String getClassName() {
-		return CollectionStyledLayoutStructureItem.class.getName();
-	}
 
 	@Override
 	public PageElement getPageElement(
@@ -57,11 +59,26 @@ public class CollectionLayoutStructureItemMapper
 					{
 						collectionConfig = _getCollectionConfig(
 							collectionStyledLayoutStructureItem);
+						collectionViewports = _getCollectionViewports(
+							collectionStyledLayoutStructureItem);
+						displayAllItems =
+							collectionStyledLayoutStructureItem.
+								isDisplayAllItems();
+						displayAllPages =
+							collectionStyledLayoutStructureItem.
+								isDisplayAllPages();
+						emptyCollectionConfig = _getEmptyCollectionConfig(
+							collectionStyledLayoutStructureItem);
+						fragmentViewports = getFragmentViewPorts(
+							collectionStyledLayoutStructureItem.
+								getItemConfigJSONObject());
+						layout = _toLayout(collectionStyledLayoutStructureItem);
 						listItemStyle =
 							collectionStyledLayoutStructureItem.
 								getListItemStyle();
 						listStyle =
 							collectionStyledLayoutStructureItem.getListStyle();
+						name = collectionStyledLayoutStructureItem.getName();
 						numberOfColumns =
 							collectionStyledLayoutStructureItem.
 								getNumberOfColumns();
@@ -71,6 +88,9 @@ public class CollectionLayoutStructureItemMapper
 						numberOfItemsPerPage =
 							collectionStyledLayoutStructureItem.
 								getNumberOfItemsPerPage();
+						numberOfPages =
+							collectionStyledLayoutStructureItem.
+								getNumberOfPages();
 						paginationType = _getPaginationType(
 							collectionStyledLayoutStructureItem.
 								getPaginationType());
@@ -80,30 +100,9 @@ public class CollectionLayoutStructureItemMapper
 						templateKey =
 							collectionStyledLayoutStructureItem.
 								getTemplateKey();
-
-						setFragmentStyle(
-							() -> {
-								JSONObject itemConfigJSONObject =
-									collectionStyledLayoutStructureItem.
-										getItemConfigJSONObject();
-
-								return toFragmentStyle(
-									itemConfigJSONObject.getJSONObject(
-										"styles"),
-									saveMappingConfiguration);
-							});
-
-						setFragmentViewports(
-							() -> {
-								JSONObject itemConfigJSONObject =
-									collectionStyledLayoutStructureItem.
-										getItemConfigJSONObject();
-
-								return getFragmentViewPorts(
-									itemConfigJSONObject);
-							});
 					}
 				};
+				id = layoutStructureItem.getItemId();
 				type = Type.COLLECTION;
 			}
 		};
@@ -161,6 +160,73 @@ public class CollectionLayoutStructureItemMapper
 		return null;
 	}
 
+	private CollectionViewport[] _getCollectionViewports(
+		CollectionStyledLayoutStructureItem
+			collectionStyledLayoutStructureItem) {
+
+		Map<String, JSONObject> collectionViewportConfigurationJSONObjects =
+			collectionStyledLayoutStructureItem.
+				getViewportConfigurationJSONObjects();
+
+		if (MapUtil.isEmpty(collectionViewportConfigurationJSONObjects)) {
+			return null;
+		}
+
+		List<CollectionViewport> collectionViewports = new ArrayList<>();
+
+		collectionViewports.add(
+			new CollectionViewport() {
+				{
+					collectionViewportDefinition =
+						_toCollectionViewportDefinition(
+							collectionViewportConfigurationJSONObjects,
+							ViewportSize.MOBILE_LANDSCAPE);
+					id = ViewportSize.MOBILE_LANDSCAPE.getViewportSizeId();
+				}
+			});
+		collectionViewports.add(
+			new CollectionViewport() {
+				{
+					collectionViewportDefinition =
+						_toCollectionViewportDefinition(
+							collectionViewportConfigurationJSONObjects,
+							ViewportSize.PORTRAIT_MOBILE);
+					id = ViewportSize.PORTRAIT_MOBILE.getViewportSizeId();
+				}
+			});
+		collectionViewports.add(
+			new CollectionViewport() {
+				{
+					collectionViewportDefinition =
+						_toCollectionViewportDefinition(
+							collectionViewportConfigurationJSONObjects,
+							ViewportSize.TABLET);
+					id = ViewportSize.TABLET.getViewportSizeId();
+				}
+			});
+
+		return collectionViewports.toArray(new CollectionViewport[0]);
+	}
+
+	private EmptyCollectionConfig _getEmptyCollectionConfig(
+		CollectionStyledLayoutStructureItem
+			collectionStyledLayoutStructureItem) {
+
+		EmptyCollectionOptions emptyCollectionOptions =
+			collectionStyledLayoutStructureItem.getEmptyCollectionOptions();
+
+		if (emptyCollectionOptions == null) {
+			return null;
+		}
+
+		return new EmptyCollectionConfig() {
+			{
+				displayMessage = emptyCollectionOptions.isDisplayMessage();
+				message_i18n = emptyCollectionOptions.getMessage();
+			}
+		};
+	}
+
 	private PageCollectionDefinition.PaginationType _getPaginationType(
 		String paginationType) {
 
@@ -183,6 +249,86 @@ public class CollectionLayoutStructureItemMapper
 		}
 
 		return null;
+	}
+
+	private CollectionViewportDefinition _toCollectionViewportDefinition(
+		Map<String, JSONObject> collectionViewportConfigurationJSONObjects,
+		ViewportSize viewportSize) {
+
+		if (!collectionViewportConfigurationJSONObjects.containsKey(
+				viewportSize.getViewportSizeId())) {
+
+			return null;
+		}
+
+		JSONObject jsonObject = collectionViewportConfigurationJSONObjects.get(
+			viewportSize.getViewportSizeId());
+
+		return new CollectionViewportDefinition() {
+			{
+				setNumberOfColumns(
+					() -> {
+						if (!jsonObject.has("numberOfColumns")) {
+							return null;
+						}
+
+						return jsonObject.getInt("numberOfColumns");
+					});
+			}
+		};
+	}
+
+	private Layout _toLayout(
+		CollectionStyledLayoutStructureItem
+			collectionStyledLayoutStructureItem) {
+
+		String formLayoutAlign = collectionStyledLayoutStructureItem.getAlign();
+		String formLayoutFlexWrap =
+			collectionStyledLayoutStructureItem.getFlexWrap();
+		String formLayoutJustify =
+			collectionStyledLayoutStructureItem.getJustify();
+
+		if (Validator.isNull(formLayoutAlign) &&
+			Validator.isNull(formLayoutFlexWrap) &&
+			Validator.isNull(formLayoutJustify)) {
+
+			return null;
+		}
+
+		return new Layout() {
+			{
+				setAlign(
+					() -> {
+						if (Validator.isNull(formLayoutAlign)) {
+							return null;
+						}
+
+						return Align.create(
+							AlignConverter.convertToExternalValue(
+								formLayoutAlign));
+					});
+				setFlexWrap(
+					() -> {
+						if (Validator.isNull(formLayoutFlexWrap)) {
+							return null;
+						}
+
+						return FlexWrap.create(
+							FlexWrapConverter.convertToExternalValue(
+								formLayoutFlexWrap));
+					});
+				setJustify(
+					() -> {
+						if (Validator.isNull(formLayoutJustify)) {
+							return null;
+						}
+
+						return Justify.create(
+							JustifyConverter.convertToExternalValue(
+								formLayoutJustify));
+					});
+			}
+		};
 	}
 
 }

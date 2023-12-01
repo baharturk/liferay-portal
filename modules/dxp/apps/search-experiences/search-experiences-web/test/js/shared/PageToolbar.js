@@ -1,41 +1,70 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {act, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
 import PageToolbar from '../../../src/main/resources/META-INF/resources/sxp_blueprint_admin/js/shared/PageToolbar';
+import ThemeContext from '../../../src/main/resources/META-INF/resources/sxp_blueprint_admin/js/shared/ThemeContext';
 
 import '@testing-library/jest-dom/extend-expect';
 
 jest.useFakeTimers();
 
+const context = {
+	availableLanguages: {
+		de_DE: 'German (Germany)',
+		en_US: 'English (United States)',
+		es_ES: 'Spanish (Spain)',
+		fr_FR: 'French (France)',
+	},
+	defaultLocale: 'en_US',
+	locale: 'en_US',
+};
+
+const description_i18n = {
+	'en-US': 'Description in English',
+	'es-ES': 'Descripcion en Espanol',
+};
+const title_i18n = {
+	'en-US': 'Title in English',
+	'es-ES': 'Titulo en Espanol',
+};
+
 const onSubmit = jest.fn();
+const onTitleAndDescriptionChange = jest.fn();
 
-Liferay.ThemeDisplay.getDefaultLanguageId = () => 'en_US';
-
-function renderPageToolbar(props) {
-	return render(
+function PageToolbarComponent(props) {
+	return (
 		<PageToolbar
-			initialDescription={{}}
-			initialTitle={{}}
+			description={description_i18n['en-US']}
+			descriptionI18n={description_i18n}
 			onCancel="/link"
 			onChangeTab={jest.fn()}
 			onSubmit={onSubmit}
+			onTitleAndDescriptionChange={onTitleAndDescriptionChange}
 			tab="query-builder"
 			tabs={{
 				'query-builder': 'query-builder',
 			}}
+			title={title_i18n['en-US']}
+			titleI18n={title_i18n}
 			{...props}
 		/>
+	);
+}
+
+function renderPageToolbar(props) {
+	return render(PageToolbarComponent(props));
+}
+
+function renderPageToolbarWithContext(context, props) {
+	return render(
+		<ThemeContext.Provider value={context}>
+			{PageToolbarComponent(props)}
+		</ThemeContext.Provider>
 	);
 }
 
@@ -47,74 +76,49 @@ describe('PageToolbar', () => {
 	});
 
 	it('renders the title', () => {
-		const initialTitle = {
-			'en-US': 'Apple',
-		};
+		const {getByText} = renderPageToolbar();
 
-		const {getByText} = renderPageToolbar({
-			initialTitle,
-		});
-
-		getByText(initialTitle['en-US']);
+		getByText(title_i18n['en-US']);
 	});
 
-	it('updates the title', () => {
-		const initialTitle = {
-			'en-US': 'Apple',
-		};
+	it('calls onTitleAndDescriptionChange when updating title', () => {
+		const {getByLabelText, getByText} = renderPageToolbar();
 
-		const {getByLabelText, getByText, queryByText} = renderPageToolbar({
-			initialTitle,
-		});
+		getByText(title_i18n['en-US']);
 
-		getByText('Apple');
-
-		fireEvent.click(getByLabelText('edit-name'));
+		fireEvent.click(getByLabelText('edit-title'));
 
 		act(() => jest.runAllTimers());
 
-		fireEvent.change(getByLabelText('name'), {
-			target: {value: 'Banana'},
+		fireEvent.change(getByLabelText('title'), {
+			target: {value: 'Updated Title'},
 		});
 
 		fireEvent.click(getByText('done'));
 
 		act(() => jest.runAllTimers());
 
-		expect(queryByText('Apple')).toBeNull();
-		getByText('Banana');
+		expect(onTitleAndDescriptionChange).toHaveBeenCalled();
 	});
 
-	it('updates the description', () => {
-		const initialTitle = {
-			'en-US': 'Apple',
-		};
+	it('calls onTitleAndDescriptionChange when updating description', () => {
+		const {getByLabelText, getByText} = renderPageToolbar();
 
-		const initialDescription = {
-			'en-US': 'A fruit',
-		};
-
-		const {getByLabelText, getByText, queryByText} = renderPageToolbar({
-			initialDescription,
-			initialTitle,
-		});
-
-		getByText('A fruit');
+		getByText(description_i18n['en-US']);
 
 		fireEvent.click(getByLabelText('edit-description'));
 
 		act(() => jest.runAllTimers());
 
 		fireEvent.change(getByLabelText('description'), {
-			target: {value: 'A red fruit'},
+			target: {value: 'Updated Description'},
 		});
 
 		fireEvent.click(getByText('done'));
 
 		act(() => jest.runAllTimers());
 
-		expect(queryByText('A fruit')).toBeNull();
-		getByText('A red fruit');
+		expect(onTitleAndDescriptionChange).toHaveBeenCalled();
 	});
 
 	it('offers link to cancel', () => {
@@ -137,35 +141,50 @@ describe('PageToolbar', () => {
 		expect(getByText('save')).toBeDisabled();
 	});
 
-	it('focuses on the name input when clicked on', () => {
-		const initialTitle = {
-			'en-US': 'Apple',
-		};
+	// Disabled, behavior when opening Modal focuses on the modal first to
+	// announce that it is open.
 
-		const {getByLabelText} = renderPageToolbar({
-			initialTitle,
-		});
+	xit('focuses on the title input when clicked on', () => {
+		const {getByLabelText} = renderPageToolbar();
 
-		fireEvent.click(getByLabelText('edit-name'));
+		fireEvent.click(getByLabelText('edit-title'));
 
 		act(() => jest.runAllTimers());
 
-		expect(getByLabelText('name')).toHaveFocus();
+		expect(getByLabelText('title')).toHaveFocus();
 	});
 
-	it('focuses on the description input when clicked on', () => {
-		const initialTitle = {
-			'en-US': 'Apple',
-		};
+	// Disabled, behavior when opening Modal focuses on the modal first to
+	// announce that it is open.
 
-		const {getByLabelText} = renderPageToolbar({
-			initialTitle,
-		});
+	xit('focuses on the description input when clicked on', () => {
+		const {getByLabelText} = renderPageToolbar();
 
 		fireEvent.click(getByLabelText('edit-description'));
 
 		act(() => jest.runAllTimers());
 
 		expect(getByLabelText('description')).toHaveFocus();
+	});
+
+	it('switches locales in modal with language selector', () => {
+		const {
+			getAllByText,
+			getAllByTitle,
+			getByDisplayValue,
+			getByLabelText,
+			getByText,
+		} = renderPageToolbarWithContext(context);
+
+		fireEvent.click(getByLabelText('edit-description'));
+
+		act(() => jest.runAllTimers());
+
+		fireEvent.click(getAllByTitle('Open Localizations')[0]);
+
+		fireEvent.click(getAllByText('es-ES')[0]);
+
+		getByDisplayValue(title_i18n['es-ES']);
+		getByText(description_i18n['es-ES']);
 	});
 });

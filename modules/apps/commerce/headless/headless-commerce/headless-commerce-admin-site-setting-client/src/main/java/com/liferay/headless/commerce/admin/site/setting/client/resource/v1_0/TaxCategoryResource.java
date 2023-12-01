@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.site.setting.client.resource.v1_0;
@@ -21,9 +12,12 @@ import com.liferay.headless.commerce.admin.site.setting.client.pagination.Pagina
 import com.liferay.headless.commerce.admin.site.setting.client.problem.Problem;
 import com.liferay.headless.commerce.admin.site.setting.client.serdes.v1_0.TaxCategorySerDes;
 
+import java.net.URL;
+
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -63,12 +57,11 @@ public interface TaxCategoryResource {
 	public HttpInvoker.HttpResponse deleteTaxCategoryHttpResponse(Long id)
 		throws Exception;
 
-	public void deleteTaxCategoryBatch(
-			Long id, String callbackURL, Object object)
+	public void deleteTaxCategoryBatch(String callbackURL, Object object)
 		throws Exception;
 
 	public HttpInvoker.HttpResponse deleteTaxCategoryBatchHttpResponse(
-			Long id, String callbackURL, Object object)
+			String callbackURL, Object object)
 		throws Exception;
 
 	public TaxCategory getTaxCategory(Long id) throws Exception;
@@ -83,11 +76,11 @@ public interface TaxCategoryResource {
 			Long id, TaxCategory taxCategory)
 		throws Exception;
 
-	public void putTaxCategoryBatch(Long id, String callbackURL, Object object)
+	public void putTaxCategoryBatch(String callbackURL, Object object)
 		throws Exception;
 
 	public HttpInvoker.HttpResponse putTaxCategoryBatchHttpResponse(
-			Long id, String callbackURL, Object object)
+			String callbackURL, Object object)
 		throws Exception;
 
 	public static class Builder {
@@ -99,8 +92,40 @@ public interface TaxCategoryResource {
 			return this;
 		}
 
+		public Builder bearerToken(String token) {
+			return header("Authorization", "Bearer " + token);
+		}
+
 		public TaxCategoryResource build() {
 			return new TaxCategoryResourceImpl(this);
+		}
+
+		public Builder contextPath(String contextPath) {
+			_contextPath = contextPath;
+
+			return this;
+		}
+
+		public Builder endpoint(String address, String scheme) {
+			String[] addressParts = address.split(":");
+
+			String host = addressParts[0];
+
+			int port = 443;
+
+			if (addressParts.length > 1) {
+				String portString = addressParts[1];
+
+				try {
+					port = Integer.parseInt(portString);
+				}
+				catch (NumberFormatException numberFormatException) {
+					throw new IllegalArgumentException(
+						"Unable to parse port from " + portString);
+				}
+			}
+
+			return endpoint(host, port, scheme);
 		}
 
 		public Builder endpoint(String host, int port, String scheme) {
@@ -109,6 +134,10 @@ public interface TaxCategoryResource {
 			_scheme = scheme;
 
 			return this;
+		}
+
+		public Builder endpoint(URL url) {
+			return endpoint(url.getHost(), url.getPort(), url.getProtocol());
 		}
 
 		public Builder header(String key, String value) {
@@ -148,6 +177,7 @@ public interface TaxCategoryResource {
 		private Builder() {
 		}
 
+		private String _contextPath = "";
 		private Map<String, String> _headers = new LinkedHashMap<>();
 		private String _host = "localhost";
 		private Locale _locale;
@@ -184,7 +214,29 @@ public interface TaxCategoryResource {
 					"HTTP response status code: " +
 						httpResponse.getStatusCode());
 
-				throw new Problem.ProblemException(Problem.toDTO(content));
+				Problem.ProblemException problemException = null;
+
+				if (Objects.equals(
+						httpResponse.getContentType(), "application/json")) {
+
+					problemException = new Problem.ProblemException(
+						Problem.toDTO(content));
+				}
+				else {
+					_logger.log(
+						Level.WARNING,
+						"Unable to process content type: " +
+							httpResponse.getContentType());
+
+					Problem problem = new Problem();
+
+					problem.setStatus(
+						String.valueOf(httpResponse.getStatusCode()));
+
+					problemException = new Problem.ProblemException(problem);
+				}
+
+				throw problemException;
 			}
 			else {
 				_logger.fine("HTTP response content: " + content);
@@ -242,7 +294,7 @@ public interface TaxCategoryResource {
 
 			httpInvoker.path(
 				_builder._scheme + "://" + _builder._host + ":" +
-					_builder._port +
+					_builder._port + _builder._contextPath +
 						"/o/headless-commerce-admin-site-setting/v1.0/commerceAdminSiteSetting/{groupId}/taxCategory");
 
 			httpInvoker.path("groupId", groupId);
@@ -275,7 +327,29 @@ public interface TaxCategoryResource {
 					"HTTP response status code: " +
 						httpResponse.getStatusCode());
 
-				throw new Problem.ProblemException(Problem.toDTO(content));
+				Problem.ProblemException problemException = null;
+
+				if (Objects.equals(
+						httpResponse.getContentType(), "application/json")) {
+
+					problemException = new Problem.ProblemException(
+						Problem.toDTO(content));
+				}
+				else {
+					_logger.log(
+						Level.WARNING,
+						"Unable to process content type: " +
+							httpResponse.getContentType());
+
+					Problem problem = new Problem();
+
+					problem.setStatus(
+						String.valueOf(httpResponse.getStatusCode()));
+
+					problemException = new Problem.ProblemException(problem);
+				}
+
+				throw problemException;
 			}
 			else {
 				_logger.fine("HTTP response content: " + content);
@@ -328,7 +402,7 @@ public interface TaxCategoryResource {
 
 			httpInvoker.path(
 				_builder._scheme + "://" + _builder._host + ":" +
-					_builder._port +
+					_builder._port + _builder._contextPath +
 						"/o/headless-commerce-admin-site-setting/v1.0/commerceAdminSiteSetting/{groupId}/taxCategory");
 
 			httpInvoker.path("groupId", groupId);
@@ -357,7 +431,29 @@ public interface TaxCategoryResource {
 					"HTTP response status code: " +
 						httpResponse.getStatusCode());
 
-				throw new Problem.ProblemException(Problem.toDTO(content));
+				Problem.ProblemException problemException = null;
+
+				if (Objects.equals(
+						httpResponse.getContentType(), "application/json")) {
+
+					problemException = new Problem.ProblemException(
+						Problem.toDTO(content));
+				}
+				else {
+					_logger.log(
+						Level.WARNING,
+						"Unable to process content type: " +
+							httpResponse.getContentType());
+
+					Problem problem = new Problem();
+
+					problem.setStatus(
+						String.valueOf(httpResponse.getStatusCode()));
+
+					problemException = new Problem.ProblemException(problem);
+				}
+
+				throw problemException;
 			}
 			else {
 				_logger.fine("HTTP response content: " + content);
@@ -395,7 +491,7 @@ public interface TaxCategoryResource {
 
 			httpInvoker.path(
 				_builder._scheme + "://" + _builder._host + ":" +
-					_builder._port +
+					_builder._port + _builder._contextPath +
 						"/o/headless-commerce-admin-site-setting/v1.0/taxCategory/{id}");
 
 			httpInvoker.path("id", id);
@@ -406,12 +502,11 @@ public interface TaxCategoryResource {
 			return httpInvoker.invoke();
 		}
 
-		public void deleteTaxCategoryBatch(
-				Long id, String callbackURL, Object object)
+		public void deleteTaxCategoryBatch(String callbackURL, Object object)
 			throws Exception {
 
 			HttpInvoker.HttpResponse httpResponse =
-				deleteTaxCategoryBatchHttpResponse(id, callbackURL, object);
+				deleteTaxCategoryBatchHttpResponse(callbackURL, object);
 
 			String content = httpResponse.getContent();
 
@@ -427,7 +522,29 @@ public interface TaxCategoryResource {
 					"HTTP response status code: " +
 						httpResponse.getStatusCode());
 
-				throw new Problem.ProblemException(Problem.toDTO(content));
+				Problem.ProblemException problemException = null;
+
+				if (Objects.equals(
+						httpResponse.getContentType(), "application/json")) {
+
+					problemException = new Problem.ProblemException(
+						Problem.toDTO(content));
+				}
+				else {
+					_logger.log(
+						Level.WARNING,
+						"Unable to process content type: " +
+							httpResponse.getContentType());
+
+					Problem problem = new Problem();
+
+					problem.setStatus(
+						String.valueOf(httpResponse.getStatusCode()));
+
+					problemException = new Problem.ProblemException(problem);
+				}
+
+				throw problemException;
 			}
 			else {
 				_logger.fine("HTTP response content: " + content);
@@ -440,7 +557,7 @@ public interface TaxCategoryResource {
 		}
 
 		public HttpInvoker.HttpResponse deleteTaxCategoryBatchHttpResponse(
-				Long id, String callbackURL, Object object)
+				String callbackURL, Object object)
 			throws Exception {
 
 			HttpInvoker httpInvoker = HttpInvoker.newHttpInvoker();
@@ -473,10 +590,8 @@ public interface TaxCategoryResource {
 
 			httpInvoker.path(
 				_builder._scheme + "://" + _builder._host + ":" +
-					_builder._port +
+					_builder._port + _builder._contextPath +
 						"/o/headless-commerce-admin-site-setting/v1.0/taxCategory/batch");
-
-			httpInvoker.path("id", id);
 
 			httpInvoker.userNameAndPassword(
 				_builder._login + ":" + _builder._password);
@@ -502,7 +617,29 @@ public interface TaxCategoryResource {
 					"HTTP response status code: " +
 						httpResponse.getStatusCode());
 
-				throw new Problem.ProblemException(Problem.toDTO(content));
+				Problem.ProblemException problemException = null;
+
+				if (Objects.equals(
+						httpResponse.getContentType(), "application/json")) {
+
+					problemException = new Problem.ProblemException(
+						Problem.toDTO(content));
+				}
+				else {
+					_logger.log(
+						Level.WARNING,
+						"Unable to process content type: " +
+							httpResponse.getContentType());
+
+					Problem problem = new Problem();
+
+					problem.setStatus(
+						String.valueOf(httpResponse.getStatusCode()));
+
+					problemException = new Problem.ProblemException(problem);
+				}
+
+				throw problemException;
 			}
 			else {
 				_logger.fine("HTTP response content: " + content);
@@ -551,7 +688,7 @@ public interface TaxCategoryResource {
 
 			httpInvoker.path(
 				_builder._scheme + "://" + _builder._host + ":" +
-					_builder._port +
+					_builder._port + _builder._contextPath +
 						"/o/headless-commerce-admin-site-setting/v1.0/taxCategory/{id}");
 
 			httpInvoker.path("id", id);
@@ -582,7 +719,29 @@ public interface TaxCategoryResource {
 					"HTTP response status code: " +
 						httpResponse.getStatusCode());
 
-				throw new Problem.ProblemException(Problem.toDTO(content));
+				Problem.ProblemException problemException = null;
+
+				if (Objects.equals(
+						httpResponse.getContentType(), "application/json")) {
+
+					problemException = new Problem.ProblemException(
+						Problem.toDTO(content));
+				}
+				else {
+					_logger.log(
+						Level.WARNING,
+						"Unable to process content type: " +
+							httpResponse.getContentType());
+
+					Problem problem = new Problem();
+
+					problem.setStatus(
+						String.valueOf(httpResponse.getStatusCode()));
+
+					problemException = new Problem.ProblemException(problem);
+				}
+
+				throw problemException;
 			}
 			else {
 				_logger.fine("HTTP response content: " + content);
@@ -623,7 +782,7 @@ public interface TaxCategoryResource {
 
 			httpInvoker.path(
 				_builder._scheme + "://" + _builder._host + ":" +
-					_builder._port +
+					_builder._port + _builder._contextPath +
 						"/o/headless-commerce-admin-site-setting/v1.0/taxCategory/{id}");
 
 			httpInvoker.path("id", id);
@@ -634,12 +793,11 @@ public interface TaxCategoryResource {
 			return httpInvoker.invoke();
 		}
 
-		public void putTaxCategoryBatch(
-				Long id, String callbackURL, Object object)
+		public void putTaxCategoryBatch(String callbackURL, Object object)
 			throws Exception {
 
 			HttpInvoker.HttpResponse httpResponse =
-				putTaxCategoryBatchHttpResponse(id, callbackURL, object);
+				putTaxCategoryBatchHttpResponse(callbackURL, object);
 
 			String content = httpResponse.getContent();
 
@@ -655,7 +813,29 @@ public interface TaxCategoryResource {
 					"HTTP response status code: " +
 						httpResponse.getStatusCode());
 
-				throw new Problem.ProblemException(Problem.toDTO(content));
+				Problem.ProblemException problemException = null;
+
+				if (Objects.equals(
+						httpResponse.getContentType(), "application/json")) {
+
+					problemException = new Problem.ProblemException(
+						Problem.toDTO(content));
+				}
+				else {
+					_logger.log(
+						Level.WARNING,
+						"Unable to process content type: " +
+							httpResponse.getContentType());
+
+					Problem problem = new Problem();
+
+					problem.setStatus(
+						String.valueOf(httpResponse.getStatusCode()));
+
+					problemException = new Problem.ProblemException(problem);
+				}
+
+				throw problemException;
 			}
 			else {
 				_logger.fine("HTTP response content: " + content);
@@ -668,7 +848,7 @@ public interface TaxCategoryResource {
 		}
 
 		public HttpInvoker.HttpResponse putTaxCategoryBatchHttpResponse(
-				Long id, String callbackURL, Object object)
+				String callbackURL, Object object)
 			throws Exception {
 
 			HttpInvoker httpInvoker = HttpInvoker.newHttpInvoker();
@@ -701,10 +881,8 @@ public interface TaxCategoryResource {
 
 			httpInvoker.path(
 				_builder._scheme + "://" + _builder._host + ":" +
-					_builder._port +
+					_builder._port + _builder._contextPath +
 						"/o/headless-commerce-admin-site-setting/v1.0/taxCategory/batch");
-
-			httpInvoker.path("id", id);
 
 			httpInvoker.userNameAndPassword(
 				_builder._login + ":" + _builder._password);

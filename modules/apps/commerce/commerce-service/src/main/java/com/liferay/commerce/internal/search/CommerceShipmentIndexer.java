@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.search;
@@ -52,7 +43,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alec Sloan
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CommerceShipmentIndexer extends BaseIndexer<CommerceShipment> {
 
 	public static final String CLASS_NAME = CommerceShipment.class.getName();
@@ -153,7 +144,7 @@ public class CommerceShipmentIndexer extends BaseIndexer<CommerceShipment> {
 		throws Exception {
 
 		if (_log.isDebugEnabled()) {
-			_log.debug("Indexing shipment " + commerceShipment);
+			_log.debug("Indexing commerce shipment " + commerceShipment);
 		}
 
 		Document document = getBaseModelDocument(CLASS_NAME, commerceShipment);
@@ -168,7 +159,7 @@ public class CommerceShipmentIndexer extends BaseIndexer<CommerceShipment> {
 		document.addKeyword(
 			"commerceAccountId", commerceShipment.getCommerceAccountId());
 		document.addKeyword(
-			"commerceAccountName", commerceShipment.getCommerceAccountName());
+			"commerceAccountName", commerceShipment.getAccountEntryName());
 		document.addKeyword(
 			"commerceChannelId", commerceChannel.getCommerceChannelId());
 		document.addKeyword("commerceChannelName", commerceChannel.getName());
@@ -192,7 +183,8 @@ public class CommerceShipmentIndexer extends BaseIndexer<CommerceShipment> {
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Document " + commerceShipment + " indexed successfully");
+				"Commerce shipment " + commerceShipment +
+					" indexed successfully");
 		}
 
 		return document;
@@ -212,8 +204,7 @@ public class CommerceShipmentIndexer extends BaseIndexer<CommerceShipment> {
 		throws Exception {
 
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), commerceShipment.getCompanyId(),
-			getDocument(commerceShipment), isCommitImmediately());
+			commerceShipment.getCompanyId(), getDocument(commerceShipment));
 	}
 
 	@Override
@@ -258,12 +249,11 @@ public class CommerceShipmentIndexer extends BaseIndexer<CommerceShipment> {
 					if (_log.isWarnEnabled()) {
 						_log.warn(
 							"Unable to index commerce shipment " +
-								commerceShipment.getCommerceShipmentId(),
+								commerceShipment,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
@@ -17,6 +8,7 @@ package com.liferay.object.service;
 import com.liferay.object.model.ObjectField;
 import com.liferay.portal.kernel.exception.PortalException;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,17 +31,21 @@ public class ObjectFieldServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.object.service.impl.ObjectFieldServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static ObjectField addCustomObjectField(
-			long listTypeDefinitionId, long objectDefinitionId,
-			String businessType, String dbType, boolean indexed,
-			boolean indexedAsKeyword, String indexedLanguageId,
-			Map<java.util.Locale, String> labelMap, String name,
-			boolean required)
+			String externalReferenceCode, long listTypeDefinitionId,
+			long objectDefinitionId, String businessType, String dbType,
+			boolean indexed, boolean indexedAsKeyword, String indexedLanguageId,
+			Map<java.util.Locale, String> labelMap, boolean localized,
+			String name, String readOnly, String readOnlyConditionExpression,
+			boolean required, boolean state,
+			List<com.liferay.object.model.ObjectFieldSetting>
+				objectFieldSettings)
 		throws PortalException {
 
 		return getService().addCustomObjectField(
-			listTypeDefinitionId, objectDefinitionId, businessType, dbType,
-			indexed, indexedAsKeyword, indexedLanguageId, labelMap, name,
-			required);
+			externalReferenceCode, listTypeDefinitionId, objectDefinitionId,
+			businessType, dbType, indexed, indexedAsKeyword, indexedLanguageId,
+			labelMap, localized, name, readOnly, readOnlyConditionExpression,
+			required, state, objectFieldSettings);
 	}
 
 	public static ObjectField deleteObjectField(long objectFieldId)
@@ -73,20 +69,30 @@ public class ObjectFieldServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
-	public static ObjectField updateCustomObjectField(
-			long objectFieldId, long listTypeDefinitionId, String businessType,
-			String dbType, boolean indexed, boolean indexedAsKeyword,
-			String indexedLanguageId, Map<java.util.Locale, String> labelMap,
-			String name, boolean required)
+	public static ObjectField updateObjectField(
+			String externalReferenceCode, long objectFieldId,
+			long listTypeDefinitionId, String businessType, String dbType,
+			boolean indexed, boolean indexedAsKeyword, String indexedLanguageId,
+			Map<java.util.Locale, String> labelMap, boolean localized,
+			String name, String readOnly, String readOnlyConditionExpression,
+			boolean required, boolean state,
+			List<com.liferay.object.model.ObjectFieldSetting>
+				objectFieldSettings)
 		throws PortalException {
 
-		return getService().updateCustomObjectField(
-			objectFieldId, listTypeDefinitionId, businessType, dbType, indexed,
-			indexedAsKeyword, indexedLanguageId, labelMap, name, required);
+		return getService().updateObjectField(
+			externalReferenceCode, objectFieldId, listTypeDefinitionId,
+			businessType, dbType, indexed, indexedAsKeyword, indexedLanguageId,
+			labelMap, localized, name, readOnly, readOnlyConditionExpression,
+			required, state, objectFieldSettings);
 	}
 
 	public static ObjectFieldService getService() {
 		return _service;
+	}
+
+	public static void setService(ObjectFieldService service) {
+		_service = service;
 	}
 
 	private static volatile ObjectFieldService _service;

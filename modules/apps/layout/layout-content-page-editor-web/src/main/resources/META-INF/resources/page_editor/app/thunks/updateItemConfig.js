@@ -1,46 +1,33 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import updateItemConfigAction from '../actions/updateItemConfig';
-import updatePageContents from '../actions/updatePageContents';
-import InfoItemService from '../services/InfoItemService';
 import LayoutService from '../services/LayoutService';
 
 export default function updateItemConfig({
 	itemConfig,
 	itemId,
-	segmentsExperienceId,
+	overridePreviousConfig = false,
 }) {
-	return (dispatch) =>
-		LayoutService.updateItemConfig({
+	return (dispatch, getState) => {
+		const {segmentsExperienceId} = getState();
+
+		return LayoutService.updateItemConfig({
 			itemConfig,
 			itemId,
 			onNetworkStatus: dispatch,
 			segmentsExperienceId,
-		})
-			.then((layoutData) => {
-				dispatch(updateItemConfigAction({itemId, layoutData}));
-			})
-			.then(() => {
-				InfoItemService.getPageContents({
-					onNetworkStatus: dispatch,
-				}).then((pageContents) => {
-					dispatch(
-						updatePageContents({
-							pageContents,
-						})
-					);
-				});
-			});
+		}).then(({layoutData, pageContents}) => {
+			dispatch(
+				updateItemConfigAction({
+					itemId,
+					layoutData,
+					overridePreviousConfig,
+					pageContents,
+				})
+			);
+		});
+	};
 }

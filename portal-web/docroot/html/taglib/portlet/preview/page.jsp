@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -50,5 +41,30 @@ if (Validator.isNull(width)) {
 </div>
 
 <aui:script>
-	Liferay.Util.disableElements('#<%= randomNamespace %>');
+	var randomElement = document.getElementById('<%= randomNamespace %>');
+
+	if (randomElement) {
+		var children = randomElement.getElementsByTagName('*');
+
+		var emptyFnFalse = function () {
+			return false;
+		};
+
+		for (var i = children.length - 1; i >= 0; i--) {
+			var item = children[i];
+
+			item.style.cursor = 'default';
+
+			item.onclick = emptyFnFalse;
+			item.onmouseover = emptyFnFalse;
+			item.onmouseout = emptyFnFalse;
+			item.onmouseenter = emptyFnFalse;
+			item.onmouseleave = emptyFnFalse;
+
+			item.action = '';
+			item.disabled = true;
+			item.href = 'javascript:void(0);';
+			item.onsubmit = emptyFnFalse;
+		}
+	}
 </aui:script>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.theme.font.awesome.web.internal.servlet.taglib;
@@ -19,7 +10,6 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
 
@@ -43,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.frontend.theme.font.awesome.web.internal.configuration.CSSFontAwesomeConfiguration",
-	immediate = true, service = DynamicInclude.class
+	service = DynamicInclude.class
 )
 public class FontAwesomeTopHeadDynamicInclude extends BaseDynamicInclude {
 
@@ -66,7 +56,7 @@ public class FontAwesomeTopHeadDynamicInclude extends BaseDynamicInclude {
 		printWriter.println(
 			StringBundler.concat(
 				"<link data-senna-track=\"permanent\" href=\"",
-				absolutePortalURLBuilder.forModuleStylesheet(
+				absolutePortalURLBuilder.forBundleStylesheet(
 					_bundleContext.getBundle(), "css/main.css"
 				).build(),
 				"\" rel=\"stylesheet\" type=\"text/css\" />"));
@@ -98,8 +88,5 @@ public class FontAwesomeTopHeadDynamicInclude extends BaseDynamicInclude {
 	private volatile BundleContext _bundleContext;
 	private volatile CSSFontAwesomeConfiguration _cssFontAwesomeConfiguration;
 	private volatile long _lastModified;
-
-	@Reference
-	private Portal _portal;
 
 }

@@ -1,24 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.type.controller.display.page.internal.layout.type.controller;
 
+import com.liferay.asset.display.page.layout.asset.entry.provider.LayoutAssetEntryProvider;
+import com.liferay.asset.display.page.layout.asset.entry.provider.LayoutAssetEntryProviderRegistry;
 import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.info.display.request.attributes.contributor.InfoDisplayRequestAttributesContributor;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemReference;
+import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorWebKeys;
+import com.liferay.layout.manager.LayoutLockManager;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.layout.type.controller.BaseLayoutTypeControllerImpl;
@@ -41,9 +38,9 @@ import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.TransferHeadersHelperUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
 import java.util.List;
@@ -61,7 +58,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Juergen Kappler
  */
 @Component(
-	immediate = true,
 	property = "layout.type=" + LayoutConstants.TYPE_ASSET_DISPLAY,
 	service = LayoutTypeController.class
 )
@@ -77,18 +73,41 @@ public class DisplayPageLayoutTypeController
 			return null;
 		}
 
-		Object object = httpServletRequest.getAttribute(
-			WebKeys.LAYOUT_ASSET_ENTRY);
+		AssetEntry assetEntry = null;
 
-		if ((object != null) && (object instanceof AssetEntry)) {
-			AssetEntry assetEntry = (AssetEntry)object;
+		try {
+			assetEntry = (AssetEntry)httpServletRequest.getAttribute(
+				WebKeys.LAYOUT_ASSET_ENTRY);
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to get asset entry", exception);
+			}
+		}
 
+		if (assetEntry == null) {
+			String portletId = ParamUtil.getString(
+				httpServletRequest, "p_p_id");
+
+			LayoutAssetEntryProvider layoutAssetEntryProvider =
+				_layoutAssetEntryProviderRegistry.getLayoutAssetEntryProvider(
+					portletId);
+
+			if (layoutAssetEntryProvider != null) {
+				assetEntry = layoutAssetEntryProvider.getLayoutAssetEntry(
+					httpServletRequest, layout);
+			}
+		}
+
+		if (assetEntry != null) {
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)httpServletRequest.getAttribute(
 					WebKeys.THEME_DISPLAY);
 
 			return _assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-				assetEntry.getClassName(), assetEntry.getClassPK(),
+				new InfoItemReference(
+					assetEntry.getClassName(),
+					new ClassPKInfoItemIdentifier(assetEntry.getClassPK())),
 				themeDisplay);
 		}
 
@@ -138,6 +157,7 @@ public class DisplayPageLayoutTypeController
 
 		String layoutMode = ParamUtil.getString(
 			httpServletRequest, "p_l_mode", Constants.VIEW);
+		String redirect = StringPool.BLANK;
 
 		if (layoutMode.equals(Constants.EDIT) &&
 			!_hasUpdatePermissions(
@@ -145,11 +165,16 @@ public class DisplayPageLayoutTypeController
 
 			layoutMode = Constants.VIEW;
 		}
+		else if (!layout.isUnlocked(layoutMode, themeDisplay.getUserId())) {
+			redirect = _layoutLockManager.getLockedLayoutURL(
+				httpServletRequest);
+		}
 
 		DisplayPageLayoutTypeControllerDisplayContext
 			displayPageLayoutTypeControllerDisplayContext =
 				new DisplayPageLayoutTypeControllerDisplayContext(
-					httpServletRequest, _infoItemServiceTracker);
+					_assetDisplayPageFriendlyURLProvider, httpServletRequest,
+					_infoItemServiceRegistry, _infoSearchClassMapperRegistry);
 
 		httpServletRequest.setAttribute(
 			DisplayPageLayoutTypeControllerWebKeys.
@@ -164,7 +189,7 @@ public class DisplayPageLayoutTypeController
 
 		RequestDispatcher requestDispatcher =
 			TransferHeadersHelperUtil.getTransferHeadersRequestDispatcher(
-				servletContext.getRequestDispatcher(page));
+				_servletContext.getRequestDispatcher(page));
 
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
@@ -175,22 +200,39 @@ public class DisplayPageLayoutTypeController
 			RequestDispatcher.INCLUDE_SERVLET_PATH);
 
 		try {
-			LayoutPageTemplateEntry layoutPageTemplateEntry =
-				_fetchLayoutPageTemplateEntry(layout);
+			boolean hasViewPermission =
+				displayPageLayoutTypeControllerDisplayContext.hasPermission(
+					themeDisplay.getPermissionChecker(), ActionKeys.VIEW);
 
-			if (layoutPageTemplateEntry != null) {
-				httpServletRequest.setAttribute(
-					ContentPageEditorWebKeys.CLASS_NAME,
-					LayoutPageTemplateEntry.class.getName());
-
-				httpServletRequest.setAttribute(
-					ContentPageEditorWebKeys.CLASS_PK,
-					layoutPageTemplateEntry.getLayoutPageTemplateEntryId());
+			if (!hasViewPermission && themeDisplay.isSignedIn()) {
+				httpServletResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
+			}
+			else if (!hasViewPermission) {
+				redirect = HttpComponentsUtil.setParameter(
+					themeDisplay.getURLSignIn(), "redirect",
+					themeDisplay.getURLCurrent());
 			}
 
-			addAttributes(httpServletRequest);
+			if (Validator.isNotNull(redirect)) {
+				httpServletResponse.sendRedirect(redirect);
+			}
+			else {
+				LayoutPageTemplateEntry layoutPageTemplateEntry =
+					_fetchLayoutPageTemplateEntry(layout);
 
-			requestDispatcher.include(httpServletRequest, servletResponse);
+				if (layoutPageTemplateEntry != null) {
+					httpServletRequest.setAttribute(
+						ContentPageEditorWebKeys.CLASS_NAME,
+						LayoutPageTemplateEntry.class.getName());
+					httpServletRequest.setAttribute(
+						ContentPageEditorWebKeys.CLASS_PK,
+						layoutPageTemplateEntry.getLayoutPageTemplateEntryId());
+				}
+
+				addAttributes(httpServletRequest);
+
+				requestDispatcher.include(httpServletRequest, servletResponse);
+			}
 		}
 		finally {
 			removeAttributes(httpServletRequest);
@@ -206,21 +248,6 @@ public class DisplayPageLayoutTypeController
 
 		if (contentType != null) {
 			httpServletResponse.setContentType(contentType);
-		}
-
-		if (!displayPageLayoutTypeControllerDisplayContext.hasPermission(
-				themeDisplay.getPermissionChecker(), ActionKeys.VIEW)) {
-
-			if (themeDisplay.isSignedIn()) {
-				httpServletResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
-			}
-			else {
-				String signInURL = themeDisplay.getURLSignIn();
-
-				httpServletResponse.sendRedirect(
-					_http.setParameter(
-						signInURL, "redirect", themeDisplay.getURLCurrent()));
-			}
 		}
 
 		return false;
@@ -276,38 +303,19 @@ public class DisplayPageLayoutTypeController
 			httpServletResponse, unsyncStringWriter);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #createServletResponse(HttpServletResponse,
-	 *             UnsyncStringWriter)}
-	 */
-	@Deprecated
-	@Override
-	protected ServletResponse createServletResponse(
-		HttpServletResponse httpServletResponse,
-		com.liferay.portal.kernel.io.unsync.UnsyncStringWriter
-			unsyncStringWriter) {
-
-		return new PipingServletResponse(
-			httpServletResponse, unsyncStringWriter);
-	}
-
 	@Override
 	protected String getEditPage() {
 		return null;
 	}
 
 	@Override
-	protected String getViewPage() {
-		return _VIEW_PAGE;
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.display.page)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		this.servletContext = servletContext;
+	@Override
+	protected String getViewPage() {
+		return _VIEW_PAGE;
 	}
 
 	private LayoutPageTemplateEntry _fetchLayoutPageTemplateEntry(
@@ -336,18 +344,15 @@ public class DisplayPageLayoutTypeController
 		PermissionChecker permissionChecker, Layout layout) {
 
 		try {
-			if (LayoutPermissionUtil.contains(
-					permissionChecker, layout, ActionKeys.UPDATE) ||
-				LayoutPermissionUtil.contains(
-					permissionChecker, layout,
-					ActionKeys.UPDATE_LAYOUT_CONTENT)) {
+			if (LayoutPermissionUtil.containsLayoutUpdatePermission(
+					permissionChecker, layout)) {
 
 				return true;
 			}
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -370,23 +375,31 @@ public class DisplayPageLayoutTypeController
 		_assetDisplayPageFriendlyURLProvider;
 
 	@Reference
-	private Http _http;
-
-	@Reference
 	private volatile List<InfoDisplayRequestAttributesContributor>
 		_infoDisplayRequestAttributesContributors;
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
+
+	@Reference
+	private InfoSearchClassMapperRegistry _infoSearchClassMapperRegistry;
+
+	@Reference
+	private LayoutAssetEntryProviderRegistry _layoutAssetEntryProviderRegistry;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
+	private LayoutLockManager _layoutLockManager;
+
+	@Reference
 	private LayoutPageTemplateEntryLocalService
 		_layoutPageTemplateEntryLocalService;
 
-	@Reference
-	private Portal _portal;
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.display.page)"
+	)
+	private ServletContext _servletContext;
 
 }

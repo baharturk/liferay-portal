@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io;
 
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldType;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeSettings;
 import com.liferay.dynamic.data.mapping.form.field.type.DefaultDDMFormFieldTypeSettings;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
@@ -43,10 +34,10 @@ import java.util.Objects;
 public class JSONObjectToDDMFormFieldTransformer {
 
 	public JSONObjectToDDMFormFieldTransformer(
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker,
+		DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
 		JSONFactory jsonFactory) {
 
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
+		_ddmFormFieldTypeServicesRegistry = ddmFormFieldTypeServicesRegistry;
 		_jsonFactory = jsonFactory;
 	}
 
@@ -138,10 +129,7 @@ public class JSONObjectToDDMFormFieldTransformer {
 		List<DDMFormField> ddmFormFields = new ArrayList<>();
 
 		for (int i = 0; i < jsonArray.length(); i++) {
-			DDMFormField ddmFormField = getDDMFormField(
-				jsonArray.getJSONObject(i));
-
-			ddmFormFields.add(ddmFormField);
+			ddmFormFields.add(getDDMFormField(jsonArray.getJSONObject(i)));
 		}
 
 		return ddmFormFields;
@@ -237,7 +225,7 @@ public class JSONObjectToDDMFormFieldTransformer {
 
 	private DDMForm _getDDMFormFieldTypeSettingsDDMForm(String type) {
 		DDMFormFieldType ddmFormFieldType =
-			_ddmFormFieldTypeServicesTracker.getDDMFormFieldType(type);
+			_ddmFormFieldTypeServicesRegistry.getDDMFormFieldType(type);
 
 		Class<? extends DDMFormFieldTypeSettings> ddmFormFieldTypeSettings =
 			DefaultDDMFormFieldTypeSettings.class;
@@ -282,8 +270,8 @@ public class JSONObjectToDDMFormFieldTransformer {
 		}
 	}
 
-	private final DDMFormFieldTypeServicesTracker
-		_ddmFormFieldTypeServicesTracker;
+	private final DDMFormFieldTypeServicesRegistry
+		_ddmFormFieldTypeServicesRegistry;
 	private final JSONFactory _jsonFactory;
 
 }

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.impl;
 
+import com.liferay.commerce.product.exception.DuplicateCPAttachmentFileEntryExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCPAttachmentFileEntryException;
 import com.liferay.commerce.product.model.CPAttachmentFileEntry;
 import com.liferay.commerce.product.model.CPAttachmentFileEntryTable;
@@ -21,7 +13,10 @@ import com.liferay.commerce.product.model.impl.CPAttachmentFileEntryImpl;
 import com.liferay.commerce.product.model.impl.CPAttachmentFileEntryModelImpl;
 import com.liferay.commerce.product.service.persistence.CPAttachmentFileEntryPersistence;
 import com.liferay.commerce.product.service.persistence.CPAttachmentFileEntryUtil;
+import com.liferay.commerce.product.service.persistence.impl.constants.CommercePersistenceConstants;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
+import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
@@ -29,11 +24,13 @@ import com.liferay.portal.kernel.dao.orm.Query;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -41,25 +38,33 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Timestamp;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The persistence implementation for the cp attachment file entry service.
@@ -71,6 +76,7 @@ import java.util.Set;
  * @author Marco Leo
  * @generated
  */
+@Component(service = CPAttachmentFileEntryPersistence.class)
 public class CPAttachmentFileEntryPersistenceImpl
 	extends BasePersistenceImpl<CPAttachmentFileEntry>
 	implements CPAttachmentFileEntryPersistence {
@@ -169,27 +175,30 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		uuid = Objects.toString(uuid, "");
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindByUuid;
 				finderArgs = new Object[] {uuid};
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindByUuid;
 			finderArgs = new Object[] {uuid, start, end, orderByComparator};
 		}
 
 		List<CPAttachmentFileEntry> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
@@ -254,7 +263,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -575,11 +584,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 	public int countByUuid(String uuid) {
 		uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = _finderPathCountByUuid;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {uuid};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByUuid;
+
+			finderArgs = new Object[] {uuid};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -614,7 +633,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -710,8 +731,11 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
 		if (result instanceof CPAttachmentFileEntry) {
 			CPAttachmentFileEntry cpAttachmentFileEntry =
@@ -722,6 +746,15 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						CPAttachmentFileEntry.class,
+						cpAttachmentFileEntry.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -762,7 +795,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 				List<CPAttachmentFileEntry> list = query.list();
 
 				if (list.isEmpty()) {
-					if (useFinderCache) {
+					if (useFinderCache && productionMode) {
 						finderCache.putResult(
 							_finderPathFetchByUUID_G, finderArgs, list);
 					}
@@ -819,11 +852,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 	public int countByUUID_G(String uuid, long groupId) {
 		uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = _finderPathCountByUUID_G;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {uuid, groupId};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByUUID_G;
+
+			finderArgs = new Object[] {uuid, groupId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -862,7 +905,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -969,18 +1014,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		uuid = Objects.toString(uuid, "");
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindByUuid_C;
 				finderArgs = new Object[] {uuid, companyId};
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindByUuid_C;
 			finderArgs = new Object[] {
 				uuid, companyId, start, end, orderByComparator
@@ -989,9 +1037,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		List<CPAttachmentFileEntry> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
@@ -1062,7 +1110,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -1405,11 +1453,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 	public int countByUuid_C(String uuid, long companyId) {
 		uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = _finderPathCountByUuid_C;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {uuid, companyId};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByUuid_C;
+
+			finderArgs = new Object[] {uuid, companyId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1448,7 +1506,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -1469,6 +1529,528 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 	private static final String _FINDER_COLUMN_UUID_C_COMPANYID_2 =
 		"cpAttachmentFileEntry.companyId = ?";
+
+	private FinderPath _finderPathWithPaginationFindByFileEntryId;
+	private FinderPath _finderPathWithoutPaginationFindByFileEntryId;
+	private FinderPath _finderPathCountByFileEntryId;
+
+	/**
+	 * Returns all the cp attachment file entries where fileEntryId = &#63;.
+	 *
+	 * @param fileEntryId the file entry ID
+	 * @return the matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByFileEntryId(long fileEntryId) {
+		return findByFileEntryId(
+			fileEntryId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the cp attachment file entries where fileEntryId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fileEntryId the file entry ID
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @return the range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByFileEntryId(
+		long fileEntryId, int start, int end) {
+
+		return findByFileEntryId(fileEntryId, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp attachment file entries where fileEntryId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fileEntryId the file entry ID
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByFileEntryId(
+		long fileEntryId, int start, int end,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		return findByFileEntryId(
+			fileEntryId, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp attachment file entries where fileEntryId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fileEntryId the file entry ID
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByFileEntryId(
+		long fileEntryId, int start, int end,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator,
+		boolean useFinderCache) {
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			(orderByComparator == null)) {
+
+			if (useFinderCache && productionMode) {
+				finderPath = _finderPathWithoutPaginationFindByFileEntryId;
+				finderArgs = new Object[] {fileEntryId};
+			}
+		}
+		else if (useFinderCache && productionMode) {
+			finderPath = _finderPathWithPaginationFindByFileEntryId;
+			finderArgs = new Object[] {
+				fileEntryId, start, end, orderByComparator
+			};
+		}
+
+		List<CPAttachmentFileEntry> list = null;
+
+		if (useFinderCache && productionMode) {
+			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
+
+			if ((list != null) && !list.isEmpty()) {
+				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
+					if (fileEntryId != cpAttachmentFileEntry.getFileEntryId()) {
+						list = null;
+
+						break;
+					}
+				}
+			}
+		}
+
+		if (list == null) {
+			StringBundler sb = null;
+
+			if (orderByComparator != null) {
+				sb = new StringBundler(
+					3 + (orderByComparator.getOrderByFields().length * 2));
+			}
+			else {
+				sb = new StringBundler(3);
+			}
+
+			sb.append(_SQL_SELECT_CPATTACHMENTFILEENTRY_WHERE);
+
+			sb.append(_FINDER_COLUMN_FILEENTRYID_FILEENTRYID_2);
+
+			if (orderByComparator != null) {
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+			}
+			else {
+				sb.append(CPAttachmentFileEntryModelImpl.ORDER_BY_JPQL);
+			}
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(fileEntryId);
+
+				list = (List<CPAttachmentFileEntry>)QueryUtil.list(
+					query, getDialect(), start, end);
+
+				cacheResult(list);
+
+				if (useFinderCache && productionMode) {
+					finderCache.putResult(finderPath, finderArgs, list);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return list;
+	}
+
+	/**
+	 * Returns the first cp attachment file entry in the ordered set where fileEntryId = &#63;.
+	 *
+	 * @param fileEntryId the file entry ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry findByFileEntryId_First(
+			long fileEntryId,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = fetchByFileEntryId_First(
+			fileEntryId, orderByComparator);
+
+		if (cpAttachmentFileEntry != null) {
+			return cpAttachmentFileEntry;
+		}
+
+		StringBundler sb = new StringBundler(4);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("fileEntryId=");
+		sb.append(fileEntryId);
+
+		sb.append("}");
+
+		throw new NoSuchCPAttachmentFileEntryException(sb.toString());
+	}
+
+	/**
+	 * Returns the first cp attachment file entry in the ordered set where fileEntryId = &#63;.
+	 *
+	 * @param fileEntryId the file entry ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry fetchByFileEntryId_First(
+		long fileEntryId,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		List<CPAttachmentFileEntry> list = findByFileEntryId(
+			fileEntryId, 0, 1, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last cp attachment file entry in the ordered set where fileEntryId = &#63;.
+	 *
+	 * @param fileEntryId the file entry ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry findByFileEntryId_Last(
+			long fileEntryId,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = fetchByFileEntryId_Last(
+			fileEntryId, orderByComparator);
+
+		if (cpAttachmentFileEntry != null) {
+			return cpAttachmentFileEntry;
+		}
+
+		StringBundler sb = new StringBundler(4);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("fileEntryId=");
+		sb.append(fileEntryId);
+
+		sb.append("}");
+
+		throw new NoSuchCPAttachmentFileEntryException(sb.toString());
+	}
+
+	/**
+	 * Returns the last cp attachment file entry in the ordered set where fileEntryId = &#63;.
+	 *
+	 * @param fileEntryId the file entry ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry fetchByFileEntryId_Last(
+		long fileEntryId,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		int count = countByFileEntryId(fileEntryId);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<CPAttachmentFileEntry> list = findByFileEntryId(
+			fileEntryId, count - 1, count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the cp attachment file entries before and after the current cp attachment file entry in the ordered set where fileEntryId = &#63;.
+	 *
+	 * @param CPAttachmentFileEntryId the primary key of the current cp attachment file entry
+	 * @param fileEntryId the file entry ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a cp attachment file entry with the primary key could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry[] findByFileEntryId_PrevAndNext(
+			long CPAttachmentFileEntryId, long fileEntryId,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = findByPrimaryKey(
+			CPAttachmentFileEntryId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			CPAttachmentFileEntry[] array = new CPAttachmentFileEntryImpl[3];
+
+			array[0] = getByFileEntryId_PrevAndNext(
+				session, cpAttachmentFileEntry, fileEntryId, orderByComparator,
+				true);
+
+			array[1] = cpAttachmentFileEntry;
+
+			array[2] = getByFileEntryId_PrevAndNext(
+				session, cpAttachmentFileEntry, fileEntryId, orderByComparator,
+				false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected CPAttachmentFileEntry getByFileEntryId_PrevAndNext(
+		Session session, CPAttachmentFileEntry cpAttachmentFileEntry,
+		long fileEntryId,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				4 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(3);
+		}
+
+		sb.append(_SQL_SELECT_CPATTACHMENTFILEENTRY_WHERE);
+
+		sb.append(_FINDER_COLUMN_FILEENTRYID_FILEENTRYID_2);
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			sb.append(CPAttachmentFileEntryModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Query query = session.createQuery(sql);
+
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+
+		QueryPos queryPos = QueryPos.getInstance(query);
+
+		queryPos.add(fileEntryId);
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						cpAttachmentFileEntry)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<CPAttachmentFileEntry> list = query.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Removes all the cp attachment file entries where fileEntryId = &#63; from the database.
+	 *
+	 * @param fileEntryId the file entry ID
+	 */
+	@Override
+	public void removeByFileEntryId(long fileEntryId) {
+		for (CPAttachmentFileEntry cpAttachmentFileEntry :
+				findByFileEntryId(
+					fileEntryId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+
+			remove(cpAttachmentFileEntry);
+		}
+	}
+
+	/**
+	 * Returns the number of cp attachment file entries where fileEntryId = &#63;.
+	 *
+	 * @param fileEntryId the file entry ID
+	 * @return the number of matching cp attachment file entries
+	 */
+	@Override
+	public int countByFileEntryId(long fileEntryId) {
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByFileEntryId;
+
+			finderArgs = new Object[] {fileEntryId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
+
+		if (count == null) {
+			StringBundler sb = new StringBundler(2);
+
+			sb.append(_SQL_COUNT_CPATTACHMENTFILEENTRY_WHERE);
+
+			sb.append(_FINDER_COLUMN_FILEENTRYID_FILEENTRYID_2);
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(fileEntryId);
+
+				count = (Long)query.uniqueResult();
+
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return count.intValue();
+	}
+
+	private static final String _FINDER_COLUMN_FILEENTRYID_FILEENTRYID_2 =
+		"cpAttachmentFileEntry.fileEntryId = ?";
 
 	private FinderPath _finderPathWithPaginationFindByC_C;
 	private FinderPath _finderPathWithoutPaginationFindByC_C;
@@ -1553,18 +2135,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 		OrderByComparator<CPAttachmentFileEntry> orderByComparator,
 		boolean useFinderCache) {
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindByC_C;
 				finderArgs = new Object[] {classNameId, classPK};
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindByC_C;
 			finderArgs = new Object[] {
 				classNameId, classPK, start, end, orderByComparator
@@ -1573,9 +2158,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		List<CPAttachmentFileEntry> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
@@ -1636,7 +2221,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -1964,11 +2549,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 	 */
 	@Override
 	public int countByC_C(long classNameId, long classPK) {
-		FinderPath finderPath = _finderPathCountByC_C;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {classNameId, classPK};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByC_C;
+
+			finderArgs = new Object[] {classNameId, classPK};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1996,7 +2591,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -2097,6 +2694,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 		OrderByComparator<CPAttachmentFileEntry> orderByComparator,
 		boolean useFinderCache) {
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
@@ -2107,9 +2707,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		List<CPAttachmentFileEntry> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
@@ -2182,7 +2782,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -2521,11 +3121,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 	 */
 	@Override
 	public int countByLtD_S(Date displayDate, int status) {
-		FinderPath finderPath = _finderPathWithPaginationCountByLtD_S;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {_getTime(displayDate), status};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathWithPaginationCountByLtD_S;
+
+			finderArgs = new Object[] {_getTime(displayDate), status};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -2564,7 +3174,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -2585,6 +3197,606 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 	private static final String _FINDER_COLUMN_LTD_S_STATUS_2 =
 		"cpAttachmentFileEntry.status = ?";
+
+	private FinderPath _finderPathWithPaginationFindByG_C_F;
+	private FinderPath _finderPathWithoutPaginationFindByG_C_F;
+	private FinderPath _finderPathCountByG_C_F;
+
+	/**
+	 * Returns all the cp attachment file entries where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 * @return the matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByG_C_F(
+		long groupId, long classNameId, long fileEntryId) {
+
+		return findByG_C_F(
+			groupId, classNameId, fileEntryId, QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the cp attachment file entries where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @return the range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByG_C_F(
+		long groupId, long classNameId, long fileEntryId, int start, int end) {
+
+		return findByG_C_F(groupId, classNameId, fileEntryId, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp attachment file entries where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByG_C_F(
+		long groupId, long classNameId, long fileEntryId, int start, int end,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		return findByG_C_F(
+			groupId, classNameId, fileEntryId, start, end, orderByComparator,
+			true);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp attachment file entries where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByG_C_F(
+		long groupId, long classNameId, long fileEntryId, int start, int end,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator,
+		boolean useFinderCache) {
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			(orderByComparator == null)) {
+
+			if (useFinderCache && productionMode) {
+				finderPath = _finderPathWithoutPaginationFindByG_C_F;
+				finderArgs = new Object[] {groupId, classNameId, fileEntryId};
+			}
+		}
+		else if (useFinderCache && productionMode) {
+			finderPath = _finderPathWithPaginationFindByG_C_F;
+			finderArgs = new Object[] {
+				groupId, classNameId, fileEntryId, start, end, orderByComparator
+			};
+		}
+
+		List<CPAttachmentFileEntry> list = null;
+
+		if (useFinderCache && productionMode) {
+			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
+
+			if ((list != null) && !list.isEmpty()) {
+				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
+					if ((groupId != cpAttachmentFileEntry.getGroupId()) ||
+						(classNameId !=
+							cpAttachmentFileEntry.getClassNameId()) ||
+						(fileEntryId !=
+							cpAttachmentFileEntry.getFileEntryId())) {
+
+						list = null;
+
+						break;
+					}
+				}
+			}
+		}
+
+		if (list == null) {
+			StringBundler sb = null;
+
+			if (orderByComparator != null) {
+				sb = new StringBundler(
+					5 + (orderByComparator.getOrderByFields().length * 2));
+			}
+			else {
+				sb = new StringBundler(5);
+			}
+
+			sb.append(_SQL_SELECT_CPATTACHMENTFILEENTRY_WHERE);
+
+			sb.append(_FINDER_COLUMN_G_C_F_GROUPID_2);
+
+			sb.append(_FINDER_COLUMN_G_C_F_CLASSNAMEID_2);
+
+			sb.append(_FINDER_COLUMN_G_C_F_FILEENTRYID_2);
+
+			if (orderByComparator != null) {
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+			}
+			else {
+				sb.append(CPAttachmentFileEntryModelImpl.ORDER_BY_JPQL);
+			}
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(groupId);
+
+				queryPos.add(classNameId);
+
+				queryPos.add(fileEntryId);
+
+				list = (List<CPAttachmentFileEntry>)QueryUtil.list(
+					query, getDialect(), start, end);
+
+				cacheResult(list);
+
+				if (useFinderCache && productionMode) {
+					finderCache.putResult(finderPath, finderArgs, list);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return list;
+	}
+
+	/**
+	 * Returns the first cp attachment file entry in the ordered set where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry findByG_C_F_First(
+			long groupId, long classNameId, long fileEntryId,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = fetchByG_C_F_First(
+			groupId, classNameId, fileEntryId, orderByComparator);
+
+		if (cpAttachmentFileEntry != null) {
+			return cpAttachmentFileEntry;
+		}
+
+		StringBundler sb = new StringBundler(8);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("groupId=");
+		sb.append(groupId);
+
+		sb.append(", classNameId=");
+		sb.append(classNameId);
+
+		sb.append(", fileEntryId=");
+		sb.append(fileEntryId);
+
+		sb.append("}");
+
+		throw new NoSuchCPAttachmentFileEntryException(sb.toString());
+	}
+
+	/**
+	 * Returns the first cp attachment file entry in the ordered set where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry fetchByG_C_F_First(
+		long groupId, long classNameId, long fileEntryId,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		List<CPAttachmentFileEntry> list = findByG_C_F(
+			groupId, classNameId, fileEntryId, 0, 1, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last cp attachment file entry in the ordered set where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry findByG_C_F_Last(
+			long groupId, long classNameId, long fileEntryId,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = fetchByG_C_F_Last(
+			groupId, classNameId, fileEntryId, orderByComparator);
+
+		if (cpAttachmentFileEntry != null) {
+			return cpAttachmentFileEntry;
+		}
+
+		StringBundler sb = new StringBundler(8);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("groupId=");
+		sb.append(groupId);
+
+		sb.append(", classNameId=");
+		sb.append(classNameId);
+
+		sb.append(", fileEntryId=");
+		sb.append(fileEntryId);
+
+		sb.append("}");
+
+		throw new NoSuchCPAttachmentFileEntryException(sb.toString());
+	}
+
+	/**
+	 * Returns the last cp attachment file entry in the ordered set where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry fetchByG_C_F_Last(
+		long groupId, long classNameId, long fileEntryId,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		int count = countByG_C_F(groupId, classNameId, fileEntryId);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<CPAttachmentFileEntry> list = findByG_C_F(
+			groupId, classNameId, fileEntryId, count - 1, count,
+			orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the cp attachment file entries before and after the current cp attachment file entry in the ordered set where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63;.
+	 *
+	 * @param CPAttachmentFileEntryId the primary key of the current cp attachment file entry
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a cp attachment file entry with the primary key could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry[] findByG_C_F_PrevAndNext(
+			long CPAttachmentFileEntryId, long groupId, long classNameId,
+			long fileEntryId,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = findByPrimaryKey(
+			CPAttachmentFileEntryId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			CPAttachmentFileEntry[] array = new CPAttachmentFileEntryImpl[3];
+
+			array[0] = getByG_C_F_PrevAndNext(
+				session, cpAttachmentFileEntry, groupId, classNameId,
+				fileEntryId, orderByComparator, true);
+
+			array[1] = cpAttachmentFileEntry;
+
+			array[2] = getByG_C_F_PrevAndNext(
+				session, cpAttachmentFileEntry, groupId, classNameId,
+				fileEntryId, orderByComparator, false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected CPAttachmentFileEntry getByG_C_F_PrevAndNext(
+		Session session, CPAttachmentFileEntry cpAttachmentFileEntry,
+		long groupId, long classNameId, long fileEntryId,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				6 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(5);
+		}
+
+		sb.append(_SQL_SELECT_CPATTACHMENTFILEENTRY_WHERE);
+
+		sb.append(_FINDER_COLUMN_G_C_F_GROUPID_2);
+
+		sb.append(_FINDER_COLUMN_G_C_F_CLASSNAMEID_2);
+
+		sb.append(_FINDER_COLUMN_G_C_F_FILEENTRYID_2);
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			sb.append(CPAttachmentFileEntryModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Query query = session.createQuery(sql);
+
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+
+		QueryPos queryPos = QueryPos.getInstance(query);
+
+		queryPos.add(groupId);
+
+		queryPos.add(classNameId);
+
+		queryPos.add(fileEntryId);
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						cpAttachmentFileEntry)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<CPAttachmentFileEntry> list = query.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Removes all the cp attachment file entries where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 */
+	@Override
+	public void removeByG_C_F(
+		long groupId, long classNameId, long fileEntryId) {
+
+		for (CPAttachmentFileEntry cpAttachmentFileEntry :
+				findByG_C_F(
+					groupId, classNameId, fileEntryId, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, null)) {
+
+			remove(cpAttachmentFileEntry);
+		}
+	}
+
+	/**
+	 * Returns the number of cp attachment file entries where groupId = &#63; and classNameId = &#63; and fileEntryId = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param fileEntryId the file entry ID
+	 * @return the number of matching cp attachment file entries
+	 */
+	@Override
+	public int countByG_C_F(long groupId, long classNameId, long fileEntryId) {
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByG_C_F;
+
+			finderArgs = new Object[] {groupId, classNameId, fileEntryId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
+
+		if (count == null) {
+			StringBundler sb = new StringBundler(4);
+
+			sb.append(_SQL_COUNT_CPATTACHMENTFILEENTRY_WHERE);
+
+			sb.append(_FINDER_COLUMN_G_C_F_GROUPID_2);
+
+			sb.append(_FINDER_COLUMN_G_C_F_CLASSNAMEID_2);
+
+			sb.append(_FINDER_COLUMN_G_C_F_FILEENTRYID_2);
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(groupId);
+
+				queryPos.add(classNameId);
+
+				queryPos.add(fileEntryId);
+
+				count = (Long)query.uniqueResult();
+
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return count.intValue();
+	}
+
+	private static final String _FINDER_COLUMN_G_C_F_GROUPID_2 =
+		"cpAttachmentFileEntry.groupId = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_C_F_CLASSNAMEID_2 =
+		"cpAttachmentFileEntry.classNameId = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_C_F_FILEENTRYID_2 =
+		"cpAttachmentFileEntry.fileEntryId = ?";
 
 	private FinderPath _finderPathWithPaginationFindByC_C_F;
 	private FinderPath _finderPathWithoutPaginationFindByC_C_F;
@@ -2675,18 +3887,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 		OrderByComparator<CPAttachmentFileEntry> orderByComparator,
 		boolean useFinderCache) {
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindByC_C_F;
 				finderArgs = new Object[] {classNameId, classPK, fileEntryId};
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindByC_C_F;
 			finderArgs = new Object[] {
 				classNameId, classPK, fileEntryId, start, end, orderByComparator
@@ -2695,9 +3910,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		List<CPAttachmentFileEntry> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
@@ -2764,7 +3979,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -3113,11 +4328,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 	 */
 	@Override
 	public int countByC_C_F(long classNameId, long classPK, long fileEntryId) {
-		FinderPath finderPath = _finderPathCountByC_C_F;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {classNameId, classPK, fileEntryId};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByC_C_F;
+
+			finderArgs = new Object[] {classNameId, classPK, fileEntryId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -3149,7 +4374,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -3261,18 +4488,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		cdnURL = Objects.toString(cdnURL, "");
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindByC_C_C;
 				finderArgs = new Object[] {classNameId, classPK, cdnURL};
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindByC_C_C;
 			finderArgs = new Object[] {
 				classNameId, classPK, cdnURL, start, end, orderByComparator
@@ -3281,9 +4511,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		List<CPAttachmentFileEntry> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
@@ -3360,7 +4590,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -3721,11 +4951,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 	public int countByC_C_C(long classNameId, long classPK, String cdnURL) {
 		cdnURL = Objects.toString(cdnURL, "");
 
-		FinderPath finderPath = _finderPathCountByC_C_C;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {classNameId, classPK, cdnURL};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByC_C_C;
+
+			finderArgs = new Object[] {classNameId, classPK, cdnURL};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -3768,7 +5008,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -3887,6 +5129,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 		int end, OrderByComparator<CPAttachmentFileEntry> orderByComparator,
 		boolean useFinderCache) {
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
@@ -3898,9 +5143,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		List<CPAttachmentFileEntry> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
@@ -3984,7 +5229,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -4363,13 +5608,23 @@ public class CPAttachmentFileEntryPersistenceImpl
 	public int countByC_C_LtD_S(
 		long classNameId, long classPK, Date displayDate, int status) {
 
-		FinderPath finderPath = _finderPathWithPaginationCountByC_C_LtD_S;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {
-			classNameId, classPK, _getTime(displayDate), status
-		};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathWithPaginationCountByC_C_LtD_S;
+
+			finderArgs = new Object[] {
+				classNameId, classPK, _getTime(displayDate), status
+			};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(5);
@@ -4416,7 +5671,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -4539,18 +5796,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 		int end, OrderByComparator<CPAttachmentFileEntry> orderByComparator,
 		boolean useFinderCache) {
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindByC_C_T_ST;
 				finderArgs = new Object[] {classNameId, classPK, type, status};
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindByC_C_T_ST;
 			finderArgs = new Object[] {
 				classNameId, classPK, type, status, start, end,
@@ -4560,9 +5820,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		List<CPAttachmentFileEntry> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
@@ -4633,7 +5893,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -5001,11 +6261,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 	public int countByC_C_T_ST(
 		long classNameId, long classPK, int type, int status) {
 
-		FinderPath finderPath = _finderPathCountByC_C_T_ST;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {classNameId, classPK, type, status};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByC_C_T_ST;
+
+			finderArgs = new Object[] {classNameId, classPK, type, status};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(5);
@@ -5041,7 +6311,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -5160,6 +6432,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 		int end, OrderByComparator<CPAttachmentFileEntry> orderByComparator,
 		boolean useFinderCache) {
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
@@ -5170,9 +6445,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		List<CPAttachmentFileEntry> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
@@ -5243,7 +6518,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -5611,11 +6886,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 	public int countByC_C_T_NotST(
 		long classNameId, long classPK, int type, int status) {
 
-		FinderPath finderPath = _finderPathWithPaginationCountByC_C_T_NotST;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {classNameId, classPK, type, status};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathWithPaginationCountByC_C_T_NotST;
+
+			finderArgs = new Object[] {classNameId, classPK, type, status};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(5);
@@ -5651,7 +6936,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -5676,35 +6963,1401 @@ public class CPAttachmentFileEntryPersistenceImpl
 	private static final String _FINDER_COLUMN_C_C_T_NOTST_STATUS_2 =
 		"cpAttachmentFileEntry.status != ?";
 
-	private FinderPath _finderPathFetchByC_ERC;
-	private FinderPath _finderPathCountByC_ERC;
+	private FinderPath _finderPathWithPaginationFindByC_C_G_T_ST;
+	private FinderPath _finderPathWithoutPaginationFindByC_C_G_T_ST;
+	private FinderPath _finderPathCountByC_C_G_T_ST;
 
 	/**
-	 * Returns the cp attachment file entry where companyId = &#63; and externalReferenceCode = &#63; or throws a <code>NoSuchCPAttachmentFileEntryException</code> if it could not be found.
+	 * Returns all the cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63;.
 	 *
-	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @return the matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByC_C_G_T_ST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status) {
+
+		return findByC_C_G_T_ST(
+			classNameId, classPK, galleryEnabled, type, status,
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @return the range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByC_C_G_T_ST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status, int start, int end) {
+
+		return findByC_C_G_T_ST(
+			classNameId, classPK, galleryEnabled, type, status, start, end,
+			null);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByC_C_G_T_ST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status, int start, int end,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		return findByC_C_G_T_ST(
+			classNameId, classPK, galleryEnabled, type, status, start, end,
+			orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByC_C_G_T_ST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status, int start, int end,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator,
+		boolean useFinderCache) {
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			(orderByComparator == null)) {
+
+			if (useFinderCache && productionMode) {
+				finderPath = _finderPathWithoutPaginationFindByC_C_G_T_ST;
+				finderArgs = new Object[] {
+					classNameId, classPK, galleryEnabled, type, status
+				};
+			}
+		}
+		else if (useFinderCache && productionMode) {
+			finderPath = _finderPathWithPaginationFindByC_C_G_T_ST;
+			finderArgs = new Object[] {
+				classNameId, classPK, galleryEnabled, type, status, start, end,
+				orderByComparator
+			};
+		}
+
+		List<CPAttachmentFileEntry> list = null;
+
+		if (useFinderCache && productionMode) {
+			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
+
+			if ((list != null) && !list.isEmpty()) {
+				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
+					if ((classNameId !=
+							cpAttachmentFileEntry.getClassNameId()) ||
+						(classPK != cpAttachmentFileEntry.getClassPK()) ||
+						(galleryEnabled !=
+							cpAttachmentFileEntry.isGalleryEnabled()) ||
+						(type != cpAttachmentFileEntry.getType()) ||
+						(status != cpAttachmentFileEntry.getStatus())) {
+
+						list = null;
+
+						break;
+					}
+				}
+			}
+		}
+
+		if (list == null) {
+			StringBundler sb = null;
+
+			if (orderByComparator != null) {
+				sb = new StringBundler(
+					7 + (orderByComparator.getOrderByFields().length * 2));
+			}
+			else {
+				sb = new StringBundler(7);
+			}
+
+			sb.append(_SQL_SELECT_CPATTACHMENTFILEENTRY_WHERE);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_ST_CLASSNAMEID_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_ST_CLASSPK_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_ST_GALLERYENABLED_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_ST_TYPE_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_ST_STATUS_2);
+
+			if (orderByComparator != null) {
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+			}
+			else {
+				sb.append(CPAttachmentFileEntryModelImpl.ORDER_BY_JPQL);
+			}
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(classNameId);
+
+				queryPos.add(classPK);
+
+				queryPos.add(galleryEnabled);
+
+				queryPos.add(type);
+
+				queryPos.add(status);
+
+				list = (List<CPAttachmentFileEntry>)QueryUtil.list(
+					query, getDialect(), start, end);
+
+				cacheResult(list);
+
+				if (useFinderCache && productionMode) {
+					finderCache.putResult(finderPath, finderArgs, list);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return list;
+	}
+
+	/**
+	 * Returns the first cp attachment file entry in the ordered set where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry findByC_C_G_T_ST_First(
+			long classNameId, long classPK, boolean galleryEnabled, int type,
+			int status,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = fetchByC_C_G_T_ST_First(
+			classNameId, classPK, galleryEnabled, type, status,
+			orderByComparator);
+
+		if (cpAttachmentFileEntry != null) {
+			return cpAttachmentFileEntry;
+		}
+
+		StringBundler sb = new StringBundler(12);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("classNameId=");
+		sb.append(classNameId);
+
+		sb.append(", classPK=");
+		sb.append(classPK);
+
+		sb.append(", galleryEnabled=");
+		sb.append(galleryEnabled);
+
+		sb.append(", type=");
+		sb.append(type);
+
+		sb.append(", status=");
+		sb.append(status);
+
+		sb.append("}");
+
+		throw new NoSuchCPAttachmentFileEntryException(sb.toString());
+	}
+
+	/**
+	 * Returns the first cp attachment file entry in the ordered set where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry fetchByC_C_G_T_ST_First(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		List<CPAttachmentFileEntry> list = findByC_C_G_T_ST(
+			classNameId, classPK, galleryEnabled, type, status, 0, 1,
+			orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last cp attachment file entry in the ordered set where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry findByC_C_G_T_ST_Last(
+			long classNameId, long classPK, boolean galleryEnabled, int type,
+			int status,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = fetchByC_C_G_T_ST_Last(
+			classNameId, classPK, galleryEnabled, type, status,
+			orderByComparator);
+
+		if (cpAttachmentFileEntry != null) {
+			return cpAttachmentFileEntry;
+		}
+
+		StringBundler sb = new StringBundler(12);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("classNameId=");
+		sb.append(classNameId);
+
+		sb.append(", classPK=");
+		sb.append(classPK);
+
+		sb.append(", galleryEnabled=");
+		sb.append(galleryEnabled);
+
+		sb.append(", type=");
+		sb.append(type);
+
+		sb.append(", status=");
+		sb.append(status);
+
+		sb.append("}");
+
+		throw new NoSuchCPAttachmentFileEntryException(sb.toString());
+	}
+
+	/**
+	 * Returns the last cp attachment file entry in the ordered set where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry fetchByC_C_G_T_ST_Last(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		int count = countByC_C_G_T_ST(
+			classNameId, classPK, galleryEnabled, type, status);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<CPAttachmentFileEntry> list = findByC_C_G_T_ST(
+			classNameId, classPK, galleryEnabled, type, status, count - 1,
+			count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the cp attachment file entries before and after the current cp attachment file entry in the ordered set where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * @param CPAttachmentFileEntryId the primary key of the current cp attachment file entry
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a cp attachment file entry with the primary key could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry[] findByC_C_G_T_ST_PrevAndNext(
+			long CPAttachmentFileEntryId, long classNameId, long classPK,
+			boolean galleryEnabled, int type, int status,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = findByPrimaryKey(
+			CPAttachmentFileEntryId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			CPAttachmentFileEntry[] array = new CPAttachmentFileEntryImpl[3];
+
+			array[0] = getByC_C_G_T_ST_PrevAndNext(
+				session, cpAttachmentFileEntry, classNameId, classPK,
+				galleryEnabled, type, status, orderByComparator, true);
+
+			array[1] = cpAttachmentFileEntry;
+
+			array[2] = getByC_C_G_T_ST_PrevAndNext(
+				session, cpAttachmentFileEntry, classNameId, classPK,
+				galleryEnabled, type, status, orderByComparator, false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected CPAttachmentFileEntry getByC_C_G_T_ST_PrevAndNext(
+		Session session, CPAttachmentFileEntry cpAttachmentFileEntry,
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status, OrderByComparator<CPAttachmentFileEntry> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				8 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(7);
+		}
+
+		sb.append(_SQL_SELECT_CPATTACHMENTFILEENTRY_WHERE);
+
+		sb.append(_FINDER_COLUMN_C_C_G_T_ST_CLASSNAMEID_2);
+
+		sb.append(_FINDER_COLUMN_C_C_G_T_ST_CLASSPK_2);
+
+		sb.append(_FINDER_COLUMN_C_C_G_T_ST_GALLERYENABLED_2);
+
+		sb.append(_FINDER_COLUMN_C_C_G_T_ST_TYPE_2);
+
+		sb.append(_FINDER_COLUMN_C_C_G_T_ST_STATUS_2);
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			sb.append(CPAttachmentFileEntryModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Query query = session.createQuery(sql);
+
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+
+		QueryPos queryPos = QueryPos.getInstance(query);
+
+		queryPos.add(classNameId);
+
+		queryPos.add(classPK);
+
+		queryPos.add(galleryEnabled);
+
+		queryPos.add(type);
+
+		queryPos.add(status);
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						cpAttachmentFileEntry)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<CPAttachmentFileEntry> list = query.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Removes all the cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63; from the database.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 */
+	@Override
+	public void removeByC_C_G_T_ST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status) {
+
+		for (CPAttachmentFileEntry cpAttachmentFileEntry :
+				findByC_C_G_T_ST(
+					classNameId, classPK, galleryEnabled, type, status,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+
+			remove(cpAttachmentFileEntry);
+		}
+	}
+
+	/**
+	 * Returns the number of cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status = &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @return the number of matching cp attachment file entries
+	 */
+	@Override
+	public int countByC_C_G_T_ST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status) {
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByC_C_G_T_ST;
+
+			finderArgs = new Object[] {
+				classNameId, classPK, galleryEnabled, type, status
+			};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
+
+		if (count == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_SQL_COUNT_CPATTACHMENTFILEENTRY_WHERE);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_ST_CLASSNAMEID_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_ST_CLASSPK_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_ST_GALLERYENABLED_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_ST_TYPE_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_ST_STATUS_2);
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(classNameId);
+
+				queryPos.add(classPK);
+
+				queryPos.add(galleryEnabled);
+
+				queryPos.add(type);
+
+				queryPos.add(status);
+
+				count = (Long)query.uniqueResult();
+
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return count.intValue();
+	}
+
+	private static final String _FINDER_COLUMN_C_C_G_T_ST_CLASSNAMEID_2 =
+		"cpAttachmentFileEntry.classNameId = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_C_G_T_ST_CLASSPK_2 =
+		"cpAttachmentFileEntry.classPK = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_C_G_T_ST_GALLERYENABLED_2 =
+		"cpAttachmentFileEntry.galleryEnabled = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_C_G_T_ST_TYPE_2 =
+		"cpAttachmentFileEntry.type = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_C_G_T_ST_STATUS_2 =
+		"cpAttachmentFileEntry.status = ?";
+
+	private FinderPath _finderPathWithPaginationFindByC_C_G_T_NotST;
+	private FinderPath _finderPathWithPaginationCountByC_C_G_T_NotST;
+
+	/**
+	 * Returns all the cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @return the matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByC_C_G_T_NotST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status) {
+
+		return findByC_C_G_T_NotST(
+			classNameId, classPK, galleryEnabled, type, status,
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @return the range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByC_C_G_T_NotST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status, int start, int end) {
+
+		return findByC_C_G_T_NotST(
+			classNameId, classPK, galleryEnabled, type, status, start, end,
+			null);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByC_C_G_T_NotST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status, int start, int end,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		return findByC_C_G_T_NotST(
+			classNameId, classPK, galleryEnabled, type, status, start, end,
+			orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPAttachmentFileEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param start the lower bound of the range of cp attachment file entries
+	 * @param end the upper bound of the range of cp attachment file entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching cp attachment file entries
+	 */
+	@Override
+	public List<CPAttachmentFileEntry> findByC_C_G_T_NotST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status, int start, int end,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator,
+		boolean useFinderCache) {
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		finderPath = _finderPathWithPaginationFindByC_C_G_T_NotST;
+		finderArgs = new Object[] {
+			classNameId, classPK, galleryEnabled, type, status, start, end,
+			orderByComparator
+		};
+
+		List<CPAttachmentFileEntry> list = null;
+
+		if (useFinderCache && productionMode) {
+			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
+				finderPath, finderArgs, this);
+
+			if ((list != null) && !list.isEmpty()) {
+				for (CPAttachmentFileEntry cpAttachmentFileEntry : list) {
+					if ((classNameId !=
+							cpAttachmentFileEntry.getClassNameId()) ||
+						(classPK != cpAttachmentFileEntry.getClassPK()) ||
+						(galleryEnabled !=
+							cpAttachmentFileEntry.isGalleryEnabled()) ||
+						(type != cpAttachmentFileEntry.getType()) ||
+						(status == cpAttachmentFileEntry.getStatus())) {
+
+						list = null;
+
+						break;
+					}
+				}
+			}
+		}
+
+		if (list == null) {
+			StringBundler sb = null;
+
+			if (orderByComparator != null) {
+				sb = new StringBundler(
+					7 + (orderByComparator.getOrderByFields().length * 2));
+			}
+			else {
+				sb = new StringBundler(7);
+			}
+
+			sb.append(_SQL_SELECT_CPATTACHMENTFILEENTRY_WHERE);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_CLASSNAMEID_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_CLASSPK_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_GALLERYENABLED_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_TYPE_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_STATUS_2);
+
+			if (orderByComparator != null) {
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+			}
+			else {
+				sb.append(CPAttachmentFileEntryModelImpl.ORDER_BY_JPQL);
+			}
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(classNameId);
+
+				queryPos.add(classPK);
+
+				queryPos.add(galleryEnabled);
+
+				queryPos.add(type);
+
+				queryPos.add(status);
+
+				list = (List<CPAttachmentFileEntry>)QueryUtil.list(
+					query, getDialect(), start, end);
+
+				cacheResult(list);
+
+				if (useFinderCache && productionMode) {
+					finderCache.putResult(finderPath, finderArgs, list);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return list;
+	}
+
+	/**
+	 * Returns the first cp attachment file entry in the ordered set where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry findByC_C_G_T_NotST_First(
+			long classNameId, long classPK, boolean galleryEnabled, int type,
+			int status,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry =
+			fetchByC_C_G_T_NotST_First(
+				classNameId, classPK, galleryEnabled, type, status,
+				orderByComparator);
+
+		if (cpAttachmentFileEntry != null) {
+			return cpAttachmentFileEntry;
+		}
+
+		StringBundler sb = new StringBundler(12);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("classNameId=");
+		sb.append(classNameId);
+
+		sb.append(", classPK=");
+		sb.append(classPK);
+
+		sb.append(", galleryEnabled=");
+		sb.append(galleryEnabled);
+
+		sb.append(", type=");
+		sb.append(type);
+
+		sb.append(", status!=");
+		sb.append(status);
+
+		sb.append("}");
+
+		throw new NoSuchCPAttachmentFileEntryException(sb.toString());
+	}
+
+	/**
+	 * Returns the first cp attachment file entry in the ordered set where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry fetchByC_C_G_T_NotST_First(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		List<CPAttachmentFileEntry> list = findByC_C_G_T_NotST(
+			classNameId, classPK, galleryEnabled, type, status, 0, 1,
+			orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last cp attachment file entry in the ordered set where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry findByC_C_G_T_NotST_Last(
+			long classNameId, long classPK, boolean galleryEnabled, int type,
+			int status,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = fetchByC_C_G_T_NotST_Last(
+			classNameId, classPK, galleryEnabled, type, status,
+			orderByComparator);
+
+		if (cpAttachmentFileEntry != null) {
+			return cpAttachmentFileEntry;
+		}
+
+		StringBundler sb = new StringBundler(12);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("classNameId=");
+		sb.append(classNameId);
+
+		sb.append(", classPK=");
+		sb.append(classPK);
+
+		sb.append(", galleryEnabled=");
+		sb.append(galleryEnabled);
+
+		sb.append(", type=");
+		sb.append(type);
+
+		sb.append(", status!=");
+		sb.append(status);
+
+		sb.append("}");
+
+		throw new NoSuchCPAttachmentFileEntryException(sb.toString());
+	}
+
+	/**
+	 * Returns the last cp attachment file entry in the ordered set where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry fetchByC_C_G_T_NotST_Last(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status,
+		OrderByComparator<CPAttachmentFileEntry> orderByComparator) {
+
+		int count = countByC_C_G_T_NotST(
+			classNameId, classPK, galleryEnabled, type, status);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<CPAttachmentFileEntry> list = findByC_C_G_T_NotST(
+			classNameId, classPK, galleryEnabled, type, status, count - 1,
+			count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the cp attachment file entries before and after the current cp attachment file entry in the ordered set where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63;.
+	 *
+	 * @param CPAttachmentFileEntryId the primary key of the current cp attachment file entry
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp attachment file entry
+	 * @throws NoSuchCPAttachmentFileEntryException if a cp attachment file entry with the primary key could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry[] findByC_C_G_T_NotST_PrevAndNext(
+			long CPAttachmentFileEntryId, long classNameId, long classPK,
+			boolean galleryEnabled, int type, int status,
+			OrderByComparator<CPAttachmentFileEntry> orderByComparator)
+		throws NoSuchCPAttachmentFileEntryException {
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = findByPrimaryKey(
+			CPAttachmentFileEntryId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			CPAttachmentFileEntry[] array = new CPAttachmentFileEntryImpl[3];
+
+			array[0] = getByC_C_G_T_NotST_PrevAndNext(
+				session, cpAttachmentFileEntry, classNameId, classPK,
+				galleryEnabled, type, status, orderByComparator, true);
+
+			array[1] = cpAttachmentFileEntry;
+
+			array[2] = getByC_C_G_T_NotST_PrevAndNext(
+				session, cpAttachmentFileEntry, classNameId, classPK,
+				galleryEnabled, type, status, orderByComparator, false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected CPAttachmentFileEntry getByC_C_G_T_NotST_PrevAndNext(
+		Session session, CPAttachmentFileEntry cpAttachmentFileEntry,
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status, OrderByComparator<CPAttachmentFileEntry> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				8 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(7);
+		}
+
+		sb.append(_SQL_SELECT_CPATTACHMENTFILEENTRY_WHERE);
+
+		sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_CLASSNAMEID_2);
+
+		sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_CLASSPK_2);
+
+		sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_GALLERYENABLED_2);
+
+		sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_TYPE_2);
+
+		sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_STATUS_2);
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			sb.append(CPAttachmentFileEntryModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Query query = session.createQuery(sql);
+
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+
+		QueryPos queryPos = QueryPos.getInstance(query);
+
+		queryPos.add(classNameId);
+
+		queryPos.add(classPK);
+
+		queryPos.add(galleryEnabled);
+
+		queryPos.add(type);
+
+		queryPos.add(status);
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						cpAttachmentFileEntry)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<CPAttachmentFileEntry> list = query.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Removes all the cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63; from the database.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 */
+	@Override
+	public void removeByC_C_G_T_NotST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status) {
+
+		for (CPAttachmentFileEntry cpAttachmentFileEntry :
+				findByC_C_G_T_NotST(
+					classNameId, classPK, galleryEnabled, type, status,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+
+			remove(cpAttachmentFileEntry);
+		}
+	}
+
+	/**
+	 * Returns the number of cp attachment file entries where classNameId = &#63; and classPK = &#63; and galleryEnabled = &#63; and type = &#63; and status &ne; &#63;.
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param galleryEnabled the gallery enabled
+	 * @param type the type
+	 * @param status the status
+	 * @return the number of matching cp attachment file entries
+	 */
+	@Override
+	public int countByC_C_G_T_NotST(
+		long classNameId, long classPK, boolean galleryEnabled, int type,
+		int status) {
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathWithPaginationCountByC_C_G_T_NotST;
+
+			finderArgs = new Object[] {
+				classNameId, classPK, galleryEnabled, type, status
+			};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
+
+		if (count == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_SQL_COUNT_CPATTACHMENTFILEENTRY_WHERE);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_CLASSNAMEID_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_CLASSPK_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_GALLERYENABLED_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_TYPE_2);
+
+			sb.append(_FINDER_COLUMN_C_C_G_T_NOTST_STATUS_2);
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(classNameId);
+
+				queryPos.add(classPK);
+
+				queryPos.add(galleryEnabled);
+
+				queryPos.add(type);
+
+				queryPos.add(status);
+
+				count = (Long)query.uniqueResult();
+
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		return count.intValue();
+	}
+
+	private static final String _FINDER_COLUMN_C_C_G_T_NOTST_CLASSNAMEID_2 =
+		"cpAttachmentFileEntry.classNameId = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_C_G_T_NOTST_CLASSPK_2 =
+		"cpAttachmentFileEntry.classPK = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_C_G_T_NOTST_GALLERYENABLED_2 =
+		"cpAttachmentFileEntry.galleryEnabled = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_C_G_T_NOTST_TYPE_2 =
+		"cpAttachmentFileEntry.type = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_C_G_T_NOTST_STATUS_2 =
+		"cpAttachmentFileEntry.status != ?";
+
+	private FinderPath _finderPathFetchByERC_C;
+	private FinderPath _finderPathCountByERC_C;
+
+	/**
+	 * Returns the cp attachment file entry where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchCPAttachmentFileEntryException</code> if it could not be found.
+	 *
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching cp attachment file entry
 	 * @throws NoSuchCPAttachmentFileEntryException if a matching cp attachment file entry could not be found
 	 */
 	@Override
-	public CPAttachmentFileEntry findByC_ERC(
-			long companyId, String externalReferenceCode)
+	public CPAttachmentFileEntry findByERC_C(
+			String externalReferenceCode, long companyId)
 		throws NoSuchCPAttachmentFileEntryException {
 
-		CPAttachmentFileEntry cpAttachmentFileEntry = fetchByC_ERC(
-			companyId, externalReferenceCode);
+		CPAttachmentFileEntry cpAttachmentFileEntry = fetchByERC_C(
+			externalReferenceCode, companyId);
 
 		if (cpAttachmentFileEntry == null) {
 			StringBundler sb = new StringBundler(6);
 
 			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
 
-			sb.append("companyId=");
-			sb.append(companyId);
-
-			sb.append(", externalReferenceCode=");
+			sb.append("externalReferenceCode=");
 			sb.append(externalReferenceCode);
+
+			sb.append(", companyId=");
+			sb.append(companyId);
 
 			sb.append("}");
 
@@ -5719,56 +8372,69 @@ public class CPAttachmentFileEntryPersistenceImpl
 	}
 
 	/**
-	 * Returns the cp attachment file entry where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the cp attachment file entry where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
 	 */
 	@Override
-	public CPAttachmentFileEntry fetchByC_ERC(
-		long companyId, String externalReferenceCode) {
+	public CPAttachmentFileEntry fetchByERC_C(
+		String externalReferenceCode, long companyId) {
 
-		return fetchByC_ERC(companyId, externalReferenceCode, true);
+		return fetchByERC_C(externalReferenceCode, companyId, true);
 	}
 
 	/**
-	 * Returns the cp attachment file entry where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the cp attachment file entry where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
 	 */
 	@Override
-	public CPAttachmentFileEntry fetchByC_ERC(
-		long companyId, String externalReferenceCode, boolean useFinderCache) {
+	public CPAttachmentFileEntry fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache) {
 
 		externalReferenceCode = Objects.toString(externalReferenceCode, "");
 
 		Object[] finderArgs = null;
 
 		if (useFinderCache) {
-			finderArgs = new Object[] {companyId, externalReferenceCode};
+			finderArgs = new Object[] {externalReferenceCode, companyId};
 		}
 
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByC_ERC, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByERC_C, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
 		if (result instanceof CPAttachmentFileEntry) {
 			CPAttachmentFileEntry cpAttachmentFileEntry =
 				(CPAttachmentFileEntry)result;
 
-			if ((companyId != cpAttachmentFileEntry.getCompanyId()) ||
-				!Objects.equals(
+			if (!Objects.equals(
 					externalReferenceCode,
-					cpAttachmentFileEntry.getExternalReferenceCode())) {
+					cpAttachmentFileEntry.getExternalReferenceCode()) ||
+				(companyId != cpAttachmentFileEntry.getCompanyId())) {
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						CPAttachmentFileEntry.class,
+						cpAttachmentFileEntry.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -5776,18 +8442,18 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 			sb.append(_SQL_SELECT_CPATTACHMENTFILEENTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_C_ERC_COMPANYID_2);
-
 			boolean bindExternalReferenceCode = false;
 
 			if (externalReferenceCode.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_ERC_EXTERNALREFERENCECODE_3);
+				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3);
 			}
 			else {
 				bindExternalReferenceCode = true;
 
-				sb.append(_FINDER_COLUMN_C_ERC_EXTERNALREFERENCECODE_2);
+				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2);
 			}
+
+			sb.append(_FINDER_COLUMN_ERC_C_COMPANYID_2);
 
 			String sql = sb.toString();
 
@@ -5800,38 +8466,21 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
-
 				if (bindExternalReferenceCode) {
 					queryPos.add(externalReferenceCode);
 				}
 
+				queryPos.add(companyId);
+
 				List<CPAttachmentFileEntry> list = query.list();
 
 				if (list.isEmpty()) {
-					if (useFinderCache) {
+					if (useFinderCache && productionMode) {
 						finderCache.putResult(
-							_finderPathFetchByC_ERC, finderArgs, list);
+							_finderPathFetchByERC_C, finderArgs, list);
 					}
 				}
 				else {
-					if (list.size() > 1) {
-						Collections.sort(list, Collections.reverseOrder());
-
-						if (_log.isWarnEnabled()) {
-							if (!useFinderCache) {
-								finderArgs = new Object[] {
-									companyId, externalReferenceCode
-								};
-							}
-
-							_log.warn(
-								"CPAttachmentFileEntryPersistenceImpl.fetchByC_ERC(long, String, boolean) with parameters (" +
-									StringUtil.merge(finderArgs) +
-										") yields a result set with more than 1 result. This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.");
-						}
-					}
-
 					CPAttachmentFileEntry cpAttachmentFileEntry = list.get(0);
 
 					result = cpAttachmentFileEntry;
@@ -5856,57 +8505,67 @@ public class CPAttachmentFileEntryPersistenceImpl
 	}
 
 	/**
-	 * Removes the cp attachment file entry where companyId = &#63; and externalReferenceCode = &#63; from the database.
+	 * Removes the cp attachment file entry where externalReferenceCode = &#63; and companyId = &#63; from the database.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the cp attachment file entry that was removed
 	 */
 	@Override
-	public CPAttachmentFileEntry removeByC_ERC(
-			long companyId, String externalReferenceCode)
+	public CPAttachmentFileEntry removeByERC_C(
+			String externalReferenceCode, long companyId)
 		throws NoSuchCPAttachmentFileEntryException {
 
-		CPAttachmentFileEntry cpAttachmentFileEntry = findByC_ERC(
-			companyId, externalReferenceCode);
+		CPAttachmentFileEntry cpAttachmentFileEntry = findByERC_C(
+			externalReferenceCode, companyId);
 
 		return remove(cpAttachmentFileEntry);
 	}
 
 	/**
-	 * Returns the number of cp attachment file entries where companyId = &#63; and externalReferenceCode = &#63;.
+	 * Returns the number of cp attachment file entries where externalReferenceCode = &#63; and companyId = &#63;.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the number of matching cp attachment file entries
 	 */
 	@Override
-	public int countByC_ERC(long companyId, String externalReferenceCode) {
+	public int countByERC_C(String externalReferenceCode, long companyId) {
 		externalReferenceCode = Objects.toString(externalReferenceCode, "");
 
-		FinderPath finderPath = _finderPathCountByC_ERC;
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
 
-		Object[] finderArgs = new Object[] {companyId, externalReferenceCode};
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByERC_C;
+
+			finderArgs = new Object[] {externalReferenceCode, companyId};
+
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		}
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
 
 			sb.append(_SQL_COUNT_CPATTACHMENTFILEENTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_C_ERC_COMPANYID_2);
-
 			boolean bindExternalReferenceCode = false;
 
 			if (externalReferenceCode.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_ERC_EXTERNALREFERENCECODE_3);
+				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3);
 			}
 			else {
 				bindExternalReferenceCode = true;
 
-				sb.append(_FINDER_COLUMN_C_ERC_EXTERNALREFERENCECODE_2);
+				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2);
 			}
+
+			sb.append(_FINDER_COLUMN_ERC_C_COMPANYID_2);
 
 			String sql = sb.toString();
 
@@ -5919,15 +8578,17 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
-
 				if (bindExternalReferenceCode) {
 					queryPos.add(externalReferenceCode);
 				}
 
+				queryPos.add(companyId);
+
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -5940,14 +8601,14 @@ public class CPAttachmentFileEntryPersistenceImpl
 		return count.intValue();
 	}
 
-	private static final String _FINDER_COLUMN_C_ERC_COMPANYID_2 =
-		"cpAttachmentFileEntry.companyId = ? AND ";
+	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2 =
+		"cpAttachmentFileEntry.externalReferenceCode = ? AND ";
 
-	private static final String _FINDER_COLUMN_C_ERC_EXTERNALREFERENCECODE_2 =
-		"cpAttachmentFileEntry.externalReferenceCode = ?";
+	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3 =
+		"(cpAttachmentFileEntry.externalReferenceCode IS NULL OR cpAttachmentFileEntry.externalReferenceCode = '') AND ";
 
-	private static final String _FINDER_COLUMN_C_ERC_EXTERNALREFERENCECODE_3 =
-		"(cpAttachmentFileEntry.externalReferenceCode IS NULL OR cpAttachmentFileEntry.externalReferenceCode = '')";
+	private static final String _FINDER_COLUMN_ERC_C_COMPANYID_2 =
+		"cpAttachmentFileEntry.companyId = ?";
 
 	public CPAttachmentFileEntryPersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
@@ -5972,6 +8633,10 @@ public class CPAttachmentFileEntryPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(CPAttachmentFileEntry cpAttachmentFileEntry) {
+		if (cpAttachmentFileEntry.getCtCollectionId() != 0) {
+			return;
+		}
+
 		entityCache.putResult(
 			CPAttachmentFileEntryImpl.class,
 			cpAttachmentFileEntry.getPrimaryKey(), cpAttachmentFileEntry);
@@ -5985,10 +8650,10 @@ public class CPAttachmentFileEntryPersistenceImpl
 			cpAttachmentFileEntry);
 
 		finderCache.putResult(
-			_finderPathFetchByC_ERC,
+			_finderPathFetchByERC_C,
 			new Object[] {
-				cpAttachmentFileEntry.getCompanyId(),
-				cpAttachmentFileEntry.getExternalReferenceCode()
+				cpAttachmentFileEntry.getExternalReferenceCode(),
+				cpAttachmentFileEntry.getCompanyId()
 			},
 			cpAttachmentFileEntry);
 	}
@@ -6014,6 +8679,10 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 		for (CPAttachmentFileEntry cpAttachmentFileEntry :
 				cpAttachmentFileEntries) {
+
+			if (cpAttachmentFileEntry.getCtCollectionId() != 0) {
+				continue;
+			}
 
 			if (entityCache.getResult(
 					CPAttachmentFileEntryImpl.class,
@@ -6086,13 +8755,13 @@ public class CPAttachmentFileEntryPersistenceImpl
 			_finderPathFetchByUUID_G, args, cpAttachmentFileEntryModelImpl);
 
 		args = new Object[] {
-			cpAttachmentFileEntryModelImpl.getCompanyId(),
-			cpAttachmentFileEntryModelImpl.getExternalReferenceCode()
+			cpAttachmentFileEntryModelImpl.getExternalReferenceCode(),
+			cpAttachmentFileEntryModelImpl.getCompanyId()
 		};
 
-		finderCache.putResult(_finderPathCountByC_ERC, args, Long.valueOf(1));
+		finderCache.putResult(_finderPathCountByERC_C, args, Long.valueOf(1));
 		finderCache.putResult(
-			_finderPathFetchByC_ERC, args, cpAttachmentFileEntryModelImpl);
+			_finderPathFetchByERC_C, args, cpAttachmentFileEntryModelImpl);
 	}
 
 	/**
@@ -6189,7 +8858,9 @@ public class CPAttachmentFileEntryPersistenceImpl
 					cpAttachmentFileEntry.getPrimaryKeyObj());
 			}
 
-			if (cpAttachmentFileEntry != null) {
+			if ((cpAttachmentFileEntry != null) &&
+				ctPersistenceHelper.isRemove(cpAttachmentFileEntry)) {
+
 				session.delete(cpAttachmentFileEntry);
 			}
 		}
@@ -6241,6 +8912,41 @@ public class CPAttachmentFileEntryPersistenceImpl
 			cpAttachmentFileEntry.setUuid(uuid);
 		}
 
+		if (Validator.isNull(
+				cpAttachmentFileEntry.getExternalReferenceCode())) {
+
+			cpAttachmentFileEntry.setExternalReferenceCode(
+				cpAttachmentFileEntry.getUuid());
+		}
+		else {
+			CPAttachmentFileEntry ercCPAttachmentFileEntry = fetchByERC_C(
+				cpAttachmentFileEntry.getExternalReferenceCode(),
+				cpAttachmentFileEntry.getCompanyId());
+
+			if (isNew) {
+				if (ercCPAttachmentFileEntry != null) {
+					throw new DuplicateCPAttachmentFileEntryExternalReferenceCodeException(
+						"Duplicate cp attachment file entry with external reference code " +
+							cpAttachmentFileEntry.getExternalReferenceCode() +
+								" and company " +
+									cpAttachmentFileEntry.getCompanyId());
+				}
+			}
+			else {
+				if ((ercCPAttachmentFileEntry != null) &&
+					(cpAttachmentFileEntry.getCPAttachmentFileEntryId() !=
+						ercCPAttachmentFileEntry.
+							getCPAttachmentFileEntryId())) {
+
+					throw new DuplicateCPAttachmentFileEntryExternalReferenceCodeException(
+						"Duplicate cp attachment file entry with external reference code " +
+							cpAttachmentFileEntry.getExternalReferenceCode() +
+								" and company " +
+									cpAttachmentFileEntry.getCompanyId());
+				}
+			}
+		}
+
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -6271,7 +8977,13 @@ public class CPAttachmentFileEntryPersistenceImpl
 		try {
 			session = openSession();
 
-			if (isNew) {
+			if (ctPersistenceHelper.isInsert(cpAttachmentFileEntry)) {
+				if (!isNew) {
+					session.evict(
+						CPAttachmentFileEntryImpl.class,
+						cpAttachmentFileEntry.getPrimaryKeyObj());
+				}
+
 				session.save(cpAttachmentFileEntry);
 			}
 			else {
@@ -6284,6 +8996,16 @@ public class CPAttachmentFileEntryPersistenceImpl
 		}
 		finally {
 			closeSession(session);
+		}
+
+		if (cpAttachmentFileEntry.getCtCollectionId() != 0) {
+			if (isNew) {
+				cpAttachmentFileEntry.setNew(false);
+			}
+
+			cpAttachmentFileEntry.resetOriginalValues();
+
+			return cpAttachmentFileEntry;
 		}
 
 		entityCache.putResult(
@@ -6344,6 +9066,44 @@ public class CPAttachmentFileEntryPersistenceImpl
 	/**
 	 * Returns the cp attachment file entry with the primary key or returns <code>null</code> if it could not be found.
 	 *
+	 * @param primaryKey the primary key of the cp attachment file entry
+	 * @return the cp attachment file entry, or <code>null</code> if a cp attachment file entry with the primary key could not be found
+	 */
+	@Override
+	public CPAttachmentFileEntry fetchByPrimaryKey(Serializable primaryKey) {
+		if (ctPersistenceHelper.isProductionMode(
+				CPAttachmentFileEntry.class, primaryKey)) {
+
+			return super.fetchByPrimaryKey(primaryKey);
+		}
+
+		CPAttachmentFileEntry cpAttachmentFileEntry = null;
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			cpAttachmentFileEntry = (CPAttachmentFileEntry)session.get(
+				CPAttachmentFileEntryImpl.class, primaryKey);
+
+			if (cpAttachmentFileEntry != null) {
+				cacheResult(cpAttachmentFileEntry);
+			}
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+
+		return cpAttachmentFileEntry;
+	}
+
+	/**
+	 * Returns the cp attachment file entry with the primary key or returns <code>null</code> if it could not be found.
+	 *
 	 * @param CPAttachmentFileEntryId the primary key of the cp attachment file entry
 	 * @return the cp attachment file entry, or <code>null</code> if a cp attachment file entry with the primary key could not be found
 	 */
@@ -6352,6 +9112,102 @@ public class CPAttachmentFileEntryPersistenceImpl
 		long CPAttachmentFileEntryId) {
 
 		return fetchByPrimaryKey((Serializable)CPAttachmentFileEntryId);
+	}
+
+	@Override
+	public Map<Serializable, CPAttachmentFileEntry> fetchByPrimaryKeys(
+		Set<Serializable> primaryKeys) {
+
+		if (ctPersistenceHelper.isProductionMode(CPAttachmentFileEntry.class)) {
+			return super.fetchByPrimaryKeys(primaryKeys);
+		}
+
+		if (primaryKeys.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		Map<Serializable, CPAttachmentFileEntry> map =
+			new HashMap<Serializable, CPAttachmentFileEntry>();
+
+		if (primaryKeys.size() == 1) {
+			Iterator<Serializable> iterator = primaryKeys.iterator();
+
+			Serializable primaryKey = iterator.next();
+
+			CPAttachmentFileEntry cpAttachmentFileEntry = fetchByPrimaryKey(
+				primaryKey);
+
+			if (cpAttachmentFileEntry != null) {
+				map.put(primaryKey, cpAttachmentFileEntry);
+			}
+
+			return map;
+		}
+
+		if ((databaseInMaxParameters > 0) &&
+			(primaryKeys.size() > databaseInMaxParameters)) {
+
+			Iterator<Serializable> iterator = primaryKeys.iterator();
+
+			while (iterator.hasNext()) {
+				Set<Serializable> page = new HashSet<>();
+
+				for (int i = 0;
+					 (i < databaseInMaxParameters) && iterator.hasNext(); i++) {
+
+					page.add(iterator.next());
+				}
+
+				map.putAll(fetchByPrimaryKeys(page));
+			}
+
+			return map;
+		}
+
+		StringBundler sb = new StringBundler((primaryKeys.size() * 2) + 1);
+
+		sb.append(getSelectSQL());
+		sb.append(" WHERE ");
+		sb.append(getPKDBName());
+		sb.append(" IN (");
+
+		for (Serializable primaryKey : primaryKeys) {
+			sb.append((long)primaryKey);
+
+			sb.append(",");
+		}
+
+		sb.setIndex(sb.index() - 1);
+
+		sb.append(")");
+
+		String sql = sb.toString();
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			Query query = session.createQuery(sql);
+
+			for (CPAttachmentFileEntry cpAttachmentFileEntry :
+					(List<CPAttachmentFileEntry>)query.list()) {
+
+				map.put(
+					cpAttachmentFileEntry.getPrimaryKeyObj(),
+					cpAttachmentFileEntry);
+
+				cacheResult(cpAttachmentFileEntry);
+			}
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+
+		return map;
 	}
 
 	/**
@@ -6419,27 +9275,30 @@ public class CPAttachmentFileEntryPersistenceImpl
 		OrderByComparator<CPAttachmentFileEntry> orderByComparator,
 		boolean useFinderCache) {
 
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
 			(orderByComparator == null)) {
 
-			if (useFinderCache) {
+			if (useFinderCache && productionMode) {
 				finderPath = _finderPathWithoutPaginationFindAll;
 				finderArgs = FINDER_ARGS_EMPTY;
 			}
 		}
-		else if (useFinderCache) {
+		else if (useFinderCache && productionMode) {
 			finderPath = _finderPathWithPaginationFindAll;
 			finderArgs = new Object[] {start, end, orderByComparator};
 		}
 
 		List<CPAttachmentFileEntry> list = null;
 
-		if (useFinderCache) {
+		if (useFinderCache && productionMode) {
 			list = (List<CPAttachmentFileEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -6475,7 +9334,7 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				cacheResult(list);
 
-				if (useFinderCache) {
+				if (useFinderCache && productionMode) {
 					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
@@ -6508,8 +9367,15 @@ public class CPAttachmentFileEntryPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CPAttachmentFileEntry.class);
+
+		Long count = null;
+
+		if (productionMode) {
+			count = (Long)finderCache.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
+		}
 
 		if (count == null) {
 			Session session = null;
@@ -6522,8 +9388,10 @@ public class CPAttachmentFileEntryPersistenceImpl
 
 				count = (Long)query.uniqueResult();
 
-				finderCache.putResult(
-					_finderPathCountAll, FINDER_ARGS_EMPTY, count);
+				if (productionMode) {
+					finderCache.putResult(
+						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
+				}
 			}
 			catch (Exception exception) {
 				throw processException(exception);
@@ -6557,14 +9425,95 @@ public class CPAttachmentFileEntryPersistenceImpl
 	}
 
 	@Override
-	protected Map<String, Integer> getTableColumnsMap() {
+	public Set<String> getCTColumnNames(
+		CTColumnResolutionType ctColumnResolutionType) {
+
+		return _ctColumnNamesMap.getOrDefault(
+			ctColumnResolutionType, Collections.emptySet());
+	}
+
+	@Override
+	public List<String> getMappingTableNames() {
+		return _mappingTableNames;
+	}
+
+	@Override
+	public Map<String, Integer> getTableColumnsMap() {
 		return CPAttachmentFileEntryModelImpl.TABLE_COLUMNS_MAP;
+	}
+
+	@Override
+	public String getTableName() {
+		return "CPAttachmentFileEntry";
+	}
+
+	@Override
+	public List<String[]> getUniqueIndexColumnNames() {
+		return _uniqueIndexColumnNames;
+	}
+
+	private static final Map<CTColumnResolutionType, Set<String>>
+		_ctColumnNamesMap = new EnumMap<CTColumnResolutionType, Set<String>>(
+			CTColumnResolutionType.class);
+	private static final List<String> _mappingTableNames =
+		new ArrayList<String>();
+	private static final List<String[]> _uniqueIndexColumnNames =
+		new ArrayList<String[]>();
+
+	static {
+		Set<String> ctControlColumnNames = new HashSet<String>();
+		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctStrictColumnNames = new HashSet<String>();
+
+		ctControlColumnNames.add("mvccVersion");
+		ctControlColumnNames.add("ctCollectionId");
+		ctStrictColumnNames.add("uuid_");
+		ctStrictColumnNames.add("externalReferenceCode");
+		ctStrictColumnNames.add("groupId");
+		ctStrictColumnNames.add("companyId");
+		ctStrictColumnNames.add("userId");
+		ctStrictColumnNames.add("userName");
+		ctStrictColumnNames.add("createDate");
+		ctIgnoreColumnNames.add("modifiedDate");
+		ctStrictColumnNames.add("classNameId");
+		ctStrictColumnNames.add("classPK");
+		ctStrictColumnNames.add("fileEntryId");
+		ctStrictColumnNames.add("cdnEnabled");
+		ctStrictColumnNames.add("cdnURL");
+		ctStrictColumnNames.add("displayDate");
+		ctStrictColumnNames.add("expirationDate");
+		ctStrictColumnNames.add("galleryEnabled");
+		ctStrictColumnNames.add("title");
+		ctStrictColumnNames.add("json");
+		ctStrictColumnNames.add("priority");
+		ctStrictColumnNames.add("type_");
+		ctStrictColumnNames.add("lastPublishDate");
+		ctStrictColumnNames.add("status");
+		ctStrictColumnNames.add("statusByUserId");
+		ctStrictColumnNames.add("statusByUserName");
+		ctStrictColumnNames.add("statusDate");
+
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.CONTROL, ctControlColumnNames);
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.PK,
+			Collections.singleton("CPAttachmentFileEntryId"));
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.STRICT, ctStrictColumnNames);
+
+		_uniqueIndexColumnNames.add(new String[] {"uuid_", "groupId"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"externalReferenceCode", "companyId"});
 	}
 
 	/**
 	 * Initializes the cp attachment file entry persistence.
 	 */
-	public void afterPropertiesSet() {
+	@Activate
+	public void activate() {
 		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
 			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
 
@@ -6627,6 +9576,24 @@ public class CPAttachmentFileEntryPersistenceImpl
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"uuid_", "companyId"}, false);
 
+		_finderPathWithPaginationFindByFileEntryId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByFileEntryId",
+			new String[] {
+				Long.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), OrderByComparator.class.getName()
+			},
+			new String[] {"fileEntryId"}, true);
+
+		_finderPathWithoutPaginationFindByFileEntryId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByFileEntryId",
+			new String[] {Long.class.getName()}, new String[] {"fileEntryId"},
+			true);
+
+		_finderPathCountByFileEntryId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByFileEntryId",
+			new String[] {Long.class.getName()}, new String[] {"fileEntryId"},
+			false);
+
 		_finderPathWithPaginationFindByC_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_C",
 			new String[] {
@@ -6659,6 +9626,29 @@ public class CPAttachmentFileEntryPersistenceImpl
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByLtD_S",
 			new String[] {Date.class.getName(), Integer.class.getName()},
 			new String[] {"displayDate", "status"}, false);
+
+		_finderPathWithPaginationFindByG_C_F = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_C_F",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Long.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), OrderByComparator.class.getName()
+			},
+			new String[] {"groupId", "classNameId", "fileEntryId"}, true);
+
+		_finderPathWithoutPaginationFindByG_C_F = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByG_C_F",
+			new String[] {
+				Long.class.getName(), Long.class.getName(), Long.class.getName()
+			},
+			new String[] {"groupId", "classNameId", "fileEntryId"}, true);
+
+		_finderPathCountByG_C_F = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_C_F",
+			new String[] {
+				Long.class.getName(), Long.class.getName(), Long.class.getName()
+			},
+			new String[] {"groupId", "classNameId", "fileEntryId"}, false);
 
 		_finderPathWithPaginationFindByC_C_F = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_C_F",
@@ -6772,45 +9762,121 @@ public class CPAttachmentFileEntryPersistenceImpl
 			},
 			new String[] {"classNameId", "classPK", "type_", "status"}, false);
 
-		_finderPathFetchByC_ERC = new FinderPath(
-			FINDER_CLASS_NAME_ENTITY, "fetchByC_ERC",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"companyId", "externalReferenceCode"}, true);
+		_finderPathWithPaginationFindByC_C_G_T_ST = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_C_G_T_ST",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Boolean.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), OrderByComparator.class.getName()
+			},
+			new String[] {
+				"classNameId", "classPK", "galleryEnabled", "type_", "status"
+			},
+			true);
 
-		_finderPathCountByC_ERC = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_ERC",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"companyId", "externalReferenceCode"}, false);
+		_finderPathWithoutPaginationFindByC_C_G_T_ST = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByC_C_G_T_ST",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Boolean.class.getName(), Integer.class.getName(),
+				Integer.class.getName()
+			},
+			new String[] {
+				"classNameId", "classPK", "galleryEnabled", "type_", "status"
+			},
+			true);
 
-		_setCPAttachmentFileEntryUtilPersistence(this);
+		_finderPathCountByC_C_G_T_ST = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_C_G_T_ST",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Boolean.class.getName(), Integer.class.getName(),
+				Integer.class.getName()
+			},
+			new String[] {
+				"classNameId", "classPK", "galleryEnabled", "type_", "status"
+			},
+			false);
+
+		_finderPathWithPaginationFindByC_C_G_T_NotST = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_C_G_T_NotST",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Boolean.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), OrderByComparator.class.getName()
+			},
+			new String[] {
+				"classNameId", "classPK", "galleryEnabled", "type_", "status"
+			},
+			true);
+
+		_finderPathWithPaginationCountByC_C_G_T_NotST = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByC_C_G_T_NotST",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Boolean.class.getName(), Integer.class.getName(),
+				Integer.class.getName()
+			},
+			new String[] {
+				"classNameId", "classPK", "galleryEnabled", "type_", "status"
+			},
+			false);
+
+		_finderPathFetchByERC_C = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByERC_C",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "companyId"}, true);
+
+		_finderPathCountByERC_C = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByERC_C",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "companyId"}, false);
+
+		CPAttachmentFileEntryUtil.setPersistence(this);
 	}
 
-	public void destroy() {
-		_setCPAttachmentFileEntryUtilPersistence(null);
+	@Deactivate
+	public void deactivate() {
+		CPAttachmentFileEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(CPAttachmentFileEntryImpl.class.getName());
 	}
 
-	private void _setCPAttachmentFileEntryUtilPersistence(
-		CPAttachmentFileEntryPersistence cpAttachmentFileEntryPersistence) {
-
-		try {
-			Field field = CPAttachmentFileEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, cpAttachmentFileEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	@ServiceReference(type = EntityCache.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
+	}
+
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
+	protected CTPersistenceHelper ctPersistenceHelper;
+
+	@Reference
 	protected EntityCache entityCache;
 
-	@ServiceReference(type = FinderCache.class)
+	@Reference
 	protected FinderCache finderCache;
 
 	private static Long _getTime(Date date) {

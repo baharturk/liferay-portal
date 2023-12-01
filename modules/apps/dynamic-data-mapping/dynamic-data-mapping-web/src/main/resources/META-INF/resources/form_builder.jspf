@@ -1,27 +1,26 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%
-String defaultLanguageId = LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault());
-
 Locale[] availableLocales = {LocaleUtil.getSiteDefault()};
+String defaultLanguageId = LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault());
+boolean hasDDMDocumentLibraryDataType = false;
 
 if (Validator.isNotNull(script)) {
 	try {
 		DDMForm ddmForm = DDMUtil.getDDMForm(script);
+
+		for (DDMFormField ddmFormField : ddmForm.getDDMFormFields()) {
+			if (StringUtil.equals(ddmFormField.getType(), "ddm-documentlibrary")) {
+				hasDDMDocumentLibraryDataType = true;
+
+				break;
+			}
+		}
 
 		String ddmFormDefaultLanguageId = LocaleUtil.toLanguageId(ddmForm.getDefaultLocale());
 
@@ -40,7 +39,7 @@ if (Validator.isNotNull(script)) {
 }
 %>
 
-<div class="separator"><!-- --></div>
+<hr class="separator" />
 
 <div class="alert alert-danger hide lfr-message-response" id="<portlet:namespace />messageContainer"></div>
 
@@ -48,6 +47,10 @@ if (Validator.isNotNull(script)) {
 	names='<%= LanguageUtil.get(request, "view[action]") + "," + LanguageUtil.get(request, "source") %>'
 	refresh="<%= false %>"
 >
+	<div class="alert alert-info ddm-documents-and-media-field lfr-message-response <%= hasDDMDocumentLibraryDataType ? StringPool.BLANK : "hide" %>">
+		<liferay-ui:message key="document-permissions-are-not-inherited-from-the-dynamic-data-list-record" />
+	</div>
+
 	<liferay-ui:section>
 		<div id="<portlet:namespace />formBuilderTab">
 			<aui:translation-manager availableLocales="<%= availableLocales %>" changeableDefaultLanguage="<%= changeableDefaultLanguage %>" defaultLanguageId="<%= defaultLanguageId %>" id="translationManager" initialize="<%= false %>" readOnly="<%= false %>" />
@@ -56,14 +59,14 @@ if (Validator.isNotNull(script)) {
 				<div class="diagram-builder-content" id="<portlet:namespace />formBuilderContent">
 					<div class="tabbable">
 						<div class="tabbable-content">
-							<ul class="lfr-nav nav nav-underline">
+							<ul class="lfr-nav nav nav-tabs">
 								<li class="nav-item">
-									<a class="active nav-link" href="javascript:;">
+									<a class="nav-link" href="javascript:void(0);">
 										<liferay-ui:message key="fields" />
 									</a>
 								</li>
 								<li class="nav-item">
-									<a class="disabled nav-link" href="javascript:;">
+									<a class="nav-link" href="javascript:void(0);">
 										<liferay-ui:message key="settings" />
 									</a>
 								</li>
@@ -107,7 +110,7 @@ for (Locale availableLocale : LanguageUtil.getAvailableLocales(themeDisplay.getS
 }
 %>
 
-<aui:script use="aui-ace-editor,aui-datepicker-deprecated,aui-tabview,event-custom-base,json,liferay-portlet-dynamic-data-lists,liferay-portlet-dynamic-data-mapping,liferay-portlet-dynamic-data-mapping-custom-fields,liferay-xml-formatter">
+<aui:script use="aui-ace-editor,aui-datepicker-deprecated,aui-tabview,event-custom-base,json,liferay-portlet-dynamic-data-lists,liferay-portlet-dynamic-data-mapping,liferay-portlet-dynamic-data-mapping-custom-fields">
 	var Lang = A.Lang;
 
 	var STR_VALUE = 'value';

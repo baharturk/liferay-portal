@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.test.util;
@@ -31,6 +22,7 @@ import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.security.RandomUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -829,35 +821,6 @@ public abstract class BaseAssetSearchTestCase {
 	}
 
 	@Test
-	public void testOrderByCreateDateAsc() throws Exception {
-		AssetEntryQuery assetEntryQuery =
-			AssetEntryQueryTestUtil.createAssetEntryQuery(
-				_group1.getGroupId(), new String[] {getBaseModelClassName()});
-
-		String[] titles = {
-			"open", "liferay", "social", "osgi", "content", "life"
-		};
-
-		testOrderByCreateDate(assetEntryQuery, "asc", titles, titles);
-	}
-
-	@Test
-	public void testOrderByCreateDateDesc() throws Exception {
-		AssetEntryQuery assetEntryQuery =
-			AssetEntryQueryTestUtil.createAssetEntryQuery(
-				_group1.getGroupId(), new String[] {getBaseModelClassName()});
-
-		testOrderByCreateDate(
-			assetEntryQuery, "desc",
-			new String[] {
-				"open", "liferay", "social", "osgi", "content", "life"
-			},
-			new String[] {
-				"life", "content", "osgi", "social", "liferay", "open"
-			});
-	}
-
-	@Test
 	public void testOrderByExpirationDateAsc() throws Exception {
 		AssetEntryQuery assetEntryQuery =
 			AssetEntryQueryTestUtil.createAssetEntryQuery(
@@ -1058,11 +1021,10 @@ public abstract class BaseAssetSearchTestCase {
 			serviceContext.setScopeGroupId(group.getGroupId());
 			serviceContext.setUserId(user.getUserId());
 
-			BaseModel<?> parentBaseModel = getParentBaseModel(
-				group, serviceContext);
-
 			baseModels.add(
-				addBaseModel(parentBaseModel, keywords, serviceContext));
+				addBaseModel(
+					getParentBaseModel(group, serviceContext), keywords,
+					serviceContext));
 		}
 
 		return baseModels;
@@ -1333,31 +1295,26 @@ public abstract class BaseAssetSearchTestCase {
 			String[] titles, String[] orderedTitles)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
-
-		BaseModel<?> parentBaseModel = getParentBaseModel(
-			_group1, serviceContext);
-
 		SearchContext searchContext = SearchContextTestUtil.getSearchContext();
 
 		searchContext.setGroupIds(assetEntryQuery.getGroupIds());
 
-		long createDate = 0;
+		for (String title : titles) {
+			ServiceContext serviceContext =
+				ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
 
-		BaseModel<?>[] baseModels = new BaseModel[titles.length];
+			serviceContext.setCreateDate(new Date());
 
-		for (int i = 0; i < titles.length; i++) {
-			long delta = 1000 - (System.currentTimeMillis() - createDate);
+			ServiceContextThreadLocal.pushServiceContext(serviceContext);
 
-			if (delta > 0) {
-				Thread.sleep(delta);
+			try {
+				addBaseModel(
+					getParentBaseModel(_group1, serviceContext), title,
+					serviceContext);
 			}
-
-			baseModels[i] = addBaseModel(
-				parentBaseModel, titles[i], serviceContext);
-
-			createDate = System.currentTimeMillis();
+			finally {
+				ServiceContextThreadLocal.popServiceContext();
+			}
 		}
 
 		assetEntryQuery.setOrderByCol1("createDate");

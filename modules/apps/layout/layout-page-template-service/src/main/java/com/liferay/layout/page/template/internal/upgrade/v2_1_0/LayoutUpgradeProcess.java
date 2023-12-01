@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.internal.upgrade.v2_1_0;
 
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
+import com.liferay.layout.constants.LayoutTypeSettingsConstants;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
-import com.liferay.layout.page.template.internal.upgrade.v2_1_0.util.LayoutPageTemplateEntryTable;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -32,6 +23,7 @@ import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -69,7 +61,7 @@ public class LayoutUpgradeProcess extends UpgradeProcess {
 			long layoutPrototypeId, ServiceContext serviceContext)
 		throws Exception {
 
-		if ((type == LayoutPageTemplateEntryTypeConstants.TYPE_WIDGET_PAGE) &&
+		if ((type == LayoutPageTemplateEntryTypeConstants.WIDGET_PAGE) &&
 			(layoutPrototypeId > 0)) {
 
 			LayoutPrototype layoutPrototype =
@@ -84,7 +76,7 @@ public class LayoutUpgradeProcess extends UpgradeProcess {
 		boolean privateLayout = false;
 		String layoutType = LayoutConstants.TYPE_ASSET_DISPLAY;
 
-		if (type == LayoutPageTemplateEntryTypeConstants.TYPE_BASIC) {
+		if (type == LayoutPageTemplateEntryTypeConstants.BASIC) {
 			layoutType = LayoutConstants.TYPE_CONTENT;
 			privateLayout = true;
 		}
@@ -98,15 +90,10 @@ public class LayoutUpgradeProcess extends UpgradeProcess {
 		Layout layout = _layoutLocalService.addLayout(
 			PortalUtil.getValidUserId(companyId, userId), groupId,
 			privateLayout, 0, titleMap, titleMap, null, null, null, layoutType,
-			StringPool.BLANK, true, true, new HashMap<>(), serviceContext);
-
-		_layoutLocalService.addLayout(
-			layout.getUserId(), layout.getGroupId(), privateLayout,
-			layout.getParentLayoutId(), PortalUtil.getClassNameId(Layout.class),
-			layout.getPlid(), layout.getNameMap(), layout.getTitleMap(),
-			layout.getDescriptionMap(), layout.getKeywordsMap(),
-			layout.getRobotsMap(), layout.getType(), StringPool.BLANK, true,
-			true, Collections.emptyMap(), 0, serviceContext);
+			UnicodePropertiesBuilder.put(
+				LayoutTypeSettingsConstants.KEY_PUBLISHED, "true"
+			).buildString(),
+			true, true, new HashMap<>(), serviceContext);
 
 		return layout.getPlid();
 	}
@@ -123,9 +110,9 @@ public class LayoutUpgradeProcess extends UpgradeProcess {
 					"LayoutPageTemplateEntry where plid is null or plid = 0"));
 			PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(
-						"update LayoutPageTemplateEntry set plid = ? where " +
-							"layoutPageTemplateEntryId = ?"))) {
+					connection,
+					"update LayoutPageTemplateEntry set plid = ? where " +
+						"layoutPageTemplateEntryId = ?")) {
 
 			while (resultSet.next()) {
 				long companyId = resultSet.getLong("companyId");
@@ -163,8 +150,9 @@ public class LayoutUpgradeProcess extends UpgradeProcess {
 					fragmentEntryLink.setClassPK(plid);
 					fragmentEntryLink.setPlid(plid);
 
-					_fragmentEntryLinkLocalService.updateFragmentEntryLink(
-						fragmentEntryLink);
+					fragmentEntryLink =
+						_fragmentEntryLinkLocalService.updateFragmentEntryLink(
+							fragmentEntryLink);
 
 					_fragmentEntryLinkLocalService.addFragmentEntryLink(
 						draftLayout.getUserId(), draftLayout.getGroupId(), 0,
@@ -173,7 +161,8 @@ public class LayoutUpgradeProcess extends UpgradeProcess {
 						fragmentEntryLink.getHtml(), fragmentEntryLink.getJs(),
 						fragmentEntryLink.getConfiguration(),
 						fragmentEntryLink.getEditableValues(), StringPool.BLANK,
-						fragmentEntryLink.getPosition(), null, serviceContext);
+						fragmentEntryLink.getPosition(), null,
+						fragmentEntryLink.getType(), serviceContext);
 				}
 			}
 
@@ -182,11 +171,7 @@ public class LayoutUpgradeProcess extends UpgradeProcess {
 	}
 
 	private void _upgradeSchema() throws Exception {
-		if (!hasColumn(LayoutPageTemplateEntryTable.TABLE_NAME, "plid")) {
-			alter(
-				LayoutPageTemplateEntryTable.class,
-				new AlterTableAddColumn("plid", "LONG"));
-		}
+		alterTableAddColumn("LayoutPageTemplateEntry", "plid", "LONG");
 	}
 
 	private final FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.sidecar;
@@ -24,7 +15,6 @@ import com.liferay.petra.process.ProcessExecutor;
 import com.liferay.petra.process.ProcessLog;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.cluster.ClusterExecutor;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -37,7 +27,6 @@ import com.liferay.portal.search.elasticsearch7.internal.connection.Elasticsearc
 import com.liferay.portal.search.elasticsearch7.internal.connection.HttpPortRange;
 import com.liferay.portal.search.elasticsearch7.internal.index.constants.SidecarVersionConstants;
 import com.liferay.portal.search.elasticsearch7.internal.util.ResourceUtil;
-import com.liferay.portal.search.elasticsearch7.settings.SettingsContributor;
 
 import java.io.File;
 import java.io.IOException;
@@ -55,7 +44,6 @@ import java.security.ProtectionDomain;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,20 +62,16 @@ import org.objectweb.asm.Opcodes;
 public class Sidecar {
 
 	public Sidecar(
-		ClusterExecutor clusterExecutor,
 		ElasticsearchConfigurationWrapper elasticsearchConfigurationWrapper,
 		ElasticsearchInstancePaths elasticsearchInstancePaths,
 		ProcessExecutor processExecutor,
 		ProcessExecutorPaths processExecutorPaths,
-		Collection<SettingsContributor> settingsContributors,
 		SidecarManager sidecarManager) {
 
-		_clusterExecutor = clusterExecutor;
 		_elasticsearchConfigurationWrapper = elasticsearchConfigurationWrapper;
 		_elasticsearchInstancePaths = elasticsearchInstancePaths;
 		_processExecutor = processExecutor;
 		_processExecutorPaths = processExecutorPaths;
-		_settingsContributors = settingsContributors;
 		_sidecarManager = sidecarManager;
 
 		_dataHomePath = elasticsearchInstancePaths.getDataPath();
@@ -304,20 +288,8 @@ public class Sidecar {
 		String versionNumber = ResourceUtil.getResourceAsString(
 			getClass(), SidecarVersionConstants.SIDECAR_VERSION_FILE_NAME);
 
-		if (versionNumber.equals("7.3.0")) {
-			return new Elasticsearch730Distribution();
-		}
-
-		if (versionNumber.equals("7.7.0")) {
-			return new Elasticsearch770Distribution();
-		}
-
-		if (versionNumber.equals("7.9.0")) {
-			return new Elasticsearch790Distribution();
-		}
-
-		if (versionNumber.equals("7.10.2")) {
-			return new Elasticsearch_7_10_2_Distribution();
+		if (versionNumber.equals(ElasticsearchDistribution.VERSION)) {
+			return new ElasticsearchDistribution();
 		}
 
 		throw new IllegalArgumentException(
@@ -329,6 +301,8 @@ public class Sidecar {
 			System.getenv()
 		).put(
 			"HOSTNAME", "localhost"
+		).put(
+			"LIBFFI_TMPDIR", _sidecarHomePath.toString()
 		).build();
 	}
 
@@ -451,6 +425,17 @@ public class Sidecar {
 						methodVisitor.visitInsn(Opcodes.RETURN);
 					},
 					classLoader));
+
+			modifiedClasses.put(
+				"org.elasticsearch.bootstrap.Spawner",
+				ClassModificationUtil.getModifiedClassBytes(
+					"org.elasticsearch.bootstrap.Spawner",
+					"spawnNativeControllers",
+					methodVisitor -> {
+						methodVisitor.visitCode();
+						methodVisitor.visitInsn(Opcodes.RETURN);
+					},
+					classLoader));
 		}
 		catch (Exception exception) {
 			_log.error("Unable to modify classes", exception);
@@ -492,12 +477,8 @@ public class Sidecar {
 			_elasticsearchInstancePaths
 		).httpPortRange(
 			new HttpPortRange(_elasticsearchConfigurationWrapper)
-		).localBindInetAddressSupplier(
-			_clusterExecutor::getBindInetAddress
 		).nodeName(
 			_getNodeName()
-		).settingsContributors(
-			_settingsContributors
 		).build();
 	}
 
@@ -515,7 +496,7 @@ public class Sidecar {
 
 			List<String> list = settings.getAsList(key);
 
-			if (!ListUtil.isEmpty(list)) {
+			if (ListUtil.isNotEmpty(list)) {
 				String keyValue = StringBundler.concat(
 					key, StringPool.EQUAL, StringUtil.merge(list));
 
@@ -558,7 +539,7 @@ public class Sidecar {
 			return _waitForPublishedAddress(noticeableFuture);
 		}
 		catch (IOException ioException) {
-			if (Objects.equals("Stream closed", ioException.getMessage())) {
+			if (Objects.equals(ioException.getMessage(), "Stream closed")) {
 				throw new RuntimeException(
 					StringBundler.concat(
 						"Sidecar JVM did not launch successfully. ",
@@ -601,7 +582,6 @@ public class Sidecar {
 	private static final Log _log = LogFactoryUtil.getLog(Sidecar.class);
 
 	private String _address;
-	private final ClusterExecutor _clusterExecutor;
 	private final Path _dataHomePath;
 	private final ElasticsearchConfigurationWrapper
 		_elasticsearchConfigurationWrapper;
@@ -610,7 +590,6 @@ public class Sidecar {
 	private final ProcessExecutor _processExecutor;
 	private final ProcessExecutorPaths _processExecutorPaths;
 	private FutureListener<Serializable> _restartFutureListener;
-	private final Collection<SettingsContributor> _settingsContributors;
 	private final Path _sidecarHomePath;
 	private SidecarManager _sidecarManager;
 	private Path _sidecarTempDirPath;

@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.notification;
 
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.field.type.DefaultDDMFormFieldValueRenderer;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
@@ -25,38 +16,36 @@ import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormValuesTestUtil;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.util.HtmlImpl;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.api.support.membermodification.MemberMatcher;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
  * @author Rafael Praxedes
  */
-@RunWith(PowerMockRunner.class)
 public class DDMFormEmailNotificationSenderTest {
 
-	@Before
-	public void setUp() throws Exception {
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
+	@BeforeClass
+	public static void setUpClass() throws Exception {
 		_setUpDDMFormEmailNotificationSender();
-		_setUpDDMFormFieldTypeServicesTracker();
-		_setUpHtmlUtil();
+		_setUpDDMFormFieldTypeServicesRegistry();
 	}
 
 	@Test
@@ -143,6 +132,26 @@ public class DDMFormEmailNotificationSenderTest {
 		Assert.assertEquals("1", String.valueOf(fieldProperties.get("value")));
 	}
 
+	private static void _setUpDDMFormEmailNotificationSender()
+		throws Exception {
+
+		_ddmFormEmailNotificationSender = new DDMFormEmailNotificationSender();
+
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormEmailNotificationSender,
+			"_ddmFormFieldTypeServicesRegistry",
+			_ddmFormFieldTypeServicesRegistry);
+	}
+
+	private static void _setUpDDMFormFieldTypeServicesRegistry() {
+		Mockito.when(
+			_ddmFormFieldTypeServicesRegistry.getDDMFormFieldValueRenderer(
+				Mockito.anyString())
+		).thenReturn(
+			_defaultDDMFormFieldValueRenderer
+		);
+	}
+
 	private DDMForm _createDDMForm(DDMFormField ddmFormField) {
 		DDMForm ddmForm = new DDMForm();
 
@@ -190,38 +199,12 @@ public class DDMFormEmailNotificationSenderTest {
 		return ddmFormInstanceRecord;
 	}
 
-	private void _setUpDDMFormEmailNotificationSender() throws Exception {
-		_ddmFormEmailNotificationSender = new DDMFormEmailNotificationSender();
-
-		MemberMatcher.field(
-			DDMFormEmailNotificationSender.class,
-			"_ddmFormFieldTypeServicesTracker"
-		).set(
-			_ddmFormEmailNotificationSender, _ddmFormFieldTypeServicesTracker
-		);
-	}
-
-	private void _setUpDDMFormFieldTypeServicesTracker() {
-		PowerMockito.when(
-			_ddmFormFieldTypeServicesTracker.getDDMFormFieldValueRenderer(
-				Matchers.anyString())
-		).thenReturn(
-			_defaultDDMFormFieldValueRenderer
-		);
-	}
-
-	private void _setUpHtmlUtil() {
-		HtmlUtil htmlUtil = new HtmlUtil();
-
-		htmlUtil.setHtml(new HtmlImpl());
-	}
-
-	private DDMFormEmailNotificationSender _ddmFormEmailNotificationSender;
-
-	@Mock
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
-
-	private final DefaultDDMFormFieldValueRenderer
+	private static DDMFormEmailNotificationSender
+		_ddmFormEmailNotificationSender;
+	private static final DDMFormFieldTypeServicesRegistry
+		_ddmFormFieldTypeServicesRegistry = Mockito.mock(
+			DDMFormFieldTypeServicesRegistry.class);
+	private static final DefaultDDMFormFieldValueRenderer
 		_defaultDDMFormFieldValueRenderer =
 			new DefaultDDMFormFieldValueRenderer();
 

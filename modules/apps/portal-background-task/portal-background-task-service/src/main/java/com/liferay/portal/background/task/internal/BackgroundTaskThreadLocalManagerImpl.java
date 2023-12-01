@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.background.task.internal;
@@ -17,12 +8,14 @@ package com.liferay.portal.background.task.internal;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskThreadLocalManager;
 import com.liferay.portal.kernel.cluster.ClusterInvokeThreadLocal;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.GroupThreadLocal;
@@ -42,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Michael C. Han
  */
-@Component(immediate = true, service = BackgroundTaskThreadLocalManager.class)
+@Component(service = BackgroundTaskThreadLocalManager.class)
 public class BackgroundTaskThreadLocalManagerImpl
 	implements BackgroundTaskThreadLocalManager {
 
@@ -126,20 +119,26 @@ public class BackgroundTaskThreadLocalManagerImpl
 		long groupId = GetterUtil.getLong(threadLocalValues.get("groupId"));
 
 		if (groupId > 0) {
-			GroupThreadLocal.setGroupId(groupId);
+			Group group = _groupLocalService.fetchGroup(groupId);
+
+			if ((group != null) && (group.getCompanyId() == companyId)) {
+				GroupThreadLocal.setGroupId(groupId);
+			}
 		}
 
 		String principalName = GetterUtil.getString(
 			threadLocalValues.get("principalName"));
 
 		if (Validator.isNotNull(principalName)) {
-			PrincipalThreadLocal.setName(principalName);
-
 			User user = _userLocalService.fetchUser(
-				PrincipalThreadLocal.getUserId());
+				GetterUtil.getLong(principalName));
 
-			PermissionThreadLocal.setPermissionChecker(
-				_permissionCheckerFactory.create(user));
+			if ((user != null) && (user.getCompanyId() == companyId)) {
+				PrincipalThreadLocal.setName(principalName);
+
+				PermissionThreadLocal.setPermissionChecker(
+					_permissionCheckerFactory.create(user));
+			}
 		}
 
 		Locale siteDefaultLocale = (Locale)threadLocalValues.get(
@@ -155,18 +154,6 @@ public class BackgroundTaskThreadLocalManagerImpl
 		if (themeDisplayLocale != null) {
 			LocaleThreadLocal.setThemeDisplayLocale(themeDisplayLocale);
 		}
-	}
-
-	@Reference(unbind = "-")
-	protected void setPermissionCheckerFactory(
-		PermissionCheckerFactory permissionCheckerFactory) {
-
-		_permissionCheckerFactory = permissionCheckerFactory;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
 	}
 
 	protected static final String KEY_THREAD_LOCAL_VALUES = "threadLocalValues";
@@ -185,7 +172,13 @@ public class BackgroundTaskThreadLocalManagerImpl
 			"Unable to find company " + companyId);
 	}
 
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
 	private PermissionCheckerFactory _permissionCheckerFactory;
+
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

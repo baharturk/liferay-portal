@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model.impl;
@@ -19,9 +10,9 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.object.model.ObjectViewColumn;
 import com.liferay.object.model.ObjectViewColumnModel;
-import com.liferay.object.model.ObjectViewColumnSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
+import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
@@ -31,26 +22,29 @@ import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -81,8 +75,8 @@ public class ObjectViewColumnModelImpl
 		{"objectViewColumnId", Types.BIGINT}, {"companyId", Types.BIGINT},
 		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"objectViewId", Types.BIGINT}, {"objectFieldName", Types.VARCHAR},
-		{"priority", Types.INTEGER}
+		{"objectViewId", Types.BIGINT}, {"label", Types.VARCHAR},
+		{"objectFieldName", Types.VARCHAR}, {"priority", Types.INTEGER}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -98,12 +92,13 @@ public class ObjectViewColumnModelImpl
 		TABLE_COLUMNS_MAP.put("createDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("modifiedDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("objectViewId", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("label", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("objectFieldName", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("priority", Types.INTEGER);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table ObjectViewColumn (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,objectViewColumnId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,objectViewId LONG,objectFieldName VARCHAR(75) null,priority INTEGER)";
+		"create table ObjectViewColumn (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,objectViewColumnId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,objectViewId LONG,label STRING null,objectFieldName VARCHAR(75) null,priority INTEGER)";
 
 	public static final String TABLE_SQL_DROP = "drop table ObjectViewColumn";
 
@@ -129,20 +124,26 @@ public class ObjectViewColumnModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTVIEWID_COLUMN_BITMASK = 2L;
+	public static final long OBJECTFIELDNAME_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 4L;
+	public static final long OBJECTVIEWID_COLUMN_BITMASK = 4L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTVIEWCOLUMNID_COLUMN_BITMASK = 8L;
+	public static final long OBJECTVIEWCOLUMNID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -156,61 +157,6 @@ public class ObjectViewColumnModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static ObjectViewColumn toModel(ObjectViewColumnSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		ObjectViewColumn model = new ObjectViewColumnImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setObjectViewColumnId(soapModel.getObjectViewColumnId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setObjectViewId(soapModel.getObjectViewId());
-		model.setObjectFieldName(soapModel.getObjectFieldName());
-		model.setPriority(soapModel.getPriority());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<ObjectViewColumn> toModels(
-		ObjectViewColumnSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<ObjectViewColumn> models = new ArrayList<ObjectViewColumn>(
-			soapModels.length);
-
-		for (ObjectViewColumnSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public ObjectViewColumnModelImpl() {
@@ -289,120 +235,118 @@ public class ObjectViewColumnModelImpl
 	public Map<String, Function<ObjectViewColumn, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<ObjectViewColumn, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, ObjectViewColumn>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			ObjectViewColumn.class.getClassLoader(), ObjectViewColumn.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<ObjectViewColumn, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<ObjectViewColumn> constructor =
-				(Constructor<ObjectViewColumn>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<ObjectViewColumn, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<ObjectViewColumn, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", ObjectViewColumn::getMvccVersion);
+			attributeGetterFunctions.put("uuid", ObjectViewColumn::getUuid);
+			attributeGetterFunctions.put(
+				"objectViewColumnId", ObjectViewColumn::getObjectViewColumnId);
+			attributeGetterFunctions.put(
+				"companyId", ObjectViewColumn::getCompanyId);
+			attributeGetterFunctions.put("userId", ObjectViewColumn::getUserId);
+			attributeGetterFunctions.put(
+				"userName", ObjectViewColumn::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", ObjectViewColumn::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", ObjectViewColumn::getModifiedDate);
+			attributeGetterFunctions.put(
+				"objectViewId", ObjectViewColumn::getObjectViewId);
+			attributeGetterFunctions.put("label", ObjectViewColumn::getLabel);
+			attributeGetterFunctions.put(
+				"objectFieldName", ObjectViewColumn::getObjectFieldName);
+			attributeGetterFunctions.put(
+				"priority", ObjectViewColumn::getPriority);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<ObjectViewColumn, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<ObjectViewColumn, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<ObjectViewColumn, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<ObjectViewColumn, Object>>();
-		Map<String, BiConsumer<ObjectViewColumn, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<ObjectViewColumn, ?>>();
+		private static final Map<String, BiConsumer<ObjectViewColumn, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", ObjectViewColumn::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<ObjectViewColumn, Long>)
-				ObjectViewColumn::setMvccVersion);
-		attributeGetterFunctions.put("uuid", ObjectViewColumn::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<ObjectViewColumn, String>)ObjectViewColumn::setUuid);
-		attributeGetterFunctions.put(
-			"objectViewColumnId", ObjectViewColumn::getObjectViewColumnId);
-		attributeSetterBiConsumers.put(
-			"objectViewColumnId",
-			(BiConsumer<ObjectViewColumn, Long>)
-				ObjectViewColumn::setObjectViewColumnId);
-		attributeGetterFunctions.put(
-			"companyId", ObjectViewColumn::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<ObjectViewColumn, Long>)ObjectViewColumn::setCompanyId);
-		attributeGetterFunctions.put("userId", ObjectViewColumn::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<ObjectViewColumn, Long>)ObjectViewColumn::setUserId);
-		attributeGetterFunctions.put("userName", ObjectViewColumn::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<ObjectViewColumn, String>)
-				ObjectViewColumn::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", ObjectViewColumn::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<ObjectViewColumn, Date>)
-				ObjectViewColumn::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", ObjectViewColumn::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<ObjectViewColumn, Date>)
-				ObjectViewColumn::setModifiedDate);
-		attributeGetterFunctions.put(
-			"objectViewId", ObjectViewColumn::getObjectViewId);
-		attributeSetterBiConsumers.put(
-			"objectViewId",
-			(BiConsumer<ObjectViewColumn, Long>)
-				ObjectViewColumn::setObjectViewId);
-		attributeGetterFunctions.put(
-			"objectFieldName", ObjectViewColumn::getObjectFieldName);
-		attributeSetterBiConsumers.put(
-			"objectFieldName",
-			(BiConsumer<ObjectViewColumn, String>)
-				ObjectViewColumn::setObjectFieldName);
-		attributeGetterFunctions.put("priority", ObjectViewColumn::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<ObjectViewColumn, Integer>)
-				ObjectViewColumn::setPriority);
+		static {
+			Map<String, BiConsumer<ObjectViewColumn, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<ObjectViewColumn, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<ObjectViewColumn, Long>)
+					ObjectViewColumn::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<ObjectViewColumn, String>)
+					ObjectViewColumn::setUuid);
+			attributeSetterBiConsumers.put(
+				"objectViewColumnId",
+				(BiConsumer<ObjectViewColumn, Long>)
+					ObjectViewColumn::setObjectViewColumnId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<ObjectViewColumn, Long>)
+					ObjectViewColumn::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<ObjectViewColumn, Long>)
+					ObjectViewColumn::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<ObjectViewColumn, String>)
+					ObjectViewColumn::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<ObjectViewColumn, Date>)
+					ObjectViewColumn::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<ObjectViewColumn, Date>)
+					ObjectViewColumn::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"objectViewId",
+				(BiConsumer<ObjectViewColumn, Long>)
+					ObjectViewColumn::setObjectViewId);
+			attributeSetterBiConsumers.put(
+				"label",
+				(BiConsumer<ObjectViewColumn, String>)
+					ObjectViewColumn::setLabel);
+			attributeSetterBiConsumers.put(
+				"objectFieldName",
+				(BiConsumer<ObjectViewColumn, String>)
+					ObjectViewColumn::setObjectFieldName);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<ObjectViewColumn, Integer>)
+					ObjectViewColumn::setPriority);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -603,6 +547,115 @@ public class ObjectViewColumnModelImpl
 
 	@JSON
 	@Override
+	public String getLabel() {
+		if (_label == null) {
+			return "";
+		}
+		else {
+			return _label;
+		}
+	}
+
+	@Override
+	public String getLabel(Locale locale) {
+		String languageId = LocaleUtil.toLanguageId(locale);
+
+		return getLabel(languageId);
+	}
+
+	@Override
+	public String getLabel(Locale locale, boolean useDefault) {
+		String languageId = LocaleUtil.toLanguageId(locale);
+
+		return getLabel(languageId, useDefault);
+	}
+
+	@Override
+	public String getLabel(String languageId) {
+		return LocalizationUtil.getLocalization(getLabel(), languageId);
+	}
+
+	@Override
+	public String getLabel(String languageId, boolean useDefault) {
+		return LocalizationUtil.getLocalization(
+			getLabel(), languageId, useDefault);
+	}
+
+	@Override
+	public String getLabelCurrentLanguageId() {
+		return _labelCurrentLanguageId;
+	}
+
+	@JSON
+	@Override
+	public String getLabelCurrentValue() {
+		Locale locale = getLocale(_labelCurrentLanguageId);
+
+		return getLabel(locale);
+	}
+
+	@Override
+	public Map<Locale, String> getLabelMap() {
+		return LocalizationUtil.getLocalizationMap(getLabel());
+	}
+
+	@Override
+	public void setLabel(String label) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_label = label;
+	}
+
+	@Override
+	public void setLabel(String label, Locale locale) {
+		setLabel(label, locale, LocaleUtil.getDefault());
+	}
+
+	@Override
+	public void setLabel(String label, Locale locale, Locale defaultLocale) {
+		String languageId = LocaleUtil.toLanguageId(locale);
+		String defaultLanguageId = LocaleUtil.toLanguageId(defaultLocale);
+
+		if (Validator.isNotNull(label)) {
+			setLabel(
+				LocalizationUtil.updateLocalization(
+					getLabel(), "Label", label, languageId, defaultLanguageId));
+		}
+		else {
+			setLabel(
+				LocalizationUtil.removeLocalization(
+					getLabel(), "Label", languageId));
+		}
+	}
+
+	@Override
+	public void setLabelCurrentLanguageId(String languageId) {
+		_labelCurrentLanguageId = languageId;
+	}
+
+	@Override
+	public void setLabelMap(Map<Locale, String> labelMap) {
+		setLabelMap(labelMap, LocaleUtil.getDefault());
+	}
+
+	@Override
+	public void setLabelMap(
+		Map<Locale, String> labelMap, Locale defaultLocale) {
+
+		if (labelMap == null) {
+			return;
+		}
+
+		setLabel(
+			LocalizationUtil.updateLocalization(
+				labelMap, getLabel(), "Label",
+				LocaleUtil.toLanguageId(defaultLocale)));
+	}
+
+	@JSON
+	@Override
 	public String getObjectFieldName() {
 		if (_objectFieldName == null) {
 			return "";
@@ -619,6 +672,15 @@ public class ObjectViewColumnModelImpl
 		}
 
 		_objectFieldName = objectFieldName;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalObjectFieldName() {
+		return getColumnOriginalValue("objectFieldName");
 	}
 
 	@JSON
@@ -680,6 +742,72 @@ public class ObjectViewColumnModelImpl
 	}
 
 	@Override
+	public String[] getAvailableLanguageIds() {
+		Set<String> availableLanguageIds = new TreeSet<String>();
+
+		Map<Locale, String> labelMap = getLabelMap();
+
+		for (Map.Entry<Locale, String> entry : labelMap.entrySet()) {
+			Locale locale = entry.getKey();
+			String value = entry.getValue();
+
+			if (Validator.isNotNull(value)) {
+				availableLanguageIds.add(LocaleUtil.toLanguageId(locale));
+			}
+		}
+
+		return availableLanguageIds.toArray(
+			new String[availableLanguageIds.size()]);
+	}
+
+	@Override
+	public String getDefaultLanguageId() {
+		String xml = getLabel();
+
+		if (xml == null) {
+			return "";
+		}
+
+		Locale defaultLocale = LocaleUtil.getDefault();
+
+		return LocalizationUtil.getDefaultLanguageId(xml, defaultLocale);
+	}
+
+	@Override
+	public void prepareLocalizedFieldsForImport() throws LocaleException {
+		Locale defaultLocale = LocaleUtil.fromLanguageId(
+			getDefaultLanguageId());
+
+		Locale[] availableLocales = LocaleUtil.fromLanguageIds(
+			getAvailableLanguageIds());
+
+		Locale defaultImportLocale = LocalizationUtil.getDefaultImportLocale(
+			ObjectViewColumn.class.getName(), getPrimaryKey(), defaultLocale,
+			availableLocales);
+
+		prepareLocalizedFieldsForImport(defaultImportLocale);
+	}
+
+	@Override
+	@SuppressWarnings("unused")
+	public void prepareLocalizedFieldsForImport(Locale defaultImportLocale)
+		throws LocaleException {
+
+		Locale defaultLocale = LocaleUtil.getDefault();
+
+		String modelDefaultLanguageId = getDefaultLanguageId();
+
+		String label = getLabel(defaultLocale);
+
+		if (Validator.isNull(label)) {
+			setLabel(getLabel(modelDefaultLanguageId), defaultLocale);
+		}
+		else {
+			setLabel(getLabel(defaultLocale), defaultLocale, defaultLocale);
+		}
+	}
+
+	@Override
 	public ObjectViewColumn toEscapedModel() {
 		if (_escapedModel == null) {
 			Function<InvocationHandler, ObjectViewColumn>
@@ -707,6 +835,7 @@ public class ObjectViewColumnModelImpl
 		objectViewColumnImpl.setCreateDate(getCreateDate());
 		objectViewColumnImpl.setModifiedDate(getModifiedDate());
 		objectViewColumnImpl.setObjectViewId(getObjectViewId());
+		objectViewColumnImpl.setLabel(getLabel());
 		objectViewColumnImpl.setObjectFieldName(getObjectFieldName());
 		objectViewColumnImpl.setPriority(getPriority());
 
@@ -737,6 +866,8 @@ public class ObjectViewColumnModelImpl
 			this.<Date>getColumnOriginalValue("modifiedDate"));
 		objectViewColumnImpl.setObjectViewId(
 			this.<Long>getColumnOriginalValue("objectViewId"));
+		objectViewColumnImpl.setLabel(
+			this.<String>getColumnOriginalValue("label"));
 		objectViewColumnImpl.setObjectFieldName(
 			this.<String>getColumnOriginalValue("objectFieldName"));
 		objectViewColumnImpl.setPriority(
@@ -863,6 +994,14 @@ public class ObjectViewColumnModelImpl
 
 		objectViewColumnCacheModel.objectViewId = getObjectViewId();
 
+		objectViewColumnCacheModel.label = getLabel();
+
+		String label = objectViewColumnCacheModel.label;
+
+		if ((label != null) && (label.length() == 0)) {
+			objectViewColumnCacheModel.label = null;
+		}
+
 		objectViewColumnCacheModel.objectFieldName = getObjectFieldName();
 
 		String objectFieldName = objectViewColumnCacheModel.objectFieldName;
@@ -926,41 +1065,12 @@ public class ObjectViewColumnModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<ObjectViewColumn, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<ObjectViewColumn, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<ObjectViewColumn, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((ObjectViewColumn)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, ObjectViewColumn>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					ObjectViewColumn.class, ModelWrapper.class);
 
 	}
 
@@ -974,6 +1084,8 @@ public class ObjectViewColumnModelImpl
 	private Date _modifiedDate;
 	private boolean _setModifiedDate;
 	private long _objectViewId;
+	private String _label;
+	private String _labelCurrentLanguageId;
 	private String _objectFieldName;
 	private int _priority;
 
@@ -981,7 +1093,8 @@ public class ObjectViewColumnModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<ObjectViewColumn, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1015,6 +1128,7 @@ public class ObjectViewColumnModelImpl
 		_columnOriginalValues.put("createDate", _createDate);
 		_columnOriginalValues.put("modifiedDate", _modifiedDate);
 		_columnOriginalValues.put("objectViewId", _objectViewId);
+		_columnOriginalValues.put("label", _label);
 		_columnOriginalValues.put("objectFieldName", _objectFieldName);
 		_columnOriginalValues.put("priority", _priority);
 	}
@@ -1058,9 +1172,11 @@ public class ObjectViewColumnModelImpl
 
 		columnBitmasks.put("objectViewId", 256L);
 
-		columnBitmasks.put("objectFieldName", 512L);
+		columnBitmasks.put("label", 512L);
 
-		columnBitmasks.put("priority", 1024L);
+		columnBitmasks.put("objectFieldName", 1024L);
+
+		columnBitmasks.put("priority", 2048L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

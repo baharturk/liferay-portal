@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.theme.minium.site.initializer.internal;
 
+import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.settings.AccountEntryGroupSettings;
-import com.liferay.commerce.account.configuration.CommerceAccountGroupServiceConfiguration;
-import com.liferay.commerce.account.constants.CommerceAccountConstants;
-import com.liferay.commerce.account.util.CommerceAccountRoleHelper;
+import com.liferay.commerce.configuration.CommerceAccountGroupServiceConfiguration;
+import com.liferay.commerce.constants.CommerceConstants;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.initializer.util.AssetCategoriesImporter;
@@ -58,13 +49,15 @@ import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedO
 import com.liferay.commerce.theme.minium.SiteInitializerDependencyResolver;
 import com.liferay.commerce.theme.minium.SiteInitializerDependencyResolverThreadLocal;
 import com.liferay.commerce.util.AccountEntryAllowedTypesUtil;
+import com.liferay.commerce.util.CommerceAccountRoleHelper;
 import com.liferay.commerce.util.CommerceShippingEngineRegistry;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -75,7 +68,6 @@ import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.model.ThemeSetting;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
@@ -87,12 +79,11 @@ import com.liferay.portal.kernel.service.ThemeLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.service.permission.ModelPermissionsFactory;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.settings.ModifiableSettings;
 import com.liferay.portal.kernel.settings.Settings;
-import com.liferay.portal.kernel.settings.SettingsFactory;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -100,6 +91,7 @@ import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.search.capabilities.SearchCapabilities;
 import com.liferay.site.exception.InitializationException;
 import com.liferay.site.initializer.SiteInitializer;
 
@@ -128,7 +120,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = "site.initializer.key=" + MiniumSiteInitializer.KEY,
 	service = SiteInitializer.class
 )
@@ -141,7 +132,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, "minium-description");
+		return _language.get(resourceBundle, "minium-description");
 	}
 
 	@Override
@@ -154,7 +145,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, "minium");
+		return _language.get(resourceBundle, "minium");
 	}
 
 	@Override
@@ -202,9 +193,9 @@ public class MiniumSiteInitializer implements SiteInitializer {
 			_createRoles(
 				serviceContext, commerceChannel.getCommerceChannelId());
 
-			_configureB2BSite(commerceChannel.getGroupId(), serviceContext);
+			_configureB2BSite(commerceChannel.getGroup(), serviceContext);
 
-			_miniumLayoutsInitializer.initialize(serviceContext);
+			_createLayouts(serviceContext);
 
 			_importAssetCategories(serviceContext);
 
@@ -272,7 +263,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 			throw initializationException;
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw new InitializationException(exception);
 		}
@@ -280,6 +271,10 @@ public class MiniumSiteInitializer implements SiteInitializer {
 
 	@Override
 	public boolean isActive(long companyId) {
+		if (!_searchCapabilities.isCommerceSupported()) {
+			return false;
+		}
+
 		Theme theme = _themeLocalService.fetchTheme(
 			companyId, _MINIUM_THEME_ID);
 
@@ -304,38 +299,38 @@ public class MiniumSiteInitializer implements SiteInitializer {
 		_cpDefinitions = null;
 	}
 
-	private void _configureB2BSite(long groupId, ServiceContext serviceContext)
+	private void _configureB2BSite(Group group, ServiceContext serviceContext)
 		throws Exception {
-
-		Group group = _groupLocalService.getGroup(groupId);
 
 		group.setType(GroupConstants.TYPE_SITE_PRIVATE);
 		group.setManualMembership(true);
 		group.setMembershipRestriction(
 			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION);
 
-		_groupLocalService.updateGroup(group);
+		group = _groupLocalService.updateGroup(group);
 
-		_commerceCurrencyLocalService.importDefaultValues(serviceContext);
+		_commerceCurrencyLocalService.importDefaultValues(true, serviceContext);
 		_cpMeasurementUnitLocalService.importDefaultValues(serviceContext);
 
 		_commerceAccountRoleHelper.checkCommerceAccountRoles(serviceContext);
 
-		Settings settings = _settingsFactory.getSettings(
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
 			new GroupServiceSettingsLocator(
-				groupId, CommerceAccountConstants.SERVICE_NAME));
+				group.getGroupId(),
+				CommerceConstants.SERVICE_NAME_COMMERCE_ACCOUNT));
 
 		ModifiableSettings modifiableSettings =
 			settings.getModifiableSettings();
 
 		modifiableSettings.setValue(
 			"commerceSiteType",
-			String.valueOf(CommerceAccountConstants.SITE_TYPE_B2B));
+			String.valueOf(CommerceChannelConstants.SITE_TYPE_B2B));
 
 		modifiableSettings.store();
 
 		_accountEntryGroupSettings.setAllowedTypes(
-			serviceContext.getScopeGroupId(), _getAllowedTypes(groupId));
+			serviceContext.getScopeGroupId(),
+			_getAllowedTypes(group.getGroupId()));
 	}
 
 	private CommerceCatalog _createCatalog(ServiceContext serviceContext)
@@ -360,10 +355,37 @@ public class MiniumSiteInitializer implements SiteInitializer {
 		Group group = serviceContext.getScopeGroup();
 
 		return _commerceChannelLocalService.addCommerceChannel(
-			StringPool.BLANK, group.getGroupId(),
+			StringPool.BLANK, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
+			group.getGroupId(),
 			group.getName(serviceContext.getLanguageId()) + " Portal",
 			CommerceChannelConstants.CHANNEL_TYPE_SITE, null,
 			commerceCatalog.getCommerceCurrencyCode(), serviceContext);
+	}
+
+	private void _createLayouts(ServiceContext serviceContext)
+		throws Exception {
+
+		SiteInitializerDependencyResolver siteInitializerDependencyResolver =
+			SiteInitializerDependencyResolverThreadLocal.
+				getSiteInitializerDependencyResolver();
+
+		if (siteInitializerDependencyResolver != null) {
+			_siteInitializerDependencyResolver =
+				siteInitializerDependencyResolver;
+		}
+		else {
+			_siteInitializerDependencyResolver =
+				_defaultSiteInitializerDependencyResolver;
+		}
+
+		_cpFileImporter.cleanLayouts(serviceContext);
+
+		_cpFileImporter.createLayouts(
+			_jsonFactory.createJSONArray(
+				_siteInitializerDependencyResolver.getJSON("layouts.json")),
+			_siteInitializerDependencyResolver.getImageClassLoader(),
+			_siteInitializerDependencyResolver.getImageDependencyPath(),
+			serviceContext);
 	}
 
 	private void _createRoles(
@@ -386,7 +408,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 					CommerceAccountGroupServiceConfiguration.class,
 					new GroupServiceSettingsLocator(
 						commerceChannelGroupId,
-						CommerceAccountConstants.SERVICE_NAME));
+						CommerceConstants.SERVICE_NAME_COMMERCE_ACCOUNT));
 
 		return AccountEntryAllowedTypesUtil.getAllowedTypes(
 			commerceAccountGroupServiceConfiguration.commerceSiteType());
@@ -432,7 +454,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 		serviceContext.setAddGroupPermissions(true);
 		serviceContext.setAddGuestPermissions(true);
 		serviceContext.setCompanyId(group.getCompanyId());
-		serviceContext.setLanguageId(LanguageUtil.getLanguageId(locale));
+		serviceContext.setLanguageId(_language.getLanguageId(locale));
 		serviceContext.setScopeGroupId(groupId);
 		serviceContext.setTimeZone(user.getTimeZone());
 		serviceContext.setUserId(user.getUserId());
@@ -570,9 +592,21 @@ public class MiniumSiteInitializer implements SiteInitializer {
 			_log.info("Importing commerce price entries...");
 		}
 
+		JSONArray jsonArray = _getJSONArray("price-entries.json");
+
+		for (int i = 0; i < jsonArray.length(); i++) {
+			JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+			String sku = jsonObject.getString("sku");
+
+			String externalReferenceCode =
+				sku + _siteInitializerDependencyResolver.getKey();
+
+			jsonObject.put("externalReferenceCode", externalReferenceCode);
+		}
+
 		_commercePriceEntriesImporter.importCommercePriceEntries(
-			_getJSONArray("price-entries.json"), catalogGroupId,
-			serviceContext.getUserId());
+			jsonArray, catalogGroupId, serviceContext.getUserId());
 
 		if (_log.isInfoEnabled()) {
 			_log.info("Commerce price entries successfully imported");
@@ -637,6 +671,26 @@ public class MiniumSiteInitializer implements SiteInitializer {
 
 				jsonObject.put(
 					"externalReferenceCode", newExternalReferenceCode);
+
+				JSONArray skusJSONArray = jsonObject.getJSONArray("skus");
+
+				if (skusJSONArray != null) {
+					for (int j = 0; j < skusJSONArray.length(); j++) {
+						JSONObject skuJSONObject = skusJSONArray.getJSONObject(
+							j);
+
+						String skuExternalReferenceCode =
+							skuJSONObject.getString("externalReferenceCode");
+
+						String newSkuExternalReferenceCode =
+							skuExternalReferenceCode +
+								_siteInitializerDependencyResolver.getKey();
+
+						skuJSONObject.put(
+							"externalReferenceCode",
+							newSkuExternalReferenceCode);
+					}
+				}
 			}
 		}
 
@@ -870,7 +924,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 				HashMapBuilder.put(
 					locale, commerceShippingEngine.getDescription(locale)
 				).build(),
-				null, shippingMethod, 0, true);
+				true, shippingMethod, null, 0, StringPool.BLANK);
 
 		_setCommerceShippingOption(
 			commerceShippingMethod, "Standard Delivery", StringPool.BLANK,
@@ -888,14 +942,15 @@ public class MiniumSiteInitializer implements SiteInitializer {
 
 		_commerceShippingFixedOptionLocalService.addCommerceShippingFixedOption(
 			serviceContext.getUserId(), commerceShippingMethod.getGroupId(),
-			commerceShippingMethod.getCommerceShippingMethodId(),
-			HashMapBuilder.put(
-				serviceContext.getLocale(), name
-			).build(),
+			commerceShippingMethod.getCommerceShippingMethodId(), price,
 			HashMapBuilder.put(
 				serviceContext.getLocale(), description
 			).build(),
-			price, 0);
+			null,
+			HashMapBuilder.put(
+				serviceContext.getLocale(), name
+			).build(),
+			0);
 	}
 
 	private void _setDefaultCatalogImage(
@@ -912,7 +967,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 		File file = null;
 
 		try {
-			file = FileUtil.createTempFile(inputStream);
+			file = _file.createTempFile(inputStream);
 
 			String mimeType = MimeTypesUtil.getContentType(file);
 
@@ -926,7 +981,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 		}
 		finally {
 			if (file != null) {
-				FileUtil.delete(file);
+				_file.delete(file);
 			}
 		}
 	}
@@ -956,7 +1011,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 			_siteInitializerDependencyResolver.getImageDependencyPath() +
 				"minium_logo.png");
 
-		File file = FileUtil.createTempFile(inputStream);
+		File file = _file.createTempFile(inputStream);
 
 		_cpFileImporter.updateLogo(file, true, true, serviceContext);
 		_cpFileImporter.updateLogo(file, false, true, serviceContext);
@@ -1113,6 +1168,9 @@ public class MiniumSiteInitializer implements SiteInitializer {
 	private DLImporter _dlImporter;
 
 	@Reference
+	private com.liferay.portal.kernel.util.File _file;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference
@@ -1122,7 +1180,7 @@ public class MiniumSiteInitializer implements SiteInitializer {
 	private KBArticleImporter _kbArticleImporter;
 
 	@Reference
-	private MiniumLayoutsInitializer _miniumLayoutsInitializer;
+	private Language _language;
 
 	@Reference
 	private OrganizationImporter _organizationImporter;
@@ -1136,13 +1194,13 @@ public class MiniumSiteInitializer implements SiteInitializer {
 	@Reference
 	private RoleLocalService _roleLocalService;
 
+	@Reference
+	private SearchCapabilities _searchCapabilities;
+
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.commerce.theme.minium.site.initializer)"
 	)
 	private ServletContext _servletContext;
-
-	@Reference
-	private SettingsFactory _settingsFactory;
 
 	private SiteInitializerDependencyResolver
 		_siteInitializerDependencyResolver;

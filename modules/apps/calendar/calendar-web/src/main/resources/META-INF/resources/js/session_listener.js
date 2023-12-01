@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-calendar-session-listener',
 	(A) => {
-		var CalendarSessionListener = A.Component.create({
+		const CalendarSessionListener = A.Component.create({
 			ATTRS: {
 				calendars: {
 					value: [],
@@ -30,13 +21,13 @@ AUI.add(
 
 			prototype: {
 				_disableCalendars() {
-					var instance = this;
+					const instance = this;
 
-					var calendars = instance.get('calendars');
+					const calendars = instance.get('calendars');
 
 					// eslint-disable-next-line @liferay/aui/no-object
 					A.Object.each(calendars, (calendar) => {
-						var permissions = calendar.get('permissions');
+						const permissions = calendar.get('permissions');
 
 						permissions.DELETE = false;
 						permissions.MANAGE_BOOKINGS = false;
@@ -46,9 +37,9 @@ AUI.add(
 				},
 
 				_disableEvents() {
-					var instance = this;
+					const instance = this;
 
-					var scheduler = instance.get('scheduler');
+					const scheduler = instance.get('scheduler');
 
 					scheduler.getEvents().forEach((event) => {
 						event.set('disabled', true);
@@ -56,11 +47,11 @@ AUI.add(
 				},
 
 				_disableScheduler() {
-					var instance = this;
+					const instance = this;
 
-					var addEventButtons = A.all('.calendar-add-event-btn');
+					const addEventButtons = A.all('.calendar-add-event-btn');
 
-					var scheduler = instance.get('scheduler');
+					const scheduler = instance.get('scheduler');
 
 					addEventButtons.set('disabled', true);
 
@@ -68,7 +59,7 @@ AUI.add(
 				},
 
 				_onSessionExpired() {
-					var instance = this;
+					const instance = this;
 
 					instance._disableCalendars();
 
@@ -78,7 +69,7 @@ AUI.add(
 				},
 
 				initializer() {
-					var instance = this;
+					const instance = this;
 
 					Liferay.on(
 						'sessionExpired',

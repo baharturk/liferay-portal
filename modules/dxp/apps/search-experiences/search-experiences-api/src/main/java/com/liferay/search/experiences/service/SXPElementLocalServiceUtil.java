@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.service;
@@ -46,15 +37,17 @@ public class SXPElementLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.search.experiences.service.impl.SXPElementLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static SXPElement addSXPElement(
-			long userId, Map<java.util.Locale, String> descriptionMap,
-			String elementDefinitionJSON, boolean readOnly,
-			String schemaVersion, Map<java.util.Locale, String> titleMap,
-			int type,
+			String externalReferenceCode, long userId,
+			Map<java.util.Locale, String> descriptionMap,
+			String elementDefinitionJSON, String fallbackDescription,
+			String fallbackTitle, boolean readOnly, String schemaVersion,
+			Map<java.util.Locale, String> titleMap, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addSXPElement(
-			userId, descriptionMap, elementDefinitionJSON, readOnly,
+			externalReferenceCode, userId, descriptionMap,
+			elementDefinitionJSON, fallbackDescription, fallbackTitle, readOnly,
 			schemaVersion, titleMap, type, serviceContext);
 	}
 
@@ -231,6 +224,13 @@ public class SXPElementLocalServiceUtil {
 		return getService().fetchSXPElement(sxpElementId);
 	}
 
+	public static SXPElement fetchSXPElementByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchSXPElementByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the sxp element with the matching UUID and company.
 	 *
@@ -296,6 +296,14 @@ public class SXPElementLocalServiceUtil {
 		return getService().getSXPElement(sxpElementId);
 	}
 
+	public static SXPElement getSXPElementByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getSXPElementByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the sxp element with the matching UUID and company.
 	 *
@@ -349,7 +357,7 @@ public class SXPElementLocalServiceUtil {
 	}
 
 	public static SXPElement updateSXPElement(
-			long userId, long sxpElementId,
+			String externalReferenceCode, long userId, long sxpElementId,
 			Map<java.util.Locale, String> descriptionMap,
 			String elementDefinitionJSON, boolean hidden, String schemaVersion,
 			Map<java.util.Locale, String> titleMap,
@@ -357,8 +365,9 @@ public class SXPElementLocalServiceUtil {
 		throws PortalException {
 
 		return getService().updateSXPElement(
-			userId, sxpElementId, descriptionMap, elementDefinitionJSON, hidden,
-			schemaVersion, titleMap, serviceContext);
+			externalReferenceCode, userId, sxpElementId, descriptionMap,
+			elementDefinitionJSON, hidden, schemaVersion, titleMap,
+			serviceContext);
 	}
 
 	/**
@@ -377,6 +386,10 @@ public class SXPElementLocalServiceUtil {
 
 	public static SXPElementLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(SXPElementLocalService service) {
+		_service = service;
 	}
 
 	private static volatile SXPElementLocalService _service;

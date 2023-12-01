@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.validator.internal;
@@ -18,7 +9,7 @@ import com.liferay.dynamic.data.mapping.expression.CreateExpressionRequest;
 import com.liferay.dynamic.data.mapping.expression.DDMExpression;
 import com.liferay.dynamic.data.mapping.expression.DDMExpressionException;
 import com.liferay.dynamic.data.mapping.expression.DDMExpressionFactory;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueAccessor;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueValidator;
 import com.liferay.dynamic.data.mapping.form.field.type.DefaultDDMFormFieldValueAccessor;
@@ -57,7 +48,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -68,7 +58,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marcellus Tavares
  */
-@Component(immediate = true, service = DDMFormValuesValidator.class)
+@Component(service = DDMFormValuesValidator.class)
 public class DDMFormValuesValidatorImpl implements DDMFormValuesValidator {
 
 	@Override
@@ -84,7 +74,7 @@ public class DDMFormValuesValidatorImpl implements DDMFormValuesValidator {
 
 		_ddmFormFieldValueExpressionParameterAccessor =
 			new DDMFormFieldValueExpressionParameterAccessor(
-				ddmFormValues.getDefaultLocale(), timeZoneId);
+				_jsonFactory, ddmFormValues.getDefaultLocale(), timeZoneId);
 
 		DDMForm ddmForm = ddmFormValues.getDDMForm();
 
@@ -212,32 +202,13 @@ public class DDMFormValuesValidatorImpl implements DDMFormValuesValidator {
 		DDMFormFieldValueAccessor<?> ddmFormFieldValueAccessor =
 			_getDDMFormFieldValueAccessor(ddmFormField.getType());
 
-		Set<Locale> locales = value.getAvailableLocales();
+		for (Locale locale : value.getAvailableLocales()) {
+			if (!ddmFormFieldValueAccessor.isEmpty(ddmFormFieldValue, locale)) {
+				return false;
+			}
+		}
 
-		Stream<Locale> stream = locales.stream();
-
-		return stream.allMatch(
-			locale -> ddmFormFieldValueAccessor.isEmpty(
-				ddmFormFieldValue, locale));
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMExpressionFactory(
-		DDMExpressionFactory ddmExpressionFactory) {
-
-		_ddmExpressionFactory = ddmExpressionFactory;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMFormFieldTypeServicesTracker(
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker) {
-
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJSONFactory(JSONFactory jsonFactory) {
-		_jsonFactory = jsonFactory;
+		return true;
 	}
 
 	protected void validateDDMFormFieldValidationExpression(
@@ -265,7 +236,8 @@ public class DDMFormValuesValidatorImpl implements DDMFormValuesValidator {
 		String type) {
 
 		DDMFormFieldValueAccessor<?> ddmFormFieldValueAccessor =
-			_ddmFormFieldTypeServicesTracker.getDDMFormFieldValueAccessor(type);
+			_ddmFormFieldTypeServicesRegistry.getDDMFormFieldValueAccessor(
+				type);
 
 		if (ddmFormFieldValueAccessor != null) {
 			return ddmFormFieldValueAccessor;
@@ -454,14 +426,21 @@ public class DDMFormValuesValidatorImpl implements DDMFormValuesValidator {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormValuesValidatorImpl.class);
 
+	@Reference
 	private DDMExpressionFactory _ddmExpressionFactory;
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
+
+	@Reference
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
+
 	private DDMFormFieldValueExpressionParameterAccessor
 		_ddmFormFieldValueExpressionParameterAccessor;
 	private final DDMFormFieldValueAccessor<String>
 		_defaultDDMFormFieldValueAccessor =
 			new DefaultDDMFormFieldValueAccessor();
+
+	@Reference
 	private JSONFactory _jsonFactory;
+
 	private ServiceTrackerMap<String, DDMFormFieldValueValidator>
 		_serviceTrackerMap;
 

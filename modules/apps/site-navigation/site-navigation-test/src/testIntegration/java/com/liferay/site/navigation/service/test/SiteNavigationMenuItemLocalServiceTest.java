@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.service.test;
@@ -541,10 +532,6 @@ public class SiteNavigationMenuItemLocalServiceTest {
 
 	@Test(expected = SiteNavigationMenuItemNameException.class)
 	public void testInvalidSiteNavigationMenuItemName() throws PortalException {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		_siteNavigationMenuItemLocalService.addSiteNavigationMenuItem(
 			TestPropsValues.getUserId(), _group.getGroupId(),
 			_siteNavigationMenu.getSiteNavigationMenuId(), 0,
@@ -552,35 +539,31 @@ public class SiteNavigationMenuItemLocalServiceTest {
 			UnicodePropertiesBuilder.put(
 				"name", StringUtil.randomString(1000)
 			).buildString(),
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	@Test(expected = InvalidSiteNavigationMenuItemTypeException.class)
 	public void testInvalidSiteNavigationMenuItemType() throws PortalException {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		_siteNavigationMenuItemLocalService.addSiteNavigationMenuItem(
 			TestPropsValues.getUserId(), _group.getGroupId(),
 			_siteNavigationMenu.getSiteNavigationMenuId(), 0,
-			"invalidMenuItemType", StringPool.BLANK, serviceContext);
+			"invalidMenuItemType", StringPool.BLANK,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	@Test
 	public void testSiteNavigationMenuItemInvalidCustomAttribute()
 		throws PortalException {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		SiteNavigationMenuItem siteNavigationMenuItem =
 			_siteNavigationMenuItemLocalService.addSiteNavigationMenuItem(
 				TestPropsValues.getUserId(), _group.getGroupId(),
 				_siteNavigationMenu.getSiteNavigationMenuId(), 0,
 				SiteNavigationMenuItemTypeConstants.LAYOUT, StringPool.BLANK,
-				serviceContext);
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
 
 		_expandoBridge.setClassPK(
 			siteNavigationMenuItem.getSiteNavigationMenuItemId());

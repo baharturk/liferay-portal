@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.taglib.servlet.taglib;
@@ -24,15 +15,18 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistryUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
 import com.liferay.taglib.util.IncludeTag;
 
 import java.util.Objects;
@@ -51,6 +45,10 @@ public class InputTag extends IncludeTag {
 
 	public long getClassPK() {
 		return _classPK;
+	}
+
+	public String getHelpMessage() {
+		return _helpMessage;
 	}
 
 	public String getInputAddon() {
@@ -89,6 +87,10 @@ public class InputTag extends IncludeTag {
 		_disabled = disabled;
 	}
 
+	public void setHelpMessage(String helpMessage) {
+		_helpMessage = helpMessage;
+	}
+
 	public void setInputAddon(String inputAddon) {
 		_inputAddon = inputAddon;
 	}
@@ -123,6 +125,7 @@ public class InputTag extends IncludeTag {
 		_className = null;
 		_classPK = 0;
 		_disabled = false;
+		_helpMessage = null;
 		_inputAddon = null;
 		_localizable = true;
 		_name = _DEFAULT_NAME;
@@ -149,6 +152,8 @@ public class InputTag extends IncludeTag {
 			"liferay-friendly-url:input:friendlyURLMaxLength",
 			_FRIENDLY_URL_MAX_LENGTH);
 		httpServletRequest.setAttribute(
+			"liferay-friendly-url:input:helpMessage", getHelpMessage());
+		httpServletRequest.setAttribute(
 			"liferay-friendly-url:input:inputAddon", getInputAddon());
 		httpServletRequest.setAttribute(
 			"liferay-friendly-url:input:localizable", isLocalizable());
@@ -174,6 +179,25 @@ public class InputTag extends IncludeTag {
 
 	private String _getFallbackValue() {
 		try {
+			if (Objects.equals(getClassName(), FileEntry.class.getName())) {
+				return StringPool.BLANK;
+			}
+
+			if (Objects.equals(getClassName(), Layout.class.getName())) {
+				Layout layout = LayoutLocalServiceUtil.fetchLayout(
+					getClassPK());
+
+				if (layout == null) {
+					return StringPool.BLANK;
+				}
+
+				if (isLocalizable()) {
+					return layout.getFriendlyURLsXML();
+				}
+
+				return layout.getFriendlyURL();
+			}
+
 			String urlTitle = BeanPropertiesUtil.getString(
 				_getModel(), "urlTitle");
 
@@ -195,6 +219,10 @@ public class InputTag extends IncludeTag {
 				languageId, "UrlTitle");
 		}
 		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
 			return StringPool.BLANK;
 		}
 	}
@@ -220,6 +248,10 @@ public class InputTag extends IncludeTag {
 				return StringPool.BLANK;
 			}
 
+			if (Objects.equals(getClassName(), Layout.class.getName())) {
+				return _getFallbackValue();
+			}
+
 			FriendlyURLEntry mainFriendlyURLEntry =
 				FriendlyURLEntryLocalServiceUtil.getMainFriendlyURLEntry(
 					PortalUtil.getClassNameId(_getActualClassName()),
@@ -233,6 +265,10 @@ public class InputTag extends IncludeTag {
 		}
 		catch (NoSuchFriendlyURLEntryMappingException
 					noSuchFriendlyURLEntryMappingException) {
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchFriendlyURLEntryMappingException);
+			}
 
 			return _getFallbackValue();
 		}
@@ -255,9 +291,12 @@ public class InputTag extends IncludeTag {
 
 	private static final String _PAGE = "/input/page.jsp";
 
+	private static final Log _log = LogFactoryUtil.getLog(InputTag.class);
+
 	private String _className;
 	private long _classPK;
 	private boolean _disabled;
+	private String _helpMessage;
 	private String _inputAddon;
 	private boolean _localizable = true;
 	private String _name = _DEFAULT_NAME;

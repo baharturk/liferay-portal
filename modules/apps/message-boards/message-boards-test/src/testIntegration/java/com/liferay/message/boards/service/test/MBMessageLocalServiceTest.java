@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.test;
@@ -17,7 +8,6 @@ package com.liferay.message.boards.service.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.message.boards.constants.MBCategoryConstants;
 import com.liferay.message.boards.constants.MBMessageConstants;
-import com.liferay.message.boards.exception.DuplicateMessageExternalReferenceCodeException;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.MBMessageLocalServiceUtil;
@@ -40,6 +30,8 @@ import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PropsValues;
 
@@ -85,15 +77,12 @@ public class MBMessageLocalServiceTest {
 		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
 			Collections.emptyList();
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		MBMessage message = MBMessageLocalServiceUtil.addMessage(
 			TestPropsValues.getUserId(), RandomTestUtil.randomString(),
 			_group.getGroupId(), MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			subject, body, "bbcode", inputStreamOVPs, false, 0.0, false,
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		Assert.assertEquals(subject, message.getSubject());
 		Assert.assertEquals(subject, message.getBody());
@@ -106,15 +95,12 @@ public class MBMessageLocalServiceTest {
 		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
 			Collections.emptyList();
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		MBMessage message = MBMessageLocalServiceUtil.addMessage(
 			TestPropsValues.getUserId(), RandomTestUtil.randomString(),
 			_group.getGroupId(), MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			subject, body, "html", inputStreamOVPs, false, 0.0, false,
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		Assert.assertEquals(subject, message.getSubject());
 		Assert.assertEquals(HtmlUtil.escape(subject), message.getBody());
@@ -129,15 +115,12 @@ public class MBMessageLocalServiceTest {
 		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
 			Collections.emptyList();
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		MBMessage message = MBMessageLocalServiceUtil.addMessage(
 			TestPropsValues.getUserId(), RandomTestUtil.randomString(),
 			_group.getGroupId(), MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			subject, body, "bbcode", inputStreamOVPs, false, 0.0, false,
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		Assert.assertEquals(subject, message.getSubject());
 		Assert.assertEquals(subject, message.getBody());
@@ -172,39 +155,6 @@ public class MBMessageLocalServiceTest {
 		Assert.assertEquals(subject, mbMessage.getBody());
 	}
 
-	@Test(expected = DuplicateMessageExternalReferenceCodeException.class)
-	public void testAddMessageWithExistingExternalReferenceCode()
-		throws Exception {
-
-		User user = TestPropsValues.getUser();
-
-		MBMessage message = addMessage();
-
-		MBMessageLocalServiceUtil.addMessage(
-			message.getExternalReferenceCode(), user.getUserId(),
-			user.getFullName(), _group.getGroupId(),
-			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID, 0, 0,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			MBMessageConstants.DEFAULT_FORMAT, Collections.emptyList(), false,
-			0.0, false, ServiceContextTestUtil.getServiceContext());
-	}
-
-	@Test
-	public void testAddMessageWithExternalReferenceCode() throws Exception {
-		String externalReferenceCode = RandomTestUtil.randomString();
-		User user = TestPropsValues.getUser();
-
-		MBMessage mbMessage = MBMessageLocalServiceUtil.addMessage(
-			externalReferenceCode, user.getUserId(), user.getFullName(),
-			_group.getGroupId(), MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-			0, 0, RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			MBMessageConstants.DEFAULT_FORMAT, Collections.emptyList(), false,
-			0.0, false, ServiceContextTestUtil.getServiceContext());
-
-		Assert.assertEquals(
-			externalReferenceCode, mbMessage.getExternalReferenceCode());
-	}
-
 	@Test
 	public void testAddMessageWithNullBody() throws Exception {
 		User user = TestPropsValues.getUser();
@@ -236,59 +186,73 @@ public class MBMessageLocalServiceTest {
 	public void testAddMessageWithoutExternalReferenceCode() throws Exception {
 		User user = TestPropsValues.getUser();
 
-		MBMessage mbMessage = MBMessageLocalServiceUtil.addMessage(
+		MBMessage mbMessage1 = MBMessageLocalServiceUtil.addMessage(
 			user.getUserId(), user.getFullName(), _group.getGroupId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			ServiceContextTestUtil.getServiceContext());
 
-		Assert.assertEquals(
-			String.valueOf(mbMessage.getMessageId()),
-			mbMessage.getExternalReferenceCode());
+		String externalReferenceCode = mbMessage1.getExternalReferenceCode();
+
+		Assert.assertEquals(externalReferenceCode, mbMessage1.getUuid());
+
+		MBMessage mbMessage2 =
+			MBMessageLocalServiceUtil.getMBMessageByExternalReferenceCode(
+				externalReferenceCode, _group.getGroupId());
+
+		Assert.assertEquals(mbMessage1, mbMessage2);
 	}
 
 	@Test
 	public void testAddXSSMessageWithInvalidFormat() throws Exception {
-		String subject = "<script>alert(1)</script>";
-		String body = "<script>alert(2)</script>";
-		String format = "text/plain";
-		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
-			Collections.emptyList();
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.portal.security.antisamy.internal." +
+					"AntiSamySanitizerImpl",
+				LoggerTestUtil.WARN)) {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
+			String subject = "<script>alert(1)</script>";
+			String body = "<script>alert(2)</script>";
+			String format = "text/plain";
+			List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
+				Collections.emptyList();
 
-		MBMessage message = MBMessageLocalServiceUtil.addMessage(
-			TestPropsValues.getUserId(), RandomTestUtil.randomString(),
-			_group.getGroupId(), MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-			subject, body, format, inputStreamOVPs, false, 0.0, false,
-			serviceContext);
+			MBMessage message = MBMessageLocalServiceUtil.addMessage(
+				TestPropsValues.getUserId(), RandomTestUtil.randomString(),
+				_group.getGroupId(),
+				MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID, subject, body,
+				format, inputStreamOVPs, false, 0.0, false,
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
 
-		Assert.assertEquals(subject, message.getSubject());
-		Assert.assertEquals(StringPool.BLANK, message.getBody());
-		Assert.assertEquals("html", message.getFormat());
+			Assert.assertEquals(subject, message.getSubject());
+			Assert.assertEquals(StringPool.BLANK, message.getBody());
+			Assert.assertEquals("html", message.getFormat());
+		}
 	}
 
 	@Test
 	public void testAddXSSSubjectWithEmptyBodyMessage() throws Exception {
-		String subject = "<script>alert(1)</script>";
-		String body = StringPool.BLANK;
-		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
-			Collections.emptyList();
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.portal.security.antisamy.internal." +
+					"AntiSamySanitizerImpl",
+				LoggerTestUtil.WARN)) {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
+			String subject = "<script>alert(1)</script>";
+			String body = StringPool.BLANK;
+			List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
+				Collections.emptyList();
 
-		MBMessage message = MBMessageLocalServiceUtil.addMessage(
-			TestPropsValues.getUserId(), RandomTestUtil.randomString(),
-			_group.getGroupId(), MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-			subject, body, "html", inputStreamOVPs, false, 0.0, false,
-			serviceContext);
+			MBMessage message = MBMessageLocalServiceUtil.addMessage(
+				TestPropsValues.getUserId(), RandomTestUtil.randomString(),
+				_group.getGroupId(),
+				MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID, subject, body,
+				"html", inputStreamOVPs, false, 0.0, false,
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
 
-		Assert.assertEquals(subject, message.getSubject());
-		Assert.assertEquals(HtmlUtil.escape(subject), message.getBody());
+			Assert.assertEquals(subject, message.getSubject());
+			Assert.assertEquals(HtmlUtil.escape(subject), message.getBody());
+		}
 	}
 
 	@Test(expected = PortalException.class)
@@ -407,14 +371,11 @@ public class MBMessageLocalServiceTest {
 
 		Assert.assertEquals(mbThread.getModifiedDate(), date);
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		MBMessageLocalServiceUtil.updateMessage(
 			message.getUserId(), message.getMessageId(), message.getSubject(),
 			RandomTestUtil.randomString(), Collections.emptyList(), 0, false,
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		mbThread = message.getThread();
 
@@ -433,14 +394,12 @@ public class MBMessageLocalServiceTest {
 
 		Assert.assertEquals(mbThread.getModifiedDate(), date);
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		MBMessageLocalServiceUtil.updateMessage(
 			message.getUserId(), message.getMessageId(),
 			RandomTestUtil.randomString(), message.getBody(),
-			Collections.emptyList(), 0, false, serviceContext);
+			Collections.emptyList(), 0, false,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		mbThread = message.getThread();
 

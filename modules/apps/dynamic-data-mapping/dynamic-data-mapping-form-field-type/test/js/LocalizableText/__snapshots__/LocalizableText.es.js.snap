@@ -6,7 +6,6 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -48,7 +47,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                 role="presentation"
               >
                 <use
-                  xlink:href="#ja-jp"
+                  href="#ja-jp"
                 />
               </svg>
             </span>
@@ -61,16 +60,23 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
+              role="presentation"
               style="left: -999px; top: -995px;"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -89,7 +95,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -112,10 +118,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -134,7 +144,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -157,10 +167,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -179,7 +193,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -202,10 +216,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -224,7 +242,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -247,10 +265,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -269,7 +291,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -292,10 +314,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -314,7 +340,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -337,10 +363,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -359,7 +389,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -382,10 +412,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -404,7 +438,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -427,10 +461,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -449,7 +487,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -472,10 +510,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -494,7 +536,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -517,10 +559,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -539,7 +585,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -562,10 +608,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -584,7 +634,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -607,10 +657,14 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -629,7 +683,7 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -663,7 +717,6 @@ exports[`Field LocalizableText adds a new translation for an untranslated item 1
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -674,7 +727,6 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -705,7 +757,6 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
             aria-haspopup="true"
             class="dropdown-toggle btn btn-monospaced btn-secondary"
             data-testid="triggerButton"
-            style=""
             type="button"
           >
             <span
@@ -716,7 +767,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                 role="presentation"
               >
                 <use
-                  xlink:href="#en-us"
+                  href="#en-us"
                 />
               </svg>
             </span>
@@ -729,16 +780,22 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
-              style="left: -999px; top: -995px;"
+              role="presentation"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -757,7 +814,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -780,10 +837,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -802,7 +863,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -825,10 +886,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -847,7 +912,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -870,10 +935,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -892,7 +961,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -915,10 +984,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -937,7 +1010,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -960,10 +1033,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -982,7 +1059,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -1005,10 +1082,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1027,7 +1108,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -1050,10 +1131,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1072,7 +1157,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -1095,10 +1180,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1117,7 +1206,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -1140,10 +1229,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1162,7 +1255,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -1185,10 +1278,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1207,7 +1304,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -1230,10 +1327,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1252,7 +1353,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -1275,10 +1376,14 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1297,7 +1402,7 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -1331,7 +1436,6 @@ exports[`Field LocalizableText emits field edit event on field change 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -1342,7 +1446,6 @@ exports[`Field LocalizableText fills with the default language value when the se
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -1384,7 +1487,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                 role="presentation"
               >
                 <use
-                  xlink:href="#ja-jp"
+                  href="#ja-jp"
                 />
               </svg>
             </span>
@@ -1397,16 +1500,23 @@ exports[`Field LocalizableText fills with the default language value when the se
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
+              role="presentation"
               style="left: -999px; top: -995px;"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1425,7 +1535,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -1448,10 +1558,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1470,7 +1584,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -1493,10 +1607,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1515,7 +1633,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -1538,10 +1656,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1560,7 +1682,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -1583,10 +1705,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1605,7 +1731,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -1628,10 +1754,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1650,7 +1780,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -1673,10 +1803,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1695,7 +1829,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -1718,10 +1852,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1740,7 +1878,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -1763,10 +1901,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1785,7 +1927,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -1808,10 +1950,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1830,7 +1976,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -1853,10 +1999,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1875,7 +2025,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -1898,10 +2048,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1920,7 +2074,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -1943,10 +2097,14 @@ exports[`Field LocalizableText fills with the default language value when the se
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -1965,7 +2123,7 @@ exports[`Field LocalizableText fills with the default language value when the se
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -1999,7 +2157,6 @@ exports[`Field LocalizableText fills with the default language value when the se
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -2010,7 +2167,6 @@ exports[`Field LocalizableText fills with the selected language value when the s
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -2052,7 +2208,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                 role="presentation"
               >
                 <use
-                  xlink:href="#ca-es"
+                  href="#ca-es"
                 />
               </svg>
             </span>
@@ -2065,16 +2221,23 @@ exports[`Field LocalizableText fills with the selected language value when the s
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
+              role="presentation"
               style="left: -999px; top: -995px;"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2093,7 +2256,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -2116,10 +2279,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2138,7 +2305,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -2161,10 +2328,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2183,7 +2354,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -2206,10 +2377,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2228,7 +2403,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -2251,10 +2426,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2273,7 +2452,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -2296,10 +2475,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2318,7 +2501,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -2341,10 +2524,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2363,7 +2550,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -2386,10 +2573,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2408,7 +2599,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -2431,10 +2622,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2453,7 +2648,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -2476,10 +2671,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2498,7 +2697,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -2521,10 +2720,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2543,7 +2746,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -2566,10 +2769,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2588,7 +2795,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -2611,10 +2818,14 @@ exports[`Field LocalizableText fills with the selected language value when the s
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2633,7 +2844,7 @@ exports[`Field LocalizableText fills with the selected language value when the s
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -2667,7 +2878,6 @@ exports[`Field LocalizableText fills with the selected language value when the s
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -2679,9 +2889,8 @@ exports[`Field LocalizableText has a label 1`] = `
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
   >
     <label
+      aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
       class="ddm-label"
-      for="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-      tabindex="0"
     >
       label
     </label>
@@ -2714,7 +2923,6 @@ exports[`Field LocalizableText has a label 1`] = `
             aria-haspopup="true"
             class="dropdown-toggle btn btn-monospaced btn-secondary"
             data-testid="triggerButton"
-            style=""
             type="button"
           >
             <span
@@ -2725,7 +2933,7 @@ exports[`Field LocalizableText has a label 1`] = `
                 role="presentation"
               >
                 <use
-                  xlink:href="#en-us"
+                  href="#en-us"
                 />
               </svg>
             </span>
@@ -2738,16 +2946,22 @@ exports[`Field LocalizableText has a label 1`] = `
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
-              style="left: -999px; top: -995px;"
+              role="presentation"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2766,7 +2980,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -2789,10 +3003,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2811,7 +3029,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -2834,10 +3052,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2856,7 +3078,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -2879,10 +3101,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2901,7 +3127,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -2924,10 +3150,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2946,7 +3176,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -2969,10 +3199,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -2991,7 +3225,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -3014,10 +3248,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3036,7 +3274,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -3059,10 +3297,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3081,7 +3323,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -3104,10 +3346,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3126,7 +3372,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -3149,10 +3395,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3171,7 +3421,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -3194,10 +3444,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3216,7 +3470,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -3239,10 +3493,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3261,7 +3519,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -3284,10 +3542,14 @@ exports[`Field LocalizableText has a label 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3306,7 +3568,7 @@ exports[`Field LocalizableText has a label 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -3340,7 +3602,12 @@ exports[`Field LocalizableText has a label 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <span
+      class="sr-only"
+      id="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
+    >
+      label
+    </span>
   </div>
 </div>
 `;
@@ -3351,7 +3618,6 @@ exports[`Field LocalizableText has a placeholder 1`] = `
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -3382,7 +3648,6 @@ exports[`Field LocalizableText has a placeholder 1`] = `
             aria-haspopup="true"
             class="dropdown-toggle btn btn-monospaced btn-secondary"
             data-testid="triggerButton"
-            style=""
             type="button"
           >
             <span
@@ -3393,7 +3658,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                 role="presentation"
               >
                 <use
-                  xlink:href="#en-us"
+                  href="#en-us"
                 />
               </svg>
             </span>
@@ -3406,16 +3671,22 @@ exports[`Field LocalizableText has a placeholder 1`] = `
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
-              style="left: -999px; top: -995px;"
+              role="presentation"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3434,7 +3705,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -3457,10 +3728,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3479,7 +3754,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -3502,10 +3777,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3524,7 +3803,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -3547,10 +3826,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3569,7 +3852,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -3592,10 +3875,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3614,7 +3901,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -3637,10 +3924,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3659,7 +3950,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -3682,10 +3973,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3704,7 +3999,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -3727,10 +4022,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3749,7 +4048,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -3772,10 +4071,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3794,7 +4097,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -3817,10 +4120,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3839,7 +4146,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -3862,10 +4169,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3884,7 +4195,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -3907,10 +4218,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3929,7 +4244,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -3952,10 +4267,14 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -3974,7 +4293,7 @@ exports[`Field LocalizableText has a placeholder 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -4008,7 +4327,6 @@ exports[`Field LocalizableText has a placeholder 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -4019,7 +4337,6 @@ exports[`Field LocalizableText is not readOnly 1`] = `
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -4050,7 +4367,6 @@ exports[`Field LocalizableText is not readOnly 1`] = `
             aria-haspopup="true"
             class="dropdown-toggle btn btn-monospaced btn-secondary"
             data-testid="triggerButton"
-            style=""
             type="button"
           >
             <span
@@ -4061,7 +4377,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                 role="presentation"
               >
                 <use
-                  xlink:href="#en-us"
+                  href="#en-us"
                 />
               </svg>
             </span>
@@ -4074,16 +4390,22 @@ exports[`Field LocalizableText is not readOnly 1`] = `
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
-              style="left: -999px; top: -995px;"
+              role="presentation"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4102,7 +4424,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -4125,10 +4447,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4147,7 +4473,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -4170,10 +4496,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4192,7 +4522,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -4215,10 +4545,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4237,7 +4571,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -4260,10 +4594,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4282,7 +4620,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -4305,10 +4643,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4327,7 +4669,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -4350,10 +4692,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4372,7 +4718,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -4395,10 +4741,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4417,7 +4767,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -4440,10 +4790,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4462,7 +4816,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -4485,10 +4839,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4507,7 +4865,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -4530,10 +4888,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4552,7 +4914,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -4575,10 +4937,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4597,7 +4963,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -4620,10 +4986,14 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4642,7 +5012,7 @@ exports[`Field LocalizableText is not readOnly 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -4676,7 +5046,6 @@ exports[`Field LocalizableText is not readOnly 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -4687,7 +5056,6 @@ exports[`Field LocalizableText is not required 1`] = `
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -4718,7 +5086,6 @@ exports[`Field LocalizableText is not required 1`] = `
             aria-haspopup="true"
             class="dropdown-toggle btn btn-monospaced btn-secondary"
             data-testid="triggerButton"
-            style=""
             type="button"
           >
             <span
@@ -4729,7 +5096,7 @@ exports[`Field LocalizableText is not required 1`] = `
                 role="presentation"
               >
                 <use
-                  xlink:href="#en-us"
+                  href="#en-us"
                 />
               </svg>
             </span>
@@ -4742,16 +5109,22 @@ exports[`Field LocalizableText is not required 1`] = `
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
-              style="left: -999px; top: -995px;"
+              role="presentation"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4770,7 +5143,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -4793,10 +5166,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4815,7 +5192,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -4838,10 +5215,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4860,7 +5241,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -4883,10 +5264,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4905,7 +5290,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -4928,10 +5313,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4950,7 +5339,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -4973,10 +5362,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -4995,7 +5388,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -5018,10 +5411,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5040,7 +5437,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -5063,10 +5460,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5085,7 +5486,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -5108,10 +5509,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5130,7 +5535,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -5153,10 +5558,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5175,7 +5584,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -5198,10 +5607,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5220,7 +5633,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -5243,10 +5656,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5265,7 +5682,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -5288,10 +5705,14 @@ exports[`Field LocalizableText is not required 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5310,7 +5731,7 @@ exports[`Field LocalizableText is not required 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -5344,7 +5765,6 @@ exports[`Field LocalizableText is not required 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -5355,7 +5775,6 @@ exports[`Field LocalizableText removes the translation of an item already transl
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -5397,7 +5816,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                 role="presentation"
               >
                 <use
-                  xlink:href="#pt-br"
+                  href="#pt-br"
                 />
               </svg>
             </span>
@@ -5410,16 +5829,23 @@ exports[`Field LocalizableText removes the translation of an item already transl
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
+              role="presentation"
               style="left: -999px; top: -995px;"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5438,7 +5864,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -5461,10 +5887,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5483,7 +5913,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -5506,10 +5936,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5528,7 +5962,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -5551,10 +5985,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5573,7 +6011,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -5596,10 +6034,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5618,7 +6060,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -5641,10 +6083,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5663,7 +6109,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -5686,10 +6132,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5708,7 +6158,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -5731,10 +6181,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5753,7 +6207,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -5776,10 +6230,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5798,7 +6256,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -5821,10 +6279,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5843,7 +6305,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -5866,10 +6328,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5888,7 +6354,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -5911,10 +6377,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5933,7 +6403,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -5956,10 +6426,14 @@ exports[`Field LocalizableText removes the translation of an item already transl
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -5978,7 +6452,7 @@ exports[`Field LocalizableText removes the translation of an item already transl
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -6012,7 +6486,6 @@ exports[`Field LocalizableText removes the translation of an item already transl
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -6023,7 +6496,6 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -6054,7 +6526,6 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
             aria-haspopup="true"
             class="dropdown-toggle btn btn-monospaced btn-secondary"
             data-testid="triggerButton"
-            style=""
             type="button"
           >
             <span
@@ -6065,7 +6536,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                 role="presentation"
               >
                 <use
-                  xlink:href="#en-us"
+                  href="#en-us"
                 />
               </svg>
             </span>
@@ -6078,16 +6549,22 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
-              style="left: -999px; top: -995px;"
+              role="presentation"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6106,7 +6583,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -6129,10 +6606,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6151,7 +6632,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -6174,10 +6655,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6196,7 +6681,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -6219,10 +6704,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6241,7 +6730,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -6264,10 +6753,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6286,7 +6779,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -6309,10 +6802,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6331,7 +6828,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -6354,10 +6851,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6376,7 +6877,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -6399,10 +6900,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6421,7 +6926,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -6444,10 +6949,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6466,7 +6975,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -6489,10 +6998,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6511,7 +7024,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -6534,10 +7047,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6556,7 +7073,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -6579,10 +7096,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6601,7 +7122,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -6624,10 +7145,14 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6646,7 +7171,7 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -6680,7 +7205,6 @@ exports[`Field LocalizableText renders no values when values come empty 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -6691,7 +7215,6 @@ exports[`Field LocalizableText renders values 1`] = `
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -6722,7 +7245,6 @@ exports[`Field LocalizableText renders values 1`] = `
             aria-haspopup="true"
             class="dropdown-toggle btn btn-monospaced btn-secondary"
             data-testid="triggerButton"
-            style=""
             type="button"
           >
             <span
@@ -6733,7 +7255,7 @@ exports[`Field LocalizableText renders values 1`] = `
                 role="presentation"
               >
                 <use
-                  xlink:href="#en-us"
+                  href="#en-us"
                 />
               </svg>
             </span>
@@ -6746,16 +7268,22 @@ exports[`Field LocalizableText renders values 1`] = `
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
-              style="left: -999px; top: -995px;"
+              role="presentation"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6774,7 +7302,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -6797,10 +7325,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6819,7 +7351,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -6842,10 +7374,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6864,7 +7400,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -6887,10 +7423,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6909,7 +7449,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -6932,10 +7472,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6954,7 +7498,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -6977,10 +7521,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -6999,7 +7547,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -7022,10 +7570,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7044,7 +7596,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -7067,10 +7619,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7089,7 +7645,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -7112,10 +7668,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7134,7 +7694,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -7157,10 +7717,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7179,7 +7743,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -7202,10 +7766,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7224,7 +7792,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -7247,10 +7815,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7269,7 +7841,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -7292,10 +7864,14 @@ exports[`Field LocalizableText renders values 1`] = `
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7314,7 +7890,7 @@ exports[`Field LocalizableText renders values 1`] = `
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -7348,7 +7924,6 @@ exports[`Field LocalizableText renders values 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -7359,7 +7934,6 @@ exports[`Field LocalizableText shows default language value when no other langua
     aria-labelledby="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US_fieldDetails"
     class="form-group hide"
     data-field-name="_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US"
-    tabindex="0"
   >
     <div
       class="input-group"
@@ -7390,7 +7964,6 @@ exports[`Field LocalizableText shows default language value when no other langua
             aria-haspopup="true"
             class="dropdown-toggle btn btn-monospaced btn-secondary"
             data-testid="triggerButton"
-            style=""
             type="button"
           >
             <span
@@ -7401,7 +7974,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                 role="presentation"
               >
                 <use
-                  xlink:href="#en-us"
+                  href="#en-us"
                 />
               </svg>
             </span>
@@ -7414,16 +7987,22 @@ exports[`Field LocalizableText shows default language value when no other langua
           </button>
           <div>
             <div
+              aria-hidden="true"
               class="dropdown-menu"
-              style="left: -999px; top: -995px;"
+              role="presentation"
             >
               <ul
                 class="list-unstyled"
+                role="menu"
               >
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownen_US"
+                    name="undefineden_US"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7442,7 +8021,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#en-us"
+                                href="#en-us"
                               />
                             </svg>
                           </span>
@@ -7465,10 +8044,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownar_SA"
+                    name="undefinedar_SA"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7487,7 +8070,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ar-sa"
+                                href="#ar-sa"
                               />
                             </svg>
                           </span>
@@ -7510,10 +8093,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownca_ES"
+                    name="undefinedca_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7532,7 +8119,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ca-es"
+                                href="#ca-es"
                               />
                             </svg>
                           </span>
@@ -7555,10 +8142,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownzh_CN"
+                    name="undefinedzh_CN"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7577,7 +8168,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#zh-cn"
+                                href="#zh-cn"
                               />
                             </svg>
                           </span>
@@ -7600,10 +8191,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownnl_NL"
+                    name="undefinednl_NL"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7622,7 +8217,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#nl-nl"
+                                href="#nl-nl"
                               />
                             </svg>
                           </span>
@@ -7645,10 +8240,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfi_FI"
+                    name="undefinedfi_FI"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7667,7 +8266,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fi-fi"
+                                href="#fi-fi"
                               />
                             </svg>
                           </span>
@@ -7690,10 +8289,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownfr_FR"
+                    name="undefinedfr_FR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7712,7 +8315,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#fr-fr"
+                                href="#fr-fr"
                               />
                             </svg>
                           </span>
@@ -7735,10 +8338,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownde_DE"
+                    name="undefinedde_DE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7757,7 +8364,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#de-de"
+                                href="#de-de"
                               />
                             </svg>
                           </span>
@@ -7780,10 +8387,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownhu_HU"
+                    name="undefinedhu_HU"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7802,7 +8413,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#hu-hu"
+                                href="#hu-hu"
                               />
                             </svg>
                           </span>
@@ -7825,10 +8436,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownja_JP"
+                    name="undefinedja_JP"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7847,7 +8462,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#ja-jp"
+                                href="#ja-jp"
                               />
                             </svg>
                           </span>
@@ -7870,10 +8485,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownpt_BR"
+                    name="undefinedpt_BR"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7892,7 +8511,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#pt-br"
+                                href="#pt-br"
                               />
                             </svg>
                           </span>
@@ -7915,10 +8534,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownes_ES"
+                    name="undefinedes_ES"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7937,7 +8560,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#es-es"
+                                href="#es-es"
                               />
                             </svg>
                           </span>
@@ -7960,10 +8583,14 @@ exports[`Field LocalizableText shows default language value when no other langua
                     </span>
                   </button>
                 </li>
-                <li>
+                <li
+                  role="presentation"
+                >
                   <button
                     class="dropdown-item custom-dropdown-item-row"
                     data-testid="availableLocalesDropdownsv_SE"
+                    name="undefinedsv_SE"
+                    role="menuitem"
                   >
                     <span
                       class="autofit-row"
@@ -7982,7 +8609,7 @@ exports[`Field LocalizableText shows default language value when no other langua
                               role="presentation"
                             >
                               <use
-                                xlink:href="#sv-se"
+                                href="#sv-se"
                               />
                             </svg>
                           </span>
@@ -8016,7 +8643,6 @@ exports[`Field LocalizableText shows default language value when no other langua
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;

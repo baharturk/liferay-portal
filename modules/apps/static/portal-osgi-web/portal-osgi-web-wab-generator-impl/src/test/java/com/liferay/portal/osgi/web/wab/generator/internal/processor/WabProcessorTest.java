@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.wab.generator.internal.processor;
@@ -43,19 +34,20 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -95,7 +87,7 @@ public class WabProcessorTest {
 
 	@Test
 	public void testClassicThemeWab() throws Exception {
-		File file = getFile("/classic-theme.autodeployed.war");
+		File file = getFile("dependencies/classic-theme.autodeployed.war");
 
 		try (Jar jar = new Jar(file)) {
 			Assert.assertNull(jar.getBsn());
@@ -207,7 +199,7 @@ public class WabProcessorTest {
 	@Test
 	public void testFatCDIWabOptsOutOfOSGiCDIIntegration() throws Exception {
 		WabProcessor wabProcessor = new TestWabProcessor(
-			getFile("/jsf.cdi.applicant.portlet.war"),
+			getFile("dependencies/jsf.cdi.applicant.portlet.war"),
 			Collections.singletonMap(
 				"Web-ContextPath",
 				new String[] {"/jsf-cdi-applicant-portlet"}));
@@ -292,7 +284,7 @@ public class WabProcessorTest {
 	@Test
 	public void testSkinnyCDIWabGainsOSGiCDIIntegration() throws Exception {
 		WabProcessor wabProcessor = new TestWabProcessor(
-			getFile("/PortletV3AnnotatedDemo.war"),
+			getFile("dependencies/PortletV3AnnotatedDemo.war"),
 			Collections.singletonMap(
 				"Web-ContextPath",
 				new String[] {"/portlet-V3-annotated-demo"}));
@@ -404,7 +396,7 @@ public class WabProcessorTest {
 	@Test
 	public void testThatEmbeddedLibsAreHandledProperly() throws Exception {
 		WabProcessor wabProcessor = new TestWabProcessor(
-			getFile("/tck-V3URLTests.wab.war"),
+			getFile("dependencies/tck-V3URLTests.wab.war"),
 			Collections.singletonMap(
 				"Web-ContextPath",
 				new String[] {"/portlet-V3-annotated-demo"}));
@@ -555,15 +547,32 @@ public class WabProcessorTest {
 
 				File parent = deployDir.getParentFile();
 
-				Stream<Path> pathsStream = Files.walk(parent.toPath());
+				Files.walkFileTree(
+					parent.toPath(),
+					new SimpleFileVisitor<Path>() {
 
-				pathsStream.sorted(
-					Comparator.reverseOrder()
-				).map(
-					Path::toFile
-				).forEach(
-					File::delete
-				);
+						@Override
+						public FileVisitResult postVisitDirectory(
+								Path path, IOException ioException)
+							throws IOException {
+
+							Files.delete(path);
+
+							return FileVisitResult.CONTINUE;
+						}
+
+						@Override
+						public FileVisitResult visitFile(
+								Path path,
+								BasicFileAttributes basicFileAttributes)
+							throws IOException {
+
+							Files.delete(path);
+
+							return FileVisitResult.CONTINUE;
+						}
+
+					});
 
 				parent.mkdirs();
 

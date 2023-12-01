@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -100,7 +91,7 @@ if (commerceNotificationTemplate != null) {
 		>
 			<div class="row">
 				<div class="col-12">
-					<label for="<portlet:namespace />toFieldWrapper"><%= LanguageUtil.get(resourceBundle, "to") %></label>
+					<label for="<portlet:namespace />toFieldWrapper"><liferay-ui:message key="to" /></label>
 
 					<aui:field-wrapper label="" name="toFieldWrapper">
 						<liferay-ui:input-localized
@@ -152,7 +143,7 @@ if (commerceNotificationTemplate != null) {
 		<commerce-ui:panel
 			title='<%= LanguageUtil.get(resourceBundle, "email-content") %>'
 		>
-			<label for="<portlet:namespace />subjectFieldWrapper"><%= LanguageUtil.get(resourceBundle, "subject") %></label>
+			<label for="<portlet:namespace />subjectFieldWrapper"><liferay-ui:message key="subject" /></label>
 
 			<aui:field-wrapper label="" name="subjectFieldWrapper">
 				<liferay-ui:input-localized
@@ -167,7 +158,7 @@ if (commerceNotificationTemplate != null) {
 			}
 			%>
 
-			<label for="<portlet:namespace />bodyFieldWrapper"><%= LanguageUtil.get(resourceBundle, "body") %></label>
+			<label for="<portlet:namespace />bodyFieldWrapper"><liferay-ui:message key="body" /></label>
 
 			<aui:field-wrapper label="" name="bodyFieldWrapper">
 				<liferay-ui:input-localized
@@ -214,17 +205,19 @@ if (commerceNotificationTemplate != null) {
 		window,
 		'<portlet:namespace />selectType',
 		() => {
-			var A = AUI();
+			const name = document.getElementById('<portlet:namespace />name').value;
+			const description = document.getElementById(
+				'<portlet:namespace />description'
+			).value;
+			const from = document.getElementById('<portlet:namespace />from').value;
+			const fromName = document.getElementById(
+				'<portlet:namespace />fromName'
+			).value;
+			const cc = document.getElementById('<portlet:namespace />cc').value;
+			const bcc = document.getElementById('<portlet:namespace />bcc').value;
+			const type = document.getElementById('<portlet:namespace />type').value;
 
-			var name = A.one('#<portlet:namespace />name').val();
-			var description = A.one('#<portlet:namespace />description').val();
-			var from = A.one('#<portlet:namespace />from').val();
-			var fromName = A.one('#<portlet:namespace />fromName').val();
-			var cc = A.one('#<portlet:namespace />cc').val();
-			var bcc = A.one('#<portlet:namespace />bcc').val();
-			var type = A.one('#<portlet:namespace />type').val();
-
-			var portletURL = new Liferay.PortletURL.createURL(
+			const portletURL = new Liferay.PortletURL.createURL(
 				'<%= currentURLObj %>'
 			);
 

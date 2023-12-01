@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayInput} from '@clayui/form';
@@ -58,15 +52,13 @@ const getTimeOptions = (isAmPm) => {
 };
 
 function UpdateDueDateStep({className, dueDate = new Date()}) {
-	const {isAmPm} = useContext(AppContext);
+	const {isAmPm, timeFormat} = useContext(AppContext);
 	const {setUpdateDueDate, updateDueDate} = useContext(ModalContext);
 
 	const dateFormat = getLocaleDateFormat();
-	const timeFormat = getLocaleDateFormat('LT');
 
 	const dateMask = getMaskByDateFormat(dateFormat);
 
-	const [invalidDate, setInvalidDate] = useState(false);
 	const [comment, setComment] = useState('');
 	const [date, setDate] = useState(
 		formatDate(dueDate, dateFormat, defaultDateFormat)
@@ -74,12 +66,30 @@ function UpdateDueDateStep({className, dueDate = new Date()}) {
 	const [time, setTime] = useState(
 		toUppercase(formatDate(dueDate, timeFormat, defaultDateFormat))
 	);
+	const [validDate, setValidDate] = useState(true);
+	const [validTime, setValidTime] = useState(true);
 
 	useEffect(() => {
 		let newDueDate = null;
+
 		const validDate = isValidDate(date, dateFormat);
 
-		if (validDate && isValidDate(time, timeFormat)) {
+		let validTime = false;
+
+		if (time) {
+			if (isAmPm) {
+				if (time.includes('AM') || time.includes('PM')) {
+					validTime = true;
+				}
+			}
+			else {
+				if (!time.includes('AM') && !time.includes('PM')) {
+					validTime = true;
+				}
+			}
+		}
+
+		if (date && validDate && validTime) {
 			const newDateTime = formatDate(
 				`${date} ${time}`,
 				defaultDateFormat,
@@ -91,8 +101,10 @@ function UpdateDueDateStep({className, dueDate = new Date()}) {
 				: null;
 		}
 
-		setInvalidDate(!validDate);
+		setValidDate(validDate);
+		setValidTime(validTime);
 		setUpdateDueDate({...updateDueDate, dueDate: newDueDate});
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [date, time]);
 
@@ -106,7 +118,7 @@ function UpdateDueDateStep({className, dueDate = new Date()}) {
 				<div className="form-group-autofit">
 					<div
 						className={`form-group-item ${
-							invalidDate && 'has-error'
+							!validDate && 'has-error'
 						}`}
 					>
 						<label htmlFor="dateInput">
@@ -121,15 +133,17 @@ function UpdateDueDateStep({className, dueDate = new Date()}) {
 							className="form-control"
 							mask={dateMask}
 							onChange={({target}) => setDate(target.value)}
-							placeholder={dateFormat}
+							placeholder={Liferay.Language.get(
+								'mm-dd-yyyy'
+							).replace(/[()]/g, '')}
 							value={date}
 						/>
 					</div>
 
 					<UpdateDueDateStep.TimePickerInput
-						format={timeFormat}
 						isAmPm={isAmPm}
 						setValue={setTime}
+						validTime={validTime}
 						value={time}
 					/>
 				</div>
@@ -150,20 +164,15 @@ function UpdateDueDateStep({className, dueDate = new Date()}) {
 	);
 }
 
-function TimePickerInputWithOptions({format, isAmPm, setValue, value}) {
-	const [invalidTime, setInvalidTime] = useState(false);
+function TimePickerInputWithOptions({isAmPm, setValue, validTime, value}) {
 	const [showOptions, setShowOptions] = useState(false);
 	const inputRef = useRef();
 	const options = getTimeOptions(isAmPm);
 
-	useEffect(() => {
-		setInvalidTime(!isValidDate(value, format));
-	}, [format, value]);
-
 	return (
 		<div
 			className={`form-group-item form-group-item-label-spacer ${
-				invalidTime ? 'has-error' : ''
+				!validTime ? 'has-error' : ''
 			}`}
 		>
 			<ClayInput

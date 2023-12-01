@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayButtonWithIcon} from '@clayui/button';
 import {ClayDropDownWithItems} from '@clayui/drop-down';
 import classNames from 'classnames';
 import domAlign from 'dom-align';
+import {sub} from 'frontend-js-web';
 import React, {
 	createContext,
 	forwardRef,
@@ -29,8 +21,12 @@ import React, {
 
 import {useConfig} from '../../core/hooks/useConfig.es';
 import {EVENT_TYPES} from '../actions/eventTypes.es';
-import {useForm} from '../hooks/useForm.es';
+import {useSetSourceItem as useSetKeyboardDNDSourceItem} from '../components/KeyboardDNDContext';
+import {useForm, useFormState} from '../hooks/useForm.es';
 import {useResizeObserver} from '../hooks/useResizeObserver.es';
+import {getFieldChildren} from '../utils/getFieldChildren';
+
+import './Actions.scss';
 
 const ActionsContext = createContext({});
 
@@ -189,11 +185,23 @@ export function ActionsControls({
 
 export const Actions = forwardRef(
 	(
-		{activePage, fieldId, fieldType, isFieldSet, parentFieldName},
+		{
+			activePage,
+			field,
+			fieldId,
+			fieldType,
+			isFieldSelected,
+			isFieldSet,
+			itemPath,
+			parentFieldName,
+		},
 		actionsRef
 	) => {
 		const {fieldTypes} = useConfig();
-		const {actions} = useActions();
+		const formState = useFormState();
+		const {actions, dispatch} = useActions();
+
+		const setKeyboardDNDSourceItem = useSetKeyboardDNDSourceItem();
 
 		const label = useMemo(() => {
 			if (isFieldSet) {
@@ -203,13 +211,93 @@ export const Actions = forwardRef(
 			return fieldTypes.find(({name}) => name === fieldType).label;
 		}, [fieldType, isFieldSet, fieldTypes]);
 
+		const handleEditButtonClick = () => {
+			dispatch({
+				payload: {activePage, field},
+				type: ACTIONS_TYPES.ACTIVE,
+			});
+		};
+
+		const handleDragButtonClick = () => {
+			let parentField;
+			let pageIndex;
+
+			const hasFieldId = (itemWithRows) =>
+				itemWithRows.rows?.some((row) =>
+					row.columns?.some((column) =>
+						column.fields?.some(
+							(field) =>
+								field.fieldName === fieldId ||
+								hasFieldId({
+									...field,
+									rows: getFieldChildren(field),
+								})
+						)
+					)
+				);
+
+			formState.pages.forEach((page, index) => {
+				if (typeof pageIndex === 'number') {
+					return;
+				}
+
+				if (hasFieldId(page)) {
+					pageIndex = index;
+					parentField = {};
+
+					page.rows.forEach((row) => {
+						row.columns.forEach((column) => {
+							column.fields.forEach((field) => {
+								if (hasFieldId(field)) {
+									parentField = field;
+								}
+							});
+						});
+					});
+				}
+			});
+
+			setKeyboardDNDSourceItem({
+				dragType: 'move',
+				fieldName: fieldId,
+				itemPath,
+				pageIndex,
+				parentField,
+			});
+		};
+
 		return (
 			<div
 				className={classNames('ddm-field-actions-container', {
+					'ddm-field-actions-container--selected': isFieldSelected,
 					'ddm-fieldset': isFieldSet,
 				})}
 				ref={actionsRef}
 			>
+				<div className="ddm-field-action-buttons">
+					<ClayButtonWithIcon
+						aria-label={sub(Liferay.Language.get('move-x'), [
+							label,
+						])}
+						className="ddm-field-action-button mr-2 sr-only sr-only-focusable"
+						displayType="primary"
+						onClick={handleDragButtonClick}
+						role="application"
+						symbol="drag"
+					/>
+
+					<ClayButtonWithIcon
+						aria-label={sub(Liferay.Language.get('edit-x'), [
+							label,
+						])}
+						className="ddm-field-action-button mr-2 sr-only sr-only-focusable"
+						displayType="primary"
+						onClick={handleEditButtonClick}
+						role="application"
+						symbol="cog"
+					/>
+				</div>
+
 				<span className="actions-label">{label}</span>
 
 				<ClayDropDownWithItems

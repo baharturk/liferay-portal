@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.invitation.invite.members.service.persistence.impl;
@@ -37,7 +28,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -49,7 +39,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Collections;
@@ -77,7 +66,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {MemberRequestPersistence.class, BasePersistence.class})
+@Component(service = MemberRequestPersistence.class)
 public class MemberRequestPersistenceImpl
 	extends BasePersistenceImpl<MemberRequest>
 	implements MemberRequestPersistence {
@@ -166,7 +155,8 @@ public class MemberRequestPersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByKey, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByKey, finderArgs, this);
 		}
 
 		if (result instanceof MemberRequest) {
@@ -284,7 +274,7 @@ public class MemberRequestPersistenceImpl
 
 		Object[] finderArgs = new Object[] {key};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -437,7 +427,7 @@ public class MemberRequestPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<MemberRequest>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (MemberRequest memberRequest : list) {
@@ -803,7 +793,7 @@ public class MemberRequestPersistenceImpl
 
 		Object[] finderArgs = new Object[] {receiverUserId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -946,7 +936,7 @@ public class MemberRequestPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<MemberRequest>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (MemberRequest memberRequest : list) {
@@ -1336,7 +1326,7 @@ public class MemberRequestPersistenceImpl
 
 		Object[] finderArgs = new Object[] {receiverUserId, status};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1466,7 +1456,8 @@ public class MemberRequestPersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByG_R_S, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByG_R_S, finderArgs, this);
 		}
 
 		if (result instanceof MemberRequest) {
@@ -1590,7 +1581,7 @@ public class MemberRequestPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, receiverUserId, status};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -2089,7 +2080,7 @@ public class MemberRequestPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<MemberRequest>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2159,7 +2150,7 @@ public class MemberRequestPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -2292,30 +2283,14 @@ public class MemberRequestPersistenceImpl
 			},
 			new String[] {"groupId", "receiverUserId", "status"}, false);
 
-		_setMemberRequestUtilPersistence(this);
+		MemberRequestUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setMemberRequestUtilPersistence(null);
+		MemberRequestUtil.setPersistence(null);
 
 		entityCache.removeCache(MemberRequestImpl.class.getName());
-	}
-
-	private void _setMemberRequestUtilPersistence(
-		MemberRequestPersistence memberRequestPersistence) {
-
-		try {
-			Field field = MemberRequestUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, memberRequestPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -2380,9 +2355,5 @@ public class MemberRequestPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private MemberRequestModelArgumentsResolver
-		_memberRequestModelArgumentsResolver;
 
 }

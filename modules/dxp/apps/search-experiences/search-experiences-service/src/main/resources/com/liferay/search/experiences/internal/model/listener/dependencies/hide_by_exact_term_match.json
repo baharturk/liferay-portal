@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Hide results by exact term match."
+		"en_US": "hide-by-exact-term-match-description"
 	},
 	"elementDefinition": {
 		"category": "hide",
@@ -37,12 +37,12 @@
 				{
 					"fields": [
 						{
-							"label": "Field",
+							"label": "field",
 							"name": "field",
 							"type": "fieldMapping"
 						},
 						{
-							"label": "Value",
+							"label": "value",
 							"name": "value",
 							"type": "text"
 						}
@@ -51,7 +51,8 @@
 			]
 		}
 	},
+	"externalReferenceCode": "HIDE_BY_EXACT_TERM_MATCH",
 	"title_i18n": {
-		"en_US": "Hide by Exact Term Match"
+		"en_US": "hide-by-exact-term-match"
 	}
 }

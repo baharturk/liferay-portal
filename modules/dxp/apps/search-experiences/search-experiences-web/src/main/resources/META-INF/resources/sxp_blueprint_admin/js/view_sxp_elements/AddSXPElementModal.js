@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -17,9 +11,11 @@ import getCN from 'classnames';
 import {fetch, navigate} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
-import {DEFAULT_ERROR} from '../utils/constants';
-import {DEFAULT_EDIT_SXP_ELEMENT} from '../utils/data';
-import {isDefined} from '../utils/utils';
+import {CUSTOM_JSON_SXP_ELEMENT} from '../utils/data';
+import {DEFAULT_ERROR} from '../utils/errorMessages';
+import {DEFAULT_HEADERS} from '../utils/fetch/fetch_data';
+import isDefined from '../utils/functions/is_defined';
+import {setInitialSuccessToast} from '../utils/toasts';
 
 const ADD_EVENT = 'addSXPElement';
 
@@ -60,12 +56,10 @@ const AddSXPElementModal = ({
 		fetch('/o/search-experiences-rest/v1.0/sxp-elements', {
 			body: JSON.stringify({
 				description_i18n: {[defaultLocale]: descriptionInputValue},
-				elementDefinition: DEFAULT_EDIT_SXP_ELEMENT.elementDefinition,
+				elementDefinition: CUSTOM_JSON_SXP_ELEMENT.elementDefinition,
 				title_i18n: {[defaultLocale]: titleInputValue},
 			}),
-			headers: new Headers({
-				'Content-Type': 'application/json',
-			}),
+			headers: DEFAULT_HEADERS,
 			method: 'POST',
 		})
 			.then((response) => {
@@ -91,9 +85,21 @@ const AddSXPElementModal = ({
 								responseContent.id
 							);
 
+							setInitialSuccessToast(
+								Liferay.Language.get(
+									'the-element-was-created-successfully'
+								)
+							);
+
 							navigate(url);
 						}
 						else {
+							setInitialSuccessToast(
+								Liferay.Language.get(
+									'the-element-was-created-successfully'
+								)
+							);
+
 							navigate(window.location.href);
 						}
 					}
@@ -109,7 +115,11 @@ const AddSXPElementModal = ({
 	return (
 		<ClayModalProvider>
 			{visibleModal && (
-				<ClayModal observer={observer} size="md">
+				<ClayModal
+					className="sxp-add-element-modal-root"
+					observer={observer}
+					size="md"
+				>
 					<ClayModal.Header>
 						{Liferay.Language.get('new-search-element')}
 					</ClayModal.Header>
@@ -128,7 +138,7 @@ const AddSXPElementModal = ({
 									className="control-label"
 									htmlFor={`${portletNamespace}title`}
 								>
-									{Liferay.Language.get('name')}
+									{Liferay.Language.get('title')}
 
 									<span className="reference-mark">
 										<ClayIcon symbol="asterisk" />

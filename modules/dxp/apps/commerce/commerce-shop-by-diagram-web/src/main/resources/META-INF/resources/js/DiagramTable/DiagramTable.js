@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayEmptyState from '@clayui/empty-state';
@@ -18,7 +12,7 @@ import {
 	useCommerceAccount,
 	useCommerceCart,
 } from 'commerce-frontend-js/utilities/hooks';
-import {openToast} from 'frontend-js-web';
+import {openToast, sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 
@@ -41,8 +35,8 @@ function formatCpInstances(cpInstances, quantities) {
 				return selectedCpInstances;
 			}
 
-			const options = formatProductOptions(
-				cpInstance.options,
+			const skuOptions = formatProductOptions(
+				cpInstance.skuOptions,
 				cpInstance.productOptions
 			);
 
@@ -50,11 +44,11 @@ function formatCpInstances(cpInstances, quantities) {
 				...selectedCpInstances,
 				{
 					inCart: false,
-					options,
 					quantity:
 						quantities[cpInstance.skuId] ||
 						cpInstance.initialQuantity,
 					skuId: cpInstance.skuId,
+					skuOptions,
 				},
 			];
 		},
@@ -211,7 +205,7 @@ function DiagramTable({
 									onDelete={handleMappedProductDelete}
 									product={product}
 									quantity={
-										newQuantities[product.skuId] ||
+										newQuantities[product.skuId] ??
 										product.initialQuantity
 									}
 									setMappedProducts={setMappedProducts}
@@ -252,6 +246,9 @@ function DiagramTable({
 			{mappedProducts && !mappedProducts.length && !loaderActive && (
 				<ClayEmptyState
 					className="full-height-content"
+					description={Liferay.Language.get(
+						'sorry,-no-results-were-found'
+					)}
 					title={Liferay.Language.get('there-are-no-results')}
 				/>
 			)}
@@ -272,7 +269,7 @@ function DiagramTable({
 						mappedProducts || [],
 						newQuantities
 					)}
-					disabled={!commerceAccount.id || !selectedProductsCounter}
+					disabled={!commerceAccount?.id || !selectedProductsCounter}
 					hideIcon={true}
 					onAdd={() => {
 						const message =
@@ -280,7 +277,7 @@ function DiagramTable({
 								? Liferay.Language.get(
 										'the-product-was-successfully-added-to-the-cart'
 								  )
-								: Liferay.Util.sub(
+								: sub(
 										Liferay.Language.get(
 											'x-products-were-successfully-added-to-the-cart'
 										),

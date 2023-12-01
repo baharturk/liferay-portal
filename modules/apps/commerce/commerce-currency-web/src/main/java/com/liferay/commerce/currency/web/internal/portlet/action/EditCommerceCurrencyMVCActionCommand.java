@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.currency.web.internal.portlet.action;
@@ -23,8 +14,8 @@ import com.liferay.commerce.currency.exception.CommerceCurrencyNameException;
 import com.liferay.commerce.currency.exception.NoSuchCurrencyException;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyService;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -33,9 +24,8 @@ import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 
 import java.math.BigDecimal;
 
@@ -53,7 +43,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"javax.portlet.name=" + CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
 		"mvc.command.name=/commerce_currency/edit_commerce_currency"
@@ -130,10 +119,8 @@ public class EditCommerceCurrencyMVCActionCommand extends BaseMVCActionCommand {
 			};
 		}
 		else {
-			updateCommerceCurrencyExchangeRateIds = StringUtil.split(
-				ParamUtil.getString(
-					actionRequest, "updateCommerceCurrencyExchangeRateIds"),
-				0L);
+			updateCommerceCurrencyExchangeRateIds = ParamUtil.getLongValues(
+				actionRequest, "rowIds");
 		}
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
@@ -169,9 +156,8 @@ public class EditCommerceCurrencyMVCActionCommand extends BaseMVCActionCommand {
 			deleteCommerceCurrencyIds = new long[] {commerceCurrencyId};
 		}
 		else {
-			deleteCommerceCurrencyIds = StringUtil.split(
-				ParamUtil.getString(actionRequest, "deleteCommerceCurrencyIds"),
-				0L);
+			deleteCommerceCurrencyIds = ParamUtil.getLongValues(
+				actionRequest, "rowIds");
 		}
 
 		for (long deleteCommerceCurrencyId : deleteCommerceCurrencyIds) {
@@ -220,12 +206,11 @@ public class EditCommerceCurrencyMVCActionCommand extends BaseMVCActionCommand {
 		long commerceCurrencyId = ParamUtil.getLong(
 			actionRequest, "commerceCurrencyId");
 
-		String code = ParamUtil.getString(actionRequest, "code");
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name");
 		String rate = ParamUtil.getString(actionRequest, "rate");
-		Map<Locale, String> formatPatternMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "formatPattern");
+		Map<Locale, String> formatPatternMap = _localization.getLocalizationMap(
+			actionRequest, "formatPattern");
 
 		String roundingMode = ParamUtil.getString(
 			actionRequest, "roundingMode");
@@ -237,6 +222,8 @@ public class EditCommerceCurrencyMVCActionCommand extends BaseMVCActionCommand {
 		CommerceCurrency commerceCurrency = null;
 
 		if (commerceCurrencyId <= 0) {
+			String code = ParamUtil.getString(actionRequest, "code");
+
 			commerceCurrency = _commerceCurrencyService.addCommerceCurrency(
 				code, nameMap, symbol, new BigDecimal(rate), formatPatternMap,
 				maxFractionDigits, minFractionDigits, roundingMode, primary,
@@ -247,7 +234,7 @@ public class EditCommerceCurrencyMVCActionCommand extends BaseMVCActionCommand {
 				CommerceCurrency.class.getName(), actionRequest);
 
 			commerceCurrency = _commerceCurrencyService.updateCommerceCurrency(
-				commerceCurrencyId, code, nameMap, symbol, new BigDecimal(rate),
+				commerceCurrencyId, nameMap, symbol, new BigDecimal(rate),
 				formatPatternMap, maxFractionDigits, minFractionDigits,
 				roundingMode, primary, priority, active, serviceContext);
 		}
@@ -260,5 +247,8 @@ public class EditCommerceCurrencyMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private Localization _localization;
 
 }

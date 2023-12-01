@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -75,6 +66,7 @@ public class LayoutWrapper
 		attributes.put("styleBookEntryId", getStyleBookEntryId());
 		attributes.put("css", getCss());
 		attributes.put("priority", getPriority());
+		attributes.put("faviconFileEntryId", getFaviconFileEntryId());
 		attributes.put("masterLayoutPlid", getMasterLayoutPlid());
 		attributes.put("layoutPrototypeUuid", getLayoutPrototypeUuid());
 		attributes.put(
@@ -283,6 +275,12 @@ public class LayoutWrapper
 
 		if (priority != null) {
 			setPriority(priority);
+		}
+
+		Long faviconFileEntryId = (Long)attributes.get("faviconFileEntryId");
+
+		if (faviconFileEntryId != null) {
+			setFaviconFileEntryId(faviconFileEntryId);
 		}
 
 		Long masterLayoutPlid = (Long)attributes.get("masterLayoutPlid");
@@ -665,6 +663,21 @@ public class LayoutWrapper
 	}
 
 	/**
+	 * Returns the favicon file entry ID of this layout.
+	 *
+	 * @return the favicon file entry ID of this layout
+	 */
+	@Override
+	public long getFaviconFileEntryId() {
+		return model.getFaviconFileEntryId();
+	}
+
+	@Override
+	public String getFaviconURL() {
+		return model.getFaviconURL();
+	}
+
+	/**
 	 * Returns the friendly url of this layout.
 	 *
 	 * @return the friendly url of this layout
@@ -761,6 +774,11 @@ public class LayoutWrapper
 	@Override
 	public String getHTMLTitle(String localeLanguageId) {
 		return model.getHTMLTitle(localeLanguageId);
+	}
+
+	@Override
+	public String getIcon() {
+		return model.getIcon();
 	}
 
 	/**
@@ -908,6 +926,11 @@ public class LayoutWrapper
 	@Override
 	public LayoutSet getLayoutSet() {
 		return model.getLayoutSet();
+	}
+
+	@Override
+	public Layout getLayoutSetPrototypeLayout() {
+		return model.getLayoutSetPrototypeLayout();
 	}
 
 	/**
@@ -1602,6 +1625,11 @@ public class LayoutWrapper
 		return model.isDraftLayout();
 	}
 
+	@Override
+	public boolean isEmbeddedPersonalApplication() {
+		return model.isEmbeddedPersonalApplication();
+	}
+
 	/**
 	 * Returns <code>true</code> if this layout is expired.
 	 *
@@ -1684,6 +1712,11 @@ public class LayoutWrapper
 		return model.isInheritLookAndFeel();
 	}
 
+	@Override
+	public boolean isLayoutDeleteable() {
+		return model.isLayoutDeleteable();
+	}
+
 	/**
 	 * Returns <code>true</code> if the current layout is built from a layout
 	 * template and still maintains an active connection to it.
@@ -1705,6 +1738,16 @@ public class LayoutWrapper
 	@Override
 	public boolean isLayoutPrototypeLinkEnabled() {
 		return model.isLayoutPrototypeLinkEnabled();
+	}
+
+	@Override
+	public boolean isLayoutSortable() {
+		return model.isLayoutSortable();
+	}
+
+	@Override
+	public boolean isLayoutUpdateable() {
+		return model.isLayoutUpdateable();
 	}
 
 	/**
@@ -1747,6 +1790,11 @@ public class LayoutWrapper
 	@Override
 	public boolean isPublicLayout() {
 		return model.isPublicLayout();
+	}
+
+	@Override
+	public boolean isPublished() {
+		return model.isPublished();
 	}
 
 	/**
@@ -1805,6 +1853,11 @@ public class LayoutWrapper
 	}
 
 	@Override
+	public boolean isTypeCollection() {
+		return model.isTypeCollection();
+	}
+
+	@Override
 	public boolean isTypeContent() {
 		return model.isTypeContent();
 	}
@@ -1837,6 +1890,11 @@ public class LayoutWrapper
 	@Override
 	public boolean isTypeURL() {
 		return model.isTypeURL();
+	}
+
+	@Override
+	public boolean isUnlocked(String mode, long userId) {
+		return model.isUnlocked(mode, userId);
 	}
 
 	@Override
@@ -2007,6 +2065,16 @@ public class LayoutWrapper
 		java.util.Locale defaultLocale) {
 
 		model.setDescriptionMap(descriptionMap, defaultLocale);
+	}
+
+	/**
+	 * Sets the favicon file entry ID of this layout.
+	 *
+	 * @param faviconFileEntryId the favicon file entry ID of this layout
+	 */
+	@Override
+	public void setFaviconFileEntryId(long faviconFileEntryId) {
+		model.setFaviconFileEntryId(faviconFileEntryId);
 	}
 
 	/**
@@ -2609,6 +2677,11 @@ public class LayoutWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.service;
@@ -276,15 +267,17 @@ public class CalendarBookingServiceUtil {
 	public static List<CalendarBooking> search(
 			long companyId, long[] groupIds, long[] calendarIds,
 			long[] calendarResourceIds, long parentCalendarBookingId,
-			String keywords, long startTime, long endTime, boolean recurring,
+			String keywords, long startTime, long endTime,
+			java.util.TimeZone displayTimeZone, boolean recurring,
 			int[] statuses, int start, int end,
 			OrderByComparator<CalendarBooking> orderByComparator)
 		throws PortalException {
 
 		return getService().search(
 			companyId, groupIds, calendarIds, calendarResourceIds,
-			parentCalendarBookingId, keywords, startTime, endTime, recurring,
-			statuses, start, end, orderByComparator);
+			parentCalendarBookingId, keywords, startTime, endTime,
+			displayTimeZone, recurring, statuses, start, end,
+			orderByComparator);
 	}
 
 	public static List<CalendarBooking> search(
@@ -499,6 +492,10 @@ public class CalendarBookingServiceUtil {
 
 	public static CalendarBookingService getService() {
 		return _service;
+	}
+
+	public static void setService(CalendarBookingService service) {
+		_service = service;
 	}
 
 	private static volatile CalendarBookingService _service;

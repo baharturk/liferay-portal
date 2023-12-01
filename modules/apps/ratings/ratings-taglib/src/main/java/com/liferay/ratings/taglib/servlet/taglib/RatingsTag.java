@@ -1,25 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.ratings.taglib.servlet.taglib;
 
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.trash.TrashHandler;
+import com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -27,6 +23,7 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
 import com.liferay.ratings.kernel.RatingsType;
 import com.liferay.ratings.kernel.definition.PortletRatingsDefinitionUtil;
 import com.liferay.ratings.kernel.model.RatingsEntry;
@@ -35,7 +32,6 @@ import com.liferay.ratings.kernel.service.RatingsEntryLocalServiceUtil;
 import com.liferay.ratings.kernel.service.RatingsStatsLocalServiceUtil;
 import com.liferay.ratings.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.taglib.util.IncludeTag;
-import com.liferay.trash.kernel.util.TrashUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.PageContext;
@@ -82,6 +78,13 @@ public class RatingsTag extends IncludeTag {
 	}
 
 	public void setClassName(String className) {
+		if (className.equals(DLFileEntry.class.getName()) ||
+			className.equals(FileEntry.class.getName()) ||
+			className.equals(LiferayFileEntry.class.getName())) {
+
+			className = DLFileEntryConstants.getClassName();
+		}
+
 		_className = className;
 	}
 
@@ -237,7 +240,7 @@ public class RatingsTag extends IncludeTag {
 			httpServletRequest.setAttribute("liferay-ratings:ratings:url", url);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -357,7 +360,14 @@ public class RatingsTag extends IncludeTag {
 
 	private boolean _isInTrash() throws PortalException {
 		if (_inTrash == null) {
-			return TrashUtil.isInTrash(_className, _classPK);
+			TrashHandler trashHandler =
+				TrashHandlerRegistryUtil.getTrashHandler(_className);
+
+			if (trashHandler == null) {
+				return false;
+			}
+
+			return trashHandler.isInTrash(_classPK);
 		}
 
 		return _inTrash;

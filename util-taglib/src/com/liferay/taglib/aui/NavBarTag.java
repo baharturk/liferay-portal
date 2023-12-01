@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.aui;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.util.IntegerWrapper;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.aui.base.BaseNavBarTag;
 
 import javax.servlet.http.HttpServletRequest;
@@ -28,7 +18,10 @@ import javax.servlet.jsp.tagext.BodyTag;
  * @author Bruno Basto
  * @author Nathan Cavanaugh
  * @author Julio Camarero
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+ *             com.liferay.frontend.taglib.clay.servlet.taglib.NavigationBarTag}
  */
+@Deprecated
 public class NavBarTag extends BaseNavBarTag implements BodyTag {
 
 	@Override
@@ -78,12 +71,6 @@ public class NavBarTag extends BaseNavBarTag implements BodyTag {
 
 	@Override
 	protected String getPage() {
-		String markupView = getMarkupView();
-
-		if (Validator.isNotNull(markupView)) {
-			return "/html/taglib/aui/nav_bar/" + markupView + "/page.jsp";
-		}
-
 		return "/html/taglib/aui/nav_bar/page.jsp";
 	}
 

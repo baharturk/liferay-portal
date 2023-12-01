@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.display.context;
@@ -36,9 +27,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Lourdes Fernández Besada
@@ -52,8 +41,6 @@ public class JournalEditArticleDisplayContextTest {
 
 	@Before
 	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
 		Mockito.when(
 			_httpServletRequest.getAttribute(WebKeys.THEME_DISPLAY)
 		).thenReturn(
@@ -127,7 +114,7 @@ public class JournalEditArticleDisplayContextTest {
 			_httpServletRequest, "home"
 		);
 
-		Mockito.verifyZeroInteractions(_journalFolderLocalService);
+		Mockito.verifyNoInteractions(_journalFolderLocalService);
 	}
 
 	@Test
@@ -174,7 +161,7 @@ public class JournalEditArticleDisplayContextTest {
 			folderId
 		);
 
-		Mockito.verifyZeroInteractions(_language);
+		Mockito.verifyNoInteractions(_language);
 	}
 
 	@Test
@@ -329,27 +316,18 @@ public class JournalEditArticleDisplayContextTest {
 	private static final String _UNEXPECTED_FOLDER_NAME_MESSAGE =
 		"Unexpected folder name";
 
-	@Mock
-	private BeanProperties _beanProperties;
-
-	@Mock
-	private HttpServletRequest _httpServletRequest;
-
-	@Mock
-	private JournalArticle _journalArticle;
-
+	private final BeanProperties _beanProperties = Mockito.mock(
+		BeanProperties.class);
+	private final HttpServletRequest _httpServletRequest = Mockito.mock(
+		HttpServletRequest.class);
+	private final JournalArticle _journalArticle = Mockito.mock(
+		JournalArticle.class);
 	private JournalEditArticleDisplayContext _journalEditArticleDisplayContext;
-
-	@Mock
-	private JournalFolderLocalService _journalFolderLocalService;
-
-	@Mock
-	private Language _language;
-
-	@Mock
-	private LiferayPortletResponse _liferayPortletResponse;
-
-	@Mock
-	private ThemeDisplay _themeDisplay;
+	private final JournalFolderLocalService _journalFolderLocalService =
+		Mockito.mock(JournalFolderLocalService.class);
+	private final Language _language = Mockito.mock(Language.class);
+	private final LiferayPortletResponse _liferayPortletResponse = Mockito.mock(
+		LiferayPortletResponse.class);
+	private final ThemeDisplay _themeDisplay = Mockito.mock(ThemeDisplay.class);
 
 }

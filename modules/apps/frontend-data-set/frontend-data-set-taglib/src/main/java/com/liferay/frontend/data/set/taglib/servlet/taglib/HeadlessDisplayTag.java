@@ -1,48 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.data.set.taglib.servlet.taglib;
 
+import com.liferay.frontend.data.set.filter.FDSFilter;
 import com.liferay.frontend.data.set.filter.FDSFilterSerializer;
 import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
-import com.liferay.frontend.data.set.model.FDSPaginationEntry;
 import com.liferay.frontend.data.set.model.FDSSortItem;
 import com.liferay.frontend.data.set.model.FDSSortItemList;
 import com.liferay.frontend.data.set.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.frontend.data.set.view.FDSViewSerializer;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
-import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portal.kernel.theme.PortletDisplay;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
-import com.liferay.taglib.util.IncludeTag;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
-
-import javax.portlet.PortletURL;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
@@ -52,7 +36,7 @@ import javax.servlet.jsp.PageContext;
  * @author Marco Leo
  * @author Alessio Antonio Rendina
  */
-public class HeadlessDisplayTag extends IncludeTag {
+public class HeadlessDisplayTag extends BaseDisplayTag {
 
 	@Override
 	public int doStartTag() throws JspException {
@@ -68,11 +52,15 @@ public class HeadlessDisplayTag extends IncludeTag {
 			_setActiveViewSettingsJSON();
 			_setFDSViewsContext();
 			_setFDSFiltersContext();
-			_setFDSPaginationEntries();
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
+
+		String randomKey = PortalUtil.generateRandomKey(
+			getRequest(), "taglib_frontend_data_set_headless_display_page");
+
+		setRandomNamespace(randomKey + StringPool.UNDERLINE);
 
 		return super.doStartTag();
 	}
@@ -97,6 +85,10 @@ public class HeadlessDisplayTag extends IncludeTag {
 		return _fdsActionDropdownItems;
 	}
 
+	public List<FDSFilter> getFdsFilters() {
+		return _fdsFilters;
+	}
+
 	public List<FDSSortItem> getFdsSortItemList() {
 		return _fdsSortItemList;
 	}
@@ -109,36 +101,12 @@ public class HeadlessDisplayTag extends IncludeTag {
 		return _formName;
 	}
 
-	public String getId() {
-		return _id;
-	}
-
-	public int getItemsPerPage() {
-		return _itemsPerPage;
-	}
-
-	public String getNamespace() {
-		return _namespace;
-	}
-
 	public String getNestedItemsKey() {
 		return _nestedItemsKey;
 	}
 
 	public String getNestedItemsReferenceKey() {
 		return _nestedItemsReferenceKey;
-	}
-
-	public int getPageNumber() {
-		return _pageNumber;
-	}
-
-	public PortletURL getPortletURL() {
-		return _portletURL;
-	}
-
-	public List<String> getSelectedItems() {
-		return _selectedItems;
 	}
 
 	public String getSelectedItemsKey() {
@@ -195,6 +163,10 @@ public class HeadlessDisplayTag extends IncludeTag {
 		_fdsActionDropdownItems = fdsActionDropdownItems;
 	}
 
+	public void setFdsFilters(List<FDSFilter> fdsFilters) {
+		_fdsFilters = fdsFilters;
+	}
+
 	public void setFdsSortItemList(FDSSortItemList fdsSortItemList) {
 		_fdsSortItemList = fdsSortItemList;
 	}
@@ -205,18 +177,6 @@ public class HeadlessDisplayTag extends IncludeTag {
 
 	public void setFormName(String formName) {
 		_formName = formName;
-	}
-
-	public void setId(String id) {
-		_id = id;
-	}
-
-	public void setItemsPerPage(int itemsPerPage) {
-		_itemsPerPage = itemsPerPage;
-	}
-
-	public void setNamespace(String namespace) {
-		_namespace = namespace;
 	}
 
 	public void setNestedItemsKey(String nestedItemsKey) {
@@ -236,18 +196,6 @@ public class HeadlessDisplayTag extends IncludeTag {
 		super.setPageContext(pageContext);
 
 		setServletContext(ServletContextUtil.getServletContext());
-	}
-
-	public void setPageNumber(int pageNumber) {
-		_pageNumber = pageNumber;
-	}
-
-	public void setPortletURL(PortletURL portletURL) {
-		_portletURL = portletURL;
-	}
-
-	public void setSelectedItems(List<String> selectedItems) {
-		_selectedItems = selectedItems;
 	}
 
 	public void setSelectedItemsKey(String selectedItemsKey) {
@@ -286,23 +234,16 @@ public class HeadlessDisplayTag extends IncludeTag {
 		_creationMenu = new CreationMenu();
 		_customViewsEnabled = false;
 		_fdsActionDropdownItems = new ArrayList<>();
+		_fdsFilters = new ArrayList<>();
 		_fdsFiltersContext = null;
 		_fdsFilterSerializer = null;
-		_fdsPaginationEntries = null;
 		_fdsSortItemList = new FDSSortItemList();
 		_fdsViewsContext = null;
 		_fdsViewSerializer = null;
 		_formId = null;
 		_formName = null;
-		_id = null;
-		_itemsPerPage = 0;
-		_namespace = null;
 		_nestedItemsKey = null;
 		_nestedItemsReferenceKey = null;
-		_pageNumber = 0;
-		_paginationSelectedEntry = 0;
-		_portletURL = null;
-		_selectedItems = null;
 		_selectedItemsKey = null;
 		_selectionType = null;
 		_showManagementBar = true;
@@ -312,17 +253,11 @@ public class HeadlessDisplayTag extends IncludeTag {
 	}
 
 	@Override
-	protected String getPage() {
-		return _PAGE;
-	}
-
-	@Override
-	protected void setAttributes(HttpServletRequest httpServletRequest) {
-		httpServletRequest = getRequest();
-
-		httpServletRequest.setAttribute(
-			"frontend-data-set:headless-display:data",
-			HashMapBuilder.<String, Object>put(
+	protected Map<String, Object> prepareProps(Map<String, Object> props) {
+		return super.prepareProps(
+			HashMapBuilder.<String, Object>putAll(
+				props
+			).put(
 				"actionParameterName",
 				GetterUtil.getString(_actionParameterName)
 			).put(
@@ -336,7 +271,7 @@ public class HeadlessDisplayTag extends IncludeTag {
 			).put(
 				"creationMenu", _creationMenu
 			).put(
-				"currentURL", PortalUtil.getCurrentURL(httpServletRequest)
+				"currentURL", PortalUtil.getCurrentURL(getRequest())
 			).put(
 				"customViewsEnabled", _customViewsEnabled
 			).put(
@@ -346,31 +281,16 @@ public class HeadlessDisplayTag extends IncludeTag {
 			).put(
 				"formName", _validateDataAttribute(_formName)
 			).put(
-				"id", _id
+				"id", getId()
 			).put(
 				"itemsActions", _fdsActionDropdownItems
-			).put(
-				"namespace", _namespace
 			).put(
 				"nestedItemsKey", _validateDataAttribute(_nestedItemsKey)
 			).put(
 				"nestedItemsReferenceKey",
 				_validateDataAttribute(_nestedItemsReferenceKey)
 			).put(
-				"pagination",
-				HashMapBuilder.<String, Object>put(
-					"deltas", _fdsPaginationEntries
-				).put(
-					"initialDelta", _itemsPerPage
-				).put(
-					"initialPageNumber", _pageNumber
-				).build()
-			).put(
-				"portletId", _getRootPortletId(httpServletRequest)
-			).put(
-				"portletURL", _portletURL.toString()
-			).put(
-				"selectedItems", _selectedItems
+				"portletId", PortalUtil.getPortletId(getRequest())
 			).put(
 				"selectedItemsKey", _validateDataAttribute(_selectedItemsKey)
 			).put(
@@ -382,36 +302,12 @@ public class HeadlessDisplayTag extends IncludeTag {
 			).put(
 				"showSearch", _showSearch
 			).put(
-				"sorting", _fdsSortItemList
+				"sorts", _fdsSortItemList
 			).put(
 				"style", _validateDataAttribute(_style)
 			).put(
 				"views", _fdsViewsContext
 			).build());
-	}
-
-	private List<FDSPaginationEntry> _getFdsPaginationEntries() {
-		List<FDSPaginationEntry> fdsPaginationEntries = new ArrayList<>();
-
-		for (int curDelta : PropsValues.SEARCH_CONTAINER_PAGE_DELTA_VALUES) {
-			if (curDelta > SearchContainer.MAX_DELTA) {
-				continue;
-			}
-
-			fdsPaginationEntries.add(new FDSPaginationEntry(null, curDelta));
-		}
-
-		return fdsPaginationEntries;
-	}
-
-	private String _getRootPortletId(HttpServletRequest httpServletRequest) {
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
-		return portletDisplay.getRootPortletId();
 	}
 
 	private void _setActiveViewSettingsJSON() {
@@ -422,34 +318,19 @@ public class HeadlessDisplayTag extends IncludeTag {
 				httpServletRequest);
 
 		_activeViewSettingsJSON = portalPreferences.getValue(
-			ServletContextUtil.getFDSSettingsNamespace(httpServletRequest, _id),
+			ServletContextUtil.getFDSSettingsNamespace(
+				httpServletRequest, getId()),
 			"activeViewSettingsJSON");
 	}
 
 	private void _setFDSFiltersContext() {
 		_fdsFiltersContext = _fdsFilterSerializer.serialize(
-			_id, PortalUtil.getLocale(getRequest()));
-	}
-
-	private void _setFDSPaginationEntries() {
-		_fdsPaginationEntries = _getFdsPaginationEntries();
-
-		Stream<FDSPaginationEntry> stream = _fdsPaginationEntries.stream();
-
-		FDSPaginationEntry fdsPaginationEntry = stream.filter(
-			entry -> entry.getLabel() == _itemsPerPage
-		).findAny(
-		).orElse(
-			null
-		);
-
-		_paginationSelectedEntry = _fdsPaginationEntries.indexOf(
-			fdsPaginationEntry);
+			getId(), getFdsFilters(), PortalUtil.getLocale(getRequest()));
 	}
 
 	private void _setFDSViewsContext() {
 		_fdsViewsContext = _fdsViewSerializer.serialize(
-			_id, PortalUtil.getLocale(getRequest()));
+			getId(), PortalUtil.getLocale(getRequest()));
 	}
 
 	private Object _validateDataAttribute(Object object) {
@@ -459,8 +340,6 @@ public class HeadlessDisplayTag extends IncludeTag {
 
 		return object;
 	}
-
-	private static final String _PAGE = "/headless_display/page.jsp";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		HeadlessDisplayTag.class);
@@ -474,23 +353,16 @@ public class HeadlessDisplayTag extends IncludeTag {
 	private boolean _customViewsEnabled;
 	private List<FDSActionDropdownItem> _fdsActionDropdownItems =
 		new ArrayList<>();
+	private List<FDSFilter> _fdsFilters = new ArrayList<>();
 	private Object _fdsFiltersContext;
 	private FDSFilterSerializer _fdsFilterSerializer;
-	private List<FDSPaginationEntry> _fdsPaginationEntries;
 	private FDSSortItemList _fdsSortItemList = new FDSSortItemList();
 	private Object _fdsViewsContext;
 	private FDSViewSerializer _fdsViewSerializer;
 	private String _formId;
 	private String _formName;
-	private String _id;
-	private int _itemsPerPage;
-	private String _namespace;
 	private String _nestedItemsKey;
 	private String _nestedItemsReferenceKey;
-	private int _pageNumber;
-	private int _paginationSelectedEntry;
-	private PortletURL _portletURL;
-	private List<String> _selectedItems;
 	private String _selectedItemsKey;
 	private String _selectionType;
 	private boolean _showManagementBar = true;

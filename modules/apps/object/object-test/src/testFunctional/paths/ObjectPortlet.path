@@ -22,17 +22,17 @@
 	</tr>
 	<tr>
 		<td>CHECK_UNCHECK_DROPDOWN_ITEM</td>
-		<td>//button[contains(@class,'dropdown-item')][contains(text(),'${key_dropdowntItem}')]</td>
+		<td>//button[contains(@class,'dropdown-item')][contains(text(),'${key_dropdownItem}')]</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>COLUMN_ICON_SEARCH</td>
-		<td>//div[contains(@class,'dropdown-menu show')]//input[contains(@class,'form-control input-group-inset input-group-inset-after')]</td>
+		<td>//div[contains(@class,'dropdown-menu')]//span[contains(@class, 'input-group-inset-item')]</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>COLUMN_SEARCH_FIELD</td>
-		<td>//div[contains(@class,'dropdown-menu show')]//input[contains(@class,'form-control input-group-inset input-group-inset-after')]</td>
+		<td>//div[contains(@class,'dropdown-menu')]//input[contains(@class,'form-control input-group-inset input-group-inset-after')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -42,32 +42,47 @@
 	</tr>
 	<tr>
 		<td>DUPLICATED_ENTRY_VALUE</td>
-		<td>(//div[contains(@class,'dnd-tbody')]//div[contains(text(),'${key_entry}')])[2]</td>
+		<td>(//div[contains(@class,'dnd-tbody')]//*[contains(text(),'${key_entry}')])[2]</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>ENTRY_COLUMN</td>
-		<td>//div[contains(@class,'dnd-th')]//div[contains(text(),'${key_column}')]</td>
+		<td>//div[contains(@class,'dnd-th')]//*[contains(text(),'${key_column}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ENTRY_ID</td>
+		<td>//div[contains(@class,'dnd-tbody')]//div[contains(@class,'table-list-title')]</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>ENTRY_STATUS</td>
-		<td>//div[contains(text(),'${key_entry}')]/following-sibling::div//strong[contains(@class, 'workflow-value') and contains(text(),'${key_status}')]</td>
+		<td>//*[text()='${key_entry}']/../following-sibling::div//*[text()='${key_status}']</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>ENTRY_VALUE</td>
-		<td>//div[contains(@class,'dnd-tbody')]//div[contains(text(),'${key_entry}')]</td>
+		<td>//div[contains(@class,'dnd-tbody')]//*[contains(text(),'${key_entry}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ENTRY_VALUE_BY_POSITION</td>
+		<td>//div[contains(@class,'dnd-tbody')]//div[contains(@class, 'dnd-tr')][${key_order}]//*[contains(text(),'${key_entry}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ENTRY_VALUE_WITH_ELLIPSIS</td>
+		<td>//div[contains(@class,'dnd-tbody')]//span[contains(@class,'text-truncate') and contains(text(),'${key_entry}')]</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>ENTRY_VALUE_SPECIFIC_ORDER</td>
-		<td>//div[${resultOrder}]//div[contains(@class,'dnd-tbody')]//div[contains(text(),'${key_entry}')]</td>
+		<td>//div[${resultOrder}]//div[contains(@class,'dnd-tbody')]//*[contains(text(),'${key_entry}')]</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>ENTRY_KEBAB_MENU</td>
-		<td>//div[contains(@class,'dnd-tbody')]//div[contains(text(),'${key_entry}')]/following-sibling::div//button</td>
+		<td>//div[contains(@class,'dnd-tbody')]//*[contains(text(),'${key_entry}')]/parent::div/following-sibling::div//button | //div[contains(@class, 'dnd-td') and contains(., '${key_entry}')]/following-sibling::div//button</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -82,12 +97,17 @@
 	</tr>
 	<tr>
 		<td>GENERIC_ENTRY_COLUMN</td>
-		<td>//div[contains(@class,'dnd-th')][contains(text(),'${key_fieldLabelName}')]</td>
+		<td>//div[contains(@class,'dnd-th')]//button[contains(text(),'${key_fieldLabelName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>INPUT_NAME</td>
+		<td>//input[contains(@id,'_com_liferay_document_library_web_portlet_DLAdminPortlet_name')]</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>OBJECT_PORTLET_HEADER</td>
-		<td>//span[@data-qa-id='headerTitle' and contains (text(),'${key_objectLabel}')]</td>
+		<td>//h1[@data-qa-id='headerTitle' and contains (text(),'${key_objectLabel}')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -116,8 +136,8 @@
 		<td></td>
 	</tr>
 	<tr>
-		<td>SEARCH_RESULT_RELATIONSHIP_ENTRY</td>
-		<td>//button[contains(@class,'dropdown-item')]//span[contains(text(),'${key_entry}')]</td>
+		<td>SEARCH_ENTRY_ON_RELATIONSHIP_FIELD_LABEL_SPECIFIC</td>
+		<td>//label[contains(text(),'${key_relationshipFieldLabel}')]/..//input[contains(@placeholder,'Search')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -126,9 +146,29 @@
 		<td></td>
 	</tr>
 	<tr>
-	<td>SORT_FIELD</td>
-	<td>//button[@class='btn-sorting inline-item text-nowrap text-truncate-inline btn btn-sm btn-unstyled' and contains(text(), '${key_sortFieldName}')]</td>
-	<td></td>
+		<td>SELECT_OBJECT_FOLDER</td>
+		<td>//li[contains(@class,'object-folder-list-item') and (.='${key_label}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_OBJECT</td>
+		<td>//div[(@class='table-list-title')]//a[text()= '${label}']</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_FRAME_OBJECT</td>
+		<td>//div[(@class='data-set-content-wrapper') and contains (.,'${key_frame}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_SYSTEM_OBJECT</td>
+		<td>//div[(@class='table-list-title') and (.='${key_label}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SORT_FIELD</td>
+		<td>//button[@class='btn-sorting inline-item text-nowrap text-truncate-inline btn btn-sm btn-unstyled' and contains(text(), '${key_sortFieldName}')]</td>
+		<td></td>
 	</tr>
 	<tr>
 		<td>VIEW_ENTRY_BUTTON</td>
@@ -158,6 +198,66 @@
 	<tr>
 		<td>VIEW_FIELD_ON_MENU</td>
 		<td>//span[contains(@class,'c-inner') and contains(text(),'${key_itemMenu}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OBJECT_FIELD_SELECTED</td>
+		<td>//div[@class='form-control results-chosen select-field-trigger']//div[contains(text(),'${key_entrySelected}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ENTRY_CLOB_KEBAB_MENU</td>
+		<td>//div[contains(@class,'dnd-tbody')]//div[contains(.,'${key_entry}')]/following-sibling::div//button</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_WIDGET_IN_PAGE_BUILDER_TOGGLE</td>
+		<td>//span[text()='Show Widget in Page Builder']/preceding-sibling::span/input</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ENABLE_CATEGORIZATION_BUTTON</td>
+		<td>//span[text()='Enable Categorization of Object entries']/preceding-sibling::span/input</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ENABLE_ENTRY_HISTORY_IN_AUDIT_FRAMEWORK_BUTTON</td>
+		<td>//span[text()='Enable Entry History in Audit Framework']/preceding-sibling::span/input</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_EMPTY_LABEL_IN_DATE_ENTRY</td>
+		<td>//input[(@placeholder='__/__/____')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_EMPTY_LABEL_IN_DATE_TIME_ENTRY</td>
+		<td>//input[(@placeholder='__/__/____ __:__ _')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ENTRY_FIELD_GENERIC</td>
+		<td>//div[contains(@data-field-name,'ObjectDefinitionsPortlet') and contains(label,'${key_customField}')]//input[1]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>FILE_ENTRY_OBJECT</td>
+		<td>//div[contains(@class, 'dropzone-wrapper')]//div//..//div[contains(text(), '${key_infoText}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>DELETE_RELATIONSHIP_ENTRY</td>
+		<td>//div[contains(text(),'${key_entryName}')]/..//a[@title = 'Delete']</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ARROW_ORDER_COLUMN</td>
+		<td>//button[contains(@class,'btn-sorting') and contains(.,'${key_orderColumn}')]//*[contains(@class,'lexicon-icon-order')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>RELATIONSHIP_ENTRY_READ_ONLY</td>
+		<td>//div[contains(@class,'ddm-field')]//input[contains(@value, '${key_entry}') and @readonly]</td>
 		<td></td>
 	</tr>
 </tbody>

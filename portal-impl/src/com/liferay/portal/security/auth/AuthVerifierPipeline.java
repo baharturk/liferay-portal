@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.auth;
@@ -32,6 +23,7 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.security.auth.registry.AuthVerifierRegistry;
+import com.liferay.portal.spring.context.PortalContextLoaderListener;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,12 +51,6 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 public class AuthVerifierPipeline {
 
 	public static final String AUTH_TYPE = "auth.type";
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #getPortalAuthVerifierPipeline()}
-	 */
-	@Deprecated
-	public static volatile AuthVerifierPipeline PORTAL_AUTH_VERIFIER_PIPELINE;
 
 	public static String getAuthVerifierPropertyName(String className) {
 		String simpleClassName = StringUtil.extractLast(
@@ -185,10 +171,9 @@ public class AuthVerifierPipeline {
 		HttpServletRequest httpServletRequest =
 			accessControlContext.getRequest();
 
-		long defaultUserId = UserLocalServiceUtil.getDefaultUserId(
-			PortalUtil.getCompanyId(httpServletRequest));
-
-		authVerifierResult.setUserId(defaultUserId);
+		authVerifierResult.setUserId(
+			UserLocalServiceUtil.getGuestUserId(
+				PortalUtil.getCompanyId(httpServletRequest)));
 
 		return authVerifierResult;
 	}
@@ -385,7 +370,8 @@ public class AuthVerifierPipeline {
 		static {
 			AuthVerifierPipeline portalAuthVerifierPipeline =
 				new AuthVerifierPipeline(
-					Collections.emptyList(), PortalUtil.getPathContext());
+					Collections.emptyList(),
+					PortalContextLoaderListener.getPortalServletContextPath());
 
 			BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
@@ -441,8 +427,6 @@ public class AuthVerifierPipeline {
 			serviceTracker.open();
 
 			_PORTAL_AUTH_VERIFIER_PIPELINE = portalAuthVerifierPipeline;
-
-			PORTAL_AUTH_VERIFIER_PIPELINE = portalAuthVerifierPipeline;
 		}
 
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.web.internal.zip.processor;
@@ -17,7 +8,7 @@ package com.liferay.style.book.web.internal.zip.processor;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.GroupConstants;
@@ -32,7 +23,7 @@ import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.zip.ZipWriter;
-import com.liferay.portal.kernel.zip.ZipWriterFactoryUtil;
+import com.liferay.portal.kernel.zip.ZipWriterFactory;
 import com.liferay.style.book.constants.StyleBookPortletKeys;
 import com.liferay.style.book.exception.DuplicateStyleBookEntryKeyException;
 import com.liferay.style.book.model.StyleBookEntry;
@@ -59,7 +50,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Eudaldo Alonso
  */
-@Component(immediate = true, service = StyleBookEntryZipProcessor.class)
+@Component(service = StyleBookEntryZipProcessor.class)
 public class StyleBookEntryZipProcessorImpl
 	implements StyleBookEntryZipProcessor {
 
@@ -67,7 +58,7 @@ public class StyleBookEntryZipProcessorImpl
 	public File exportStyleBookEntries(List<StyleBookEntry> styleBookEntries)
 		throws PortletException {
 
-		ZipWriter zipWriter = ZipWriterFactoryUtil.getZipWriter();
+		ZipWriter zipWriter = _zipWriterFactory.getZipWriter();
 
 		try {
 			for (StyleBookEntry styleBookEntry : styleBookEntries) {
@@ -143,7 +134,7 @@ public class StyleBookEntryZipProcessorImpl
 				new StyleBookEntryZipProcessorImportResultEntry(
 					name,
 					StyleBookEntryZipProcessorImportResultEntry.Status.IMPORTED,
-					StringPool.BLANK));
+					styleBookEntry));
 
 			return styleBookEntry;
 		}
@@ -204,7 +195,7 @@ public class StyleBookEntryZipProcessorImpl
 			key = path.substring(path.lastIndexOf(CharPool.SLASH) + 1);
 		}
 		else if (fileName.equals("style-book.json")) {
-			JSONObject styleBookJSONObject = JSONFactoryUtil.createJSONObject(
+			JSONObject styleBookJSONObject = _jsonFactory.createJSONObject(
 				StringUtil.read(
 					zipFile.getInputStream(zipFile.getEntry(fileName))));
 
@@ -256,7 +247,7 @@ public class StyleBookEntryZipProcessorImpl
 		}
 
 		FileEntry fileEntry = PortletFileRepositoryUtil.addPortletFileEntry(
-			groupId, userId, className, classPK,
+			null, groupId, userId, className, classPK,
 			StyleBookPortletKeys.STYLE_BOOK, repository.getDlFolderId(),
 			inputStream,
 			classPK + "_preview." + FileUtil.getExtension(contentPath),
@@ -313,8 +304,8 @@ public class StyleBookEntryZipProcessorImpl
 		String styleBookEntryContent = _getContent(zipFile, fileName);
 
 		if (Validator.isNotNull(styleBookEntryContent)) {
-			JSONObject styleBookEntryJSONObject =
-				JSONFactoryUtil.createJSONObject(styleBookEntryContent);
+			JSONObject styleBookEntryJSONObject = _jsonFactory.createJSONObject(
+				styleBookEntryContent);
 
 			defaultStyleBookEntry = styleBookEntryJSONObject.getBoolean(
 				"defaultStyleBookEntry");
@@ -342,19 +333,19 @@ public class StyleBookEntryZipProcessorImpl
 					styleBookEntry.getPreviewFileEntryId());
 			}
 
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+			JSONObject jsonObject = _jsonFactory.createJSONObject(
 				styleBookEntryContent);
 
 			String thumbnailPath = jsonObject.getString("thumbnailPath");
 
 			if (Validator.isNotNull(thumbnailPath)) {
-				long previewFileEntryId = _getPreviewFileEntryId(
-					userId, groupId, zipFile, StyleBookEntry.class.getName(),
-					styleBookEntry.getStyleBookEntryId(), fileName,
-					thumbnailPath);
-
 				_styleBookEntryEntryService.updatePreviewFileEntryId(
-					styleBookEntry.getStyleBookEntryId(), previewFileEntryId);
+					styleBookEntry.getStyleBookEntryId(),
+					_getPreviewFileEntryId(
+						userId, groupId, zipFile,
+						StyleBookEntry.class.getName(),
+						styleBookEntry.getStyleBookEntryId(), fileName,
+						thumbnailPath));
 			}
 		}
 	}
@@ -374,9 +365,15 @@ public class StyleBookEntryZipProcessorImpl
 		_importResultEntries;
 
 	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
 	private StyleBookEntryLocalService _styleBookEntryEntryLocalService;
 
 	@Reference
 	private StyleBookEntryService _styleBookEntryEntryService;
+
+	@Reference
+	private ZipWriterFactory _zipWriterFactory;
 
 }

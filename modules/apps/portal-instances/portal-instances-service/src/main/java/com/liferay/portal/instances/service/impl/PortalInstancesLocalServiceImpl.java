@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.instances.service.impl;
@@ -29,7 +20,6 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.Role;
-import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.InvokerPortlet;
@@ -43,7 +33,6 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
-import com.liferay.portal.kernel.service.CompanyService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
@@ -53,7 +42,6 @@ import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.ThemeLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.servlet.DummyHttpServletResponse;
-import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ColorSchemeFactoryUtil;
@@ -62,17 +50,15 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portlet.RenderRequestFactory;
 import com.liferay.portlet.RenderResponseFactory;
 import com.liferay.site.initializer.SiteInitializer;
 import com.liferay.site.initializer.SiteInitializerRegistry;
-
-import java.sql.SQLException;
 
 import java.util.List;
 
@@ -81,7 +67,6 @@ import javax.portlet.PortletMode;
 import javax.portlet.PortletRequest;
 import javax.portlet.WindowState;
 
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
@@ -98,23 +83,8 @@ public class PortalInstancesLocalServiceImpl
 	extends PortalInstancesLocalServiceBaseImpl {
 
 	@Override
-	public void addCompanyId(long companyId) {
-		PortalInstances.addCompanyId(companyId);
-	}
-
-	@Override
-	public long getCompanyId(HttpServletRequest httpServletRequest) {
-		return PortalInstances.getCompanyId(httpServletRequest);
-	}
-
-	@Override
 	public long[] getCompanyIds() {
 		return PortalInstances.getCompanyIds();
-	}
-
-	@Override
-	public long[] getCompanyIdsBySQL() throws SQLException {
-		return PortalInstances.getCompanyIdsBySQL();
 	}
 
 	@Override
@@ -123,19 +93,13 @@ public class PortalInstancesLocalServiceImpl
 	}
 
 	@Override
-	public String[] getWebIds() {
-		return PortalInstances.getWebIds();
-	}
-
-	@Override
 	public void initializePortalInstance(
-			long companyId, String siteInitializerKey,
-			ServletContext servletContext)
+			long companyId, String siteInitializerKey)
 		throws PortalException {
 
 		Company company = _companyLocalService.getCompany(companyId);
 
-		PortalInstances.initCompany(servletContext, company.getWebId());
+		PortalInstances.initCompany(company);
 
 		if (Validator.isNull(siteInitializerKey)) {
 			return;
@@ -195,41 +159,6 @@ public class PortalInstancesLocalServiceImpl
 		}
 	}
 
-	@Override
-	public boolean isAutoLoginIgnoreHost(String host) {
-		return PortalInstances.isAutoLoginIgnoreHost(host);
-	}
-
-	@Override
-	public boolean isAutoLoginIgnorePath(String path) {
-		return PortalInstances.isAutoLoginIgnorePath(path);
-	}
-
-	@Override
-	public boolean isCompanyActive(long companyId) {
-		return PortalInstances.isCompanyActive(companyId);
-	}
-
-	@Override
-	public boolean isVirtualHostsIgnoreHost(String host) {
-		return PortalInstances.isVirtualHostsIgnoreHost(host);
-	}
-
-	@Override
-	public boolean isVirtualHostsIgnorePath(String path) {
-		return PortalInstances.isVirtualHostsIgnorePath(path);
-	}
-
-	@Override
-	public void reload(ServletContext servletContext) {
-		PortalInstances.reload(servletContext);
-	}
-
-	@Override
-	public void removeCompany(long companyId) {
-		PortalInstances.removeCompany(companyId);
-	}
-
 	@Clusterable
 	@Override
 	public void synchronizePortalInstances() {
@@ -249,11 +178,7 @@ public class PortalInstancesLocalServiceImpl
 						return;
 					}
 
-					ServletContext portalContext = ServletContextPool.get(
-						_portal.getPathContext());
-
-					PortalInstances.initCompany(
-						portalContext, company.getWebId());
+					PortalInstances.initCompany(company);
 				});
 
 			_companyLocalService.forEachCompanyId(
@@ -261,7 +186,7 @@ public class PortalInstancesLocalServiceImpl
 				ArrayUtil.toLongArray(removeableCompanyIds));
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -313,22 +238,20 @@ public class PortalInstancesLocalServiceImpl
 			(LayoutTypePortlet)controlPanelLayout.getLayoutType());
 		themeDisplay.setLocale(LocaleUtil.getSiteDefault());
 
-		String themeId = PrefsPropsUtil.getString(
+		String themeId = _prefsProps.getString(
 			company.getCompanyId(),
 			PropsKeys.CONTROL_PANEL_LAYOUT_REGULAR_THEME_ID);
 
-		Theme theme = _themeLocalService.getTheme(
-			company.getCompanyId(), themeId);
-
 		themeDisplay.setLookAndFeel(
-			theme, ColorSchemeFactoryUtil.getDefaultRegularColorScheme());
+			_themeLocalService.getTheme(company.getCompanyId(), themeId),
+			ColorSchemeFactoryUtil.getDefaultRegularColorScheme());
 
 		themeDisplay.setPermissionChecker(permissionChecker);
 		themeDisplay.setPlid(controlPanelPlid);
 		themeDisplay.setRealUser(user);
 		themeDisplay.setRequest(httpServletRequest);
-		themeDisplay.setScopeGroupId(group.getGroupId());
-		themeDisplay.setSiteGroupId(group.getGroupId());
+		themeDisplay.setScopeGroupId(controlPanelLayout.getGroupId());
+		themeDisplay.setSiteGroupId(controlPanelLayout.getGroupId());
 		themeDisplay.setUser(user);
 
 		httpServletRequest.setAttribute(WebKeys.THEME_DISPLAY, themeDisplay);
@@ -362,14 +285,13 @@ public class PortalInstancesLocalServiceImpl
 
 			httpServletRequest.setAttribute(
 				JavaConstants.JAVAX_PORTLET_REQUEST, liferayRenderRequest);
-
 			httpServletRequest.setAttribute(
 				JavaConstants.JAVAX_PORTLET_RESPONSE,
 				RenderResponseFactory.create(
 					new DummyHttpServletResponse(), liferayRenderRequest));
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return serviceContext;
@@ -380,9 +302,6 @@ public class PortalInstancesLocalServiceImpl
 
 	@Reference
 	private CompanyLocalService _companyLocalService;
-
-	@Reference
-	private CompanyService _companyService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
@@ -398,6 +317,9 @@ public class PortalInstancesLocalServiceImpl
 
 	@Reference
 	private PortletLocalService _portletLocalService;
+
+	@Reference
+	private PrefsProps _prefsProps;
 
 	@Reference
 	private RoleLocalService _roleLocalService;

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.internal.sla.processor;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
@@ -23,7 +15,7 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.workflow.metrics.model.WorkflowMetricsSLADefinitionVersion;
 import com.liferay.portal.workflow.metrics.sla.calendar.WorkflowMetricsSLACalendar;
-import com.liferay.portal.workflow.metrics.sla.calendar.WorkflowMetricsSLACalendarTracker;
+import com.liferay.portal.workflow.metrics.sla.calendar.WorkflowMetricsSLACalendarRegistry;
 import com.liferay.portal.workflow.metrics.sla.processor.WorkflowMetricsSLAStatus;
 
 import java.time.Duration;
@@ -37,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Stack;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Rafael Praxedes
  */
-@Component(immediate = true, service = WorkflowMetricsSLAProcessor.class)
+@Component(service = WorkflowMetricsSLAProcessor.class)
 public class WorkflowMetricsSLAProcessor {
 
 	public WorkflowMetricsSLAInstanceResult process(
@@ -79,7 +69,7 @@ public class WorkflowMetricsSLAProcessor {
 		}
 
 		WorkflowMetricsSLACalendar workflowMetricsSLACalendar =
-			_workflowMetricsSLACalendarTracker.getWorkflowMetricsSLACalendar(
+			_workflowMetricsSLACalendarRegistry.getWorkflowMetricsSLACalendar(
 				workflowMetricsSLADefinitionVersion.getCalendarKey());
 		WorkflowMetricsSLAStopwatch workflowMetricsSLAStopwatch =
 			_createWorkflowMetricsSLAStopwatch(
@@ -452,8 +442,8 @@ public class WorkflowMetricsSLAProcessor {
 				setProcessId(workflowMetricsSLAInstanceResult.getProcessId());
 				setSLADefinitionId(
 					workflowMetricsSLAInstanceResult.getSLADefinitionId());
-				setTaskName(document.getString("name"));
 				setTaskId(document.getLong("taskId"));
+				setTaskName(document.getString("name"));
 				setWorkflowMetricsSLAStatus(
 					_getWorkflowMetricsSLAStatus(
 						document, workflowMetricsSLAInstanceResult));
@@ -472,17 +462,11 @@ public class WorkflowMetricsSLAProcessor {
 			return Collections.emptyList();
 		}
 
-		return Stream.of(
-			documents
-		).flatMap(
-			List::stream
-		).map(
+		return TransformUtil.transform(
+			documents,
 			document -> _createWorkflowMetricsSLATaskResult(
 				document, instanceCompleted, instanceCompletionLocalDateTime,
-				nowLocalDateTime, workflowMetricsSLAInstanceResult)
-		).collect(
-			Collectors.toList()
-		);
+				nowLocalDateTime, workflowMetricsSLAInstanceResult));
 	}
 
 	private LocalDateTime _getMaxLocalDateTime(
@@ -620,7 +604,7 @@ public class WorkflowMetricsSLAProcessor {
 		DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
 	@Reference
-	private WorkflowMetricsSLACalendarTracker
-		_workflowMetricsSLACalendarTracker;
+	private WorkflowMetricsSLACalendarRegistry
+		_workflowMetricsSLACalendarRegistry;
 
 }

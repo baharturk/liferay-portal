@@ -1,24 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-var copySaved = '';
+import {openModal} from 'frontend-js-web';
 
-var starterkitList = document.getElementsByClassName('liferay-online-item');
+let copySaved = '';
+
+const starterkitList = document.getElementsByClassName('liferay-online-item');
 
 function addActiveClass(event) {
 	event.target.classList.add('active');
 }
 
 if (starterkitList) {
-	for (var i = 0, len = starterkitList.length; i < len; i++) {
+	for (let i = 0, len = starterkitList.length; i < len; i++) {
 		starterkitList[i].addEventListener('focus', addActiveClass);
 	}
 }
@@ -65,7 +61,7 @@ function openItem(
 	redirectURL,
 	siteInitializerKey
 ) {
-	Liferay.Util.openModal({
+	openModal({
 		bodyHTML: `<div class="form-group" id="snGroup">
 				 <label for="siteName">Site name
 					 <small> (more than 4 characters)</small>

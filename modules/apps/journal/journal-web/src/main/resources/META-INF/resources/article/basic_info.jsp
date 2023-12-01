@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -24,10 +15,10 @@ JournalEditArticleDisplayContext journalEditArticleDisplayContext = new JournalE
 DDMStructure ddmStructure = journalEditArticleDisplayContext.getDDMStructure();
 %>
 
-<aui:input name="ddmStructureKey" type="hidden" value="<%= ddmStructure.getStructureKey() %>" />
+<aui:input name="ddmStructureId" type="hidden" value="<%= ddmStructure.getStructureId() %>" />
 
 <c:if test="<%= journalWebConfiguration.changeableDefaultLanguage() %>">
-	<div id="<%= liferayPortletResponse.getNamespace() + "-change-default-language" %>">
+	<div id="<%= liferayPortletResponse.getNamespace() %>-change-default-language">
 		<react:component
 			module="js/ChangeDefaultLanguage.es"
 			props="<%= journalEditArticleDisplayContext.getChangeDefaultLanguageData() %>"
@@ -46,7 +37,11 @@ DDMStructure ddmStructure = journalEditArticleDisplayContext.getDDMStructure();
 	</div>
 
 	<div class="form-group">
-		<aui:button name="selectFolderButton" value="select" />
+		<clay:button
+			displayType="secondary"
+			id='<%= liferayPortletResponse.getNamespace() + "selectFolderButton" %>'
+			label="select"
+		/>
 	</div>
 
 	<liferay-frontend:component
@@ -66,7 +61,7 @@ DDMStructure ddmStructure = journalEditArticleDisplayContext.getDDMStructure();
 				).buildString()
 			).build()
 		%>'
-		module="js/SelectFolderButton.es"
+		module="js/SelectFolderButton"
 	/>
 </c:if>
 
@@ -101,11 +96,20 @@ DDMStructure ddmStructure = journalEditArticleDisplayContext.getDDMStructure();
 		</div>
 
 		<aui:script>
-			Liferay.Util.disableToggleBoxes(
-				'<portlet:namespace />autoArticleId',
-				'<portlet:namespace />newArticleId',
-				true
+			var autoArticleInput = document.getElementById(
+				'<portlet:namespace />autoArticleId'
 			);
+			var newArticleInput = document.getElementById(
+				'<portlet:namespace />newArticleId'
+			);
+
+			if (autoArticleInput && newArticleInput) {
+				newArticleInput.disabled = autoArticleInput.checked;
+
+				autoArticleInput.addEventListener('click', () => {
+					Liferay.Util.toggleDisabled(newArticleInput, !newArticleInput.disabled);
+				});
+			}
 		</aui:script>
 	</c:when>
 	<c:otherwise>
@@ -121,7 +125,7 @@ DDMStructure ddmStructure = journalEditArticleDisplayContext.getDDMStructure();
 </c:choose>
 
 <div>
-	<label for="<portlet:namespace />descriptionMapAsXML"><liferay-ui:message key="description" /></label>
+	<label for="<portlet:namespace />descriptionMapAsXML" id="<portlet:namespace />Aria"><liferay-ui:message key="description" /></label>
 
 	<liferay-ui:input-localized
 		availableLocales="<%= journalEditArticleDisplayContext.getAvailableLocales() %>"

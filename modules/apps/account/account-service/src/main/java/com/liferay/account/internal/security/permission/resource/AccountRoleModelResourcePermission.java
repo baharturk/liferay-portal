@@ -1,40 +1,45 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.internal.security.permission.resource;
 
+import com.liferay.account.constants.AccountActionKeys;
 import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.model.AccountEntry;
+import com.liferay.account.model.AccountEntryOrganizationRel;
 import com.liferay.account.model.AccountRole;
+import com.liferay.account.role.AccountRolePermissionThreadLocal;
 import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
 import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.service.OrganizationLocalService;
+import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
+import com.liferay.portal.kernel.service.permission.RolePermissionUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
+
+import java.util.List;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.account.model.AccountRole",
 	service = ModelResourcePermission.class
 )
@@ -83,28 +88,78 @@ public class AccountRoleModelResourcePermission
 			String actionId)
 		throws PortalException {
 
+		Group group = null;
+
+		long contextAccountEntryId =
+			AccountRolePermissionThreadLocal.getAccountEntryId();
+
+		if (contextAccountEntryId > 0) {
+			AccountEntry accountEntry =
+				_accountEntryLocalService.getAccountEntry(
+					contextAccountEntryId);
+
+			group = accountEntry.getAccountEntryGroup();
+		}
+
 		AccountRole accountRole = _accountRoleLocalService.fetchAccountRole(
 			accountRoleId);
 
-		if (accountRole != null) {
-			Role role = accountRole.getRole();
+		if (accountRole == null) {
+			return permissionChecker.hasPermission(
+				group, AccountRole.class.getName(), 0L, actionId);
+		}
 
-			if (permissionChecker.hasOwnerPermission(
-					permissionChecker.getCompanyId(),
-					AccountRole.class.getName(), accountRoleId,
-					role.getUserId(), actionId)) {
+		Role role = accountRole.getRole();
+
+		if (permissionChecker.hasOwnerPermission(
+				permissionChecker.getCompanyId(), AccountRole.class.getName(),
+				accountRoleId, role.getUserId(), actionId)) {
+
+			return true;
+		}
+
+		long accountRoleAccountEntryId = accountRole.getAccountEntryId();
+
+		if ((accountRoleAccountEntryId >
+				AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT) &&
+			(contextAccountEntryId >
+				AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT) &&
+			!Objects.equals(accountRoleAccountEntryId, contextAccountEntryId)) {
+
+			return false;
+		}
+
+		for (long accountEntryId :
+				new long[] {accountRoleAccountEntryId, contextAccountEntryId}) {
+
+			if (Objects.equals(actionId, ActionKeys.VIEW) &&
+				RolePermissionUtil.contains(
+					permissionChecker, role.getRoleId(), ActionKeys.VIEW)) {
+
+				return true;
+			}
+
+			if (Objects.equals(actionId, AccountActionKeys.ASSIGN_USERS) &&
+				(accountEntryId > 0) &&
+				_accountEntryModelResourcePermission.contains(
+					permissionChecker, accountEntryId,
+					ActionKeys.MANAGE_USERS)) {
+
+				return true;
+			}
+
+			if (_checkOrganizationRolesPermission(
+					accountEntryId, accountRoleId, actionId,
+					permissionChecker)) {
 
 				return true;
 			}
 		}
 
-		Group group = null;
-
-		long accountEntryId = accountRole.getAccountEntryId();
-
-		if (accountEntryId > 0) {
+		if ((group == null) && (accountRoleAccountEntryId > 0)) {
 			AccountEntry accountEntry =
-				_accountEntryLocalService.getAccountEntry(accountEntryId);
+				_accountEntryLocalService.getAccountEntry(
+					accountRoleAccountEntryId);
 
 			group = accountEntry.getAccountEntryGroup();
 		}
@@ -123,11 +178,82 @@ public class AccountRoleModelResourcePermission
 		return _portletResourcePermission;
 	}
 
+	private boolean _checkOrganizationRolesPermission(
+			long accountEntryId, long accountRoleId, String actionId,
+			PermissionChecker permissionChecker)
+		throws PortalException {
+
+		if (accountEntryId == 0) {
+			return false;
+		}
+
+		long[] userOrganizationIds =
+			_organizationLocalService.getUserOrganizationIds(
+				permissionChecker.getUserId(), true);
+
+		List<AccountEntryOrganizationRel> accountEntryOrganizationRels =
+			_accountEntryOrganizationRelLocalService.
+				getAccountEntryOrganizationRels(accountEntryId);
+
+		for (AccountEntryOrganizationRel accountEntryOrganizationRel :
+				accountEntryOrganizationRels) {
+
+			Organization organization =
+				_organizationLocalService.fetchOrganization(
+					accountEntryOrganizationRel.getOrganizationId());
+
+			Organization originalOrganization = organization;
+
+			while (organization != null) {
+				if (Objects.equals(organization, originalOrganization) &&
+					permissionChecker.hasPermission(
+						organization.getGroupId(), AccountRole.class.getName(),
+						accountRoleId, actionId)) {
+
+					return true;
+				}
+
+				if (!Objects.equals(organization, originalOrganization) &&
+					OrganizationPermissionUtil.contains(
+						permissionChecker, organization,
+						AccountActionKeys.MANAGE_SUBORGANIZATIONS_ACCOUNTS) &&
+					ArrayUtil.contains(
+						userOrganizationIds,
+						organization.getOrganizationId()) &&
+					permissionChecker.hasPermission(
+						organization.getGroupId(), AccountRole.class.getName(),
+						accountRoleId, actionId)) {
+
+					return true;
+				}
+
+				organization = organization.getParentOrganization();
+			}
+		}
+
+		return false;
+	}
+
 	@Reference
 	private AccountEntryLocalService _accountEntryLocalService;
 
+	@Reference(
+		policy = ReferencePolicy.DYNAMIC,
+		policyOption = ReferencePolicyOption.GREEDY,
+		target = "(model.class.name=com.liferay.account.model.AccountEntry)"
+	)
+	private volatile ModelResourcePermission<AccountEntry>
+		_accountEntryModelResourcePermission;
+
+	@Reference
+	private AccountEntryOrganizationRelLocalService
+		_accountEntryOrganizationRelLocalService;
+
 	@Reference
 	private AccountRoleLocalService _accountRoleLocalService;
+
+	@Reference
+	private OrganizationLocalService _organizationLocalService;
 
 	@Reference(
 		target = "(resource.name=" + AccountConstants.RESOURCE_NAME + ")"

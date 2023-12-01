@@ -1,23 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.menu.item.display.page.internal.portlet.action;
 
+import com.liferay.info.item.InfoItemClassDetails;
+import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.info.item.provider.InfoItemDetailsProvider;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
@@ -25,6 +19,7 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -33,7 +28,10 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.navigation.admin.constants.SiteNavigationAdminPortletKeys;
 import com.liferay.site.navigation.exception.SiteNavigationMenuItemNameException;
+import com.liferay.site.navigation.model.SiteNavigationMenuItem;
 import com.liferay.site.navigation.service.SiteNavigationMenuItemService;
+
+import java.util.Arrays;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
@@ -45,7 +43,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Lourdes Fernández Besada
  */
 @Component(
-	immediate = true,
 	property = {
 		"javax.portlet.name=" + SiteNavigationAdminPortletKeys.SITE_NAVIGATION_ADMIN,
 		"mvc.command.name=/navigation_menu/add_display_page_type_site_navigation_menu_item"
@@ -60,7 +57,7 @@ public class AddDisplayPageTypeSiteNavigationMenuItemMVCActionCommand
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
 		long classNameId = ParamUtil.getLong(actionRequest, "classNameId");
 		long classPK = ParamUtil.getLong(actionRequest, "classPK");
@@ -78,41 +75,69 @@ public class AddDisplayPageTypeSiteNavigationMenuItemMVCActionCommand
 			ServiceContext serviceContext = ServiceContextFactory.getInstance(
 				actionRequest);
 
+			long parentSiteNavigationMenuItemId = ParamUtil.getLong(
+				actionRequest, "parentSiteNavigationMenuItemId");
+
 			try {
-				_siteNavigationMenuItemService.addSiteNavigationMenuItem(
-					themeDisplay.getScopeGroupId(), siteNavigationMenuId, 0,
-					siteNavigationMenuItemType,
-					UnicodePropertiesBuilder.create(
-						true
-					).put(
-						"className", siteNavigationMenuItemType
-					).put(
-						"classNameId", String.valueOf(classNameId)
-					).put(
-						"classPK", String.valueOf(classPK)
-					).put(
-						"classTypeId",
-						String.valueOf(
-							ParamUtil.getLong(actionRequest, "classTypeId"))
-					).put(
-						"title", ParamUtil.getString(actionRequest, "title")
-					).put(
-						"type", ParamUtil.getString(actionRequest, "type")
-					).buildString(),
-					serviceContext);
+				SiteNavigationMenuItem siteNavigationMenuItem =
+					_siteNavigationMenuItemService.addSiteNavigationMenuItem(
+						themeDisplay.getScopeGroupId(), siteNavigationMenuId,
+						parentSiteNavigationMenuItemId,
+						siteNavigationMenuItemType,
+						UnicodePropertiesBuilder.create(
+							true
+						).put(
+							"className", siteNavigationMenuItemType
+						).put(
+							"classNameId", String.valueOf(classNameId)
+						).put(
+							"classPK", String.valueOf(classPK)
+						).put(
+							"classTypeId",
+							String.valueOf(
+								ParamUtil.getLong(actionRequest, "classTypeId"))
+						).put(
+							"title", ParamUtil.getString(actionRequest, "title")
+						).put(
+							"type", ParamUtil.getString(actionRequest, "type")
+						).buildString(),
+						serviceContext);
+
+				int order = ParamUtil.getInteger(actionRequest, "order", -1);
+
+				if (order >= 0) {
+					_siteNavigationMenuItemService.updateSiteNavigationMenuItem(
+						siteNavigationMenuItem.getSiteNavigationMenuItemId(),
+						parentSiteNavigationMenuItemId, order);
+				}
+
+				InfoItemDetailsProvider<?> infoItemDetailsProvider =
+					_infoItemServiceRegistry.getFirstInfoItemService(
+						InfoItemDetailsProvider.class,
+						_portal.getClassName(classNameId));
+
+				InfoItemClassDetails infoItemClassDetails =
+					infoItemDetailsProvider.getInfoItemClassDetails();
+
+				SessionMessages.add(
+					actionRequest, "siteNavigationMenuItemsAdded",
+					_language.format(
+						themeDisplay.getLocale(), "x-x-was-added-to-this-menu",
+						Arrays.asList(
+							1,
+							infoItemClassDetails.getLabel(
+								themeDisplay.getLocale()))));
 			}
 			catch (SiteNavigationMenuItemNameException
 						siteNavigationMenuItemNameException) {
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(
-						siteNavigationMenuItemNameException,
-						siteNavigationMenuItemNameException);
+					_log.debug(siteNavigationMenuItemNameException);
 				}
 
 				jsonObject.put(
 					"errorMessage",
-					LanguageUtil.get(
+					_language.get(
 						_portal.getHttpServletRequest(actionRequest),
 						"an-unexpected-error-occurred"));
 			}
@@ -129,7 +154,7 @@ public class AddDisplayPageTypeSiteNavigationMenuItemMVCActionCommand
 
 			jsonObject.put(
 				"errorMessage",
-				LanguageUtil.get(
+				_language.get(
 					_portal.getHttpServletRequest(actionRequest),
 					"an-unexpected-error-occurred"));
 		}
@@ -140,6 +165,15 @@ public class AddDisplayPageTypeSiteNavigationMenuItemMVCActionCommand
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		AddDisplayPageTypeSiteNavigationMenuItemMVCActionCommand.class);
+
+	@Reference
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

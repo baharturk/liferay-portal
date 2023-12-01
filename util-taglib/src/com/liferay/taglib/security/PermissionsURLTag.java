@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.security;
@@ -18,6 +9,7 @@ import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.WindowStateFactory;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -38,6 +30,66 @@ import javax.servlet.jsp.tagext.TagSupport;
  * @author Brian Wing Shun Chan
  */
 public class PermissionsURLTag extends TagSupport {
+
+	public static String doTag(
+			String redirect, String modelResource, Object resourceGroupId,
+			String windowState, HttpServletRequest httpServletRequest)
+		throws Exception {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		resourceGroupId = _getResourceGroupId(resourceGroupId, themeDisplay);
+
+		if (Validator.isNull(redirect) &&
+			(Validator.isNull(windowState) ||
+			 !windowState.equals(LiferayWindowState.POP_UP.toString()))) {
+
+			redirect = PortalUtil.getCurrentURL(httpServletRequest);
+		}
+
+		if (Validator.isNull(windowState)) {
+			if (themeDisplay.isStatePopUp()) {
+				windowState = LiferayWindowState.POP_UP.toString();
+			}
+			else {
+				windowState = WindowState.MAXIMIZED.toString();
+			}
+		}
+
+		PortletURL portletURL = PortletURLBuilder.create(
+			PortletProviderUtil.getPortletURL(
+				httpServletRequest,
+				PortletConfigurationApplicationType.PortletConfiguration.
+					CLASS_NAME,
+				PortletProvider.Action.VIEW)
+		).setMVCPath(
+			"/edit_permissions.jsp"
+		).setPortletResource(
+			() -> {
+				PortletDisplay portletDisplay =
+					themeDisplay.getPortletDisplay();
+
+				return portletDisplay.getId();
+			}
+		).setParameter(
+			"modelResource", modelResource
+		).setParameter(
+			"portletConfiguration", true
+		).setParameter(
+			"resourceGroupId", resourceGroupId
+		).setWindowState(
+			WindowStateFactory.getWindowState(windowState)
+		).buildPortletURL();
+
+		if (Validator.isNotNull(redirect)) {
+			portletURL.setParameter("redirect", redirect);
+			portletURL.setParameter("returnToFullPageURL", redirect);
+		}
+
+		return portletURL.toString();
+	}
 
 	/**
 	 * Returns the URL for opening the resource's permissions configuration
@@ -76,24 +128,7 @@ public class PermissionsURLTag extends TagSupport {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		if (resourceGroupId instanceof Number) {
-			Number resourceGroupIdNumber = (Number)resourceGroupId;
-
-			if (resourceGroupIdNumber.longValue() < 0) {
-				resourceGroupId = null;
-			}
-		}
-		else if (resourceGroupId instanceof String) {
-			String esourceGroupIdString = (String)resourceGroupId;
-
-			if (esourceGroupIdString.length() == 0) {
-				resourceGroupId = null;
-			}
-		}
-
-		if (resourceGroupId == null) {
-			resourceGroupId = String.valueOf(themeDisplay.getScopeGroupId());
-		}
+		resourceGroupId = _getResourceGroupId(resourceGroupId, themeDisplay);
 
 		if (Validator.isNull(redirect) &&
 			(Validator.isNull(windowState) ||
@@ -203,6 +238,31 @@ public class PermissionsURLTag extends TagSupport {
 
 	public void setWindowState(String windowState) {
 		_windowState = windowState;
+	}
+
+	private static Object _getResourceGroupId(
+		Object resourceGroupId, ThemeDisplay themeDisplay) {
+
+		if (resourceGroupId instanceof Number) {
+			Number resourceGroupIdNumber = (Number)resourceGroupId;
+
+			if (resourceGroupIdNumber.longValue() < 0) {
+				resourceGroupId = null;
+			}
+		}
+		else if (resourceGroupId instanceof String) {
+			String resourceGroupIdString = (String)resourceGroupId;
+
+			if (resourceGroupIdString.length() == 0) {
+				resourceGroupId = null;
+			}
+		}
+
+		if (resourceGroupId == null) {
+			resourceGroupId = String.valueOf(themeDisplay.getScopeGroupId());
+		}
+
+		return resourceGroupId;
 	}
 
 	private String _modelResource;

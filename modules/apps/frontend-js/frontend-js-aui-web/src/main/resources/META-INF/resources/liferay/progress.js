@@ -1,36 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-progress',
 	(A) => {
-		var Lang = A.Lang;
+		const Lang = A.Lang;
 
-		var STR_EMPTY = '';
+		const STR_EMPTY = '';
 
-		var STR_UPDATE_PERIOD = 'updatePeriod';
+		const STR_UPDATE_PERIOD = 'updatePeriod';
 
-		var STR_VALUE = 'value';
+		const STR_VALUE = 'value';
 
-		var TPL_FRAME =
-			'<iframe frameborder="0" height="0" id="{0}-poller" src="javascript:;" style="display:none" tabindex="-1" title="empty" width="0"></iframe>';
+		const TPL_FRAME =
+			'<iframe frameborder="0" height="0" id="{0}-poller" src="javascript:void(0);" style="display:none" tabindex="-1" title="empty" width="0"></iframe>';
 
-		var TPL_URL_UPDATE =
+		const TPL_URL_UPDATE =
 			themeDisplay.getPathMain() +
 			'/portal/progress_poller?progressId={0}&sessionKey={1}&updatePeriod={2}';
 
-		var Progress = A.Component.create({
+		const Progress = A.Component.create({
 			ATTRS: {
 				message: {
 					validator: Lang.isString,
@@ -54,7 +45,7 @@ AUI.add(
 
 			prototype: {
 				_afterComplete() {
-					var instance = this;
+					const instance = this;
 
 					instance
 						.get('boundingBox')
@@ -66,9 +57,9 @@ AUI.add(
 				},
 
 				_afterValueChange(event) {
-					var instance = this;
+					const instance = this;
 
-					var label = instance.get('message');
+					let label = instance.get('message');
 
 					if (!label) {
 						label = event.newVal + '%';
@@ -78,7 +69,7 @@ AUI.add(
 				},
 
 				_onIframeLoad() {
-					var instance = this;
+					const instance = this;
 
 					setTimeout(() => {
 						instance._frame
@@ -88,7 +79,7 @@ AUI.add(
 				},
 
 				bindUI() {
-					var instance = this;
+					const instance = this;
 
 					Progress.superclass.bindUI.call(instance, arguments);
 
@@ -103,13 +94,13 @@ AUI.add(
 				},
 
 				renderUI() {
-					var instance = this;
+					const instance = this;
 
 					Progress.superclass.renderUI.call(instance, arguments);
 
-					var tplFrame = Lang.sub(TPL_FRAME, [instance.get('id')]);
+					const tplFrame = Lang.sub(TPL_FRAME, [instance.get('id')]);
 
-					var frame = A.Node.create(tplFrame);
+					const frame = A.Node.create(tplFrame);
 
 					instance.get('boundingBox').placeBefore(frame);
 
@@ -117,7 +108,7 @@ AUI.add(
 				},
 
 				startProgress() {
-					var instance = this;
+					const instance = this;
 
 					if (!instance.get('rendered')) {
 						instance.render();
@@ -133,9 +124,9 @@ AUI.add(
 				},
 
 				updateProgress() {
-					var instance = this;
+					const instance = this;
 
-					var url = Lang.sub(TPL_URL_UPDATE, [
+					const url = Lang.sub(TPL_URL_UPDATE, [
 						instance.get('id'),
 						instance.get('sessionKey'),
 						instance.get(STR_UPDATE_PERIOD),

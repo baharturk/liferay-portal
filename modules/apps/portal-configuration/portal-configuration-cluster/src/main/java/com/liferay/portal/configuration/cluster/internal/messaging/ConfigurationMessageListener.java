@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.configuration.cluster.internal.messaging;
@@ -24,6 +15,7 @@ import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageListener;
 
 import java.util.Dictionary;
+import java.util.Set;
 
 import org.osgi.framework.Constants;
 import org.osgi.service.cm.Configuration;
@@ -36,38 +28,17 @@ import org.osgi.service.component.annotations.Reference;
  * @author Raymond Augé
  */
 @Component(
-	enabled = false, immediate = true,
+	enabled = false,
 	property = "destination.name=" + ConfigurationClusterDestinationNames.CONFIGURATION,
 	service = MessageListener.class
 )
 public class ConfigurationMessageListener extends BaseMessageListener {
-
-	@Reference(unbind = "-")
-	public void setReloadablePersistenceManager(
-		ReloadablePersistenceManager reloadablePersistenceManager) {
-
-		_reloadablePersistenceManager = reloadablePersistenceManager;
-	}
 
 	@Override
 	protected void doReceive(Message message) throws Exception {
 		_reloadConfiguration(
 			message.getString(Constants.SERVICE_PID),
 			message.getInteger("configuration.event.type"));
-	}
-
-	@Reference(unbind = "-")
-	protected void setConfigurationAdmin(
-		ConfigurationAdmin configurationAdmin) {
-
-		_configurationAdmin = configurationAdmin;
-	}
-
-	@Reference(
-		target = "(destination.name=" + ConfigurationClusterDestinationNames.CONFIGURATION + ")",
-		unbind = "-"
-	)
-	protected void setDestination(Destination destination) {
 	}
 
 	private void _reloadConfiguration(String pid, int type) throws Exception {
@@ -89,6 +60,18 @@ public class ConfigurationMessageListener extends BaseMessageListener {
 			}
 
 			for (Configuration configuration : configurations) {
+				Set<Configuration.ConfigurationAttribute>
+					configurationAttributes = configuration.getAttributes();
+				boolean readOnly = false;
+
+				if (configurationAttributes.contains(
+						Configuration.ConfigurationAttribute.READ_ONLY)) {
+
+					configuration.removeAttributes(
+						Configuration.ConfigurationAttribute.READ_ONLY);
+					readOnly = true;
+				}
+
 				if (type == ConfigurationEvent.CM_DELETED) {
 					configuration.delete();
 				}
@@ -99,6 +82,11 @@ public class ConfigurationMessageListener extends BaseMessageListener {
 					else {
 						configuration.update(dictionary);
 					}
+
+					if (readOnly) {
+						configuration.addAttributes(
+							Configuration.ConfigurationAttribute.READ_ONLY);
+					}
 				}
 			}
 		}
@@ -107,7 +95,15 @@ public class ConfigurationMessageListener extends BaseMessageListener {
 		}
 	}
 
+	@Reference
 	private ConfigurationAdmin _configurationAdmin;
+
+	@Reference(
+		target = "(destination.name=" + ConfigurationClusterDestinationNames.CONFIGURATION + ")"
+	)
+	private Destination _destination;
+
+	@Reference
 	private ReloadablePersistenceManager _reloadablePersistenceManager;
 
 }

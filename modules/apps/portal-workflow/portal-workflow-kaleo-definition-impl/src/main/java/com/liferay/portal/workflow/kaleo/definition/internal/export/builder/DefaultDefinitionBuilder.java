@@ -1,19 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.definition.internal.export.builder;
 
+import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapperFactory;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -34,13 +28,16 @@ import com.liferay.portal.workflow.kaleo.service.KaleoTransitionLocalService;
 
 import java.util.List;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Michael C. Han
  */
-@Component(immediate = true, service = DefinitionBuilder.class)
+@Component(service = DefinitionBuilder.class)
 public class DefaultDefinitionBuilder implements DefinitionBuilder {
 
 	@Override
@@ -67,6 +64,22 @@ public class DefaultDefinitionBuilder implements DefinitionBuilder {
 				StringBundler.concat(version, CharPool.PERIOD, 0)));
 	}
 
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext,
+			(Class<NodeBuilder<Node>>)(Class<?>)NodeBuilder.class, null,
+			ServiceReferenceMapperFactory.create(
+				bundleContext,
+				(nodeBuilder, emitter) -> emitter.emit(
+					String.valueOf(nodeBuilder.getNodeType()))));
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerMap.close();
+	}
+
 	private Definition _buildDefinition(
 			KaleoDefinitionVersion kaleoDefinitionVersion)
 		throws PortalException {
@@ -82,7 +95,7 @@ public class DefaultDefinitionBuilder implements DefinitionBuilder {
 				kaleoDefinitionVersion.getKaleoDefinitionVersionId());
 
 		for (KaleoNode kaleoNode : kaleoNodes) {
-			NodeBuilder nodeBuilder = _nodeBuilderRegistry.getNodeBuilder(
+			NodeBuilder<Node> nodeBuilder = _serviceTrackerMap.getService(
 				kaleoNode.getType());
 
 			Node node = nodeBuilder.buildNode(kaleoNode);
@@ -136,7 +149,6 @@ public class DefaultDefinitionBuilder implements DefinitionBuilder {
 	@Reference
 	private KaleoTransitionLocalService _kaleoTransitionLocalService;
 
-	@Reference
-	private NodeBuilderRegistry _nodeBuilderRegistry;
+	private ServiceTrackerMap<String, NodeBuilder<Node>> _serviceTrackerMap;
 
 }

@@ -1,41 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {act, cleanup, fireEvent, render, within} from '@testing-library/react';
+import {act, cleanup, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
 import ImportMappingItem from '../../../src/main/resources/META-INF/resources/js/import/ImportMappingItem';
 
-const field = 'currencyCode';
-
-const selectableFields = [
-	{
-		label: 'test',
-		required: true,
-		value: 'test',
-	},
-	{
-		label: 'testSelect',
-		value: 'testSelect',
-	},
-];
-
 const BASE_PROPS = {
-	field,
+	dbField: {
+		name: 'nameTest',
+	},
+	fileFields: ['first name', 'last name', 'address'],
+	formEvaluated: false,
 	portletNamespace: 'test',
-	selectableFields,
+	required: true,
+	selectedFileField: 'first name',
+	updateFieldMapping: () => {},
 };
 
 describe('ImportMappingItem', () => {
@@ -45,102 +28,54 @@ describe('ImportMappingItem', () => {
 		render(<ImportMappingItem {...BASE_PROPS} />);
 	});
 
-	it('must show dropdown items on select click', () => {
-		const {getByLabelText, getByText} = render(
-			<ImportMappingItem {...BASE_PROPS} />
-		);
-
-		act(() => {
-			fireEvent.click(getByLabelText(BASE_PROPS.field));
-		});
-
-		expect(
-			getByText(BASE_PROPS.selectableFields[0].label)
-		).toBeInTheDocument();
-	});
-
-	it('must call the onChange method on user click dropdown item not selected', () => {
+	it('must call the updateFieldMapping method when a user selects a value', () => {
 		const onChangeMock = jest.fn();
 
-		const {getByLabelText, getByText} = render(
-			<ImportMappingItem {...BASE_PROPS} onChange={onChangeMock} />
-		);
-
-		act(() => {
-			fireEvent.click(getByLabelText(BASE_PROPS.field));
-			fireEvent.click(getByText(BASE_PROPS.selectableFields[0].label));
-		});
-
-		expect(onChangeMock).toBeCalledTimes(1);
-	});
-
-	it('must not call the onChange method on user click dropdown item selected', () => {
-		const onChangeMock = jest.fn();
-
-		const {getByLabelText, getByRole} = render(
+		const {getByLabelText} = render(
 			<ImportMappingItem
-				field={field}
-				onChange={onChangeMock}
-				portletNamespace={BASE_PROPS.portletNamespace}
-				selectableFields={selectableFields.filter(
-					(field) => field.label !== selectableFields[0].label
-				)}
-				selectedField={selectableFields[0].value}
+				{...BASE_PROPS}
+				updateFieldMapping={onChangeMock}
 			/>
 		);
 
 		act(() => {
-			fireEvent.click(getByLabelText(BASE_PROPS.field));
-			fireEvent.click(
-				within(getByRole('list')).getByText(selectableFields[0].label)
-			);
+			fireEvent.change(getByLabelText(/nameTest/), {
+				target: {value: 'address'},
+			});
 		});
 
-		expect(onChangeMock).not.toBeCalled();
+		expect(onChangeMock).toBeCalledWith('address');
 	});
 
-	it('must show in the dropdown menu the item selected', () => {
-		const {getByLabelText, getByRole} = render(
+	it('must have a error status when the form is evaluated, the field is required and no value is selected', () => {
+		const {container} = render(
 			<ImportMappingItem
-				field={field}
-				portletNamespace={BASE_PROPS.portletNamespace}
-				selectableFields={selectableFields.filter(
-					(fields) => fields.label !== selectableFields[0].label
-				)}
-				selectedField={selectableFields[0].value}
+				{...BASE_PROPS}
+				formEvaluated={true}
+				selectedFileField=""
 			/>
 		);
 
-		act(() => {
-			fireEvent.click(getByLabelText(field));
-		});
-
 		expect(
-			within(getByRole('list')).getByText(selectableFields[0].label)
+			container.querySelector('.form-group.has-error')
 		).toBeInTheDocument();
 	});
 
-	it('must filter elements when search text is provided', () => {
-		const {
-			getByLabelText,
-			getByPlaceholderText,
-			getByText,
-			queryByText,
-		} = render(<ImportMappingItem {...BASE_PROPS} />);
-
-		act(() => {
-			fireEvent.click(getByLabelText(BASE_PROPS.field));
-			fireEvent.change(
-				getByPlaceholderText(Liferay.Language.get('search')),
-				{
-					target: {value: BASE_PROPS.selectableFields[1].label},
-				}
-			);
-		});
+	it('must have a success status when the form is evaluated and the field is not required', () => {
+		const {container} = render(
+			<ImportMappingItem
+				{...BASE_PROPS}
+				dbField={{
+					name: 'name',
+				}}
+				formEvaluated={true}
+				required={false}
+				selectedFileField=""
+			/>
+		);
 
 		expect(
-			getByText(BASE_PROPS.selectableFields[1].label)
+			container.querySelector('.form-group.has-success')
 		).toBeInTheDocument();
-		expect(queryByText(BASE_PROPS.selectableFields[0].label)).toBeNull();
 	});
 });

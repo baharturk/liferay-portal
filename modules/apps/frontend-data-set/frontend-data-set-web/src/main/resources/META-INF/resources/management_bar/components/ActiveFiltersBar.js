@@ -1,34 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import PropTypes from 'prop-types';
 import React, {useContext} from 'react';
 
+import ViewsContext from '../../views/ViewsContext';
+import {VIEWS_ACTION_TYPES} from '../../views/viewsReducer';
 import FilterResume from './FilterResume';
-import FiltersContext from './filters/FiltersContext';
 
 function ActiveFiltersBar({disabled}) {
-	const filtersState = useContext(FiltersContext);
+	const [{filters}, viewsDispatch] = useContext(ViewsContext);
 
-	const activeFilters = filtersState.filters.reduce(
-		(acc, filter) =>
-			filter.value !== undefined && !filter.invisible
-				? acc.concat(filter.id)
-				: acc,
-		[]
-	);
+	const resetFiltersValue = () => {
+		viewsDispatch({
+			type: VIEWS_ACTION_TYPES.UPDATE_FILTERS,
+			value: filters.map((filter) => ({
+				...filter,
+				active: false,
+				odataFilterString: undefined,
+				selectedData: undefined,
+			})),
+		});
+	};
+
+	const activeFilters = filters.filter((filter) => filter.active);
 
 	return activeFilters.length ? (
 		<div className="management-bar management-bar-light navbar navbar-expand-md">
@@ -37,28 +35,12 @@ function ActiveFiltersBar({disabled}) {
 					<ul className="tbar-nav">
 						<li className="p-0 tbar-item tbar-item-expand">
 							<div className="tbar-section">
-								{activeFilters.map((id) => {
-									const filter = filtersState.filters.reduce(
-										(found, filter) =>
-											found ||
-											(filter.id === id ? filter : null),
-										null
-									);
-
-									if (!filter) {
-										throw new Error(
-											`Filter "${id}" not found.`
-										);
-									}
-
+								{activeFilters.map((filter) => {
 									return (
 										<FilterResume
 											disabled={disabled}
 											key={filter.id}
 											{...filter}
-											updateFilterState={
-												filtersState.updateFilterState
-											}
 										/>
 									);
 								})}
@@ -70,7 +52,7 @@ function ActiveFiltersBar({disabled}) {
 								<ClayButton
 									disabled={disabled}
 									displayType="unstyled"
-									onClick={filtersState.resetFiltersValue}
+									onClick={resetFiltersValue}
 								>
 									{Liferay.Language.get('reset-filters')}
 								</ClayButton>

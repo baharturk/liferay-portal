@@ -1,25 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model;
 
+import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -43,6 +37,8 @@ public class CommerceChannelWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
+		attributes.put("uuid", getUuid());
 		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("commerceChannelId", getCommerceChannelId());
 		attributes.put("companyId", getCompanyId());
@@ -50,6 +46,7 @@ public class CommerceChannelWrapper
 		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
+		attributes.put("accountEntryId", getAccountEntryId());
 		attributes.put("siteGroupId", getSiteGroupId());
 		attributes.put("name", getName());
 		attributes.put("type", getType());
@@ -67,6 +64,18 @@ public class CommerceChannelWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
+		}
+
+		String uuid = (String)attributes.get("uuid");
+
+		if (uuid != null) {
+			setUuid(uuid);
 		}
 
 		String externalReferenceCode = (String)attributes.get(
@@ -110,6 +119,12 @@ public class CommerceChannelWrapper
 
 		if (modifiedDate != null) {
 			setModifiedDate(modifiedDate);
+		}
+
+		Long accountEntryId = (Long)attributes.get("accountEntryId");
+
+		if (accountEntryId != null) {
+			setAccountEntryId(accountEntryId);
 		}
 
 		Long siteGroupId = (Long)attributes.get("siteGroupId");
@@ -163,6 +178,16 @@ public class CommerceChannelWrapper
 	}
 
 	/**
+	 * Returns the account entry ID of this commerce channel.
+	 *
+	 * @return the account entry ID of this commerce channel
+	 */
+	@Override
+	public long getAccountEntryId() {
+		return model.getAccountEntryId();
+	}
+
+	/**
 	 * Returns the commerce channel ID of this commerce channel.
 	 *
 	 * @return the commerce channel ID of this commerce channel
@@ -200,6 +225,16 @@ public class CommerceChannelWrapper
 	@Override
 	public Date getCreateDate() {
 		return model.getCreateDate();
+	}
+
+	/**
+	 * Returns the ct collection ID of this commerce channel.
+	 *
+	 * @return the ct collection ID of this commerce channel
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
 	}
 
 	/**
@@ -314,9 +349,9 @@ public class CommerceChannelWrapper
 
 	@Override
 	public com.liferay.portal.kernel.util.UnicodeProperties
-		getTypeSettingsProperties() {
+		getTypeSettingsUnicodeProperties() {
 
-		return model.getTypeSettingsProperties();
+		return model.getTypeSettingsUnicodeProperties();
 	}
 
 	/**
@@ -350,6 +385,16 @@ public class CommerceChannelWrapper
 	}
 
 	/**
+	 * Returns the uuid of this commerce channel.
+	 *
+	 * @return the uuid of this commerce channel
+	 */
+	@Override
+	public String getUuid() {
+		return model.getUuid();
+	}
+
+	/**
 	 * Returns <code>true</code> if this commerce channel is discounts target net price.
 	 *
 	 * @return <code>true</code> if this commerce channel is discounts target net price; <code>false</code> otherwise
@@ -362,6 +407,16 @@ public class CommerceChannelWrapper
 	@Override
 	public void persist() {
 		model.persist();
+	}
+
+	/**
+	 * Sets the account entry ID of this commerce channel.
+	 *
+	 * @param accountEntryId the account entry ID of this commerce channel
+	 */
+	@Override
+	public void setAccountEntryId(long accountEntryId) {
+		model.setAccountEntryId(accountEntryId);
 	}
 
 	/**
@@ -402,6 +457,16 @@ public class CommerceChannelWrapper
 	@Override
 	public void setCreateDate(Date createDate) {
 		model.setCreateDate(createDate);
+	}
+
+	/**
+	 * Sets the ct collection ID of this commerce channel.
+	 *
+	 * @param ctCollectionId the ct collection ID of this commerce channel
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
 	}
 
 	/**
@@ -505,11 +570,11 @@ public class CommerceChannelWrapper
 	}
 
 	@Override
-	public void setTypeSettingsProperties(
+	public void setTypeSettingsUnicodeProperties(
 		com.liferay.portal.kernel.util.UnicodeProperties
 			typeSettingsUnicodeProperties) {
 
-		model.setTypeSettingsProperties(typeSettingsUnicodeProperties);
+		model.setTypeSettingsUnicodeProperties(typeSettingsUnicodeProperties);
 	}
 
 	/**
@@ -540,6 +605,40 @@ public class CommerceChannelWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	/**
+	 * Sets the uuid of this commerce channel.
+	 *
+	 * @param uuid the uuid of this commerce channel
+	 */
+	@Override
+	public void setUuid(String uuid) {
+		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CommerceChannel, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CommerceChannel, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
+	}
+
+	@Override
+	public StagedModelType getStagedModelType() {
+		return model.getStagedModelType();
 	}
 
 	@Override

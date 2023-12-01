@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.service.FragmentCollectionService;
 import com.liferay.fragment.service.persistence.FragmentCollectionPersistence;
@@ -24,6 +16,8 @@ import com.liferay.fragment.util.comparator.FragmentCollectionNameComparator;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -32,6 +26,7 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
@@ -157,6 +152,37 @@ public class FragmentCollectionServiceTest {
 				fragmentCollection.getFragmentCollectionId());
 
 		Assert.assertEquals(fragmentCollection, persistedFragmentCollection);
+	}
+
+	@Test
+	public void testGetFragmentCollectionFileEntries() throws Exception {
+		FragmentCollection fragmentCollection =
+			_fragmentCollectionService.addFragmentCollection(
+				_group.getGroupId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(), StringPool.BLANK,
+				ServiceContextTestUtil.getServiceContext(
+					_group, TestPropsValues.getUserId()));
+
+		List<FileEntry> originalFragmentCollectionFileEntries =
+			_fragmentCollectionService.getFragmentCollectionFileEntries(
+				fragmentCollection.getFragmentCollectionId());
+
+		_portletFileRepository.addPortletFileEntry(
+			_group.getGroupId(), TestPropsValues.getUserId(),
+			FragmentCollection.class.getName(),
+			fragmentCollection.getFragmentCollectionId(),
+			FragmentPortletKeys.FRAGMENT,
+			fragmentCollection.getResourcesFolderId(), new byte[0],
+			RandomTestUtil.randomString(), ContentTypes.IMAGE_PNG, false);
+
+		List<FileEntry> actualFragmentCollectionFileEntries =
+			_fragmentCollectionService.getFragmentCollectionFileEntries(
+				fragmentCollection.getFragmentCollectionId());
+
+		Assert.assertEquals(
+			actualFragmentCollectionFileEntries.toString(),
+			originalFragmentCollectionFileEntries.size() + 1,
+			actualFragmentCollectionFileEntries.size());
 	}
 
 	@Test
@@ -425,16 +451,14 @@ public class FragmentCollectionServiceTest {
 
 	@Test
 	public void testUpdateFragmentCollection() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group, TestPropsValues.getUserId());
-
 		String name = RandomTestUtil.randomString();
 
 		FragmentCollection fragmentCollection =
 			_fragmentCollectionService.addFragmentCollection(
 				_group.getGroupId(), RandomTestUtil.randomString(), name,
-				StringPool.BLANK, serviceContext);
+				StringPool.BLANK,
+				ServiceContextTestUtil.getServiceContext(
+					_group, TestPropsValues.getUserId()));
 
 		FragmentCollection persistedFragmentCollection =
 			_fragmentCollectionPersistence.findByPrimaryKey(
@@ -451,5 +475,8 @@ public class FragmentCollectionServiceTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private PortletFileRepository _portletFileRepository;
 
 }

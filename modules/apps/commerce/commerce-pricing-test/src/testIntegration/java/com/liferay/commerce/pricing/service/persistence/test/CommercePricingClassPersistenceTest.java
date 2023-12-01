@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.pricing.exception.DuplicateCommercePricingClassExternalReferenceCodeException;
 import com.liferay.commerce.pricing.exception.NoSuchPricingClassException;
 import com.liferay.commerce.pricing.model.CommercePricingClass;
 import com.liferay.commerce.pricing.service.CommercePricingClassLocalServiceUtil;
@@ -129,6 +121,8 @@ public class CommercePricingClassPersistenceTest {
 
 		newCommercePricingClass.setMvccVersion(RandomTestUtil.nextLong());
 
+		newCommercePricingClass.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCommercePricingClass.setUuid(RandomTestUtil.randomString());
 
 		newCommercePricingClass.setExternalReferenceCode(
@@ -160,6 +154,9 @@ public class CommercePricingClassPersistenceTest {
 		Assert.assertEquals(
 			existingCommercePricingClass.getMvccVersion(),
 			newCommercePricingClass.getMvccVersion());
+		Assert.assertEquals(
+			existingCommercePricingClass.getCtCollectionId(),
+			newCommercePricingClass.getCtCollectionId());
 		Assert.assertEquals(
 			existingCommercePricingClass.getUuid(),
 			newCommercePricingClass.getUuid());
@@ -199,6 +196,30 @@ public class CommercePricingClassPersistenceTest {
 				newCommercePricingClass.getLastPublishDate()));
 	}
 
+	@Test(
+		expected = DuplicateCommercePricingClassExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CommercePricingClass commercePricingClass = addCommercePricingClass();
+
+		CommercePricingClass newCommercePricingClass =
+			addCommercePricingClass();
+
+		newCommercePricingClass.setCompanyId(
+			commercePricingClass.getCompanyId());
+
+		newCommercePricingClass = _persistence.update(newCommercePricingClass);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCommercePricingClass);
+
+		newCommercePricingClass.setExternalReferenceCode(
+			commercePricingClass.getExternalReferenceCode());
+
+		_persistence.update(newCommercePricingClass);
+	}
+
 	@Test
 	public void testCountByUuid() throws Exception {
 		_persistence.countByUuid("");
@@ -225,12 +246,12 @@ public class CommercePricingClassPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -261,11 +282,11 @@ public class CommercePricingClassPersistenceTest {
 
 	protected OrderByComparator<CommercePricingClass> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CommercePricingClass", "mvccVersion", true, "uuid", true,
-			"externalReferenceCode", true, "commercePricingClassId", true,
-			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "modifiedDate", true, "title", true, "description", true,
-			"lastPublishDate", true);
+			"CommercePricingClass", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "externalReferenceCode", true,
+			"commercePricingClassId", true, "companyId", true, "userId", true,
+			"userName", true, "createDate", true, "modifiedDate", true, "title",
+			true, "description", true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -562,15 +583,15 @@ public class CommercePricingClassPersistenceTest {
 		CommercePricingClass commercePricingClass) {
 
 		Assert.assertEquals(
-			Long.valueOf(commercePricingClass.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				commercePricingClass, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			commercePricingClass.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				commercePricingClass, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(commercePricingClass.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				commercePricingClass, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CommercePricingClass addCommercePricingClass() throws Exception {
@@ -579,6 +600,8 @@ public class CommercePricingClassPersistenceTest {
 		CommercePricingClass commercePricingClass = _persistence.create(pk);
 
 		commercePricingClass.setMvccVersion(RandomTestUtil.nextLong());
+
+		commercePricingClass.setCtCollectionId(RandomTestUtil.nextLong());
 
 		commercePricingClass.setUuid(RandomTestUtil.randomString());
 

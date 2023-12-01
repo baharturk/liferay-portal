@@ -6,8 +6,8 @@ exports[`Grid has a label 1`] = `
     class="form-group hide"
   >
     <label
+      aria-labelledby="undefined_fieldDetails"
       class="ddm-label"
-      tabindex="0"
     >
       label
     </label>
@@ -80,7 +80,12 @@ exports[`Grid has a label 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <span
+      class="sr-only"
+      id="undefined_fieldDetails"
+    >
+      label
+    </span>
   </div>
 </div>
 `;
@@ -90,7 +95,6 @@ exports[`Grid has a tip 1`] = `
   <div
     aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
@@ -161,18 +165,21 @@ exports[`Grid has a tip 1`] = `
       type="hidden"
       value="false"
     />
-    <span
+    <div
       aria-hidden="true"
-      class="form-text"
+      class="form-feedback-group lfr-de__field-feedback"
     >
-      Type something
-    </span>
+      <div
+        id="undefined_fieldHelp"
+      >
+        Type something
+      </div>
+    </div>
     <span
       class="sr-only"
       id="undefined_fieldDetails"
     >
       Type something
-      <br />
     </span>
   </div>
 </div>
@@ -183,7 +190,6 @@ exports[`Grid has an id 1`] = `
   <div
     aria-labelledby="Id_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
@@ -254,7 +260,6 @@ exports[`Grid has an id 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -264,7 +269,6 @@ exports[`Grid is not editable 1`] = `
   <div
     aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
@@ -332,7 +336,6 @@ exports[`Grid is not editable 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -342,7 +345,6 @@ exports[`Grid is not required 1`] = `
   <div
     aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
@@ -355,6 +357,7 @@ exports[`Grid is not required 1`] = `
         class="table-responsive"
       >
         <table
+          aria-required="false"
           class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
         >
           <thead>
@@ -413,7 +416,6 @@ exports[`Grid is not required 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -424,8 +426,8 @@ exports[`Grid renders Label if showLabel is true 1`] = `
     class="form-group hide"
   >
     <label
+      aria-labelledby="undefined_fieldDetails"
       class="ddm-label"
-      tabindex="0"
     >
       text
     </label>
@@ -498,7 +500,12 @@ exports[`Grid renders Label if showLabel is true 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <span
+      class="sr-only"
+      id="undefined_fieldDetails"
+    >
+      text
+    </span>
   </div>
 </div>
 `;
@@ -508,7 +515,6 @@ exports[`Grid renders columns 1`] = `
   <div
     aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
@@ -606,7 +612,6 @@ exports[`Grid renders columns 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -616,7 +621,6 @@ exports[`Grid renders no columns when columns comes empty 1`] = `
   <div
     aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
@@ -660,7 +664,6 @@ exports[`Grid renders no columns when columns comes empty 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -670,7 +673,6 @@ exports[`Grid renders no rows when row comes empty 1`] = `
   <div
     aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
@@ -704,7 +706,6 @@ exports[`Grid renders no rows when row comes empty 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;
@@ -714,7 +715,6 @@ exports[`Grid renders rows 1`] = `
   <div
     aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
@@ -821,7 +821,6 @@ exports[`Grid renders rows 1`] = `
       type="hidden"
       value="false"
     />
-    
   </div>
 </div>
 `;

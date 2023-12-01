@@ -1,97 +1,69 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.search.web.internal.display.context;
 
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
-import com.liferay.commerce.product.content.search.web.internal.util.CPSpecificationOptionFacetsUtil;
-import com.liferay.commerce.product.model.CPSpecificationOption;
-import com.liferay.commerce.product.service.CPSpecificationOptionLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.search.facet.Facet;
-import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import java.io.Serializable;
 
 import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
 
-import javax.portlet.RenderRequest;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
  */
-public class CPSpecificationOptionFacetsDisplayContext {
+public class CPSpecificationOptionFacetsDisplayContext implements Serializable {
 
 	public CPSpecificationOptionFacetsDisplayContext(
-		CPSpecificationOptionLocalService cpSpecificationOptionLocalService,
-		RenderRequest renderRequest, List<Facet> facets,
-		String paginationStartParameterName,
-		PortletSharedSearchResponse portletSharedSearchResponse) {
+			HttpServletRequest httpServletRequest)
+		throws ConfigurationException {
 
-		_cpSpecificationOptionLocalService = cpSpecificationOptionLocalService;
-		_renderRequest = renderRequest;
-		_facets = facets;
-		_paginationStartParameterName = paginationStartParameterName;
-		_portletSharedSearchResponse = portletSharedSearchResponse;
-
-		_locale = _renderRequest.getLocale();
+		_httpServletRequest = httpServletRequest;
 	}
 
-	public CPSpecificationOption getCPSpecificationOption(String fieldName)
-		throws PortalException {
+	public List<CPSpecificationOptionsSearchFacetDisplayContext>
+		getCPSpecificationOptionsSearchFacetDisplayContexts() {
 
-		String key =
-			CPSpecificationOptionFacetsUtil.
-				getCPSpecificationOptionKeyFromIndexFieldName(fieldName);
-
-		return _cpSpecificationOptionLocalService.fetchCPSpecificationOption(
-			PortalUtil.getCompanyId(_renderRequest), key);
+		return _cpSpecificationOptionsSearchFacetDisplayContexts;
 	}
 
-	public String getCPSpecificationOptionKey(String fieldName)
-		throws PortalException {
+	public long getDisplayStyleGroupId() {
+		if (_displayStyleGroupId != 0) {
+			return _displayStyleGroupId;
+		}
 
-		CPSpecificationOption cpSpecificationOption = getCPSpecificationOption(
-			fieldName);
+		long displayStyleGroupId = _DISPLAY_STYLE_GROUP_ID;
 
-		return cpSpecificationOption.getKey();
-	}
+		if (displayStyleGroupId <= 0) {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)_httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
 
-	public String getCPSpecificationOptionTitle(String fieldName)
-		throws PortalException {
+			displayStyleGroupId = themeDisplay.getScopeGroupId();
+		}
 
-		CPSpecificationOption cpSpecificationOption = getCPSpecificationOption(
-			fieldName);
+		_displayStyleGroupId = displayStyleGroupId;
 
-		return cpSpecificationOption.getTitle(_locale);
-	}
-
-	public List<Facet> getFacets() {
-		return _facets;
-	}
-
-	public String getPaginationStartParameterName() {
-		return _paginationStartParameterName;
+		return _displayStyleGroupId;
 	}
 
 	public boolean hasCommerceChannel() throws PortalException {
 		CommerceContext commerceContext =
-			(CommerceContext)_renderRequest.getAttribute(
+			(CommerceContext)_httpServletRequest.getAttribute(
 				CommerceWebKeys.COMMERCE_CONTEXT);
+
+		if (commerceContext == null) {
+			return false;
+		}
 
 		long commerceChannelId = commerceContext.getCommerceChannelId();
 
@@ -102,32 +74,19 @@ public class CPSpecificationOptionFacetsDisplayContext {
 		return false;
 	}
 
-	public boolean isCPDefinitionSpecificationOptionValueSelected(
-			String fieldName, String fieldValue)
-		throws PortalException {
+	public void setCPSpecificationOptionsSearchFacetDisplayContexts(
+		List<CPSpecificationOptionsSearchFacetDisplayContext>
+			cpSpecificationOptionsSearchFacetDisplayContexts) {
 
-		CPSpecificationOption cpSpecificationOption = getCPSpecificationOption(
-			fieldName);
-
-		Optional<String[]> parameterValuesOptional =
-			_portletSharedSearchResponse.getParameterValues(
-				cpSpecificationOption.getKey(), _renderRequest);
-
-		if (parameterValuesOptional.isPresent()) {
-			String[] parameterValues = parameterValuesOptional.get();
-
-			return ArrayUtil.contains(parameterValues, fieldValue);
-		}
-
-		return false;
+		_cpSpecificationOptionsSearchFacetDisplayContexts =
+			cpSpecificationOptionsSearchFacetDisplayContexts;
 	}
 
-	private final CPSpecificationOptionLocalService
-		_cpSpecificationOptionLocalService;
-	private final List<Facet> _facets;
-	private final Locale _locale;
-	private final String _paginationStartParameterName;
-	private final PortletSharedSearchResponse _portletSharedSearchResponse;
-	private final RenderRequest _renderRequest;
+	private static final long _DISPLAY_STYLE_GROUP_ID = 0;
+
+	private List<CPSpecificationOptionsSearchFacetDisplayContext>
+		_cpSpecificationOptionsSearchFacetDisplayContexts;
+	private long _displayStyleGroupId;
+	private final HttpServletRequest _httpServletRequest;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.model.impl;
@@ -35,7 +26,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -252,163 +242,152 @@ public class AssetListEntrySegmentsEntryRelModelImpl
 	public Map<String, Function<AssetListEntrySegmentsEntryRel, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AssetListEntrySegmentsEntryRel, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AssetListEntrySegmentsEntryRel>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AssetListEntrySegmentsEntryRel.class.getClassLoader(),
-			AssetListEntrySegmentsEntryRel.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<AssetListEntrySegmentsEntryRel, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<AssetListEntrySegmentsEntryRel> constructor =
-				(Constructor<AssetListEntrySegmentsEntryRel>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<AssetListEntrySegmentsEntryRel, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String,
+						 Function<AssetListEntrySegmentsEntryRel, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
-
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
-		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
-	}
-
-	private static final Map
-		<String, Function<AssetListEntrySegmentsEntryRel, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<AssetListEntrySegmentsEntryRel, Object>>
-			_attributeSetterBiConsumers;
-
-	static {
-		Map<String, Function<AssetListEntrySegmentsEntryRel, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String,
-					 Function<AssetListEntrySegmentsEntryRel, Object>>();
-		Map<String, BiConsumer<AssetListEntrySegmentsEntryRel, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<AssetListEntrySegmentsEntryRel, ?>>();
-
-		attributeGetterFunctions.put(
-			"mvccVersion", AssetListEntrySegmentsEntryRel::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
-				AssetListEntrySegmentsEntryRel::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId",
-			AssetListEntrySegmentsEntryRel::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
-				AssetListEntrySegmentsEntryRel::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"uuid", AssetListEntrySegmentsEntryRel::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, String>)
-				AssetListEntrySegmentsEntryRel::setUuid);
-		attributeGetterFunctions.put(
-			"assetListEntrySegmentsEntryRelId",
-			AssetListEntrySegmentsEntryRel::
-				getAssetListEntrySegmentsEntryRelId);
-		attributeSetterBiConsumers.put(
-			"assetListEntrySegmentsEntryRelId",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
+			attributeGetterFunctions.put(
+				"mvccVersion", AssetListEntrySegmentsEntryRel::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId",
+				AssetListEntrySegmentsEntryRel::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"uuid", AssetListEntrySegmentsEntryRel::getUuid);
+			attributeGetterFunctions.put(
+				"assetListEntrySegmentsEntryRelId",
 				AssetListEntrySegmentsEntryRel::
-					setAssetListEntrySegmentsEntryRelId);
-		attributeGetterFunctions.put(
-			"groupId", AssetListEntrySegmentsEntryRel::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
-				AssetListEntrySegmentsEntryRel::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", AssetListEntrySegmentsEntryRel::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
-				AssetListEntrySegmentsEntryRel::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", AssetListEntrySegmentsEntryRel::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
-				AssetListEntrySegmentsEntryRel::setUserId);
-		attributeGetterFunctions.put(
-			"userName", AssetListEntrySegmentsEntryRel::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, String>)
-				AssetListEntrySegmentsEntryRel::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", AssetListEntrySegmentsEntryRel::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Date>)
-				AssetListEntrySegmentsEntryRel::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", AssetListEntrySegmentsEntryRel::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Date>)
-				AssetListEntrySegmentsEntryRel::setModifiedDate);
-		attributeGetterFunctions.put(
-			"assetListEntryId",
-			AssetListEntrySegmentsEntryRel::getAssetListEntryId);
-		attributeSetterBiConsumers.put(
-			"assetListEntryId",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
-				AssetListEntrySegmentsEntryRel::setAssetListEntryId);
-		attributeGetterFunctions.put(
-			"priority", AssetListEntrySegmentsEntryRel::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Integer>)
-				AssetListEntrySegmentsEntryRel::setPriority);
-		attributeGetterFunctions.put(
-			"segmentsEntryId",
-			AssetListEntrySegmentsEntryRel::getSegmentsEntryId);
-		attributeSetterBiConsumers.put(
-			"segmentsEntryId",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
-				AssetListEntrySegmentsEntryRel::setSegmentsEntryId);
-		attributeGetterFunctions.put(
-			"typeSettings", AssetListEntrySegmentsEntryRel::getTypeSettings);
-		attributeSetterBiConsumers.put(
-			"typeSettings",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, String>)
-				AssetListEntrySegmentsEntryRel::setTypeSettings);
-		attributeGetterFunctions.put(
-			"lastPublishDate",
-			AssetListEntrySegmentsEntryRel::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<AssetListEntrySegmentsEntryRel, Date>)
-				AssetListEntrySegmentsEntryRel::setLastPublishDate);
+					getAssetListEntrySegmentsEntryRelId);
+			attributeGetterFunctions.put(
+				"groupId", AssetListEntrySegmentsEntryRel::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", AssetListEntrySegmentsEntryRel::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", AssetListEntrySegmentsEntryRel::getUserId);
+			attributeGetterFunctions.put(
+				"userName", AssetListEntrySegmentsEntryRel::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", AssetListEntrySegmentsEntryRel::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate",
+				AssetListEntrySegmentsEntryRel::getModifiedDate);
+			attributeGetterFunctions.put(
+				"assetListEntryId",
+				AssetListEntrySegmentsEntryRel::getAssetListEntryId);
+			attributeGetterFunctions.put(
+				"priority", AssetListEntrySegmentsEntryRel::getPriority);
+			attributeGetterFunctions.put(
+				"segmentsEntryId",
+				AssetListEntrySegmentsEntryRel::getSegmentsEntryId);
+			attributeGetterFunctions.put(
+				"typeSettings",
+				AssetListEntrySegmentsEntryRel::getTypeSettings);
+			attributeGetterFunctions.put(
+				"lastPublishDate",
+				AssetListEntrySegmentsEntryRel::getLastPublishDate);
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
+		}
+
+	}
+
+	private static class AttributeSetterBiConsumersHolder {
+
+		private static final Map
+			<String, BiConsumer<AssetListEntrySegmentsEntryRel, Object>>
+				_attributeSetterBiConsumers;
+
+		static {
+			Map<String, BiConsumer<AssetListEntrySegmentsEntryRel, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String,
+						 BiConsumer<AssetListEntrySegmentsEntryRel, ?>>();
+
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
+					AssetListEntrySegmentsEntryRel::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
+					AssetListEntrySegmentsEntryRel::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, String>)
+					AssetListEntrySegmentsEntryRel::setUuid);
+			attributeSetterBiConsumers.put(
+				"assetListEntrySegmentsEntryRelId",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
+					AssetListEntrySegmentsEntryRel::
+						setAssetListEntrySegmentsEntryRelId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
+					AssetListEntrySegmentsEntryRel::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
+					AssetListEntrySegmentsEntryRel::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
+					AssetListEntrySegmentsEntryRel::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, String>)
+					AssetListEntrySegmentsEntryRel::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Date>)
+					AssetListEntrySegmentsEntryRel::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Date>)
+					AssetListEntrySegmentsEntryRel::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"assetListEntryId",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
+					AssetListEntrySegmentsEntryRel::setAssetListEntryId);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Integer>)
+					AssetListEntrySegmentsEntryRel::setPriority);
+			attributeSetterBiConsumers.put(
+				"segmentsEntryId",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Long>)
+					AssetListEntrySegmentsEntryRel::setSegmentsEntryId);
+			attributeSetterBiConsumers.put(
+				"typeSettings",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, String>)
+					AssetListEntrySegmentsEntryRel::setTypeSettings);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<AssetListEntrySegmentsEntryRel, Date>)
+					AssetListEntrySegmentsEntryRel::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -1051,45 +1030,14 @@ public class AssetListEntrySegmentsEntryRelModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AssetListEntrySegmentsEntryRel, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AssetListEntrySegmentsEntryRel, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AssetListEntrySegmentsEntryRel, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(AssetListEntrySegmentsEntryRel)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, AssetListEntrySegmentsEntryRel>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						AssetListEntrySegmentsEntryRel.class,
+						ModelWrapper.class);
 
 	}
 
@@ -1114,7 +1062,8 @@ public class AssetListEntrySegmentsEntryRelModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<AssetListEntrySegmentsEntryRel, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

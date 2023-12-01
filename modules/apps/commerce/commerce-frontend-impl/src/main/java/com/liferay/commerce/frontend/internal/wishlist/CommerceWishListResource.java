@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.frontend.internal.wishlist;
@@ -33,7 +24,7 @@ import com.liferay.commerce.wish.list.model.CommerceWishListItem;
 import com.liferay.commerce.wish.list.service.CommerceWishListItemService;
 import com.liferay.commerce.wish.list.service.CommerceWishListService;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
@@ -58,7 +49,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marco Leo
  */
-@Component(enabled = false, service = CommerceWishListResource.class)
+@Component(service = CommerceWishListResource.class)
 public class CommerceWishListResource {
 
 	@Path("/wish-list-item")
@@ -78,7 +69,7 @@ public class CommerceWishListResource {
 			long userId = _portal.getUserId(httpServletRequest);
 
 			if (userId == 0) {
-				User user = _userLocalService.getDefaultUser(
+				User user = _userLocalService.getGuestUser(
 					_portal.getCompanyId(httpServletRequest));
 
 				userId = user.getUserId();
@@ -104,8 +95,8 @@ public class CommerceWishListResource {
 
 			if (commerceWishList == null) {
 				commerceWishList = _commerceWishListService.addCommerceWishList(
-					LanguageUtil.get(serviceContext.getLocale(), "default"),
-					true, serviceContext);
+					_language.get(serviceContext.getLocale(), "default"), true,
+					serviceContext);
 			}
 
 			CPCatalogEntry cpCatalogEntry =
@@ -151,7 +142,7 @@ public class CommerceWishListResource {
 		catch (Exception exception) {
 			wishListItemUpdated.setSuccess(false);
 
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return _getResponse(wishListItemUpdated);
@@ -172,7 +163,7 @@ public class CommerceWishListResource {
 			).build();
 		}
 		catch (JsonProcessingException jsonProcessingException) {
-			_log.error(jsonProcessingException, jsonProcessingException);
+			_log.error(jsonProcessingException);
 		}
 
 		return Response.status(
@@ -207,6 +198,9 @@ public class CommerceWishListResource {
 
 	@Reference
 	private CPInstanceLocalService _cpInstanceLocalService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

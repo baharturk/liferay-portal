@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model.impl;
@@ -78,7 +69,7 @@ public class FragmentEntryLinkCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(53);
+		StringBundler sb = new StringBundler(57);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -120,6 +111,8 @@ public class FragmentEntryLinkCacheModel
 		sb.append(js);
 		sb.append(", configuration=");
 		sb.append(configuration);
+		sb.append(", deleted=");
+		sb.append(deleted);
 		sb.append(", editableValues=");
 		sb.append(editableValues);
 		sb.append(", namespace=");
@@ -128,6 +121,8 @@ public class FragmentEntryLinkCacheModel
 		sb.append(position);
 		sb.append(", rendererKey=");
 		sb.append(rendererKey);
+		sb.append(", type=");
+		sb.append(type);
 		sb.append(", lastPropagationDate=");
 		sb.append(lastPropagationDate);
 		sb.append(", lastPublishDate=");
@@ -214,6 +209,8 @@ public class FragmentEntryLinkCacheModel
 			fragmentEntryLinkImpl.setConfiguration(configuration);
 		}
 
+		fragmentEntryLinkImpl.setDeleted(deleted);
+
 		if (editableValues == null) {
 			fragmentEntryLinkImpl.setEditableValues("");
 		}
@@ -236,6 +233,8 @@ public class FragmentEntryLinkCacheModel
 		else {
 			fragmentEntryLinkImpl.setRendererKey(rendererKey);
 		}
+
+		fragmentEntryLinkImpl.setType(type);
 
 		if (lastPropagationDate == Long.MIN_VALUE) {
 			fragmentEntryLinkImpl.setLastPropagationDate(null);
@@ -292,11 +291,15 @@ public class FragmentEntryLinkCacheModel
 		html = (String)objectInput.readObject();
 		js = (String)objectInput.readObject();
 		configuration = (String)objectInput.readObject();
+
+		deleted = objectInput.readBoolean();
 		editableValues = (String)objectInput.readObject();
 		namespace = objectInput.readUTF();
 
 		position = objectInput.readInt();
 		rendererKey = objectInput.readUTF();
+
+		type = objectInput.readInt();
 		lastPropagationDate = objectInput.readLong();
 		lastPublishDate = objectInput.readLong();
 	}
@@ -372,6 +375,8 @@ public class FragmentEntryLinkCacheModel
 			objectOutput.writeObject(configuration);
 		}
 
+		objectOutput.writeBoolean(deleted);
+
 		if (editableValues == null) {
 			objectOutput.writeObject("");
 		}
@@ -395,6 +400,7 @@ public class FragmentEntryLinkCacheModel
 			objectOutput.writeUTF(rendererKey);
 		}
 
+		objectOutput.writeInt(type);
 		objectOutput.writeLong(lastPropagationDate);
 		objectOutput.writeLong(lastPublishDate);
 	}
@@ -419,10 +425,12 @@ public class FragmentEntryLinkCacheModel
 	public String html;
 	public String js;
 	public String configuration;
+	public boolean deleted;
 	public String editableValues;
 	public String namespace;
 	public int position;
 	public String rendererKey;
+	public int type;
 	public long lastPropagationDate;
 	public long lastPublishDate;
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet.filters.virtualhost.test;
@@ -31,6 +22,7 @@ import com.liferay.portal.servlet.filters.virtualhost.VirtualHostFilter;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PortalImpl;
+import com.liferay.portal.util.PropsValues;
 
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
@@ -135,8 +127,39 @@ public class VirtualHostFilterTest {
 				_mockFilterChain));
 	}
 
+	@Test
+	public void testProcessFilter4() {
+		String homeURL = PropsValues.COMPANY_DEFAULT_HOME_URL;
+
+		try {
+			ReflectionTestUtil.setFieldValue(
+				PropsValues.class, "COMPANY_DEFAULT_HOME_URL",
+				StringPool.SLASH);
+			_mockHttpServletRequest.setRequestURI(StringPool.SLASH);
+
+			_virtualHostFilter.init(_mockFilterConfig);
+
+			ReflectionTestUtil.invoke(
+				_virtualHostFilter, "processFilter",
+				new Class<?>[] {
+					HttpServletRequest.class, HttpServletResponse.class,
+					FilterChain.class
+				},
+				_mockHttpServletRequest, _mockHttpServletResponse,
+				_mockFilterChain);
+		}
+		finally {
+			ReflectionTestUtil.setFieldValue(
+				PropsValues.class, "COMPANY_DEFAULT_HOME_URL", homeURL);
+		}
+
+		Assert.assertNotEquals(
+			StringPool.SLASH, _mockHttpServletResponse.getForwardedUrl());
+	}
+
 	private String _getLastPath(
-		MockHttpServletRequest request, MockHttpServletResponse response,
+		MockHttpServletRequest mockHttpServletRequest,
+		MockHttpServletResponse mockHttpServletResponse,
 		MockFilterChain filterChain) {
 
 		_virtualHostFilter.init(_mockFilterConfig);
@@ -147,9 +170,10 @@ public class VirtualHostFilterTest {
 				HttpServletRequest.class, HttpServletResponse.class,
 				FilterChain.class
 			},
-			request, response, filterChain);
+			mockHttpServletRequest, mockHttpServletResponse, filterChain);
 
-		LastPath lastPath = (LastPath)request.getAttribute(WebKeys.LAST_PATH);
+		LastPath lastPath = (LastPath)mockHttpServletRequest.getAttribute(
+			WebKeys.LAST_PATH);
 
 		if (lastPath != null) {
 			return lastPath.getPath();

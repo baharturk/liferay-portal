@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.service.base;
@@ -18,18 +9,17 @@ import com.liferay.commerce.order.rule.model.COREntry;
 import com.liferay.commerce.order.rule.service.COREntryService;
 import com.liferay.commerce.order.rule.service.COREntryServiceUtil;
 import com.liferay.commerce.order.rule.service.persistence.COREntryPersistence;
-import com.liferay.commerce.order.rule.service.persistence.COREntryRelPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.BaseServiceImpl;
 import com.liferay.portal.kernel.util.PortalUtil;
-
-import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -58,7 +48,7 @@ public abstract class COREntryServiceBaseImpl
 	 */
 	@Deactivate
 	protected void deactivate() {
-		_setServiceUtilService(null);
+		COREntryServiceUtil.setService(null);
 	}
 
 	@Override
@@ -72,7 +62,7 @@ public abstract class COREntryServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		corEntryService = (COREntryService)aopProxy;
 
-		_setServiceUtilService(corEntryService);
+		COREntryServiceUtil.setService(corEntryService);
 	}
 
 	/**
@@ -117,20 +107,6 @@ public abstract class COREntryServiceBaseImpl
 		}
 	}
 
-	private void _setServiceUtilService(COREntryService corEntryService) {
-		try {
-			Field field = COREntryServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, corEntryService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	@Reference
 	protected com.liferay.commerce.order.rule.service.COREntryLocalService
 		corEntryLocalService;
@@ -141,29 +117,10 @@ public abstract class COREntryServiceBaseImpl
 	protected COREntryPersistence corEntryPersistence;
 
 	@Reference
-	protected COREntryRelPersistence corEntryRelPersistence;
-
-	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameService
-		classNameService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserService userService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		COREntryServiceBaseImpl.class);
 
 }

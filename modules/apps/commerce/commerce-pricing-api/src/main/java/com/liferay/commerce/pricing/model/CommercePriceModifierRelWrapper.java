@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.model;
@@ -20,6 +11,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -46,6 +39,7 @@ public class CommercePriceModifierRelWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put(
 			"commercePriceModifierRelId", getCommercePriceModifierRelId());
 		attributes.put("companyId", getCompanyId());
@@ -66,6 +60,12 @@ public class CommercePriceModifierRelWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
 		}
 
 		Long commercePriceModifierRelId = (Long)attributes.get(
@@ -208,6 +208,16 @@ public class CommercePriceModifierRelWrapper
 	}
 
 	/**
+	 * Returns the ct collection ID of this commerce price modifier rel.
+	 *
+	 * @return the ct collection ID of this commerce price modifier rel
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
+	}
+
+	/**
 	 * Returns the modified date of this commerce price modifier rel.
 	 *
 	 * @return the modified date of this commerce price modifier rel
@@ -338,6 +348,16 @@ public class CommercePriceModifierRelWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this commerce price modifier rel.
+	 *
+	 * @param ctCollectionId the ct collection ID of this commerce price modifier rel
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
 	 * Sets the modified date of this commerce price modifier rel.
 	 *
 	 * @param modifiedDate the modified date of this commerce price modifier rel
@@ -395,6 +415,25 @@ public class CommercePriceModifierRelWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CommercePriceModifierRel, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CommercePriceModifierRel, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

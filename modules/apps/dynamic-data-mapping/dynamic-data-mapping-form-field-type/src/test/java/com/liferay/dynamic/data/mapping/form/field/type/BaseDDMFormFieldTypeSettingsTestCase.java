@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type;
@@ -20,6 +11,8 @@ import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
+import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoaderUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -31,31 +24,20 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Leonardo Barros
  */
-@PrepareForTest({PortalClassLoaderUtil.class, ResourceBundleUtil.class})
-@RunWith(PowerMockRunner.class)
-public abstract class BaseDDMFormFieldTypeSettingsTestCase
-	extends PowerMockito {
+public abstract class BaseDDMFormFieldTypeSettingsTestCase {
 
 	@Before
 	public void setUp() throws Exception {
@@ -90,19 +72,19 @@ public abstract class BaseDDMFormFieldTypeSettingsTestCase
 		Set<Locale> availableLocales = new HashSet<>(
 			Arrays.asList(LocaleUtil.BRAZIL, LocaleUtil.US));
 
-		when(
+		Mockito.when(
 			language.getAvailableLocales()
 		).thenReturn(
 			availableLocales
 		);
 
-		when(
+		Mockito.when(
 			language.getLanguageId(LocaleUtil.BRAZIL)
 		).thenReturn(
 			"pt_BR"
 		);
 
-		when(
+		Mockito.when(
 			language.getLanguageId(LocaleUtil.US)
 		).thenReturn(
 			"en_US"
@@ -112,24 +94,18 @@ public abstract class BaseDDMFormFieldTypeSettingsTestCase
 	}
 
 	protected void setUpPortalClassLoaderUtil() {
-		mockStatic(PortalClassLoaderUtil.class);
-
-		when(
-			PortalClassLoaderUtil.getClassLoader()
-		).thenReturn(
-			_classLoader
-		);
+		PortalClassLoaderUtil.setClassLoader(Mockito.mock(ClassLoader.class));
 	}
 
 	protected void setUpPortalUtil() {
 		PortalUtil portalUtil = new PortalUtil();
 
-		Portal portal = mock(Portal.class);
+		Portal portal = Mockito.mock(Portal.class);
 
-		ResourceBundle resourceBundle = mock(ResourceBundle.class);
+		ResourceBundle resourceBundle = Mockito.mock(ResourceBundle.class);
 
-		when(
-			portal.getResourceBundle(Matchers.any(Locale.class))
+		Mockito.when(
+			portal.getResourceBundle(Mockito.any(Locale.class))
 		).thenReturn(
 			resourceBundle
 		);
@@ -138,25 +114,35 @@ public abstract class BaseDDMFormFieldTypeSettingsTestCase
 	}
 
 	protected void setUpResourceBundleUtil() {
-		mockStatic(ResourceBundleUtil.class);
+		ResourceBundleLoader resourceBundleLoader = Mockito.mock(
+			ResourceBundleLoader.class);
 
-		when(
-			ResourceBundleUtil.getBundle(
-				"content.Language", LocaleUtil.BRAZIL, _classLoader)
+		ResourceBundleLoaderUtil.setPortalResourceBundleLoader(
+			resourceBundleLoader);
+
+		Mockito.when(
+			resourceBundleLoader.loadResourceBundle(Mockito.any(Locale.class))
 		).thenReturn(
-			_resourceBundle
+			ResourceBundleUtil.EMPTY_RESOURCE_BUNDLE
 		);
 
-		when(
-			ResourceBundleUtil.getBundle(
-				"content.Language", LocaleUtil.US, _classLoader)
+		ResourceBundle mockResourceBundle = Mockito.mock(ResourceBundle.class);
+
+		Mockito.when(
+			resourceBundleLoader.loadResourceBundle(Mockito.eq(LocaleUtil.US))
 		).thenReturn(
-			_resourceBundle
+			mockResourceBundle
+		);
+
+		Mockito.when(
+			resourceBundleLoader.loadResourceBundle(
+				Mockito.eq(LocaleUtil.BRAZIL))
+		).thenReturn(
+			mockResourceBundle
 		);
 	}
 
-	@Mock
-	protected Language language;
+	protected Language language = Mockito.mock(Language.class);
 
 	private void _assertDDMFormLayoutColumn(
 		DDMFormLayoutColumn actualDDMFormLayoutColumn,
@@ -184,20 +170,16 @@ public abstract class BaseDDMFormFieldTypeSettingsTestCase
 			ReflectionTestUtil.invoke(
 				actualDDMFormLayoutRelatedObject, methodName, null);
 
-		Stream<Object> stream = actualDDMFormLayoutRelatedObjects.stream();
-
-		stream.forEachOrdered(
+		actualDDMFormLayoutRelatedObjects.forEach(
 			function.apply(expectedDDMFormLayoutRelatedObjects));
 
 		Assert.assertEquals(
 			expectedDDMFormLayoutRelatedObjects.toString(), 0,
 			expectedDDMFormLayoutRelatedObjects.size());
 
-		Optional.ofNullable(
-			runnable
-		).ifPresent(
-			Runnable::run
-		);
+		if (runnable != null) {
+			runnable.run();
+		}
 	}
 
 	private Function<List<Object>, Consumer<Object>>
@@ -228,11 +210,5 @@ public abstract class BaseDDMFormFieldTypeSettingsTestCase
 				_getAssertDDMFormLayoutColumnsFunction(),
 				"getDDMFormLayoutColumns", null);
 	}
-
-	@Mock
-	private ClassLoader _classLoader;
-
-	@Mock
-	private ResourceBundle _resourceBundle;
 
 }

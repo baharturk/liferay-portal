@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.translation.web.internal.portlet.action;
@@ -17,9 +8,10 @@ package com.liferay.translation.web.internal.portlet.action;
 import com.liferay.info.field.InfoField;
 import com.liferay.info.field.InfoFieldValue;
 import com.liferay.info.form.InfoForm;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.InfoItemReference;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.item.provider.InfoItemFormProvider;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
@@ -36,7 +28,7 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.translation.constants.TranslationPortletKeys;
 import com.liferay.translation.service.TranslationEntryService;
 import com.liferay.translation.web.internal.helper.TranslationRequestHelper;
@@ -74,12 +66,12 @@ public class UpdateTranslationMVCActionCommand extends BaseMVCActionCommand {
 			long groupId = ParamUtil.getLong(actionRequest, "groupId");
 
 			long segmentsExperienceId = ParamUtil.getLong(
-				actionRequest, "segmentsExperienceId",
-				SegmentsExperienceConstants.ID_DEFAULT);
+				actionRequest, "segmentsExperienceId");
 
 			TranslationRequestHelper translationRequestHelper =
 				new TranslationRequestHelper(
-					_infoItemServiceTracker, actionRequest);
+					_infoItemServiceRegistry, actionRequest,
+					_segmentsExperienceLocalService);
 
 			String className = translationRequestHelper.getClassName(
 				segmentsExperienceId);
@@ -90,9 +82,10 @@ public class UpdateTranslationMVCActionCommand extends BaseMVCActionCommand {
 				className, classPK);
 
 			InfoItemObjectProvider<Object> infoItemObjectProvider =
-				_infoItemServiceTracker.getFirstInfoItemService(
+				_infoItemServiceRegistry.getFirstInfoItemService(
 					InfoItemObjectProvider.class,
-					infoItemReference.getClassName());
+					infoItemReference.getClassName(),
+					ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
 			InfoItemFieldValues infoItemFieldValues =
 				InfoItemFieldValues.builder(
@@ -101,7 +94,8 @@ public class UpdateTranslationMVCActionCommand extends BaseMVCActionCommand {
 				).infoFieldValues(
 					_getInfoFieldValues(
 						actionRequest, className,
-						infoItemObjectProvider.getInfoItem(classPK))
+						infoItemObjectProvider.getInfoItem(
+							new ClassPKInfoItemIdentifier(classPK)))
 				).build();
 
 			ServiceContext serviceContext = ServiceContextFactory.getInstance(
@@ -122,7 +116,7 @@ public class UpdateTranslationMVCActionCommand extends BaseMVCActionCommand {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			SessionErrors.add(actionRequest, exception.getClass(), exception);
 
@@ -151,9 +145,9 @@ public class UpdateTranslationMVCActionCommand extends BaseMVCActionCommand {
 		return values;
 	}
 
-	private <T> List<InfoField> _getInfoFields(String className, T object) {
+	private <T> List<InfoField<?>> _getInfoFields(String className, T object) {
 		InfoItemFormProvider<T> infoItemFormProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
+			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFormProvider.class, className);
 
 		InfoForm infoForm = infoItemFormProvider.getInfoForm(object);
@@ -172,9 +166,9 @@ public class UpdateTranslationMVCActionCommand extends BaseMVCActionCommand {
 		InfoItemFieldValues infoItemFieldValues = _getInfoItemFieldValues(
 			className, object);
 
-		for (InfoField infoField : _getInfoFields(className, object)) {
+		for (InfoField<?> infoField : _getInfoFields(className, object)) {
 			String[] infoFieldParameterValue = infoFieldParameterValues.get(
-				infoField.getName());
+				infoField.getUniqueId());
 
 			if (ArrayUtil.isNotEmpty(infoFieldParameterValue)) {
 				Locale sourceLocale = _getSourceLocale(actionRequest);
@@ -182,7 +176,7 @@ public class UpdateTranslationMVCActionCommand extends BaseMVCActionCommand {
 				List<InfoFieldValue<Object>> sourceInfoFieldValues =
 					new ArrayList<>(
 						infoItemFieldValues.getInfoFieldValues(
-							infoField.getName()));
+							infoField.getUniqueId()));
 
 				for (int i = 0; i < infoFieldParameterValue.length; i++) {
 					InfoFieldValue<Object> sourceInfoFieldValue =
@@ -210,7 +204,7 @@ public class UpdateTranslationMVCActionCommand extends BaseMVCActionCommand {
 		String className, T object) {
 
 		InfoItemFieldValuesProvider<Object> infoItemFieldValuesProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
+			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFieldValuesProvider.class, className);
 
 		return infoItemFieldValuesProvider.getInfoItemFieldValues(object);
@@ -238,7 +232,10 @@ public class UpdateTranslationMVCActionCommand extends BaseMVCActionCommand {
 		UpdateTranslationMVCActionCommand.class);
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
+
+	@Reference
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	@Reference
 	private TranslationEntryService _translationEntryService;

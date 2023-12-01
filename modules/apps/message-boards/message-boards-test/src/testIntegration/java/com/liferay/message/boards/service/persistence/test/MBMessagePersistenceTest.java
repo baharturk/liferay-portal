@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.message.boards.exception.DuplicateMBMessageExternalReferenceCodeException;
 import com.liferay.message.boards.exception.NoSuchMessageException;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBMessageLocalServiceUtil;
@@ -263,6 +255,26 @@ public class MBMessagePersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingMBMessage.getStatusDate()),
 			Time.getShortTimestamp(newMBMessage.getStatusDate()));
+	}
+
+	@Test(expected = DuplicateMBMessageExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		MBMessage mbMessage = addMBMessage();
+
+		MBMessage newMBMessage = addMBMessage();
+
+		newMBMessage.setGroupId(mbMessage.getGroupId());
+
+		newMBMessage = _persistence.update(newMBMessage);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newMBMessage);
+
+		newMBMessage.setExternalReferenceCode(
+			mbMessage.getExternalReferenceCode());
+
+		_persistence.update(newMBMessage);
 	}
 
 	@Test
@@ -536,12 +548,12 @@ public class MBMessagePersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_ERC() throws Exception {
-		_persistence.countByG_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
 
-		_persistence.countByG_ERC(0L, "null");
+		_persistence.countByERC_G("null", 0L);
 
-		_persistence.countByG_ERC(0L, (String)null);
+		_persistence.countByERC_G((String)null, 0L);
 	}
 
 	@Test
@@ -867,15 +879,15 @@ public class MBMessagePersistenceTest {
 				new Class<?>[] {String.class}, "urlSubject"));
 
 		Assert.assertEquals(
-			Long.valueOf(mbMessage.getGroupId()),
-			ReflectionTestUtil.<Long>invoke(
-				mbMessage, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "groupId"));
-		Assert.assertEquals(
 			mbMessage.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				mbMessage, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(mbMessage.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				mbMessage, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected MBMessage addMBMessage() throws Exception {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.display.context;
@@ -24,25 +15,24 @@ import com.liferay.dynamic.data.mapping.form.builder.settings.DDMFormBuilderSett
 import com.liferay.dynamic.data.mapping.form.builder.settings.DDMFormBuilderSettingsResponse;
 import com.liferay.dynamic.data.mapping.form.builder.settings.DDMFormBuilderSettingsRetriever;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldType;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderer;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderingContext;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormTemplateContextFactory;
 import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
 import com.liferay.dynamic.data.mapping.form.web.internal.configuration.DDMFormWebConfiguration;
-import com.liferay.dynamic.data.mapping.form.web.internal.configuration.FFDateTimeDDMFormFieldTypeConfiguration;
-import com.liferay.dynamic.data.mapping.form.web.internal.configuration.activator.FFSubmissionsSettingsConfigurationActivator;
 import com.liferay.dynamic.data.mapping.form.web.internal.constants.DDMFormWebKeys;
 import com.liferay.dynamic.data.mapping.form.web.internal.display.context.helper.DDMFormAdminRequestHelper;
 import com.liferay.dynamic.data.mapping.form.web.internal.display.context.helper.FormInstancePermissionCheckerHelper;
-import com.liferay.dynamic.data.mapping.form.web.internal.instance.lifecycle.AddDefaultSharedFormLayoutPortalInstanceLifecycleListener;
+import com.liferay.dynamic.data.mapping.form.web.internal.display.context.util.DDMFormAdminActionDropdownItemsProvider;
 import com.liferay.dynamic.data.mapping.form.web.internal.search.DDMFormInstanceRowChecker;
 import com.liferay.dynamic.data.mapping.form.web.internal.search.DDMFormInstanceSearch;
+import com.liferay.dynamic.data.mapping.form.web.internal.util.DDMLayoutUtil;
 import com.liferay.dynamic.data.mapping.io.DDMFormFieldTypesSerializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormFieldTypesSerializerSerializeRequest;
 import com.liferay.dynamic.data.mapping.io.DDMFormFieldTypesSerializerSerializeResponse;
-import com.liferay.dynamic.data.mapping.io.exporter.DDMFormInstanceRecordWriterTracker;
+import com.liferay.dynamic.data.mapping.io.exporter.DDMFormInstanceRecordWriterRegistry;
 import com.liferay.dynamic.data.mapping.model.DDMDataProviderInstance;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
@@ -51,9 +41,6 @@ import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecordVersion;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceSettings;
 import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
-import com.liferay.dynamic.data.mapping.model.DDMFormLayoutColumn;
-import com.liferay.dynamic.data.mapping.model.DDMFormLayoutPage;
-import com.liferay.dynamic.data.mapping.model.DDMFormLayoutRow;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalService;
@@ -64,7 +51,7 @@ import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapter;
-import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterTracker;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterRegistry;
 import com.liferay.dynamic.data.mapping.util.DDMFormFactory;
 import com.liferay.dynamic.data.mapping.util.DDMFormLayoutFactory;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesMerger;
@@ -85,7 +72,6 @@ import com.liferay.layout.dynamic.data.mapping.form.field.type.constants.LayoutD
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.editor.configuration.EditorConfiguration;
@@ -107,6 +93,7 @@ import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -124,16 +111,14 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.servlet.PipingServletResponseFactory;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.portlet.PortletException;
 import javax.portlet.PortletRequest;
@@ -152,16 +137,14 @@ public class DDMFormAdminDisplayContext {
 
 	public DDMFormAdminDisplayContext(
 		RenderRequest renderRequest, RenderResponse renderResponse,
-		AddDefaultSharedFormLayoutPortalInstanceLifecycleListener
-			addDefaultSharedFormLayoutPortalInstanceLifecycleListener,
 		DDMFormBuilderContextFactory ddmFormBuilderContextFactory,
 		DDMFormBuilderSettingsRetriever ddmFormBuilderSettingsRetriever,
 		DDMFormContextDeserializer<DDMFormValues> ddmFormContextToDDMFormValues,
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker,
+		DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
 		DDMFormFieldTypesSerializer ddmFormFieldTypesSerializer,
 		DDMFormInstanceLocalService ddmFormInstanceLocalService,
 		DDMFormInstanceRecordLocalService ddmFormInstanceRecordLocalService,
-		DDMFormInstanceRecordWriterTracker ddmFormInstanceRecordWriterTracker,
+		DDMFormInstanceRecordWriterRegistry ddmFormInstanceRecordWriterRegistry,
 		DDMFormInstanceService ddmFormInstanceService,
 		DDMFormInstanceVersionLocalService ddmFormInstanceVersionLocalService,
 		DDMFormRenderer ddmFormRenderer,
@@ -169,28 +152,22 @@ public class DDMFormAdminDisplayContext {
 		DDMFormValuesFactory ddmFormValuesFactory,
 		DDMFormValuesMerger ddmFormValuesMerger,
 		DDMFormWebConfiguration ddmFormWebConfiguration,
-		DDMStorageAdapterTracker ddmStorageAdapterTracker,
+		DDMStorageAdapterRegistry ddmStorageAdapterRegistry,
 		DDMStructureLocalService ddmStructureLocalService,
-		DDMStructureService ddmStructureService,
-		FFDateTimeDDMFormFieldTypeConfiguration
-			ffDateTimeDDMFormFieldTypeConfiguration,
-		FFSubmissionsSettingsConfigurationActivator
-			ffSubmissionsSettingsConfigurationActivator,
-		JSONFactory jsonFactory, NPMResolver npmResolver,
+		DDMStructureService ddmStructureService, JSONFactory jsonFactory,
+		NPMResolver npmResolver,
 		ObjectDefinitionLocalService objectDefinitionLocalService,
 		Portal portal) {
 
-		_addDefaultSharedFormLayoutPortalInstanceLifecycleListener =
-			addDefaultSharedFormLayoutPortalInstanceLifecycleListener;
 		_ddmFormBuilderContextFactory = ddmFormBuilderContextFactory;
 		_ddmFormBuilderSettingsRetriever = ddmFormBuilderSettingsRetriever;
 		_ddmFormContextToDDMFormValues = ddmFormContextToDDMFormValues;
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
+		_ddmFormFieldTypeServicesRegistry = ddmFormFieldTypeServicesRegistry;
 		_ddmFormFieldTypesSerializer = ddmFormFieldTypesSerializer;
 		_ddmFormInstanceLocalService = ddmFormInstanceLocalService;
 		_ddmFormInstanceRecordLocalService = ddmFormInstanceRecordLocalService;
-		_ddmFormInstanceRecordWriterTracker =
-			ddmFormInstanceRecordWriterTracker;
+		_ddmFormInstanceRecordWriterRegistry =
+			ddmFormInstanceRecordWriterRegistry;
 		_ddmFormInstanceService = ddmFormInstanceService;
 		_ddmFormInstanceVersionLocalService =
 			ddmFormInstanceVersionLocalService;
@@ -198,13 +175,9 @@ public class DDMFormAdminDisplayContext {
 		_ddmFormValuesFactory = ddmFormValuesFactory;
 		_ddmFormValuesMerger = ddmFormValuesMerger;
 		_ddmFormWebConfiguration = ddmFormWebConfiguration;
-		_ddmStorageAdapterTracker = ddmStorageAdapterTracker;
+		_ddmStorageAdapterRegistry = ddmStorageAdapterRegistry;
 		_ddmStructureLocalService = ddmStructureLocalService;
 		_ddmStructureService = ddmStructureService;
-		_ffDateTimeDDMFormFieldTypeConfiguration =
-			ffDateTimeDDMFormFieldTypeConfiguration;
-		_ffSubmissionsSettingsConfigurationActivator =
-			ffSubmissionsSettingsConfigurationActivator;
 		_npmResolver = npmResolver;
 		_objectDefinitionLocalService = objectDefinitionLocalService;
 		_portal = portal;
@@ -219,6 +192,35 @@ public class DDMFormAdminDisplayContext {
 
 		_formInstancePermissionCheckerHelper =
 			new FormInstancePermissionCheckerHelper(ddmFormAdminRequestHelper);
+	}
+
+	public List<DropdownItem> getActionDropdownItems(
+			DDMFormInstance ddmFormInstance)
+		throws PortalException {
+
+		boolean invalidDDMFormInstance = false;
+
+		if (!hasValidDDMFormFields(ddmFormInstance) ||
+			!hasValidStorageType(ddmFormInstance)) {
+
+			invalidDDMFormInstance = true;
+		}
+
+		DDMFormAdminActionDropdownItemsProvider
+			ddmFormAdminActionDropdownItemsProvider =
+				new DDMFormAdminActionDropdownItemsProvider(
+					getAutocompleteUserURL(), ddmFormInstance,
+					getExportFormURL(ddmFormInstance.getFormInstanceId()),
+					_formInstancePermissionCheckerHelper,
+					isFormPublished(ddmFormInstance),
+					ddmFormAdminRequestHelper.getRequest(),
+					invalidDDMFormInstance,
+					getFormLocalizedNameJSONObject(ddmFormInstance),
+					getPublishedFormURL(ddmFormInstance), renderResponse,
+					getScopeGroupId(),
+					getShareFormInstanceURL(ddmFormInstance));
+
+		return ddmFormAdminActionDropdownItemsProvider.getActionDropdownItems();
 	}
 
 	public List<DropdownItem> getActionItemsDropdownItems() {
@@ -248,9 +250,9 @@ public class DDMFormAdminDisplayContext {
 		return _ddmFormWebConfiguration.autosaveInterval();
 	}
 
-	public Map<String, String> getAvailableExportExtensions() {
-		return _ddmFormInstanceRecordWriterTracker.
-			getDDMFormInstanceRecordWriterExtensions();
+	public Set<String> getAvailableExportTypes() {
+		return _ddmFormInstanceRecordWriterRegistry.
+			getDDMFormInstanceRecordWriterTypes();
 	}
 
 	public JSONArray getAvailableLanguageIdsJSONArray() {
@@ -306,6 +308,10 @@ public class DDMFormAdminDisplayContext {
 		return _ddmFormWebConfiguration.csvExport();
 	}
 
+	public String getDataEngineModule() {
+		return _npmResolver.resolveModuleName("data-engine-js-components-web");
+	}
+
 	public String getDataProviderInstanceParameterSettingsURL()
 		throws PortalException {
 
@@ -343,8 +349,8 @@ public class DDMFormAdminDisplayContext {
 
 	public JSONArray getDDMFormFieldTypesJSONArray() throws PortalException {
 		List<DDMFormFieldType> availableDDMFormFieldTypes =
-			_removeDDMFormFieldTypesOutOfScope(
-				_ddmFormFieldTypeServicesTracker.getDDMFormFieldTypes());
+			_filterDDMFormFieldTypes(
+				_ddmFormFieldTypeServicesRegistry.getDDMFormFieldTypes());
 
 		String serializedFormFieldTypes = _serialize(
 			availableDDMFormFieldTypes);
@@ -420,7 +426,7 @@ public class DDMFormAdminDisplayContext {
 				}
 			}
 			catch (PortalException portalException) {
-				_log.error(portalException, portalException);
+				_log.error(portalException);
 			}
 		}
 
@@ -479,8 +485,6 @@ public class DDMFormAdminDisplayContext {
 		DDMFormLayout ddmFormLayout = DDMFormLayoutFactory.create(
 			DDMFormInstanceSettings.class);
 
-		_removeSubmissionsSettings(ddmFormLayout.getDDMFormLayoutPages());
-
 		ddmFormLayout.setPaginationMode(DDMFormLayout.TABBED_MODE);
 
 		DDMFormRenderingContext ddmFormRenderingContext =
@@ -511,7 +515,7 @@ public class DDMFormAdminDisplayContext {
 		return new DDMFormViewFormInstanceRecordsDisplayContext(
 			renderRequest, renderResponse, getDDMFormInstance(),
 			_ddmFormInstanceRecordLocalService,
-			_ddmFormFieldTypeServicesTracker);
+			_ddmFormFieldTypeServicesRegistry);
 	}
 
 	public DDMStructure getDDMStructure() throws PortalException {
@@ -544,13 +548,17 @@ public class DDMFormAdminDisplayContext {
 	public String getDefaultLanguageId() {
 		String defaultLanguageId = _getFormBuilderContextDefaultLanguageId();
 
-		if (defaultLanguageId != null) {
+		if ((defaultLanguageId != null) &&
+			LanguageUtil.isAvailableLocale(defaultLanguageId)) {
+
 			return defaultLanguageId;
 		}
 
 		defaultLanguageId = _getFormDefaultLanguageId();
 
-		if (defaultLanguageId != null) {
+		if ((defaultLanguageId != null) &&
+			LanguageUtil.isAvailableLocale(defaultLanguageId)) {
+
 			return defaultLanguageId;
 		}
 
@@ -619,13 +627,24 @@ public class DDMFormAdminDisplayContext {
 	}
 
 	public String getEmptyResultsMessage() {
-		SearchContainer<?> search = getSearch();
-
-		HttpServletRequest httpServletRequest =
-			ddmFormAdminRequestHelper.getRequest();
+		SearchContainer<?> searchContainer = getSearchContainer();
 
 		return LanguageUtil.get(
-			httpServletRequest, search.getEmptyResultsMessage());
+			ddmFormAdminRequestHelper.getRequest(),
+			searchContainer.getEmptyResultsMessage());
+	}
+
+	public String getExportFormURL(long formInstanceId) {
+		LiferayPortletURL liferayPortletURL =
+			(LiferayPortletURL)renderResponse.createResourceURL();
+
+		liferayPortletURL.setCopyCurrentRenderParameters(false);
+		liferayPortletURL.setParameter(
+			"formInstanceId", String.valueOf(formInstanceId));
+		liferayPortletURL.setResourceID(
+			"/dynamic_data_mapping_form/export_form_instance");
+
+		return liferayPortletURL.toString();
 	}
 
 	public String getFieldSetDefinitionURL() throws PortalException {
@@ -681,9 +700,8 @@ public class DDMFormAdminDisplayContext {
 
 		DDMFormBuilderContextRequest ddmFormBuilderContextRequest =
 			DDMFormBuilderContextRequest.with(
-				Optional.ofNullable(null), themeDisplay.getRequest(),
-				themeDisplay.getResponse(),
-				LocaleUtil.fromLanguageId(getDefaultLanguageId()), true);
+				null, themeDisplay.getRequest(), themeDisplay.getResponse(),
+				LocaleUtil.fromLanguageId(themeDisplay.getLanguageId()), true);
 
 		ddmFormBuilderContextRequest.addProperty(
 			"ddmStructureVersion", getLatestDDMStructureVersion());
@@ -828,7 +846,7 @@ public class DDMFormAdminDisplayContext {
 
 			for (DDMFormField ddmFormField : ddmForm.getDDMFormFields()) {
 				DDMFormFieldType ddmFormFieldType =
-					_ddmFormFieldTypeServicesTracker.getDDMFormFieldType(
+					_ddmFormFieldTypeServicesRegistry.getDDMFormFieldType(
 						ddmFormField.getType());
 
 				if (ddmFormFieldType == null) {
@@ -845,7 +863,7 @@ public class DDMFormAdminDisplayContext {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -878,7 +896,9 @@ public class DDMFormAdminDisplayContext {
 	public String getLexiconIconsPath() {
 		ThemeDisplay themeDisplay = ddmFormAdminRequestHelper.getThemeDisplay();
 
-		return themeDisplay.getPathThemeImages() + "/clay/icons.svg#";
+		String spritemap = themeDisplay.getPathThemeSpritemap();
+
+		return spritemap + "#";
 	}
 
 	public String getMainRequire() {
@@ -913,6 +933,13 @@ public class DDMFormAdminDisplayContext {
 			navigationItem -> _populateDDMDataProviderNavigationItem(
 				navigationItem)
 		).build();
+	}
+
+	public ObjectDefinition getObjectDefinition(DDMFormInstance ddmFormInstance)
+		throws PortalException {
+
+		return _objectDefinitionLocalService.fetchObjectDefinition(
+			ddmFormInstance.getObjectDefinitionId());
 	}
 
 	public String getObjectDefinitionLabel(
@@ -1051,7 +1078,19 @@ public class DDMFormAdminDisplayContext {
 		return ddmFormAdminRequestHelper.getScopeGroupId();
 	}
 
-	public SearchContainer<?> getSearch() {
+	public String getSearchActionURL() {
+		return PortletURLBuilder.createRenderURL(
+			renderResponse
+		).setMVCPath(
+			"/admin/view.jsp"
+		).setParameter(
+			"currentTab", "forms"
+		).setParameter(
+			"groupId", getScopeGroupId()
+		).buildString();
+	}
+
+	public SearchContainer<?> getSearchContainer() {
 		PortletURL portletURL = PortletURLBuilder.create(
 			getPortletURL()
 		).setParameter(
@@ -1073,25 +1112,20 @@ public class DDMFormAdminDisplayContext {
 			_getDDMFormInstanceOrderByComparator(
 				getOrderByCol(), getOrderByType()));
 		ddmFormInstanceSearch.setOrderByType(getOrderByType());
+		ddmFormInstanceSearch.setResultsAndTotal(
+			() -> _ddmFormInstanceService.search(
+				ddmFormAdminRequestHelper.getCompanyId(),
+				ddmFormAdminRequestHelper.getScopeGroupId(), getKeywords(),
+				ddmFormInstanceSearch.getStart(),
+				ddmFormInstanceSearch.getEnd(),
+				ddmFormInstanceSearch.getOrderByComparator()),
+			_ddmFormInstanceService.searchCount(
+				ddmFormAdminRequestHelper.getCompanyId(),
+				ddmFormAdminRequestHelper.getScopeGroupId(), getKeywords()));
 		ddmFormInstanceSearch.setRowChecker(
 			new DDMFormInstanceRowChecker(renderResponse));
 
-		_setDDMFormInstanceSearchResults(ddmFormInstanceSearch);
-		_setDDMFormInstanceSearchTotal(ddmFormInstanceSearch);
-
 		return ddmFormInstanceSearch;
-	}
-
-	public String getSearchActionURL() {
-		return PortletURLBuilder.createRenderURL(
-			renderResponse
-		).setMVCPath(
-			"/admin/view.jsp"
-		).setParameter(
-			"currentTab", "forms"
-		).setParameter(
-			"groupId", getScopeGroupId()
-		).buildString();
 	}
 
 	public String getSearchContainerId() {
@@ -1099,8 +1133,8 @@ public class DDMFormAdminDisplayContext {
 	}
 
 	public String getSharedFormURL() {
-		return _addDefaultSharedFormLayoutPortalInstanceLifecycleListener.
-			getFormLayoutURL(ddmFormAdminRequestHelper.getThemeDisplay());
+		return DDMLayoutUtil.getFormLayoutURL(
+			ddmFormAdminRequestHelper.getThemeDisplay());
 	}
 
 	public String getShareFormInstanceURL(DDMFormInstance ddmFormInstance) {
@@ -1147,7 +1181,7 @@ public class DDMFormAdminDisplayContext {
 	}
 
 	public int getTotalItems() {
-		SearchContainer<?> searchContainer = getSearch();
+		SearchContainer<?> searchContainer = getSearchContainer();
 
 		return searchContainer.getTotal();
 	}
@@ -1188,16 +1222,17 @@ public class DDMFormAdminDisplayContext {
 		return false;
 	}
 
-	public boolean hasValidMappedObject(DDMFormInstance ddmFormInstance)
+	public boolean hasValidMappedObject(
+			DDMFormInstance ddmFormInstance, ObjectDefinition objectDefinition)
 		throws PortalException {
 
 		if (!Objects.equals(ddmFormInstance.getStorageType(), "object")) {
 			return true;
 		}
 
-		ObjectDefinition objectDefinition =
-			_objectDefinitionLocalService.getObjectDefinition(
-				ddmFormInstance.getObjectDefinitionId());
+		if (objectDefinition == null) {
+			return false;
+		}
 
 		return objectDefinition.isActive();
 	}
@@ -1205,7 +1240,7 @@ public class DDMFormAdminDisplayContext {
 	public boolean hasValidStorageType(DDMFormInstance ddmFormInstance) {
 		try {
 			DDMStorageAdapter ddmStorageAdapter =
-				_ddmStorageAdapterTracker.getDDMStorageAdapter(
+				_ddmStorageAdapterRegistry.getDDMStorageAdapter(
 					ddmFormInstance.getStorageType());
 
 			if (ddmStorageAdapter != null) {
@@ -1214,7 +1249,7 @@ public class DDMFormAdminDisplayContext {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -1229,9 +1264,17 @@ public class DDMFormAdminDisplayContext {
 		return true;
 	}
 
-	public boolean isExpirationDateEnabled() {
-		return _ffSubmissionsSettingsConfigurationActivator.
-			expirationDateEnabled();
+	public boolean isDisplayChartAsTable() throws PortalException {
+		DDMFormInstance ddmFormInstance = getDDMFormInstance();
+
+		if (ddmFormInstance == null) {
+			return false;
+		}
+
+		DDMFormInstanceSettings ddmFormInstanceSettings =
+			ddmFormInstance.getSettingsModel();
+
+		return ddmFormInstanceSettings.displayChartAsTable();
 	}
 
 	public boolean isFormPublished() throws PortalException {
@@ -1368,25 +1411,21 @@ public class DDMFormAdminDisplayContext {
 	}
 
 	protected Locale getDefaultLocale() {
-		String i18nLanguageId = (String)renderRequest.getAttribute(
-			WebKeys.I18N_LANGUAGE_ID);
-
-		if (Validator.isNotNull(i18nLanguageId)) {
-			return LocaleUtil.fromLanguageId(i18nLanguageId);
-		}
-
 		ThemeDisplay themeDisplay = ddmFormAdminRequestHelper.getThemeDisplay();
 
-		return Optional.ofNullable(
-			themeDisplay.getSiteDefaultLocale()
-		).orElse(
-			themeDisplay.getLocale()
-		);
+		Locale defaultLocale = themeDisplay.getSiteDefaultLocale();
+
+		if (defaultLocale == null) {
+			return themeDisplay.getLocale();
+		}
+
+		return defaultLocale;
 	}
 
 	protected String getDisplayStyle(
 		PortletRequest portletRequest,
-		DDMFormWebConfiguration formWebConfiguration, String[] displayViews) {
+		DDMFormWebConfiguration ddmFormWebConfiguration,
+		String[] displayViews) {
 
 		PortalPreferences portalPreferences =
 			PortletPreferencesFactoryUtil.getPortalPreferences(portletRequest);
@@ -1397,7 +1436,7 @@ public class DDMFormAdminDisplayContext {
 		if (Validator.isNull(displayStyle)) {
 			displayStyle = portalPreferences.getValue(
 				DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN, "display-style",
-				formWebConfiguration.defaultDisplayView());
+				ddmFormWebConfiguration.defaultDisplayView());
 		}
 		else if (ArrayUtil.contains(displayViews, displayStyle)) {
 			portalPreferences.setValue(
@@ -1512,6 +1551,21 @@ public class DDMFormAdminDisplayContext {
 			languageId, HtmlUtil.escape(jsonObject.getString(languageId)));
 	}
 
+	private List<DDMFormFieldType> _filterDDMFormFieldTypes(
+		List<DDMFormFieldType> ddmFormFieldTypes) {
+
+		List<String> outOfScopeDDMFormFieldTypes = Arrays.asList(
+			DDMFormFieldTypeConstants.DDM_IMAGE,
+			DDMFormFieldTypeConstants.GEOLOCATION,
+			JournalArticleDDMFormFieldTypeConstants.JOURNAL_ARTICLE,
+			LayoutDDMFormFieldTypeConstants.LINK_TO_LAYOUT);
+
+		return ListUtil.filter(
+			ddmFormFieldTypes,
+			ddmFormFieldType -> !outOfScopeDDMFormFieldTypes.contains(
+				ddmFormFieldType.getName()));
+	}
+
 	private UnsafeConsumer<DropdownItem, Exception> _getAddFormDropdownItem() {
 		return dropdownItem -> {
 			HttpServletRequest httpServletRequest =
@@ -1541,17 +1595,12 @@ public class DDMFormAdminDisplayContext {
 
 		ThemeDisplay themeDisplay = ddmFormAdminRequestHelper.getThemeDisplay();
 
-		long fieldSetClassNameId = PortalUtil.getClassNameId(
-			DDMFormInstance.class);
-
-		DDMFormBuilderSettingsRequest ddmFormBuilderSettingsRequest =
-			DDMFormBuilderSettingsRequest.with(
-				themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId(),
-				fieldSetClassNameId, getDDMForm(), themeDisplay.getLocale());
-
 		_ddmFormBuilderSettingsResponse =
 			_ddmFormBuilderSettingsRetriever.getSettings(
-				ddmFormBuilderSettingsRequest);
+				DDMFormBuilderSettingsRequest.with(
+					themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId(),
+					PortalUtil.getClassNameId(DDMFormInstance.class),
+					getDDMForm(), themeDisplay.getLocale()));
 
 		return _ddmFormBuilderSettingsResponse;
 	}
@@ -1594,7 +1643,7 @@ public class DDMFormAdminDisplayContext {
 			return availableLocales.toArray(new Locale[0]);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return null;
 		}
@@ -1664,7 +1713,7 @@ public class DDMFormAdminDisplayContext {
 			return LocaleUtil.toLanguageId(form.getDefaultLocale());
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return null;
 		}
@@ -1674,7 +1723,6 @@ public class DDMFormAdminDisplayContext {
 		NavigationItem navigationItem) {
 
 		navigationItem.setActive(false);
-
 		navigationItem.setHref(
 			PortletURLBuilder.create(
 				PortletURLFactoryUtil.create(
@@ -1704,68 +1752,6 @@ public class DDMFormAdminDisplayContext {
 			LanguageUtil.get(moduleResourceBundle, "data-providers"));
 	}
 
-	private List<DDMFormFieldType> _removeDDMFormFieldTypesOutOfScope(
-		List<DDMFormFieldType> ddmFormFieldTypes) {
-
-		List<String> ddmFormFieldTypesOutOfScope = ListUtil.fromArray(
-			DDMFormFieldTypeConstants.DDM_IMAGE,
-			DDMFormFieldTypeConstants.GEOLOCATION,
-			JournalArticleDDMFormFieldTypeConstants.JOURNAL_ARTICLE,
-			LayoutDDMFormFieldTypeConstants.LINK_TO_LAYOUT);
-
-		if (!_ffDateTimeDDMFormFieldTypeConfiguration.enabled()) {
-			ddmFormFieldTypesOutOfScope.add(
-				DDMFormFieldTypeConstants.DATE_TIME);
-		}
-
-		Stream<DDMFormFieldType> stream = ddmFormFieldTypes.stream();
-
-		return stream.filter(
-			ddmFormFieldType -> !ddmFormFieldTypesOutOfScope.contains(
-				ddmFormFieldType.getName())
-		).collect(
-			Collectors.toList()
-		);
-	}
-
-	private void _removeSubmissionsSettings(
-		List<DDMFormLayoutPage> ddmFormLayoutPages) {
-
-		DDMFormLayoutPage ddmFormLayoutPage = ddmFormLayoutPages.get(3);
-
-		DDMFormLayoutRow ddmFormLayoutRow =
-			ddmFormLayoutPage.getDDMFormLayoutRow(0);
-
-		DDMFormLayoutColumn ddmFormLayoutColumn =
-			ddmFormLayoutRow.getDDMFormLayoutColumn(0);
-
-		List<String> ddmFormFieldNames =
-			ddmFormLayoutColumn.getDDMFormFieldNames();
-
-		if (!_ffSubmissionsSettingsConfigurationActivator.
-				expirationDateEnabled()) {
-
-			ddmFormFieldNames.remove("expirationDate");
-			ddmFormFieldNames.remove("neverExpire");
-		}
-
-		if (!_ffSubmissionsSettingsConfigurationActivator.
-				limitToOneSubmissionEnabled()) {
-
-			ddmFormFieldNames.remove("limitToOneSubmissionPerUser");
-		}
-
-		if (!_ffSubmissionsSettingsConfigurationActivator.
-				showPartialResultsEnabled()) {
-
-			ddmFormFieldNames.remove("showPartialResultsToRespondents");
-		}
-
-		if (ddmFormFieldNames.isEmpty()) {
-			ddmFormLayoutPages.remove(3);
-		}
-	}
-
 	private String _serialize(List<DDMFormFieldType> ddmFormFieldTypes) {
 		DDMFormFieldTypesSerializerSerializeRequest.Builder builder =
 			DDMFormFieldTypesSerializerSerializeRequest.Builder.newBuilder(
@@ -1778,50 +1764,26 @@ public class DDMFormAdminDisplayContext {
 		return ddmFormFieldTypesSerializerSerializeResponse.getContent();
 	}
 
-	private void _setDDMFormInstanceSearchResults(
-		DDMFormInstanceSearch ddmFormInstanceSearch) {
-
-		List<DDMFormInstance> results = _ddmFormInstanceService.search(
-			ddmFormAdminRequestHelper.getCompanyId(),
-			ddmFormAdminRequestHelper.getScopeGroupId(), getKeywords(),
-			ddmFormInstanceSearch.getStart(), ddmFormInstanceSearch.getEnd(),
-			ddmFormInstanceSearch.getOrderByComparator());
-
-		ddmFormInstanceSearch.setResults(results);
-	}
-
-	private void _setDDMFormInstanceSearchTotal(
-		DDMFormInstanceSearch ddmFormInstanceSearch) {
-
-		int total = _ddmFormInstanceService.searchCount(
-			ddmFormAdminRequestHelper.getCompanyId(),
-			ddmFormAdminRequestHelper.getScopeGroupId(), getKeywords());
-
-		ddmFormInstanceSearch.setTotal(total);
-	}
-
 	private static final String[] _DISPLAY_VIEWS = {"descriptive", "list"};
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormAdminDisplayContext.class);
 
-	private final AddDefaultSharedFormLayoutPortalInstanceLifecycleListener
-		_addDefaultSharedFormLayoutPortalInstanceLifecycleListener;
 	private final DDMFormBuilderContextFactory _ddmFormBuilderContextFactory;
 	private DDMFormBuilderSettingsResponse _ddmFormBuilderSettingsResponse;
 	private final DDMFormBuilderSettingsRetriever
 		_ddmFormBuilderSettingsRetriever;
 	private final DDMFormContextDeserializer<DDMFormValues>
 		_ddmFormContextToDDMFormValues;
-	private final DDMFormFieldTypeServicesTracker
-		_ddmFormFieldTypeServicesTracker;
+	private final DDMFormFieldTypeServicesRegistry
+		_ddmFormFieldTypeServicesRegistry;
 	private final DDMFormFieldTypesSerializer _ddmFormFieldTypesSerializer;
 	private DDMFormInstance _ddmFormInstance;
 	private final DDMFormInstanceLocalService _ddmFormInstanceLocalService;
 	private final DDMFormInstanceRecordLocalService
 		_ddmFormInstanceRecordLocalService;
-	private final DDMFormInstanceRecordWriterTracker
-		_ddmFormInstanceRecordWriterTracker;
+	private final DDMFormInstanceRecordWriterRegistry
+		_ddmFormInstanceRecordWriterRegistry;
 	private final DDMFormInstanceService _ddmFormInstanceService;
 	private final DDMFormInstanceVersionLocalService
 		_ddmFormInstanceVersionLocalService;
@@ -1829,15 +1791,11 @@ public class DDMFormAdminDisplayContext {
 	private final DDMFormValuesFactory _ddmFormValuesFactory;
 	private final DDMFormValuesMerger _ddmFormValuesMerger;
 	private final DDMFormWebConfiguration _ddmFormWebConfiguration;
-	private final DDMStorageAdapterTracker _ddmStorageAdapterTracker;
+	private final DDMStorageAdapterRegistry _ddmStorageAdapterRegistry;
 	private DDMStructure _ddmStructure;
 	private final DDMStructureLocalService _ddmStructureLocalService;
 	private final DDMStructureService _ddmStructureService;
 	private String _displayStyle;
-	private final FFDateTimeDDMFormFieldTypeConfiguration
-		_ffDateTimeDDMFormFieldTypeConfiguration;
-	private final FFSubmissionsSettingsConfigurationActivator
-		_ffSubmissionsSettingsConfigurationActivator;
 	private final FormInstancePermissionCheckerHelper
 		_formInstancePermissionCheckerHelper;
 	private final Map<Long, String> _invalidDDMFormFieldTypes = new HashMap<>();

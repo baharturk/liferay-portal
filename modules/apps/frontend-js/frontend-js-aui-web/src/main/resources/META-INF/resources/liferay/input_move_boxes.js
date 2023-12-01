@@ -1,29 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-input-move-boxes',
 	(A) => {
-		var Util = Liferay.Util;
+		const Util = Liferay.Util;
 
-		var CSS_LEFT_REORDER = 'left-reorder';
+		const CSS_LEFT_REORDER = 'left-reorder';
 
-		var CSS_RIGHT_REORDER = 'right-reorder';
+		const CSS_RIGHT_REORDER = 'right-reorder';
 
-		var NAME = 'inputmoveboxes';
+		const NAME = 'inputmoveboxes';
 
-		var InputMoveBoxes = A.Component.create({
+		const InputMoveBoxes = A.Component.create({
 			ATTRS: {
 				leftBoxMaxItems: Infinity,
 
@@ -57,18 +48,18 @@ AUI.add(
 
 			prototype: {
 				_afterMoveClick(event) {
-					var instance = this;
+					const instance = this;
 
-					var target = event.domEvent.target;
-					var targetBtn = target.ancestor('.btn', true);
+					const target = event.domEvent.target;
+					const targetBtn = target.ancestor('.btn', true);
 
 					if (targetBtn) {
-						var cssClass = targetBtn.get('className');
+						const cssClass = targetBtn.get('className');
 
-						var from = instance._leftBox;
-						var to = instance._rightBox;
+						let from = instance._leftBox;
+						let to = instance._rightBox;
 
-						var sort = !instance.get('rightReorder');
+						let sort = !instance.get('rightReorder');
 
 						if (cssClass.indexOf('move-left') !== -1) {
 							from = instance._rightBox;
@@ -83,36 +74,46 @@ AUI.add(
 				},
 
 				_afterOrderClick(event, box) {
-					var instance = this;
+					const instance = this;
 
-					var target = event.domEvent.target;
-					var targetBtn = target.ancestor('.btn', true);
+					const target = event.domEvent.target;
+					const targetBtn = target.ancestor('.btn', true);
 
 					if (targetBtn) {
-						var cssClass = targetBtn.get('className');
+						const cssClass = targetBtn.get('className');
 
-						var direction = 1;
+						let direction = 1;
 
 						if (cssClass.indexOf('reorder-up') !== -1) {
 							direction = 0;
 						}
 
-						instance._orderItem(box, direction);
+						if (!targetBtn.attr('disabled')) {
+							instance._orderItem(box, direction);
+						}
+					}
+				},
+
+				_initToggleBtn(button) {
+					const instance = this;
+
+					if (button) {
+						instance._toggleBtnState(button, true);
 					}
 				},
 
 				_moveItem(from, to, sort) {
-					var instance = this;
+					const instance = this;
 
 					from = A.one(from);
 					to = A.one(to);
 
-					var selectedIndex = from.get('selectedIndex');
+					const selectedIndex = from.get('selectedIndex');
 
-					var selectedOption;
+					let selectedOption;
 
 					if (selectedIndex >= 0) {
-						var options = from.all('option');
+						const options = from.all('option');
 
 						selectedOption = options.item(selectedIndex);
 
@@ -138,14 +139,14 @@ AUI.add(
 				},
 
 				_onSelectChange(event) {
-					var instance = this;
+					const instance = this;
 
 					instance._toggleBtnMove(event);
-					instance._toggleBtnSort(event);
+					instance._toggleBtnSort(event.currentTarget);
 				},
 
 				_onSelectFocus(event, box) {
-					var instance = this;
+					const instance = this;
 
 					instance._toggleBtnMove(event);
 
@@ -153,7 +154,11 @@ AUI.add(
 				},
 
 				_orderItem(box, direction) {
+					const instance = this;
+
 					Util.reorder(box, direction);
+
+					instance._toggleBtnSort(box);
 
 					Liferay.fire(NAME + ':orderItem', {
 						box,
@@ -162,26 +167,26 @@ AUI.add(
 				},
 
 				_renderBoxes() {
-					var instance = this;
+					const instance = this;
 
-					var contentBox = instance.get('contentBox');
+					const contentBox = instance.get('contentBox');
 
 					instance._leftBox = contentBox.one('.left-selector');
 					instance._rightBox = contentBox.one('.right-selector');
 				},
 
 				_renderButtons() {
-					var instance = this;
+					const instance = this;
 
-					var contentBox = instance.get('contentBox');
-					var strings = instance.get('strings');
+					const contentBox = instance.get('contentBox');
+					const strings = instance.get('strings');
 
-					var moveButtonsColumn = contentBox.one(
+					const moveButtonsColumn = contentBox.one(
 						'.move-arrow-buttons'
 					);
 
 					if (moveButtonsColumn) {
-						var moveToolbar = new A.Toolbar({
+						const moveToolbar = new A.Toolbar({
 							children: [
 								[
 									'normal',
@@ -221,7 +226,7 @@ AUI.add(
 						instance._moveToolbar = moveToolbar;
 					}
 
-					var config_reorder = {
+					const config_reorder = {
 						children: [
 							[
 								{
@@ -247,7 +252,7 @@ AUI.add(
 					};
 
 					if (instance.get('leftReorder')) {
-						var leftColumn = contentBox.one(
+						const leftColumn = contentBox.one(
 							'.left-selector-column'
 						);
 
@@ -262,7 +267,7 @@ AUI.add(
 					}
 
 					if (instance.get('rightReorder')) {
-						var rightColumn = contentBox.one(
+						const rightColumn = contentBox.one(
 							'.right-selector-column'
 						);
 
@@ -277,27 +282,31 @@ AUI.add(
 					}
 
 					instance._toggleReorderToolbars();
+
+					instance._initToggleBtn(contentBox.one('.move-left'));
+					instance._initToggleBtn(contentBox.one('.move-right'));
+					instance._initToggleBtn(contentBox.one('.reorder-down'));
+					instance._initToggleBtn(contentBox.one('.reorder-up'));
 				},
-
 				_toggleBtnMove(event) {
-					var instance = this;
+					const instance = this;
 
-					var sourceBox = event.target;
+					const sourceBox = event.target;
 
-					var selectedOptions = sourceBox
+					const selectedOptions = sourceBox
 						.get('options')
 						.getDOMNodes()
 						.filter((option) => option.selected);
 
-					var direction =
+					const direction =
 						sourceBox === instance._rightBox ? 'left' : 'right';
 
-					var destinationBox = instance[`_${direction}Box`];
-					var destinationBoxMaxItems = instance.get(
+					const destinationBox = instance[`_${direction}Box`];
+					const destinationBoxMaxItems = instance.get(
 						`${direction}BoxMaxItems`
 					);
 
-					var contentBox = instance.get('contentBox');
+					const contentBox = instance.get('contentBox');
 
 					instance._toggleBtnState(
 						contentBox.one(`.move-${direction}`),
@@ -305,33 +314,52 @@ AUI.add(
 							destinationBoxMaxItems
 					);
 				},
+				_toggleBtnSort(changedBox) {
+					const instance = this;
 
-				_toggleBtnSort(event) {
-					var instance = this;
+					const contentBox = instance.get('contentBox');
 
-					var contentBox = instance.get('contentBox');
+					const sortBtnDown = contentBox.one('.reorder-down');
+					const sortBtnUp = contentBox.one('.reorder-up');
 
-					var sortBtnDown = contentBox.one('.reorder-down');
-					var sortBtnUp = contentBox.one('.reorder-up');
+					const leftBox = instance._leftBox;
+					const rightBox = instance._rightBox;
 
-					var currentTarget = event.currentTarget;
+					if (changedBox && sortBtnDown && sortBtnUp) {
+						const length = changedBox.get('length');
 
-					if (currentTarget && sortBtnDown && sortBtnUp) {
-						var length = currentTarget.get('length');
-						var selectedIndex = currentTarget.get('selectedIndex');
+						const selectedIndexes = changedBox
+							.get('options')
+							.getDOMNodes()
+							.filter((option) => option.selected)
 
-						var btnDisabledDown = false;
-						var btnDisabledUp = false;
+							.map((option) => option.index);
 
-						if (selectedIndex === length - 1) {
-							btnDisabledDown = true;
+						let btnDisabledDown = false;
+						let btnDisabledUp = false;
+
+						if (changedBox === leftBox) {
+							const noItems = !length;
+
+							const noItemsSelected = !selectedIndexes.length;
+
+							const firstItemSelected = selectedIndexes.includes(
+								0
+							);
+
+							const lastItemSelected = selectedIndexes.includes(
+								length - 1
+							);
+
+							btnDisabledUp =
+								firstItemSelected || noItemsSelected || noItems;
+
+							btnDisabledDown =
+								lastItemSelected || noItemsSelected || noItems;
 						}
-						else if (selectedIndex === 0) {
-							btnDisabledUp = true;
-						}
-						else if (selectedIndex === -1) {
+						else if (changedBox === rightBox) {
 							btnDisabledDown = true;
-							btnDisabledUp = true;
+							btnDisabledUp = false;
 						}
 
 						instance._toggleBtnState(sortBtnDown, btnDisabledDown);
@@ -344,19 +372,19 @@ AUI.add(
 				},
 
 				_toggleReorderToolbar(sideReorderToolbar, sideColumn) {
-					var showReorderToolbar =
+					const showReorderToolbar =
 						sideColumn.all('option').size() > 1;
 
 					sideReorderToolbar.toggle(showReorderToolbar);
 				},
 
 				_toggleReorderToolbars() {
-					var instance = this;
+					const instance = this;
 
-					var contentBox = instance.get('contentBox');
+					const contentBox = instance.get('contentBox');
 
 					if (instance.get('leftReorder')) {
-						var leftColumn = contentBox.one(
+						const leftColumn = contentBox.one(
 							'.left-selector-column'
 						);
 
@@ -367,7 +395,7 @@ AUI.add(
 					}
 
 					if (instance.get('rightReorder')) {
-						var rightColumn = contentBox.one(
+						const rightColumn = contentBox.one(
 							'.right-selector-column'
 						);
 
@@ -379,9 +407,9 @@ AUI.add(
 				},
 
 				bindUI() {
-					var instance = this;
+					const instance = this;
 
-					var leftReorderToolbar = instance._leftReorderToolbar;
+					const leftReorderToolbar = instance._leftReorderToolbar;
 
 					if (leftReorderToolbar) {
 						leftReorderToolbar.after(
@@ -394,7 +422,7 @@ AUI.add(
 						);
 					}
 
-					var rightReorderToolbar = instance._rightReorderToolbar;
+					const rightReorderToolbar = instance._rightReorderToolbar;
 
 					if (rightReorderToolbar) {
 						rightReorderToolbar.after(
@@ -435,18 +463,18 @@ AUI.add(
 				},
 
 				renderUI() {
-					var instance = this;
+					const instance = this;
 
 					instance._renderBoxes();
 					instance._renderButtons();
 				},
 
 				sortBox(box) {
-					var newBox = [];
+					const newBox = [];
 
-					var options = box.all('option');
+					const options = box.all('option');
 
-					for (var i = 0; i < options.size(); i++) {
+					for (let i = 0; i < options.size(); i++) {
 						newBox[i] = [
 							options.item(i).val(),
 							options.item(i).text(),
@@ -468,7 +496,7 @@ AUI.add(
 						return 0;
 					});
 
-					var boxObj = A.one(box);
+					const boxObj = A.one(box);
 
 					boxObj.all('option').remove(true);
 

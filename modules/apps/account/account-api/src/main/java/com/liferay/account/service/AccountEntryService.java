@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service;
@@ -92,6 +83,11 @@ public interface AccountEntryService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AccountEntry fetchAccountEntryByExternalReferenceCode(
+			long companyId, String externalReferenceCode)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AccountEntry> getAccountEntries(
 			long companyId, int status, int start, int end,
 			OrderByComparator<AccountEntry> orderByComparator)
@@ -124,8 +120,15 @@ public interface AccountEntryService extends BaseService {
 			int status, ServiceContext serviceContext)
 		throws PortalException;
 
+	public AccountEntry updateDomains(long accountEntryId, String[] domains)
+		throws PortalException;
+
 	public AccountEntry updateExternalReferenceCode(
 			long accountEntryId, String externalReferenceCode)
+		throws PortalException;
+
+	public AccountEntry updateRestrictMembership(
+			long accountEntryId, boolean restrictMembership)
 		throws PortalException;
 
 }

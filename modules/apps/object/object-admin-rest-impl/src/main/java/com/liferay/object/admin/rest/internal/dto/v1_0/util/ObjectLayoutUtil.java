@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.internal.dto.v1_0.util;
@@ -19,8 +10,13 @@ import com.liferay.object.admin.rest.dto.v1_0.ObjectLayoutBox;
 import com.liferay.object.admin.rest.dto.v1_0.ObjectLayoutColumn;
 import com.liferay.object.admin.rest.dto.v1_0.ObjectLayoutRow;
 import com.liferay.object.admin.rest.dto.v1_0.ObjectLayoutTab;
-import com.liferay.object.util.LocalizedMapUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectField;
+import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
 import java.util.Map;
 
@@ -30,12 +26,19 @@ import java.util.Map;
 public class ObjectLayoutUtil {
 
 	public static ObjectLayout toObjectLayout(
-		Map<String, Map<String, String>> actions,
-		com.liferay.object.model.ObjectLayout serviceBuilderObjectLayout) {
+			Map<String, Map<String, String>> actions,
+			ObjectDefinitionLocalService objectDefinitionLocalService,
+			ObjectFieldLocalService objectFieldLocalService,
+			com.liferay.object.model.ObjectLayout serviceBuilderObjectLayout)
+		throws PortalException {
 
 		if (serviceBuilderObjectLayout == null) {
 			return null;
 		}
+
+		ObjectDefinition objectDefinition =
+			objectDefinitionLocalService.getObjectDefinition(
+				serviceBuilderObjectLayout.getObjectDefinitionId());
 
 		ObjectLayout objectLayout = new ObjectLayout() {
 			{
@@ -46,11 +49,15 @@ public class ObjectLayoutUtil {
 				id = serviceBuilderObjectLayout.getObjectLayoutId();
 				name = LocalizedMapUtil.getLanguageIdMap(
 					serviceBuilderObjectLayout.getNameMap());
+				objectDefinitionExternalReferenceCode =
+					objectDefinition.getExternalReferenceCode();
 				objectDefinitionId =
 					serviceBuilderObjectLayout.getObjectDefinitionId();
 				objectLayoutTabs = TransformUtil.transformToArray(
 					serviceBuilderObjectLayout.getObjectLayoutTabs(),
-					ObjectLayoutUtil::toObjectLayoutTab, ObjectLayoutTab.class);
+					objectLayoutTab -> toObjectLayoutTab(
+						objectFieldLocalService, objectLayoutTab),
+					ObjectLayoutTab.class);
 			}
 		};
 
@@ -60,53 +67,57 @@ public class ObjectLayoutUtil {
 	}
 
 	public static ObjectLayoutTab toObjectLayoutTab(
-		com.liferay.object.model.ObjectLayoutTab
-			serviceBuilderObjectLayoutTab) {
+		ObjectFieldLocalService objectFieldLocalService,
+		com.liferay.object.model.ObjectLayoutTab objectLayoutTab) {
 
-		if (serviceBuilderObjectLayoutTab == null) {
+		if (objectLayoutTab == null) {
 			return null;
 		}
 
 		return new ObjectLayoutTab() {
 			{
-				id = serviceBuilderObjectLayoutTab.getObjectLayoutTabId();
+				id = objectLayoutTab.getObjectLayoutTabId();
 				name = LocalizedMapUtil.getLanguageIdMap(
-					serviceBuilderObjectLayoutTab.getNameMap());
+					objectLayoutTab.getNameMap());
 				objectLayoutBoxes = TransformUtil.transformToArray(
-					serviceBuilderObjectLayoutTab.getObjectLayoutBoxes(),
-					ObjectLayoutUtil::_toObjectLayoutBox,
+					objectLayoutTab.getObjectLayoutBoxes(),
+					objectLayoutBox -> _toObjectLayoutBox(
+						objectFieldLocalService, objectLayoutBox),
 					ObjectLayoutBox.class);
 				objectRelationshipId =
-					serviceBuilderObjectLayoutTab.getObjectRelationshipId();
-				priority = serviceBuilderObjectLayoutTab.getPriority();
+					objectLayoutTab.getObjectRelationshipId();
+				priority = objectLayoutTab.getPriority();
 			}
 		};
 	}
 
 	private static ObjectLayoutBox _toObjectLayoutBox(
-		com.liferay.object.model.ObjectLayoutBox
-			serviceBuilderObjectLayoutBox) {
+		ObjectFieldLocalService objectFieldLocalService,
+		com.liferay.object.model.ObjectLayoutBox objectLayoutBox) {
 
-		if (serviceBuilderObjectLayoutBox == null) {
+		if (objectLayoutBox == null) {
 			return null;
 		}
 
 		return new ObjectLayoutBox() {
 			{
-				collapsable = serviceBuilderObjectLayoutBox.getCollapsable();
-				id = serviceBuilderObjectLayoutBox.getObjectLayoutBoxId();
+				collapsable = objectLayoutBox.getCollapsable();
+				id = objectLayoutBox.getObjectLayoutBoxId();
 				name = LocalizedMapUtil.getLanguageIdMap(
-					serviceBuilderObjectLayoutBox.getNameMap());
+					objectLayoutBox.getNameMap());
 				objectLayoutRows = TransformUtil.transformToArray(
-					serviceBuilderObjectLayoutBox.getObjectLayoutRows(),
-					ObjectLayoutUtil::_toObjectLayoutRow,
+					objectLayoutBox.getObjectLayoutRows(),
+					objectLayoutRow -> _toObjectLayoutRow(
+						objectFieldLocalService, objectLayoutRow),
 					ObjectLayoutRow.class);
-				priority = serviceBuilderObjectLayoutBox.getPriority();
+				priority = objectLayoutBox.getPriority();
+				type = ObjectLayoutBox.Type.create(objectLayoutBox.getType());
 			}
 		};
 	}
 
 	private static ObjectLayoutColumn _toObjectLayoutColumn(
+		ObjectFieldLocalService objectFieldLocalService,
 		com.liferay.object.model.ObjectLayoutColumn
 			serviceBuilderObjectLayoutColumn) {
 
@@ -114,11 +125,13 @@ public class ObjectLayoutUtil {
 			return null;
 		}
 
+		ObjectField objectField = objectFieldLocalService.fetchObjectField(
+			serviceBuilderObjectLayoutColumn.getObjectFieldId());
+
 		return new ObjectLayoutColumn() {
 			{
 				id = serviceBuilderObjectLayoutColumn.getObjectLayoutColumnId();
-				objectFieldId =
-					serviceBuilderObjectLayoutColumn.getObjectFieldId();
+				objectFieldName = objectField.getName();
 				priority = serviceBuilderObjectLayoutColumn.getPriority();
 				size = serviceBuilderObjectLayoutColumn.getSize();
 			}
@@ -126,6 +139,7 @@ public class ObjectLayoutUtil {
 	}
 
 	private static ObjectLayoutRow _toObjectLayoutRow(
+		ObjectFieldLocalService objectFieldLocalService,
 		com.liferay.object.model.ObjectLayoutRow
 			serviceBuilderObjectLayoutRow) {
 
@@ -138,7 +152,8 @@ public class ObjectLayoutUtil {
 				id = serviceBuilderObjectLayoutRow.getObjectLayoutRowId();
 				objectLayoutColumns = TransformUtil.transformToArray(
 					serviceBuilderObjectLayoutRow.getObjectLayoutColumns(),
-					ObjectLayoutUtil::_toObjectLayoutColumn,
+					objectLayoutColumn -> _toObjectLayoutColumn(
+						objectFieldLocalService, objectLayoutColumn),
 					ObjectLayoutColumn.class);
 				priority = serviceBuilderObjectLayoutRow.getPriority();
 			}

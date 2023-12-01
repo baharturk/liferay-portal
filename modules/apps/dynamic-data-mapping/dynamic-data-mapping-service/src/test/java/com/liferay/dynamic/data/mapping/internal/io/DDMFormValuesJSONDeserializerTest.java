@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io;
@@ -31,6 +22,8 @@ import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
@@ -45,6 +38,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.mockito.Mockito;
 
 import org.skyscreamer.jsonassert.JSONAssert;
 
@@ -64,6 +59,7 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 		super.setUp();
 
 		_setUpDDMFormValuesJSONDeserializer();
+		_setUpLanguage();
 	}
 
 	@Test
@@ -383,18 +379,24 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 	}
 
 	private void _setUpDDMFormValuesJSONDeserializer() throws Exception {
-		field(
-			DDMFormValuesJSONDeserializer.class, "_jsonFactory"
-		).set(
-			_ddmFormValuesDeserializer, new JSONFactoryImpl()
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormValuesDeserializer, "_jsonFactory", new JSONFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormValuesDeserializer, "_serviceTrackerMap",
+			ProxyFactory.newDummyInstance(ServiceTrackerMap.class));
+	}
+
+	private void _setUpLanguage() {
+		Language language = Mockito.mock(Language.class);
+
+		Mockito.when(
+			language.isAvailableLocale(Mockito.anyString())
+		).thenReturn(
+			true
 		);
 
-		field(
-			DDMFormValuesJSONDeserializer.class, "_serviceTrackerMap"
-		).set(
-			_ddmFormValuesDeserializer,
-			ProxyFactory.newDummyInstance(ServiceTrackerMap.class)
-		);
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormValuesDeserializer, "_language", language);
 	}
 
 	private void _testBooleanDDMFormFieldValueValues(

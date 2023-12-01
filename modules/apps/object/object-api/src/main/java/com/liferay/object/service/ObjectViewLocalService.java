@@ -1,22 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectView;
 import com.liferay.object.model.ObjectViewColumn;
+import com.liferay.object.model.ObjectViewFilterColumn;
+import com.liferay.object.model.ObjectViewSortColumn;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -68,10 +62,13 @@ public interface ObjectViewLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.object.service.impl.ObjectViewLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the object view local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link ObjectViewLocalServiceUtil} if injection and service tracking are not available.
 	 */
+	@Indexable(type = IndexableType.REINDEX)
 	public ObjectView addObjectView(
 			long userId, long objectDefinitionId, boolean defaultObjectView,
 			Map<Locale, String> nameMap,
-			List<ObjectViewColumn> objectViewColumns)
+			List<ObjectViewColumn> objectViewColumns,
+			List<ObjectViewFilterColumn> objectViewFilterColumns,
+			List<ObjectViewSortColumn> objectViewSortColumns)
 		throws PortalException;
 
 	/**
@@ -130,6 +127,9 @@ public interface ObjectViewLocalService
 	@Indexable(type = IndexableType.DELETE)
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public ObjectView deleteObjectView(ObjectView objectView);
+
+	public void deleteObjectViews(long objectDefinitionId)
+		throws PortalException;
 
 	/**
 	 * @throws PortalException
@@ -211,6 +211,9 @@ public interface ObjectViewLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ObjectView fetchDefaultObjectView(long objectDefinitionId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ObjectView fetchObjectView(long objectViewId);
 
 	/**
@@ -271,6 +274,9 @@ public interface ObjectViewLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<ObjectView> getObjectViews(int start, int end);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectView> getObjectViews(long objectDefinitionId);
+
 	/**
 	 * Returns the number of object views.
 	 *
@@ -294,10 +300,15 @@ public interface ObjectViewLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
+	public void unassociateObjectField(ObjectField objectField);
+
+	@Indexable(type = IndexableType.REINDEX)
 	public ObjectView updateObjectView(
 			long objectViewId, boolean defaultObjectView,
 			Map<Locale, String> nameMap,
-			List<ObjectViewColumn> objectViewColumns)
+			List<ObjectViewColumn> objectViewColumns,
+			List<ObjectViewFilterColumn> objectViewFilterColumns,
+			List<ObjectViewSortColumn> objectViewSortColumns)
 		throws PortalException;
 
 	/**

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.web.internal.portlet.action;
@@ -17,7 +8,9 @@ package com.liferay.dispatch.web.internal.portlet.action;
 import com.liferay.dispatch.constants.DispatchConstants;
 import com.liferay.dispatch.constants.DispatchPortletKeys;
 import com.liferay.dispatch.executor.DispatchTaskClusterMode;
+import com.liferay.dispatch.executor.DispatchTaskExecutorRegistry;
 import com.liferay.dispatch.model.DispatchTrigger;
+import com.liferay.dispatch.service.DispatchTriggerLocalService;
 import com.liferay.dispatch.service.DispatchTriggerService;
 import com.liferay.dispatch.web.internal.security.permisison.resource.DispatchTriggerPermission;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -99,7 +92,7 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			SessionErrors.add(actionRequest, exception.getClass());
 		}
@@ -130,14 +123,30 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 		}
 		else {
 			deleteDispatchTriggerIds = StringUtil.split(
-				ParamUtil.getString(actionRequest, "deleteDispatchTriggerIds"),
-				0L);
+				ParamUtil.getString(actionRequest, "rowIds"), 0L);
 		}
 
 		for (long deleteDispatchTriggerId : deleteDispatchTriggerIds) {
 			_dispatchTriggerService.deleteDispatchTrigger(
 				deleteDispatchTriggerId);
 		}
+	}
+
+	private DispatchTaskClusterMode _getDispatchTaskClusterMode(
+			long dispatchTaskId,
+			DispatchTaskClusterMode dispatchTaskClusterMode)
+		throws PortalException {
+
+		DispatchTrigger dispatchTrigger =
+			_dispatchTriggerLocalService.getDispatchTrigger(dispatchTaskId);
+
+		if (_dispatchTaskExecutorRegistry.isClusterModeSingle(
+				dispatchTrigger.getDispatchTaskExecutorType())) {
+
+			return DispatchTaskClusterMode.SINGLE_NODE_PERSISTED;
+		}
+
+		return dispatchTaskClusterMode;
 	}
 
 	private JSONObject _runProcess(ActionRequest actionRequest)
@@ -156,7 +165,7 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 		catch (Exception exception) {
 			hideDefaultErrorMessage(actionRequest);
 
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			jsonObject.put(
 				"error", exception.getMessage()
@@ -180,8 +189,11 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 		String cronExpression = ParamUtil.getString(
 			actionRequest, "cronExpression");
 		DispatchTaskClusterMode dispatchTaskClusterMode =
-			DispatchTaskClusterMode.valueOf(
-				ParamUtil.getInteger(actionRequest, "dispatchTaskClusterMode"));
+			_getDispatchTaskClusterMode(
+				dispatchTriggerId,
+				DispatchTaskClusterMode.valueOf(
+					ParamUtil.getInteger(
+						actionRequest, "dispatchTaskClusterMode")));
 		int endDateMonth = ParamUtil.getInteger(actionRequest, "endDateMonth");
 		int endDateDay = ParamUtil.getInteger(actionRequest, "endDateDay");
 		int endDateYear = ParamUtil.getInteger(actionRequest, "endDateYear");
@@ -216,11 +228,13 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 			startDateHour += 12;
 		}
 
+		String timeZoneId = ParamUtil.getString(actionRequest, "timeZoneId");
+
 		_dispatchTriggerService.updateDispatchTrigger(
 			dispatchTriggerId, active, cronExpression, dispatchTaskClusterMode,
 			endDateMonth, endDateDay, endDateYear, endDateHour, endDateMinute,
 			neverEnd, overlapAllowed, startDateMonth, startDateDay,
-			startDateYear, startDateHour, startDateMinute);
+			startDateYear, startDateHour, startDateMinute, timeZoneId);
 	}
 
 	private void _sendMessage(long dispatchTriggerId) {
@@ -260,8 +274,9 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 				actionRequest, "dispatchTaskExecutorType");
 
 			dispatchTrigger = _dispatchTriggerService.addDispatchTrigger(
-				_portal.getUserId(actionRequest), dispatchTaskExecutorType,
-				dispatchTaskSettingsUnicodeProperties, name);
+				null, _portal.getUserId(actionRequest),
+				dispatchTaskExecutorType, dispatchTaskSettingsUnicodeProperties,
+				name);
 		}
 
 		return dispatchTrigger;
@@ -287,6 +302,12 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 		target = "(destination.name=" + DispatchConstants.EXECUTOR_DESTINATION_NAME + ")"
 	)
 	private Destination _destination;
+
+	@Reference
+	private DispatchTaskExecutorRegistry _dispatchTaskExecutorRegistry;
+
+	@Reference
+	private DispatchTriggerLocalService _dispatchTriggerLocalService;
 
 	@Reference
 	private DispatchTriggerService _dispatchTriggerService;

@@ -253,11 +253,7 @@ that may or may not be enforced with a unique index at the database level. Case
 		List<${entity.name}> list = null;
 
 		if (${useCache}) {
-			list = (List<${entity.name}>)${finderCache}.getResult(finderPath, finderArgs
-				<#if serviceBuilder.isVersionLTE_7_3_0()>
-					, this
-				</#if>
-				);
+			list = (List<${entity.name}>)${finderCache}.getResult(finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (${entity.name} ${entity.variableName} : list) {
@@ -1509,7 +1505,11 @@ that may or may not be enforced with a unique index at the database level. Case
 	 * </p>
 	 *
 	<#list entityColumns as entityColumn>
-	 * @param ${entityColumn.name} the ${entityColumn.humanName}
+		<#if entityColumn.hasArrayableOperator()>
+			* @param ${entityColumn.pluralName} the ${entityColumn.pluralHumanName}
+		<#else>
+			* @param ${entityColumn.name} the ${entityColumn.humanName}
+		</#if>
 	</#list>
 	 * @param start the lower bound of the range of ${entity.pluralHumanName}
 	 * @param end the upper bound of the range of ${entity.pluralHumanName} (not inclusive)
@@ -1659,11 +1659,7 @@ that may or may not be enforced with a unique index at the database level. Case
 		List<${entity.name}> list = null;
 
 		if (${useCache}) {
-			list = (List<${entity.name}>)${finderCache}.getResult(_finderPathWithPaginationFindBy${entityFinder.name}, finderArgs
-				<#if serviceBuilder.isVersionLTE_7_3_0()>
-					, this
-				</#if>
-				);
+			list = (List<${entity.name}>)${finderCache}.getResult(_finderPathWithPaginationFindBy${entityFinder.name}, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (${entity.name} ${entity.variableName} : list) {
@@ -1875,7 +1871,11 @@ that may or may not be enforced with a unique index at the database level. Case
 	 * </p>
 	 *
 	<#list entityColumns as entityColumn>
-	 * @param ${entityColumn.name} the ${entityColumn.humanName}
+		<#if entityColumn.hasArrayableOperator()>
+			* @param ${entityColumn.pluralName} the ${entityColumn.pluralHumanName}
+		<#else>
+			* @param ${entityColumn.name} the ${entityColumn.humanName}
+		</#if>
 	</#list>
 	 * @param start the lower bound of the range of ${entity.pluralHumanName}
 	 * @param end the upper bound of the range of ${entity.pluralHumanName} (not inclusive)
@@ -2017,11 +2017,7 @@ that may or may not be enforced with a unique index at the database level. Case
 		List<${entity.name}> list = null;
 
 		if (${useCache}) {
-			list = (List<${entity.name}>)${finderCache}.getResult(_finderPathWithPaginationFindBy${entityFinder.name}, finderArgs
-				<#if serviceBuilder.isVersionLTE_7_3_0()>
-					, this
-				</#if>
-				);
+			list = (List<${entity.name}>)${finderCache}.getResult(_finderPathWithPaginationFindBy${entityFinder.name}, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (${entity.name} ${entity.variableName} : list) {
@@ -2281,13 +2277,9 @@ that may or may not be enforced with a unique index at the database level. Case
 			</#if>
 		</#list>
 
-		<#if entity.isChangeTrackingEnabled()>
-			boolean productionMode = ${ctPersistenceHelper}.isProductionMode(${entity.name}.class);
-		</#if>
-
 		Object[] finderArgs = null;
 
-		if (${useCache}) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {
 				<#list entityColumns as entityColumn>
 					<#if stringUtil.equals(entityColumn.type, "Date")>
@@ -2305,13 +2297,13 @@ that may or may not be enforced with a unique index at the database level. Case
 
 		Object result = null;
 
-		if (${useCache}) {
-			result = ${finderCache}.getResult(_finderPathFetchBy${entityFinder.name}, finderArgs
-				<#if serviceBuilder.isVersionLTE_7_3_0()>
-					, this
-				</#if>
-				);
+		if (useFinderCache) {
+			result = ${finderCache}.getResult(_finderPathFetchBy${entityFinder.name}, finderArgs, this);
 		}
+
+		<#if entity.isChangeTrackingEnabled()>
+			boolean productionMode = ${ctPersistenceHelper}.isProductionMode(${entity.name}.class);
+		</#if>
 
 		if (result instanceof ${entity.name}) {
 			${entity.name} ${entity.variableName} = (${entity.name})result;
@@ -2335,7 +2327,23 @@ that may or may not be enforced with a unique index at the database level. Case
 			) {
 				result = null;
 			}
+
+			<#if serviceBuilder.isVersionGTE_7_3_0() && entity.isChangeTrackingEnabled()>
+				else if (!${ctPersistenceHelper}.isProductionMode(${entity.name}.class, ${entity.variableName}.getPrimaryKey())) {
+					result = null;
+				}
+			<#elseif entity.isChangeTrackingEnabled()>
+				else if (!productionMode) {
+					result = null;
+				}
+			</#if>
 		}
+
+		<#if entity.isChangeTrackingEnabled()>
+			else if (!productionMode && result instanceof List<?>) {
+				result = null;
+			}
+		</#if>
 
 		if (result == null) {
 			StringBundler sb = new StringBundler(${entityColumns?size + 2});

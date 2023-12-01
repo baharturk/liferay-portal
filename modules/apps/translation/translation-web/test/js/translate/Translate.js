@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -135,20 +126,12 @@ const baseProps = {
 
 const renderComponent = (props) => render(<Translate {...props} />);
 
+jest.mock('frontend-js-web', () => ({
+	...jest.requireActual('frontend-js-web'),
+	sub: jest.fn((langKey, arg) => langKey.replace('x', arg)),
+}));
+
 describe('Translate', () => {
-	Liferay.Util.sub.mockImplementation((langKey, ...args) =>
-		[langKey, ...args].join('-')
-	);
-
-	Liferay.Util.unescapeHTML =
-		Liferay.Util.unescapeHTML ||
-		jest.fn((string) =>
-			string.replace(/&([^;]+);/g, (match) => {
-				return new DOMParser().parseFromString(match, 'text/html')
-					.documentElement.textContent;
-			})
-		);
-
 	afterEach(cleanup);
 
 	it('renders with auto-translate enabled', () => {
@@ -197,8 +180,7 @@ describe('Translate', () => {
 
 		expect(
 			getByText(
-				'auto-translate-x-field-' +
-					baseProps.infoFieldSetEntries[1].fields[0].label
+				`auto-translate-${baseProps.infoFieldSetEntries[1].fields[0].label}-field`
 			).closest('button')
 		).toBeDisabled();
 	});
@@ -238,8 +220,9 @@ describe('Translate', () => {
 				result = renderComponent(baseProps);
 
 				const {getByText} = result;
+
 				const autoTranslateFieldButton = getByText(
-					'auto-translate-x-field-' + infoFieldContent.label
+					`auto-translate-${infoFieldContent.label}-field`
 				).closest('button');
 
 				await act(async () => {
@@ -334,8 +317,7 @@ describe('Translate', () => {
 				const {getByText} = renderComponent(baseProps);
 
 				const autoTranslateFieldButton = getByText(
-					'auto-translate-x-field-' +
-						baseProps.infoFieldSetEntries[0].fields[0].label
+					`auto-translate-${baseProps.infoFieldSetEntries[0].fields[0].label}-field`
 				).closest('button');
 
 				await act(async () => {

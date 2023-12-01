@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -374,6 +366,19 @@ public class LayoutLocalServiceWrapper
 		return _layoutLocalService.addLayout(
 			userId, groupId, privateLayout, parentLayoutId, name, title,
 			description, type, hidden, friendlyURL, serviceContext);
+	}
+
+	@Override
+	public Layout copyLayout(
+			long userId, long groupId, boolean privateLayout,
+			java.util.Map<java.util.Locale, String> nameMap, boolean hidden,
+			boolean system, boolean copyPermissions, long sourcePlid,
+			ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.copyLayout(
+			userId, groupId, privateLayout, nameMap, hidden, system,
+			copyPermissions, sourcePlid, serviceContext);
 	}
 
 	/**
@@ -1110,6 +1115,25 @@ public class LayoutLocalServiceWrapper
 	}
 
 	/**
+	 * Returns all the layouts that match the type and belong to the group.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param privateLayout whether the layout is private to the group
+	 * @param types the layout's type (optionally {@link
+	 LayoutConstants#TYPE_PORTLET}). The possible types can be found
+	 in {@link LayoutConstants}.
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 found
+	 */
+	@Override
+	public java.util.List<Layout> getLayouts(
+			long groupId, boolean privateLayout, String[] types)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.getLayouts(groupId, privateLayout, types);
+	}
+
+	/**
 	 * Returns a range of all the layouts belonging to the group.
 	 *
 	 * @param groupId the primary key of the group
@@ -1364,6 +1388,14 @@ public class LayoutLocalServiceWrapper
 	@Override
 	public int getLayoutsCount(long groupId, boolean privateLayout) {
 		return _layoutLocalService.getLayoutsCount(groupId, privateLayout);
+	}
+
+	@Override
+	public int getLayoutsCount(
+		long groupId, boolean privateLayout, long parentLayoutId) {
+
+		return _layoutLocalService.getLayoutsCount(
+			groupId, privateLayout, parentLayoutId);
 	}
 
 	@Override
@@ -1748,8 +1780,9 @@ public class LayoutLocalServiceWrapper
 	 String)}.
 	 * @param hasIconImage whether the icon image will be updated
 	 * @param iconBytes the byte array of the layout's new icon image
-	 * @param masterLayoutPlid the primary key of the master layout
 	 * @param styleBookEntryId the primary key of the style book entrys
+	 * @param faviconFileEntryId the file entry ID of the layout's new favicon
+	 * @param masterLayoutPlid the primary key of the master layout
 	 * @param serviceContext the service context to be applied. Can set the
 	 modification date and expando bridge attributes for the layout.
 	 For layouts that are linked to a layout prototype, attributes
@@ -1773,15 +1806,16 @@ public class LayoutLocalServiceWrapper
 			java.util.Map<java.util.Locale, String> robotsMap, String type,
 			boolean hidden,
 			java.util.Map<java.util.Locale, String> friendlyURLMap,
-			boolean hasIconImage, byte[] iconBytes, long masterLayoutPlid,
-			long styleBookEntryId, ServiceContext serviceContext)
+			boolean hasIconImage, byte[] iconBytes, long styleBookEntryId,
+			long faviconFileEntryId, long masterLayoutPlid,
+			ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.updateLayout(
 			groupId, privateLayout, layoutId, parentLayoutId, nameMap, titleMap,
 			descriptionMap, keywordsMap, robotsMap, type, hidden,
-			friendlyURLMap, hasIconImage, iconBytes, masterLayoutPlid,
-			styleBookEntryId, serviceContext);
+			friendlyURLMap, hasIconImage, iconBytes, styleBookEntryId,
+			faviconFileEntryId, masterLayoutPlid, serviceContext);
 	}
 
 	/**
@@ -1803,6 +1837,20 @@ public class LayoutLocalServiceWrapper
 
 		return _layoutLocalService.updateLayout(
 			groupId, privateLayout, layoutId, typeSettings);
+	}
+
+	@Override
+	public Layout updateLayout(
+			long groupId, boolean privateLayout, long layoutId,
+			String typeSettings, byte[] iconBytes, String themeId,
+			String colorSchemeId, long styleBookEntryId, String css,
+			long faviconFileEntryId, long masterLayoutPlid)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.updateLayout(
+			groupId, privateLayout, layoutId, typeSettings, iconBytes, themeId,
+			colorSchemeId, styleBookEntryId, css, faviconFileEntryId,
+			masterLayoutPlid);
 	}
 
 	/**
@@ -2082,6 +2130,11 @@ public class LayoutLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.updateType(plid, type);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _layoutLocalService.getBasePersistence();
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.service.base;
@@ -28,6 +19,8 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -41,18 +34,9 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.saml.persistence.model.SamlPeerBinding;
 import com.liferay.saml.persistence.service.SamlPeerBindingLocalService;
 import com.liferay.saml.persistence.service.SamlPeerBindingLocalServiceUtil;
-import com.liferay.saml.persistence.service.persistence.SamlIdpSpConnectionPersistence;
-import com.liferay.saml.persistence.service.persistence.SamlIdpSpSessionPersistence;
-import com.liferay.saml.persistence.service.persistence.SamlIdpSsoSessionPersistence;
 import com.liferay.saml.persistence.service.persistence.SamlPeerBindingPersistence;
-import com.liferay.saml.persistence.service.persistence.SamlSpAuthRequestPersistence;
-import com.liferay.saml.persistence.service.persistence.SamlSpIdpConnectionPersistence;
-import com.liferay.saml.persistence.service.persistence.SamlSpMessagePersistence;
-import com.liferay.saml.persistence.service.persistence.SamlSpSessionPersistence;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -328,6 +312,11 @@ public abstract class SamlPeerBindingLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement SamlPeerBindingLocalServiceImpl#deleteSamlPeerBinding(SamlPeerBinding) to avoid orphaned data");
+		}
+
 		return samlPeerBindingLocalService.deleteSamlPeerBinding(
 			(SamlPeerBinding)persistedModel);
 	}
@@ -393,7 +382,7 @@ public abstract class SamlPeerBindingLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		SamlPeerBindingLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -408,7 +397,7 @@ public abstract class SamlPeerBindingLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		samlPeerBindingLocalService = (SamlPeerBindingLocalService)aopProxy;
 
-		_setLocalServiceUtilService(samlPeerBindingLocalService);
+		SamlPeerBindingLocalServiceUtil.setService(samlPeerBindingLocalService);
 	}
 
 	/**
@@ -453,63 +442,16 @@ public abstract class SamlPeerBindingLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		SamlPeerBindingLocalService samlPeerBindingLocalService) {
-
-		try {
-			Field field =
-				SamlPeerBindingLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, samlPeerBindingLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
-	@Reference
-	protected SamlIdpSpConnectionPersistence samlIdpSpConnectionPersistence;
-
-	@Reference
-	protected SamlIdpSpSessionPersistence samlIdpSpSessionPersistence;
-
-	@Reference
-	protected SamlIdpSsoSessionPersistence samlIdpSsoSessionPersistence;
-
 	protected SamlPeerBindingLocalService samlPeerBindingLocalService;
 
 	@Reference
 	protected SamlPeerBindingPersistence samlPeerBindingPersistence;
 
 	@Reference
-	protected SamlSpAuthRequestPersistence samlSpAuthRequestPersistence;
-
-	@Reference
-	protected SamlSpIdpConnectionPersistence samlSpIdpConnectionPersistence;
-
-	@Reference
-	protected SamlSpMessagePersistence samlSpMessagePersistence;
-
-	@Reference
-	protected SamlSpSessionPersistence samlSpSessionPersistence;
-
-	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		SamlPeerBindingLocalServiceBaseImpl.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.counter.service.persistence.impl;
@@ -56,6 +47,27 @@ import javax.sql.DataSource;
  * @author Edward Han
  */
 public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
+
+	@Override
+	public long getCurrentId(String name) {
+		try (Connection connection = getConnection();
+			PreparedStatement preparedStatement = connection.prepareStatement(
+				_SQL_SELECT_ID_BY_NAME)) {
+
+			preparedStatement.setString(1, name);
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return resultSet.getLong(1);
+				}
+			}
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+
+		return 0;
+	}
 
 	@Override
 	public List<String> getNames() {
@@ -128,8 +140,7 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 			}
 			catch (ObjectNotFoundException objectNotFoundException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(
-						objectNotFoundException, objectNotFoundException);
+					_log.debug(objectNotFoundException);
 				}
 			}
 			catch (Exception exception) {
@@ -161,8 +172,7 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 			}
 			catch (ObjectNotFoundException objectNotFoundException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(
-						objectNotFoundException, objectNotFoundException);
+					_log.debug(objectNotFoundException);
 				}
 			}
 			catch (Exception exception) {
@@ -296,7 +306,7 @@ public class CounterFinderImpl implements CacheRegistryItem, CounterFinder {
 			_log.error("Caught unexpected exception", exception);
 		}
 		else if (_log.isDebugEnabled()) {
-			_log.debug(exception, exception);
+			_log.debug(exception);
 		}
 
 		return new SystemException(exception);

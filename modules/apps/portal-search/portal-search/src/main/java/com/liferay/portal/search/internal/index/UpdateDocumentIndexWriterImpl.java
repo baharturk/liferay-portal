@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.index;
@@ -18,7 +9,6 @@ import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.messaging.proxy.ProxyModeThreadLocal;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.IndexWriter;
 import com.liferay.portal.kernel.search.SearchContext;
@@ -35,7 +25,6 @@ import java.util.Map;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
@@ -44,17 +33,13 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.search.configuration.IndexWriterHelperConfiguration",
-	configurationPolicy = ConfigurationPolicy.OPTIONAL, immediate = true,
 	service = UpdateDocumentIndexWriter.class
 )
 public class UpdateDocumentIndexWriterImpl
 	implements UpdateDocumentIndexWriter {
 
 	@Override
-	public void updateDocument(
-		String searchEngineId, long companyId, Document document,
-		boolean commitImmediately) {
-
+	public void updateDocument(long companyId, Document document) {
 		if (indexStatusManager.isIndexReadOnly() || (document == null)) {
 			return;
 		}
@@ -63,8 +48,7 @@ public class UpdateDocumentIndexWriterImpl
 			_log.debug("Document " + document.toString());
 		}
 
-		SearchEngine searchEngine = searchEngineHelper.getSearchEngine(
-			searchEngineId);
+		SearchEngine searchEngine = searchEngineHelper.getSearchEngine();
 
 		IndexWriter indexWriter = searchEngine.getIndexWriter();
 
@@ -74,11 +58,8 @@ public class UpdateDocumentIndexWriterImpl
 		SearchContext searchContext = new SearchContext();
 
 		searchContext.setCompanyId(companyId);
-		searchContext.setSearchEngineId(searchEngineId);
 
-		_setCommitImmediately(
-			searchContext,
-			commitImmediately || ProxyModeThreadLocal.isForceSync());
+		_setCommitImmediately(searchContext, _commitImmediately);
 
 		try {
 			indexWriter.updateDocument(searchContext, document);
@@ -90,8 +71,7 @@ public class UpdateDocumentIndexWriterImpl
 
 	@Override
 	public void updateDocumentPartially(
-		String searchEngineId, long companyId, Document document,
-		boolean commitImmediately) {
+		long companyId, Document document, boolean commitImmediately) {
 
 		if (indexStatusManager.isIndexReadOnly() || (document == null)) {
 			return;
@@ -101,15 +81,13 @@ public class UpdateDocumentIndexWriterImpl
 			_log.debug("Document " + document.toString());
 		}
 
-		SearchEngine searchEngine = searchEngineHelper.getSearchEngine(
-			searchEngineId);
+		SearchEngine searchEngine = searchEngineHelper.getSearchEngine();
 
 		IndexWriter indexWriter = searchEngine.getIndexWriter();
 
 		SearchContext searchContext = new SearchContext();
 
 		searchContext.setCompanyId(companyId);
-		searchContext.setSearchEngineId(searchEngineId);
 
 		_setCommitImmediately(searchContext, commitImmediately);
 
@@ -123,7 +101,7 @@ public class UpdateDocumentIndexWriterImpl
 
 	@Override
 	public void updateDocuments(
-		String searchEngineId, long companyId, Collection<Document> documents,
+		long companyId, Collection<Document> documents,
 		boolean commitImmediately) {
 
 		if (indexStatusManager.isIndexReadOnly() || (documents == null) ||
@@ -132,8 +110,7 @@ public class UpdateDocumentIndexWriterImpl
 			return;
 		}
 
-		SearchEngine searchEngine = searchEngineHelper.getSearchEngine(
-			searchEngineId);
+		SearchEngine searchEngine = searchEngineHelper.getSearchEngine();
 
 		IndexWriter indexWriter = searchEngine.getIndexWriter();
 
@@ -149,7 +126,6 @@ public class UpdateDocumentIndexWriterImpl
 		SearchContext searchContext = new SearchContext();
 
 		searchContext.setCompanyId(companyId);
-		searchContext.setSearchEngineId(searchEngineId);
 
 		_setCommitImmediately(searchContext, commitImmediately);
 
@@ -163,7 +139,7 @@ public class UpdateDocumentIndexWriterImpl
 
 	@Override
 	public void updateDocumentsPartially(
-		String searchEngineId, long companyId, Collection<Document> documents,
+		long companyId, Collection<Document> documents,
 		boolean commitImmediately) {
 
 		if (indexStatusManager.isIndexReadOnly() || (documents == null) ||
@@ -172,15 +148,13 @@ public class UpdateDocumentIndexWriterImpl
 			return;
 		}
 
-		SearchEngine searchEngine = searchEngineHelper.getSearchEngine(
-			searchEngineId);
+		SearchEngine searchEngine = searchEngineHelper.getSearchEngine();
 
 		IndexWriter indexWriter = searchEngine.getIndexWriter();
 
 		SearchContext searchContext = new SearchContext();
 
 		searchContext.setCompanyId(companyId);
-		searchContext.setSearchEngineId(searchEngineId);
 
 		_setCommitImmediately(searchContext, commitImmediately);
 

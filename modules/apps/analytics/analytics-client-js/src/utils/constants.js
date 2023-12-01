@@ -1,20 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 // AC Version
 
-export const ANALYTICS_CLIENT_VERSION = '1.0.2';
+export const ANALYTICS_CLIENT_VERSION = '1.1.8';
+
+// Application ID
+
+export const BLOG = 'Blog';
+export const CUSTOM = 'Custom';
+export const CUSTOM_EVENT = 'CustomEvent';
+export const DOCUMENT = 'Document';
+export const FORM = 'Form';
+export const PAGE = 'Page';
+export const WEB_CONTENT = 'WebContent';
+
+export const DXP_APPLICATION_IDS = [BLOG, CUSTOM, DOCUMENT, FORM, WEB_CONTENT];
 
 // Default Config
 
@@ -38,6 +41,8 @@ export const QUEUE_PRIORITY_IDENTITY = 10;
 
 // Local Storage keys
 
+export const STORAGE_KEY_CHANNEL_ID = 'ac_client_channel_id';
+
 export const STORAGE_KEY_CONTEXTS = 'ac_client_context';
 
 export const STORAGE_KEY_EVENTS = 'ac_client_batch';
@@ -47,6 +52,9 @@ export const STORAGE_KEY_IDENTITY = 'ac_client_identity';
 export const STORAGE_KEY_MESSAGES = 'ac_message_queue';
 
 export const STORAGE_KEY_MESSAGE_IDENTITY = 'ac_message_queue_identity';
+
+export const STORAGE_KEY_PREV_EMAIL_ADDRESS_HASHED =
+	'ac_client_previous_email_address_hash';
 
 export const STORAGE_KEY_USER_ID = 'ac_client_user_id';
 
@@ -97,7 +105,7 @@ export const READ_WORDS_PER_MIN = 265;
 // Track method
 
 export const TRACK_DEFAULT_OPTIONS = {
-	applicationId: 'CustomEvent',
+	applicationId: CUSTOM_EVENT,
 };
 
 // Validation

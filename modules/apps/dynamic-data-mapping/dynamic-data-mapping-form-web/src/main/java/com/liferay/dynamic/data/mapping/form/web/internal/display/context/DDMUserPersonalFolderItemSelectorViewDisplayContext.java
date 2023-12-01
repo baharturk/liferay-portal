@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.display.context;
@@ -22,13 +13,13 @@ import com.liferay.dynamic.data.mapping.form.web.internal.item.selector.DDMUserP
 import com.liferay.item.selector.ItemSelectorReturnTypeResolver;
 import com.liferay.item.selector.ItemSelectorReturnTypeResolverHandler;
 import com.liferay.item.selector.taglib.servlet.taglib.util.RepositoryEntryBrowserTagUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.dao.search.SearchPaginationUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.RepositoryEntry;
@@ -71,7 +62,30 @@ public class DDMUserPersonalFolderItemSelectorViewDisplayContext {
 		_search = search;
 
 		_portalPreferences = PortletPreferencesFactoryUtil.getPortalPreferences(
-			_httpServletRequest);
+			httpServletRequest);
+	}
+
+	public PortletURL getEditImageURL(
+		LiferayPortletResponse liferayPortletResponse) {
+
+		return PortletURLBuilder.createActionURL(
+			liferayPortletResponse, DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM
+		).setActionName(
+			"/dynamic_data_mapping_form/upload_ddm_user_personal_folder"
+		).setParameter(
+			"folderId",
+			_ddmUserPersonalFolderItemSelectorCriterion.getFolderId()
+		).setParameter(
+			"objectFieldId",
+			_ddmUserPersonalFolderItemSelectorCriterion.getObjectFieldId()
+		).setParameter(
+			"repositoryId",
+			_ddmUserPersonalFolderItemSelectorCriterion.getRepositoryId()
+		).buildPortletURL();
+	}
+
+	public long getFolderId() {
+		return _ddmUserPersonalFolderItemSelectorCriterion.getFolderId();
 	}
 
 	public String getItemSelectedEventName() {
@@ -145,6 +159,9 @@ public class DDMUserPersonalFolderItemSelectorViewDisplayContext {
 		).setParameter(
 			"folderId",
 			_ddmUserPersonalFolderItemSelectorCriterion.getFolderId()
+		).setParameter(
+			"objectFieldId",
+			_ddmUserPersonalFolderItemSelectorCriterion.getObjectFieldId()
 		).setParameter(
 			"repositoryId",
 			_ddmUserPersonalFolderItemSelectorCriterion.getRepositoryId()

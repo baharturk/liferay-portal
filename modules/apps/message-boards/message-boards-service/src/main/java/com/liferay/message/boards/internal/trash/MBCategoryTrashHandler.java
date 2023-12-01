@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.internal.trash;
@@ -19,7 +10,6 @@ import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.LayoutConstants;
@@ -27,19 +17,20 @@ import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.trash.BaseTrashHandler;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashRenderer;
-import com.liferay.portal.kernel.trash.TrashRendererFactory;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.trash.BaseTrashHandler;
+import com.liferay.trash.TrashHelper;
 import com.liferay.trash.constants.TrashActionKeys;
 
 import java.util.ArrayList;
@@ -279,7 +270,8 @@ public class MBCategoryTrashHandler extends BaseTrashHandler {
 
 	@Override
 	public TrashRenderer getTrashRenderer(long classPK) throws PortalException {
-		return _trashRendererFactory.getTrashRenderer(classPK);
+		return new MBCategoryTrashRenderer(
+			_mbCategoryLocalService.getCategory(classPK));
 	}
 
 	@Override
@@ -300,11 +292,6 @@ public class MBCategoryTrashHandler extends BaseTrashHandler {
 
 	@Override
 	public boolean isContainerModel() {
-		return true;
-	}
-
-	@Override
-	public boolean isMovable() {
 		return true;
 	}
 
@@ -344,7 +331,7 @@ public class MBCategoryTrashHandler extends BaseTrashHandler {
 			return false;
 		}
 
-		return !category.isInTrashContainer();
+		return !_trashHelper.isInTrashContainer(category);
 	}
 
 	@Override
@@ -423,42 +410,22 @@ public class MBCategoryTrashHandler extends BaseTrashHandler {
 			actionId);
 	}
 
-	@Reference(unbind = "-")
-	protected void setMBCategoryLocalService(
-		MBCategoryLocalService mbCategoryLocalService) {
-
-		_mbCategoryLocalService = mbCategoryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMBThreadLocalService(
-		MBThreadLocalService mbThreadLocalService) {
-
-		_mbThreadLocalService = mbThreadLocalService;
-	}
-
-	@Reference(
-		target = "(model.class.name=com.liferay.message.boards.model.MBCategory)",
-		unbind = "-"
-	)
-	protected void setTrashRendererFactory(
-		TrashRendererFactory trashRendererFactory) {
-
-		_trashRendererFactory = trashRendererFactory;
-	}
-
 	@Reference(
 		target = "(model.class.name=com.liferay.message.boards.model.MBCategory)"
 	)
 	private ModelResourcePermission<MBCategory>
 		_categoryModelResourcePermission;
 
+	@Reference
 	private MBCategoryLocalService _mbCategoryLocalService;
+
+	@Reference
 	private MBThreadLocalService _mbThreadLocalService;
 
 	@Reference
 	private Portal _portal;
 
-	private TrashRendererFactory _trashRendererFactory;
+	@Reference
+	private TrashHelper _trashHelper;
 
 }

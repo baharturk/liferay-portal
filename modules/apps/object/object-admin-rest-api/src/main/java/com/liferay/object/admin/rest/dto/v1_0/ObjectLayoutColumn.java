@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.dto.v1_0;
@@ -83,20 +74,20 @@ public class ObjectLayoutColumn implements Serializable {
 	protected Long id;
 
 	@Schema
-	public Long getObjectFieldId() {
-		return objectFieldId;
+	public String getObjectFieldName() {
+		return objectFieldName;
 	}
 
-	public void setObjectFieldId(Long objectFieldId) {
-		this.objectFieldId = objectFieldId;
+	public void setObjectFieldName(String objectFieldName) {
+		this.objectFieldName = objectFieldName;
 	}
 
 	@JsonIgnore
-	public void setObjectFieldId(
-		UnsafeSupplier<Long, Exception> objectFieldIdUnsafeSupplier) {
+	public void setObjectFieldName(
+		UnsafeSupplier<String, Exception> objectFieldNameUnsafeSupplier) {
 
 		try {
-			objectFieldId = objectFieldIdUnsafeSupplier.get();
+			objectFieldName = objectFieldNameUnsafeSupplier.get();
 		}
 		catch (RuntimeException re) {
 			throw re;
@@ -108,7 +99,7 @@ public class ObjectLayoutColumn implements Serializable {
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected Long objectFieldId;
+	protected String objectFieldName;
 
 	@Schema
 	public Integer getPriority() {
@@ -201,14 +192,18 @@ public class ObjectLayoutColumn implements Serializable {
 			sb.append(id);
 		}
 
-		if (objectFieldId != null) {
+		if (objectFieldName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"objectFieldId\": ");
+			sb.append("\"objectFieldName\": ");
 
-			sb.append(objectFieldId);
+			sb.append("\"");
+
+			sb.append(_escape(objectFieldName));
+
+			sb.append("\"");
 		}
 
 		if (priority != null) {
@@ -325,5 +320,7 @@ public class ObjectLayoutColumn implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

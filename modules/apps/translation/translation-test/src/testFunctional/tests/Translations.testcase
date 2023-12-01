@@ -1,4 +1,4 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-lima"
 definition {
 
 	property portal.acceptance = "true";
@@ -13,9 +13,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -24,7 +24,7 @@ definition {
 	}
 
 	@description = "This ensures that the user can see translation options after move all available languages to current."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewOptionsWithAllLanguages {
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
@@ -86,7 +86,7 @@ definition {
 	}
 
 	@description = "This ensures that the user can see translation options after move one more available language to current."
-	@priority = "5"
+	@priority = 4
 	@refactordone
 	test CanViewOptionsWithOneMoreLanguage {
 		JSONWebcontent.addWebContent(
@@ -118,7 +118,7 @@ definition {
 	}
 
 	@description = "This test covers LPS-128546. It ensures that the translated field content can be displayed correctly after editing by different translation ways."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewTranslatedFieldContentAfterEditing {
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
@@ -164,12 +164,12 @@ definition {
 			newTargetLocale = "pt-BR");
 
 		Translations.viewTargetFields(
-			webContentHTML = "Rich Text PT",
+			webContentHtml = "Rich Text PT",
 			webContentText = "Text PT",
 			webContentTitle = "WC WebContent Title PT");
 
 		Translations.translateFields(
-			webContentSourceHTML = "Rich Text PT Edit",
+			webContentSourceHtml = "Rich Text PT Edit",
 			webContentText = "Text PT Edit",
 			webContentTitle = "WC WebContent Title PT Edit");
 
@@ -202,7 +202,7 @@ definition {
 			newTargetLocale = "pt-BR");
 
 		Translations.viewTargetFields(
-			webContentHTML = "Rich Text PT Edit Again",
+			webContentHtml = "Rich Text PT Edit Again",
 			webContentText = "Text PT Again",
 			webContentTitle = "WC WebContent Title PT Again");
 	}

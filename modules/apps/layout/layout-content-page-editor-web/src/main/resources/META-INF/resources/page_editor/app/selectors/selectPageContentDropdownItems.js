@@ -1,26 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openModal} from 'frontend-js-web';
+import {openModal, sub} from 'frontend-js-web';
 
-import {selectPageContents} from './selectPageContents';
+import findPageContent from '../utils/findPageContent';
 
-export function selectPageContentDropdownItems(classPK, label = '') {
+export function selectPageContentDropdownItems(item, label = '') {
 	return (state) => {
-		const pageContent = selectPageContents(state)?.find(
-			(pageContent) => pageContent.classPK === classPK
-		);
+		const pageContent = findPageContent(state.pageContents, item);
 
 		if (!pageContent) {
 			return null;
@@ -41,8 +30,9 @@ export function selectPageContentDropdownItems(classPK, label = '') {
 			dropdownItems.push({
 				href: editURL,
 				label: label
-					? Liferay.Util.sub(Liferay.Language.get('edit-x'), label)
+					? sub(Liferay.Language.get('edit-x'), label)
 					: Liferay.Language.get('edit'),
+				symbolLeft: 'pencil',
 			});
 		}
 
@@ -61,60 +51,67 @@ export function selectPageContentDropdownItems(classPK, label = '') {
 						title: Liferay.Language.get('view-items'),
 						url: viewItemsURL,
 					}),
+				symbolLeft: 'list-ul',
 			});
 		}
 
 		if (addItems) {
 			dropdownItems.push({
+				type: 'divider',
+			});
+
+			dropdownItems.push({
 				items: addItems,
 				label: Liferay.Language.get('add-items'),
+				symbolLeft: 'plus',
 				type: 'contextual',
 			});
 		}
 
 		if (permissionsURL) {
 			dropdownItems.push({
+				type: 'divider',
+			});
+
+			dropdownItems.push({
 				label: label
-					? Liferay.Util.sub(
-							Liferay.Language.get('edit-x-permissions'),
-							label
-					  )
+					? sub(Liferay.Language.get('edit-x-permissions'), label)
 					: Liferay.Language.get('permissions'),
 				onClick: () =>
 					openModal({
 						title: label
-							? Liferay.Util.sub(
+							? sub(
 									Liferay.Language.get('edit-x-permissions'),
 									label
 							  )
 							: Liferay.Language.get('permissions'),
 						url: permissionsURL,
 					}),
+				symbolLeft: 'password-policies',
 			});
 		}
 
 		if (viewUsagesURL) {
 			dropdownItems.push({
+				type: 'divider',
+			});
+
+			dropdownItems.push({
 				label: label
-					? Liferay.Util.sub(
-							Liferay.Language.get('view-x-usages'),
-							label
-					  )
+					? sub(Liferay.Language.get('view-x-usages'), label)
 					: Liferay.Language.get('view-usages'),
 				onClick: () =>
 					openModal({
 						title: label
-							? Liferay.Util.sub(
-									Liferay.Language.get('view-x-usages'),
-									label
-							  )
+							? sub(Liferay.Language.get('view-x-usages'), label)
 							: Liferay.Language.get('view-usages'),
 						url: viewUsagesURL,
 					}),
+				symbolLeft: 'list-ul',
 			});
 		}
 
-		if (dropdownItems.length === 0) {
+		if (!dropdownItems.length) {
 			return null;
 		}
 

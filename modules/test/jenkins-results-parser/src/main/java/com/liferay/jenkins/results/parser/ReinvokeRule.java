@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -29,7 +20,7 @@ public class ReinvokeRule {
 
 	public static List<ReinvokeRule> getReinvokeRules() {
 		if (_reinvokeRules != null) {
-			return _reinvokeRules;
+			return new ArrayList<>(_reinvokeRules);
 		}
 
 		Properties buildProperties = null;
@@ -57,7 +48,7 @@ public class ReinvokeRule {
 			}
 		}
 
-		return _reinvokeRules;
+		return new ArrayList<>(_reinvokeRules);
 	}
 
 	public String getName() {
@@ -76,13 +67,24 @@ public class ReinvokeRule {
 		Matcher matcher = null;
 
 		if (axisVariablePattern != null) {
-			if (!(build instanceof AxisBuild)) {
+			String axisVariable = null;
+
+			if (build instanceof AxisBuild) {
+				AxisBuild axisBuild = (AxisBuild)build;
+
+				axisVariable = axisBuild.getAxisVariable();
+			}
+			else if (build instanceof DownstreamBuild) {
+				DownstreamBuild downstreamBuild = (DownstreamBuild)build;
+
+				axisVariable = downstreamBuild.getAxisVariable();
+			}
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(axisVariable)) {
 				return false;
 			}
 
-			AxisBuild axisBuild = (AxisBuild)build;
-
-			matcher = axisVariablePattern.matcher(axisBuild.getAxisVariable());
+			matcher = axisVariablePattern.matcher(axisVariable);
 
 			if (!matcher.find()) {
 				return false;
@@ -100,6 +102,22 @@ public class ReinvokeRule {
 
 			if (!matcher.find()) {
 				return false;
+			}
+		}
+
+		if (testSuiteNamePattern != null) {
+			TopLevelBuild topLevelBuild = build.getTopLevelBuild();
+
+			if (topLevelBuild != null) {
+				String testSuiteName = topLevelBuild.getTestSuiteName();
+
+				if (!JenkinsResultsParserUtil.isNullOrEmpty(testSuiteName)) {
+					matcher = testSuiteNamePattern.matcher(testSuiteName);
+
+					if (!matcher.find()) {
+						return false;
+					}
+				}
 			}
 		}
 
@@ -165,6 +183,12 @@ public class ReinvokeRule {
 			sb.append("\n");
 		}
 
+		if (testSuiteNamePattern != null) {
+			sb.append("testSuiteName=");
+			sb.append(testSuiteNamePattern.pattern());
+			sb.append("\n");
+		}
+
 		if (topLevelBuildJobNamePattern != null) {
 			sb.append("topLevelJobName=");
 			sb.append(topLevelBuildJobNamePattern.pattern());
@@ -179,6 +203,7 @@ public class ReinvokeRule {
 	protected Pattern jobVariantPattern;
 	protected String name;
 	protected String notificationRecipients;
+	protected Pattern testSuiteNamePattern;
 	protected Pattern topLevelBuildJobNamePattern;
 
 	private ReinvokeRule(String configurations, String ruleName) {
@@ -221,6 +246,10 @@ public class ReinvokeRule {
 				jobVariantPattern = pattern;
 
 				continue;
+			}
+
+			if (name.equals("testSuiteName")) {
+				testSuiteNamePattern = pattern;
 			}
 
 			if (name.equals("topLevelJobName")) {

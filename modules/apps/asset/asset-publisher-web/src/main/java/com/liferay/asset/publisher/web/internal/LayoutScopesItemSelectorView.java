@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal;
 
-import com.liferay.asset.publisher.constants.AssetPublisherWebKeys;
 import com.liferay.asset.publisher.util.AssetPublisherHelper;
 import com.liferay.asset.publisher.web.internal.display.context.LayoutScopesItemSelectorViewDisplayContext;
+import com.liferay.asset.publisher.web.internal.item.selector.SitesItemSelectorViewDescriptor;
 import com.liferay.item.selector.ItemSelectorReturnType;
 import com.liferay.item.selector.ItemSelectorView;
+import com.liferay.item.selector.ItemSelectorViewDescriptorRenderer;
 import com.liferay.item.selector.criteria.GroupItemSelectorReturnType;
 import com.liferay.item.selector.criteria.group.criterion.GroupItemSelectorCriterion;
 import com.liferay.portal.kernel.model.Layout;
@@ -26,18 +18,15 @@ import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
-import com.liferay.site.item.selector.criteria.SiteItemSelectorReturnType;
 
 import java.io.IOException;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 import javax.portlet.PortletURL;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -105,23 +94,19 @@ public class LayoutScopesItemSelectorView
 			layoutScopesItemSelectorViewDisplayContext =
 				new LayoutScopesItemSelectorViewDisplayContext(
 					(HttpServletRequest)servletRequest, _assetPublisherHelper,
-					groupItemSelectorCriterion, itemSelectedEventName,
-					portletURL);
+					groupItemSelectorCriterion, portletURL);
 
-		servletRequest.setAttribute(
-			AssetPublisherWebKeys.ITEM_SELECTOR_DISPLAY_CONTEXT,
-			layoutScopesItemSelectorViewDisplayContext);
-
-		RequestDispatcher requestDispatcher =
-			_servletContext.getRequestDispatcher("/view_sites.jsp");
-
-		requestDispatcher.include(servletRequest, servletResponse);
+		_itemSelectorViewDescriptorRenderer.renderHTML(
+			servletRequest, servletResponse, groupItemSelectorCriterion,
+			portletURL, itemSelectedEventName, search,
+			new SitesItemSelectorViewDescriptor(
+				(HttpServletRequest)servletRequest,
+				layoutScopesItemSelectorViewDisplayContext));
 	}
 
 	private static final List<ItemSelectorReturnType>
-		_supportedItemSelectorReturnTypes = Arrays.asList(
-			new GroupItemSelectorReturnType(),
-			new SiteItemSelectorReturnType());
+		_supportedItemSelectorReturnTypes = Collections.singletonList(
+			new GroupItemSelectorReturnType());
 
 	@Reference
 	private AssetPublisherHelper _assetPublisherHelper;
@@ -130,11 +115,10 @@ public class LayoutScopesItemSelectorView
 	private GroupLocalService _groupLocalService;
 
 	@Reference
-	private Portal _portal;
+	private ItemSelectorViewDescriptorRenderer<GroupItemSelectorCriterion>
+		_itemSelectorViewDescriptorRenderer;
 
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.asset.publisher.web)"
-	)
-	private ServletContext _servletContext;
+	@Reference
+	private Portal _portal;
 
 }

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -73,6 +64,8 @@ if (filterManageableOrganizations) {
 			creationMenu="<%= viewOrganizationsManagementToolbarDisplayContext.getCreationMenu() %>"
 			filterDropdownItems="<%= viewOrganizationsManagementToolbarDisplayContext.getFilterDropdownItems() %>"
 			itemsTotal="<%= searchContainer.getTotal() %>"
+			orderDropdownItems="<%= viewOrganizationsManagementToolbarDisplayContext.getOrderByDropdownItems() %>"
+			propsTransformer="js/ViewFlatOrganizationsAndUsersManagementToolbarPropsTransformer"
 			searchActionURL="<%= viewOrganizationsManagementToolbarDisplayContext.getSearchActionURL() %>"
 			searchContainerId="organizations"
 			searchFormName="searchFm"
@@ -101,11 +94,8 @@ if (filterManageableOrganizations) {
 
 				<c:if test="<%= usersListView.equals(UserConstants.LIST_VIEW_FLAT_ORGANIZATIONS) %>">
 					<div id="breadcrumb">
-						<liferay-ui:breadcrumb
-							showCurrentGroup="<%= false %>"
-							showGuestGroup="<%= false %>"
-							showLayout="<%= false %>"
-							showPortletBreadcrumb="<%= true %>"
+						<liferay-site-navigation:breadcrumb
+							breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, true, true) %>"
 						/>
 					</div>
 				</c:if>
@@ -128,6 +118,8 @@ if (filterManageableOrganizations) {
 					if (!OrganizationPermissionUtil.contains(permissionChecker, organization, ActionKeys.VIEW)) {
 						rowURL = null;
 					}
+
+					OrganizationActionDropdownItems organizationActionDropdownItems = new OrganizationActionDropdownItems(organization, renderRequest, renderResponse);
 					%>
 
 					<%@ include file="/organization/search_columns.jspf" %>

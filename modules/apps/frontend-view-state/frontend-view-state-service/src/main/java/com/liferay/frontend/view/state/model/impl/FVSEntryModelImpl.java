@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.view.state.model.impl;
@@ -35,7 +26,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -219,88 +209,81 @@ public class FVSEntryModelImpl
 	public Map<String, Function<FVSEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<FVSEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, FVSEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			FVSEntry.class.getClassLoader(), FVSEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<FVSEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<FVSEntry> constructor =
-				(Constructor<FVSEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<FVSEntry, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<FVSEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", FVSEntry::getMvccVersion);
+			attributeGetterFunctions.put("uuid", FVSEntry::getUuid);
+			attributeGetterFunctions.put("fvsEntryId", FVSEntry::getFvsEntryId);
+			attributeGetterFunctions.put("companyId", FVSEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", FVSEntry::getUserId);
+			attributeGetterFunctions.put("userName", FVSEntry::getUserName);
+			attributeGetterFunctions.put("createDate", FVSEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", FVSEntry::getModifiedDate);
+			attributeGetterFunctions.put("viewState", FVSEntry::getViewState);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<FVSEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<FVSEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<FVSEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<FVSEntry, Object>>();
-		Map<String, BiConsumer<FVSEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<FVSEntry, ?>>();
+		private static final Map<String, BiConsumer<FVSEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", FVSEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<FVSEntry, Long>)FVSEntry::setMvccVersion);
-		attributeGetterFunctions.put("uuid", FVSEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<FVSEntry, String>)FVSEntry::setUuid);
-		attributeGetterFunctions.put("fvsEntryId", FVSEntry::getFvsEntryId);
-		attributeSetterBiConsumers.put(
-			"fvsEntryId", (BiConsumer<FVSEntry, Long>)FVSEntry::setFvsEntryId);
-		attributeGetterFunctions.put("companyId", FVSEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<FVSEntry, Long>)FVSEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", FVSEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<FVSEntry, Long>)FVSEntry::setUserId);
-		attributeGetterFunctions.put("userName", FVSEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<FVSEntry, String>)FVSEntry::setUserName);
-		attributeGetterFunctions.put("createDate", FVSEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<FVSEntry, Date>)FVSEntry::setCreateDate);
-		attributeGetterFunctions.put("modifiedDate", FVSEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<FVSEntry, Date>)FVSEntry::setModifiedDate);
-		attributeGetterFunctions.put("viewState", FVSEntry::getViewState);
-		attributeSetterBiConsumers.put(
-			"viewState", (BiConsumer<FVSEntry, String>)FVSEntry::setViewState);
+		static {
+			Map<String, BiConsumer<FVSEntry, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<FVSEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<FVSEntry, Long>)FVSEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<FVSEntry, String>)FVSEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"fvsEntryId",
+				(BiConsumer<FVSEntry, Long>)FVSEntry::setFvsEntryId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<FVSEntry, Long>)FVSEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<FVSEntry, Long>)FVSEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<FVSEntry, String>)FVSEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<FVSEntry, Date>)FVSEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<FVSEntry, Date>)FVSEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"viewState",
+				(BiConsumer<FVSEntry, String>)FVSEntry::setViewState);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -785,41 +768,12 @@ public class FVSEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<FVSEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<FVSEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<FVSEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((FVSEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, FVSEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					FVSEntry.class, ModelWrapper.class);
 
 	}
 
@@ -837,8 +791,9 @@ public class FVSEntryModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<FVSEntry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<FVSEntry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

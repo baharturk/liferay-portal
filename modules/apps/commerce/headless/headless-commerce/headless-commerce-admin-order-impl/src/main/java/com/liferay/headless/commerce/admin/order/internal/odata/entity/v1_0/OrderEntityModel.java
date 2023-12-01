@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.order.internal.odata.entity.v1_0;
@@ -20,11 +11,9 @@ import com.liferay.portal.odata.entity.DateTimeEntityField;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.entity.IntegerEntityField;
+import com.liferay.portal.odata.entity.StringEntityField;
 
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Alessio Antonio Rendina
@@ -32,7 +21,7 @@ import java.util.stream.Stream;
 public class OrderEntityModel implements EntityModel {
 
 	public OrderEntityModel() {
-		_entityFieldsMap = Stream.of(
+		_entityFieldsMap = EntityModel.toEntityFieldsMap(
 			new CollectionEntityField(
 				new IntegerEntityField(
 					"accountId", locale -> "commerceAccountId")),
@@ -44,16 +33,15 @@ public class OrderEntityModel implements EntityModel {
 				"createDate",
 				locale -> Field.getSortableFieldName(Field.CREATE_DATE),
 				locale -> Field.CREATE_DATE),
+			new StringEntityField(
+				"creatorEmailAddress", locale -> "orderCreatorEmailAddress"),
 			new DateTimeEntityField(
 				"modifiedDate",
 				locale -> Field.getSortableFieldName(Field.MODIFIED_DATE),
 				locale -> Field.MODIFIED_DATE),
 			new DateTimeEntityField(
 				"orderDate", locale -> Field.getSortableFieldName("orderDate"),
-				locale -> "orderDate")
-		).collect(
-			Collectors.toMap(EntityField::getName, Function.identity())
-		);
+				locale -> "orderDate"));
 	}
 
 	@Override

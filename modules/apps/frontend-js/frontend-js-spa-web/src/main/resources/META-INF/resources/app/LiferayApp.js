@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {buildFragment, openToast} from 'frontend-js-web';
@@ -20,6 +11,40 @@ import App from './App';
 
 const MAX_TIMEOUT = Math.pow(2, 31) - 1;
 const PROPAGATED_PARAMS = ['bodyCssClass'];
+
+const CSS = `
+@keyframes shift-rightwards {
+	0% {
+		transform: translateX(-100%);
+	}
+	40% {
+		transform: translateX(0%);
+	}
+	60% {
+		transform: translateX(0%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+.lfr-spa-loading-bar {
+	background: var(--primary);
+	display: none;
+	height: 2px;
+	left: 0;
+	position: fixed;
+	right: 0;
+	top: 0;
+	transform: translateX(100%);
+	z-index: 2000;
+}
+
+.lfr-spa-loading .lfr-spa-loading-bar {
+	animation: shift-rightwards 1s ease-in-out infinite;
+	animation-delay: 0.4s;
+	display: block;
+}`;
 
 /**
  * LiferayApp
@@ -86,6 +111,9 @@ class LiferayApp extends App {
 
 		this.addSurfaces(new LiferaySurface(body.id));
 
+		document.head.appendChild(
+			buildFragment(`<style type="text/css">${CSS}</style>`)
+		);
 		body.appendChild(
 			buildFragment('<div class="lfr-spa-loading-bar"></div>')
 		);

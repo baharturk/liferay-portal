@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.dto.v2_0;
@@ -97,7 +88,7 @@ public class TierPrice implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getActive() {
 		return active;
 	}
@@ -154,7 +145,7 @@ public class TierPrice implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, ?> customFields;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getDiscountDiscovery() {
 		return discountDiscovery;
 	}
@@ -183,7 +174,7 @@ public class TierPrice implements Serializable {
 	protected Boolean discountDiscovery;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	@Valid
 	public BigDecimal getDiscountLevel1() {
 		return discountLevel1;
@@ -213,7 +204,7 @@ public class TierPrice implements Serializable {
 	protected BigDecimal discountLevel1;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	@Valid
 	public BigDecimal getDiscountLevel2() {
 		return discountLevel2;
@@ -243,7 +234,7 @@ public class TierPrice implements Serializable {
 	protected BigDecimal discountLevel2;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	@Valid
 	public BigDecimal getDiscountLevel3() {
 		return discountLevel3;
@@ -273,7 +264,7 @@ public class TierPrice implements Serializable {
 	protected BigDecimal discountLevel3;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	@Valid
 	public BigDecimal getDiscountLevel4() {
 		return discountLevel4;
@@ -302,7 +293,7 @@ public class TierPrice implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal discountLevel4;
 
-	@Schema
+	@Schema(example = "2017-07-21")
 	public Date getDisplayDate() {
 		return displayDate;
 	}
@@ -330,7 +321,7 @@ public class TierPrice implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date displayDate;
 
-	@Schema
+	@Schema(example = "2017-08-21")
 	public Date getExpirationDate() {
 		return expirationDate;
 	}
@@ -358,7 +349,7 @@ public class TierPrice implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date expirationDate;
 
-	@Schema
+	@Schema(example = "AB-34098-789-N")
 	public String getExternalReferenceCode() {
 		return externalReferenceCode;
 	}
@@ -387,7 +378,7 @@ public class TierPrice implements Serializable {
 	protected String externalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "31130")
 	public Long getId() {
 		return id;
 	}
@@ -414,18 +405,19 @@ public class TierPrice implements Serializable {
 	protected Long id;
 
 	@DecimalMin("0")
-	@Schema
-	public Integer getMinimumQuantity() {
+	@Schema(example = "10.1")
+	@Valid
+	public BigDecimal getMinimumQuantity() {
 		return minimumQuantity;
 	}
 
-	public void setMinimumQuantity(Integer minimumQuantity) {
+	public void setMinimumQuantity(BigDecimal minimumQuantity) {
 		this.minimumQuantity = minimumQuantity;
 	}
 
 	@JsonIgnore
 	public void setMinimumQuantity(
-		UnsafeSupplier<Integer, Exception> minimumQuantityUnsafeSupplier) {
+		UnsafeSupplier<BigDecimal, Exception> minimumQuantityUnsafeSupplier) {
 
 		try {
 			minimumQuantity = minimumQuantityUnsafeSupplier.get();
@@ -441,9 +433,9 @@ public class TierPrice implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
-	protected Integer minimumQuantity;
+	protected BigDecimal minimumQuantity;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getNeverExpire() {
 		return neverExpire;
 	}
@@ -500,7 +492,7 @@ public class TierPrice implements Serializable {
 	@NotNull
 	protected Double price;
 
-	@Schema
+	@Schema(example = "CAB-34098-789-N")
 	public String getPriceEntryExternalReferenceCode() {
 		return priceEntryExternalReferenceCode;
 	}
@@ -533,7 +525,7 @@ public class TierPrice implements Serializable {
 	protected String priceEntryExternalReferenceCode;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getPriceEntryId() {
 		return priceEntryId;
 	}
@@ -589,6 +581,34 @@ public class TierPrice implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String priceFormatted;
+
+	@Schema(example = "m")
+	public String getUnitOfMeasureKey() {
+		return unitOfMeasureKey;
+	}
+
+	public void setUnitOfMeasureKey(String unitOfMeasureKey) {
+		this.unitOfMeasureKey = unitOfMeasureKey;
+	}
+
+	@JsonIgnore
+	public void setUnitOfMeasureKey(
+		UnsafeSupplier<String, Exception> unitOfMeasureKeyUnsafeSupplier) {
+
+		try {
+			unitOfMeasureKey = unitOfMeasureKeyUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String unitOfMeasureKey;
 
 	@Override
 	public boolean equals(Object object) {
@@ -820,6 +840,20 @@ public class TierPrice implements Serializable {
 			sb.append("\"");
 		}
 
+		if (unitOfMeasureKey != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"unitOfMeasureKey\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(unitOfMeasureKey));
+
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
@@ -914,5 +948,7 @@ public class TierPrice implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.language.override.web.internal.display;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.liferay.petra.string.StringPool;
 
 /**
  * @author Drew Brokke
@@ -27,16 +17,12 @@ public class LanguageItemDisplay {
 		_value = value;
 	}
 
-	public void addOverrideLanguageId(String languageId) {
-		_overrideLanguageIds.add(languageId);
-	}
-
 	public String getKey() {
 		return _key;
 	}
 
-	public List<String> getOverrideLanguageIds() {
-		return _overrideLanguageIds;
+	public String getOverrideLanguageIdsString() {
+		return _overrideLanguageIdsString;
 	}
 
 	public String getValue() {
@@ -55,6 +41,10 @@ public class LanguageItemDisplay {
 		_override = override;
 	}
 
+	public void setOverrideLanguageIdsString(String overrideLanguageIdsString) {
+		_overrideLanguageIdsString = overrideLanguageIdsString;
+	}
+
 	public void setOverrideSelectedLanguageId(
 		boolean overrideSelectedLanguageId) {
 
@@ -63,7 +53,7 @@ public class LanguageItemDisplay {
 
 	private final String _key;
 	private boolean _override;
-	private final List<String> _overrideLanguageIds = new ArrayList<>();
+	private String _overrideLanguageIdsString = StringPool.BLANK;
 	private boolean _overrideSelectedLanguageId;
 	private final String _value;
 

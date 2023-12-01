@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -58,22 +49,10 @@ public class FileUtil {
 		_file.copyFile(source, destination);
 	}
 
-	public static void copyFile(File source, File destination, boolean lazy)
-		throws IOException {
-
-		_file.copyFile(source, destination, lazy);
-	}
-
 	public static void copyFile(String source, String destination)
 		throws IOException {
 
 		_file.copyFile(source, destination);
-	}
-
-	public static void copyFile(String source, String destination, boolean lazy)
-		throws IOException {
-
-		_file.copyFile(source, destination, lazy);
 	}
 
 	public static File createTempFile() {
@@ -144,25 +123,6 @@ public class FileUtil {
 
 	public static boolean exists(String fileName) {
 		return _file.exists(fileName);
-	}
-
-	/**
-	 * Extracts the text from the input stream and file name.
-	 *
-	 * @param  inputStream the file's input stream
-	 * @param  fileName the file's full name or extension (e.g., "Test.doc" or
-	 *         ".doc")
-	 * @return the extracted text if it is a supported format or an empty string
-	 *         if it is an unsupported format
-	 */
-	public static String extractText(InputStream inputStream, String fileName) {
-		return _file.extractText(inputStream, fileName);
-	}
-
-	public static String extractText(
-		InputStream inputStream, String fileName, int maxStringLength) {
-
-		return _file.extractText(inputStream, fileName, maxStringLength);
 	}
 
 	public static String getAbsolutePath(File file) {
@@ -240,7 +200,7 @@ public class FileUtil {
 		return _file.listFiles(fileName);
 	}
 
-	public static void mkdirs(File file) throws IOException {
+	public static void mkdirs(File file) {
 		_file.mkdirs(file);
 	}
 

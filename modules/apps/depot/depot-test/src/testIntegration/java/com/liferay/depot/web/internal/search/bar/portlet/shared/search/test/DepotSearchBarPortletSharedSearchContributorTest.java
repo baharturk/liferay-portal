@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.search.bar.portlet.shared.search.test;
@@ -20,7 +11,6 @@ import com.liferay.depot.service.DepotEntryGroupRelLocalService;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.search.BooleanClause;
 import com.liferay.portal.kernel.search.Query;
@@ -50,7 +40,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import javax.portlet.PortletPreferences;
 import javax.portlet.RenderRequest;
@@ -254,13 +243,13 @@ public class DepotSearchBarPortletSharedSearchContributorTest {
 
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
-		Layout layout = _layoutLocalService.addLayout(
-			TestPropsValues.getUserId(), _group1.getGroupId(), false, 0, "name",
-			"title", "description", LayoutConstants.TYPE_PORTLET, false,
-			StringPool.BLANK,
-			ServiceContextTestUtil.getServiceContext(_group1.getGroupId()));
-
-		themeDisplay.setLayout(layout);
+		themeDisplay.setLayout(
+			_layoutLocalService.addLayout(
+				TestPropsValues.getUserId(), _group1.getGroupId(), false, 0,
+				"name", "title", "description", LayoutConstants.TYPE_PORTLET,
+				false, StringPool.BLANK,
+				ServiceContextTestUtil.getServiceContext(
+					_group1.getGroupId())));
 
 		return new PortletSharedSearchSettings() {
 
@@ -274,44 +263,39 @@ public class DepotSearchBarPortletSharedSearchContributorTest {
 
 			@Override
 			public SearchRequestBuilder getFederatedSearchRequestBuilder(
-				Optional<String> federatedSearchKeyOptional) {
+				String federatedSearchKey) {
 
 				return _searchRequestBuilderFactory.builder();
 			}
 
 			@Override
-			public Optional<String> getKeywordsParameterName() {
-				return Optional.empty();
+			public String getKeywordsParameterName() {
+				return null;
 			}
 
 			@Override
-			public Optional<Integer> getPaginationDelta() {
-				return Optional.empty();
+			public Integer getPaginationDelta() {
+				return null;
 			}
 
 			@Override
-			public Optional<String> getPaginationDeltaParameterName() {
-				return Optional.empty();
+			public String getPaginationDeltaParameterName() {
+				return null;
 			}
 
 			@Override
-			public Optional<Integer> getPaginationStart() {
-				return Optional.empty();
+			public Integer getPaginationStart() {
+				return null;
 			}
 
 			@Override
-			public Optional<String> getPaginationStartParameterName() {
-				return Optional.empty();
+			public String getPaginationStartParameterName() {
+				return null;
 			}
 
 			@Override
-			public Optional<String> getParameter71(String name) {
-				return Optional.empty();
-			}
-
-			@Override
-			public Optional<String> getParameterOptional(String name) {
-				return Optional.empty();
+			public String getParameter(String name) {
+				return null;
 			}
 
 			@Override
@@ -320,25 +304,13 @@ public class DepotSearchBarPortletSharedSearchContributorTest {
 			}
 
 			@Override
-			public Optional<String[]> getParameterValues71(String name) {
-				return Optional.empty();
-			}
-
-			@Override
 			public String getPortletId() {
 				return null;
 			}
 
 			@Override
-			public Optional<PortletPreferences> getPortletPreferences71() {
-				return Optional.empty();
-			}
-
-			@Override
-			public Optional<PortletPreferences>
-				getPortletPreferencesOptional() {
-
-				return Optional.empty();
+			public PortletPreferences getPortletPreferences() {
+				return null;
 			}
 
 			@Override
@@ -352,8 +324,13 @@ public class DepotSearchBarPortletSharedSearchContributorTest {
 			}
 
 			@Override
-			public Optional<String> getScopeParameterName() {
-				return Optional.empty();
+			public String getScope() {
+				return null;
+			}
+
+			@Override
+			public String getScopeParameterName() {
+				return null;
 			}
 
 			@Override
@@ -395,6 +372,10 @@ public class DepotSearchBarPortletSharedSearchContributorTest {
 			@Override
 			public void setPaginationStartParameterName(
 				String paginationStartParameterName) {
+			}
+
+			@Override
+			public void setScope(String scope) {
 			}
 
 			@Override

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.opensso.internal.auto.login;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.ContactNameException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
@@ -25,7 +17,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.security.auth.ScreenNameGenerator;
 import com.liferay.portal.kernel.security.auto.login.AutoLogin;
 import com.liferay.portal.kernel.security.auto.login.BaseAutoLogin;
@@ -42,7 +34,7 @@ import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.security.exportimport.UserImporter;
+import com.liferay.portal.security.ldap.exportimport.LDAPUserImporter;
 import com.liferay.portal.security.sso.opensso.configuration.OpenSSOConfiguration;
 import com.liferay.portal.security.sso.opensso.constants.OpenSSOConstants;
 import com.liferay.portal.security.sso.opensso.constants.OpenSSOWebKeys;
@@ -82,7 +74,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.security.sso.opensso.configuration.OpenSSOConfiguration",
-	immediate = true, service = AutoLogin.class
+	service = AutoLogin.class
 )
 public class OpenSSOAutoLogin extends BaseAutoLogin {
 
@@ -145,11 +137,11 @@ public class OpenSSOAutoLogin extends BaseAutoLogin {
 					PropsValues.COMPANY_SECURITY_AUTH_TYPE);
 
 				if (authType.equals(CompanyConstants.AUTH_TYPE_SN)) {
-					user = _userImporter.importUser(
+					user = _ldapUserImporter.importUser(
 						companyId, StringPool.BLANK, screenName);
 				}
 				else {
-					user = _userImporter.importUser(
+					user = _ldapUserImporter.importUser(
 						companyId, emailAddress, StringPool.BLANK);
 				}
 			}
@@ -158,7 +150,7 @@ public class OpenSSOAutoLogin extends BaseAutoLogin {
 				// LPS-52675
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(systemException, systemException);
+					_log.debug(systemException);
 				}
 			}
 		}
@@ -268,8 +260,8 @@ public class OpenSSOAutoLogin extends BaseAutoLogin {
 		String password2 = null;
 		boolean autoScreenName = false;
 		String middleName = StringPool.BLANK;
-		long prefixId = 0;
-		long suffixId = 0;
+		long prefixListTypeId = 0;
+		long suffixListTypeId = 0;
 		boolean male = true;
 		int birthdayMonth = Calendar.JANUARY;
 		int birthdayDay = 1;
@@ -284,9 +276,10 @@ public class OpenSSOAutoLogin extends BaseAutoLogin {
 		return _userLocalService.addUser(
 			creatorUserId, companyId, autoPassword, password1, password2,
 			autoScreenName, screenName, emailAddress, locale, firstName,
-			middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-			birthdayDay, birthdayYear, jobTitle, groupIds, organizationIds,
-			roleIds, userGroupIds, sendEmail, new ServiceContext());
+			middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+			birthdayMonth, birthdayDay, birthdayYear, jobTitle,
+			UserConstants.TYPE_REGULAR, groupIds, organizationIds, roleIds,
+			userGroupIds, sendEmail, new ServiceContext());
 	}
 
 	private void _checkAddUser(long companyId, String emailAddress)
@@ -325,6 +318,9 @@ public class OpenSSOAutoLogin extends BaseAutoLogin {
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
+	private LDAPUserImporter _ldapUserImporter;
+
+	@Reference
 	private OpenSSO _openSSO;
 
 	@Reference
@@ -332,9 +328,6 @@ public class OpenSSOAutoLogin extends BaseAutoLogin {
 
 	@Reference
 	private ScreenNameGenerator _screenNameGenerator;
-
-	@Reference
-	private UserImporter _userImporter;
 
 	@Reference
 	private UserLocalService _userLocalService;

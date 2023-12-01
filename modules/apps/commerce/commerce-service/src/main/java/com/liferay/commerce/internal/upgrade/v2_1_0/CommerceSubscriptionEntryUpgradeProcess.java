@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.upgrade.v2_1_0;
 
-import com.liferay.commerce.internal.upgrade.base.BaseCommerceServiceUpgradeProcess;
 import com.liferay.commerce.model.impl.CommerceSubscriptionEntryModelImpl;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
@@ -23,6 +13,9 @@ import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.portal.kernel.dao.db.IndexMetadata;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 
 import java.sql.DatabaseMetaData;
@@ -36,8 +29,7 @@ import java.util.Objects;
 /**
  * @author Ethan Bustad
  */
-public class CommerceSubscriptionEntryUpgradeProcess
-	extends BaseCommerceServiceUpgradeProcess {
+public class CommerceSubscriptionEntryUpgradeProcess extends UpgradeProcess {
 
 	public CommerceSubscriptionEntryUpgradeProcess(
 		CPDefinitionLocalService cpDefinitionLocalService,
@@ -49,15 +41,6 @@ public class CommerceSubscriptionEntryUpgradeProcess
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		addColumn(
-			CommerceSubscriptionEntryModelImpl.class,
-			CommerceSubscriptionEntryModelImpl.TABLE_NAME, "CPInstanceUUID",
-			"VARCHAR(75)");
-		addColumn(
-			CommerceSubscriptionEntryModelImpl.class,
-			CommerceSubscriptionEntryModelImpl.TABLE_NAME, "CProductId",
-			"LONG");
-
 		_addIndexes(CommerceSubscriptionEntryModelImpl.TABLE_NAME);
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -81,15 +64,28 @@ public class CommerceSubscriptionEntryUpgradeProcess
 				preparedStatement.setLong(1, cpDefinition.getCProductId());
 
 				preparedStatement.setString(2, cpInstance.getCPInstanceUuid());
-
 				preparedStatement.setLong(3, cpInstanceId);
 
 				preparedStatement.execute();
 			}
 		}
+	}
 
-		runSQL(
-			"alter table CommerceSubscriptionEntry drop column CPInstanceId");
+	@Override
+	protected UpgradeStep[] getPostUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.dropColumns(
+				"CommerceSubscriptionEntry", "CPInstanceId")
+		};
+	}
+
+	@Override
+	protected UpgradeStep[] getPreUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.addColumns(
+				"CommerceSubscriptionEntry", "CPInstanceUUID VARCHAR(75)",
+				"CProductId LONG")
+		};
 	}
 
 	private void _addIndexes(String tableName) throws Exception {

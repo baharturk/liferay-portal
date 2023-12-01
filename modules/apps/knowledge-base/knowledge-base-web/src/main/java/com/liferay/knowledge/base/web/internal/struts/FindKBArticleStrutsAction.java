@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.web.internal.struts;
@@ -33,6 +24,7 @@ import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -57,6 +49,7 @@ import javax.portlet.PortletMode;
 import javax.portlet.PortletPreferences;
 import javax.portlet.PortletRequest;
 import javax.portlet.PortletURL;
+import javax.portlet.WindowState;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -68,7 +61,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Peter Shin
  */
 @Component(
-	immediate = true, property = "path=/knowledge_base/find_kb_article",
+	property = "path=/knowledge_base/find_kb_article",
 	service = StrutsAction.class
 )
 public class FindKBArticleStrutsAction implements StrutsAction {
@@ -137,37 +130,6 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 		return null;
 	}
 
-	@Reference(unbind = "-")
-	protected void setAdminUtilHelper(AdminHelper adminHelper) {
-		_adminHelper = adminHelper;
-	}
-
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setKBArticleLocalService(
-		KBArticleLocalService kbArticleLocalService) {
-
-		_kbArticleLocalService = kbArticleLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setKBFolderLocalService(
-		KBFolderLocalService kbFolderLocalService) {
-
-		_kbFolderLocalService = kbFolderLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setLayoutLocalService(
-		LayoutLocalService layoutLocalService) {
-
-		_layoutLocalService = layoutLocalService;
-	}
-
 	private List<Layout> _getCandidateLayouts(
 			long plid, boolean privateLayout, KBArticle kbArticle)
 		throws Exception {
@@ -184,10 +146,10 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 			group = layout.getGroup();
 		}
 
-		List<Layout> layouts = _layoutLocalService.getLayouts(
-			group.getGroupId(), privateLayout, LayoutConstants.TYPE_PORTLET);
-
-		candidateLayouts.addAll(layouts);
+		candidateLayouts.addAll(
+			_layoutLocalService.getLayouts(
+				group.getGroupId(), privateLayout,
+				LayoutConstants.TYPE_PORTLET));
 
 		Layout layout = _layoutLocalService.getLayout(plid);
 
@@ -215,10 +177,9 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 		}
 
 		if (_PORTLET_ADD_DEFAULT_RESOURCE_CHECK_ENABLED) {
-			String token = AuthTokenUtil.getToken(
-				httpServletRequest, plid, portletId);
-
-			portletURL.setParameter("p_p_auth", token);
+			portletURL.setParameter(
+				"p_p_auth",
+				AuthTokenUtil.getToken(httpServletRequest, plid, portletId));
 		}
 
 		portletURL.setPortletMode(PortletMode.VIEW);
@@ -393,57 +354,42 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 			HttpServletRequest httpServletRequest)
 		throws Exception {
 
-		String mvcPath = null;
+		return PortletURLBuilder.create(
+			PortletURLFactoryUtil.create(
+				httpServletRequest, portletId, plid,
+				PortletRequest.RENDER_PHASE)
+		).setMVCRenderCommandName(
+			"/knowledge_base/view_kb_article"
+		).setParameter(
+			"resourcePrimKey",
+			_getResourcePrimKey(
+				ParamUtil.getLong(httpServletRequest, "resourcePrimKey"),
+				kbArticle),
+			false
+		).setParameter(
+			"urlTitle", _getUrlTitle(kbArticle), false
+		).setParameter(
+			"kbFolderUrlTitle", _getKBFolderUrlTitle(kbArticle), false
+		).setPortletMode(
+			PortletMode.VIEW
+		).setWindowState(
+			_getWindowState(portletId)
+		).buildRenderURL();
+	}
 
-		String rootPortletId = PortletIdCodec.decodePortletName(portletId);
+	private String _getKBFolderUrlTitle(KBArticle kbArticle) throws Exception {
+		if ((kbArticle != null) &&
+			Validator.isNotNull(kbArticle.getUrlTitle()) &&
+			(kbArticle.getKbFolderId() !=
+				KBFolderConstants.DEFAULT_PARENT_FOLDER_ID)) {
 
-		if (rootPortletId.equals(KBPortletKeys.KNOWLEDGE_BASE_ADMIN)) {
-			mvcPath = "/admin/view_article.jsp";
-		}
-		else if (rootPortletId.equals(KBPortletKeys.KNOWLEDGE_BASE_ARTICLE)) {
-			mvcPath = "/article/view_article.jsp";
-		}
-		else if (rootPortletId.equals(KBPortletKeys.KNOWLEDGE_BASE_SECTION)) {
-			mvcPath = "/section/view_article.jsp";
-		}
+			KBFolder kbFolder = _kbFolderLocalService.getKBFolder(
+				kbArticle.getKbFolderId());
 
-		PortletURL portletURL = PortletURLFactoryUtil.create(
-			httpServletRequest, portletId, plid, PortletRequest.RENDER_PHASE);
-
-		if (mvcPath != null) {
-			portletURL.setParameter("mvcPath", mvcPath);
-		}
-
-		if ((kbArticle == null) || Validator.isNull(kbArticle.getUrlTitle())) {
-			long resourcePrimKey = ParamUtil.getLong(
-				httpServletRequest, "resourcePrimKey");
-
-			portletURL.setParameter(
-				"resourcePrimKey", String.valueOf(resourcePrimKey));
-		}
-		else {
-			portletURL.setParameter("urlTitle", kbArticle.getUrlTitle());
-
-			if (kbArticle.getKbFolderId() !=
-					KBFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
-
-				KBFolder kbFolder = _kbFolderLocalService.getKBFolder(
-					kbArticle.getKbFolderId());
-
-				portletURL.setParameter(
-					"kbFolderUrlTitle", String.valueOf(kbFolder.getUrlTitle()));
-			}
+			return kbFolder.getUrlTitle();
 		}
 
-		portletURL.setPortletMode(PortletMode.VIEW);
-
-		portletURL.setWindowState(LiferayWindowState.NORMAL);
-
-		if (rootPortletId.equals(KBPortletKeys.KNOWLEDGE_BASE_SECTION)) {
-			portletURL.setWindowState(LiferayWindowState.MAXIMIZED);
-		}
-
-		return portletURL;
+		return null;
 	}
 
 	private String _getPortletId(long plid) throws Exception {
@@ -461,6 +407,36 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 		}
 
 		return KBPortletKeys.KNOWLEDGE_BASE_ARTICLE_DEFAULT_INSTANCE;
+	}
+
+	private Long _getResourcePrimKey(
+		long resourcePrimKey, KBArticle kbArticle) {
+
+		if ((kbArticle == null) || Validator.isNull(kbArticle.getUrlTitle())) {
+			return resourcePrimKey;
+		}
+
+		return null;
+	}
+
+	private String _getUrlTitle(KBArticle kbArticle) {
+		if ((kbArticle != null) &&
+			Validator.isNotNull(kbArticle.getUrlTitle())) {
+
+			return kbArticle.getUrlTitle();
+		}
+
+		return null;
+	}
+
+	private WindowState _getWindowState(String portletId) {
+		String rootPortletId = PortletIdCodec.decodePortletName(portletId);
+
+		if (rootPortletId.equals(KBPortletKeys.KNOWLEDGE_BASE_SECTION)) {
+			return LiferayWindowState.MAXIMIZED;
+		}
+
+		return LiferayWindowState.NORMAL;
 	}
 
 	private boolean _isParentFolder(long resourcePrimKey, long kbFolderId)
@@ -498,10 +474,19 @@ public class FindKBArticleStrutsAction implements StrutsAction {
 			PropsUtil.get(
 				PropsKeys.PORTLET_ADD_DEFAULT_RESOURCE_CHECK_ENABLED));
 
+	@Reference
 	private AdminHelper _adminHelper;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
 	private KBArticleLocalService _kbArticleLocalService;
+
+	@Reference
 	private KBFolderLocalService _kbFolderLocalService;
+
+	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference

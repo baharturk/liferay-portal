@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.web.internal.display.context;
@@ -40,7 +31,6 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.DisplayTerms;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
@@ -52,13 +42,14 @@ import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
-import com.liferay.portal.kernel.search.BaseModelSearchResult;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchContextFactory;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HtmlParserUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -92,7 +83,7 @@ public class DDLViewRecordsDisplayContext {
 		_liferayPortletResponse = liferayPortletResponse;
 		_formDDMTemplateId = formDDMTemplateId;
 
-		_ddlRecordSet = (DDLRecordSet)_liferayPortletRequest.getAttribute(
+		_ddlRecordSet = (DDLRecordSet)liferayPortletRequest.getAttribute(
 			DDLWebKeys.DYNAMIC_DATA_LISTS_RECORD_SET);
 
 		_ddlRequestHelper = new DDLRequestHelper(
@@ -105,7 +96,7 @@ public class DDLViewRecordsDisplayContext {
 		if (user == null) {
 			ThemeDisplay themeDisplay = _ddlRequestHelper.getThemeDisplay();
 
-			user = themeDisplay.getDefaultUser();
+			user = themeDisplay.getGuestUser();
 		}
 
 		_user = user;
@@ -151,7 +142,6 @@ public class DDLViewRecordsDisplayContext {
 					"recordSetId",
 					String.valueOf(_ddlRecordSet.getRecordSetId()),
 					"formDDMTemplateId", String.valueOf(_formDDMTemplateId));
-
 				dropdownItem.setLabel(
 					LanguageUtil.format(
 						_ddlRequestHelper.getRequest(), "add-x",
@@ -252,7 +242,7 @@ public class DDLViewRecordsDisplayContext {
 			navigationItem -> {
 				navigationItem.setActive(true);
 				navigationItem.setLabel(
-					HtmlUtil.extractText(
+					HtmlParserUtil.extractText(
 						_ddlRecordSet.getName(_ddlRequestHelper.getLocale())));
 			}
 		).build();
@@ -350,7 +340,19 @@ public class DDLViewRecordsDisplayContext {
 		).buildPortletURL();
 	}
 
-	public SearchContainer<?> getSearch() throws PortalException {
+	public String getSearchActionURL() {
+		return PortletURLBuilder.createRenderURL(
+			_liferayPortletResponse
+		).setMVCPath(
+			_getMVCPath()
+		).setRedirect(
+			PortalUtil.getCurrentURL(_liferayPortletRequest)
+		).setParameter(
+			"recordSetId", _ddlRecordSet.getRecordSetId()
+		).buildString();
+	}
+
+	public SearchContainer<?> getSearchContainer() throws PortalException {
 		PortletURL portletURL = PortletURLBuilder.create(
 			getPortletURL()
 		).setParameter(
@@ -375,45 +377,59 @@ public class DDLViewRecordsDisplayContext {
 
 		headerNames.add(StringPool.BLANK);
 
-		SearchContainer<DDLRecord> recordSearch = new RecordSearch(
+		SearchContainer<DDLRecord> recordSearchContainer = new RecordSearch(
 			_liferayPortletRequest, portletURL, headerNames);
 
-		if (recordSearch.isSearch()) {
-			recordSearch.setEmptyResultsMessage(
+		if (recordSearchContainer.isSearch()) {
+			recordSearchContainer.setEmptyResultsMessage(
 				LanguageUtil.format(
 					_ddlRequestHelper.getLocale(), "no-x-records-were-found",
 					_ddlRecordSet.getName(), false));
 		}
 		else {
-			recordSearch.setEmptyResultsMessage("there-are-no-records");
+			recordSearchContainer.setEmptyResultsMessage(
+				"there-are-no-records");
 		}
 
-		recordSearch.setOrderByCol(getOrderByCol());
-		recordSearch.setOrderByComparator(
+		recordSearchContainer.setOrderByCol(getOrderByCol());
+		recordSearchContainer.setOrderByComparator(
 			getDDLRecordOrderByComparator(getOrderByCol(), getOrderByType()));
-		recordSearch.setOrderByType(getOrderByType());
+		recordSearchContainer.setOrderByType(getOrderByType());
 
-		if (!_user.isDefaultUser()) {
-			recordSearch.setRowChecker(
+		DisplayTerms displayTerms = recordSearchContainer.getDisplayTerms();
+
+		int status = WorkflowConstants.STATUS_APPROVED;
+
+		if (isShowAddRecordButton()) {
+			status = WorkflowConstants.STATUS_ANY;
+		}
+
+		int ddlRecordStatus = status;
+
+		if (Validator.isNull(displayTerms.getKeywords())) {
+			recordSearchContainer.setResultsAndTotal(
+				() -> DDLRecordLocalServiceUtil.getRecords(
+					_ddlRecordSet.getRecordSetId(), ddlRecordStatus,
+					recordSearchContainer.getStart(),
+					recordSearchContainer.getEnd(),
+					recordSearchContainer.getOrderByComparator()),
+				DDLRecordLocalServiceUtil.getRecordsCount(
+					_ddlRecordSet.getRecordSetId(), ddlRecordStatus));
+		}
+		else {
+			SearchContext searchContext = _getSearchContext(
+				recordSearchContainer, ddlRecordStatus);
+
+			recordSearchContainer.setResultsAndTotal(
+				DDLRecordLocalServiceUtil.searchDDLRecords(searchContext));
+		}
+
+		if (!_user.isGuestUser()) {
+			recordSearchContainer.setRowChecker(
 				new EmptyOnClickRowChecker(_liferayPortletResponse));
 		}
 
-		_setDDLRecordSearchResults(recordSearch);
-		_setDDLRecordSearchTotal(recordSearch);
-
-		return recordSearch;
-	}
-
-	public String getSearchActionURL() {
-		return PortletURLBuilder.createRenderURL(
-			_liferayPortletResponse
-		).setMVCPath(
-			_getMVCPath()
-		).setRedirect(
-			PortalUtil.getCurrentURL(_liferayPortletRequest)
-		).setParameter(
-			"recordSetId", _ddlRecordSet.getRecordSetId()
-		).buildString();
+		return recordSearchContainer;
 	}
 
 	public String getSearchContainerId() {
@@ -439,7 +455,7 @@ public class DDLViewRecordsDisplayContext {
 	}
 
 	public int getTotalItems() throws PortalException {
-		SearchContainer<?> searchContainer = getSearch();
+		SearchContainer<?> searchContainer = getSearchContainer();
 
 		return searchContainer.getTotal();
 	}
@@ -493,16 +509,14 @@ public class DDLViewRecordsDisplayContext {
 	}
 
 	public boolean isSelectable() {
-		return !_user.isDefaultUser();
+		return !_user.isGuestUser();
 	}
 
 	protected List<DropdownItem> getFilterNavigationDropdownItems() {
 		return DropdownItemListBuilder.add(
 			dropdownItem -> {
 				dropdownItem.setActive(true);
-
 				dropdownItem.setHref(getPortletURL(), "navigation", "all");
-
 				dropdownItem.setLabel(
 					LanguageUtil.get(_ddlRequestHelper.getRequest(), "all"));
 			}
@@ -593,7 +607,7 @@ public class DDLViewRecordsDisplayContext {
 	}
 
 	private SearchContext _getSearchContext(
-		SearchContainer<DDLRecord> recordSearch, int status) {
+		SearchContainer<DDLRecord> recordSearchContainer, int status) {
 
 		SearchContext searchContext = SearchContextFactory.getInstance(
 			_ddlRequestHelper.getRequest());
@@ -602,9 +616,9 @@ public class DDLViewRecordsDisplayContext {
 		searchContext.setAttribute(
 			"recordSetId", _ddlRecordSet.getRecordSetId());
 		searchContext.setAttribute("recordSetScope", _ddlRecordSet.getScope());
-		searchContext.setEnd(recordSearch.getEnd());
+		searchContext.setEnd(recordSearchContainer.getEnd());
 		searchContext.setKeywords(getKeywords());
-		searchContext.setStart(recordSearch.getStart());
+		searchContext.setStart(recordSearchContainer.getStart());
 
 		return searchContext;
 	}
@@ -639,69 +653,6 @@ public class DDLViewRecordsDisplayContext {
 			_putDDMFormFieldValue(
 				ddmFormFieldValuesMap, nestedDDMFormFieldValue);
 		}
-	}
-
-	private void _setDDLRecordSearchResults(
-			SearchContainer<DDLRecord> recordSearch)
-		throws PortalException {
-
-		List<DDLRecord> results = null;
-
-		DisplayTerms displayTerms = recordSearch.getDisplayTerms();
-
-		int status = WorkflowConstants.STATUS_APPROVED;
-
-		if (isShowAddRecordButton()) {
-			status = WorkflowConstants.STATUS_ANY;
-		}
-
-		if (Validator.isNull(displayTerms.getKeywords())) {
-			results = DDLRecordLocalServiceUtil.getRecords(
-				_ddlRecordSet.getRecordSetId(), status, recordSearch.getStart(),
-				recordSearch.getEnd(), recordSearch.getOrderByComparator());
-		}
-		else {
-			SearchContext searchContext = _getSearchContext(
-				recordSearch, status);
-
-			BaseModelSearchResult<DDLRecord> baseModelSearchResult =
-				DDLRecordLocalServiceUtil.searchDDLRecords(searchContext);
-
-			results = baseModelSearchResult.getBaseModels();
-		}
-
-		recordSearch.setResults(results);
-	}
-
-	private void _setDDLRecordSearchTotal(
-			SearchContainer<DDLRecord> recordSearch)
-		throws PortalException {
-
-		int total;
-
-		DisplayTerms displayTerms = recordSearch.getDisplayTerms();
-
-		int status = WorkflowConstants.STATUS_APPROVED;
-
-		if (isShowAddRecordButton()) {
-			status = WorkflowConstants.STATUS_ANY;
-		}
-
-		if (Validator.isNull(displayTerms.getKeywords())) {
-			total = DDLRecordLocalServiceUtil.getRecordsCount(
-				_ddlRecordSet.getRecordSetId(), status);
-		}
-		else {
-			SearchContext searchContext = _getSearchContext(
-				recordSearch, status);
-
-			BaseModelSearchResult<DDLRecord> baseModelSearchResult =
-				DDLRecordLocalServiceUtil.searchDDLRecords(searchContext);
-
-			total = baseModelSearchResult.getLength();
-		}
-
-		recordSearch.setTotal(total);
 	}
 
 	private final DDLRecordSet _ddlRecordSet;

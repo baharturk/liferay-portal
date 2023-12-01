@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.staging;
@@ -44,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Raymond Augé
  */
-@Component(immediate = true, service = LayoutStaging.class)
+@Component(service = LayoutStaging.class)
 public class LayoutStagingImpl implements LayoutStaging {
 
 	@Override
@@ -166,7 +157,7 @@ public class LayoutStagingImpl implements LayoutStaging {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			return false;
@@ -287,19 +278,13 @@ public class LayoutStagingImpl implements LayoutStaging {
 		return true;
 	}
 
-	@Reference(unbind = "-")
-	protected void setLayoutSetBranchLocalService(
-		LayoutSetBranchLocalService layoutSetBranchLocalService) {
-
-		_layoutSetBranchLocalService = layoutSetBranchLocalService;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutStagingImpl.class);
 
 	@Reference
 	private LayoutRevisionLocalService _layoutRevisionLocalService;
 
+	@Reference
 	private LayoutSetBranchLocalService _layoutSetBranchLocalService;
 
 }

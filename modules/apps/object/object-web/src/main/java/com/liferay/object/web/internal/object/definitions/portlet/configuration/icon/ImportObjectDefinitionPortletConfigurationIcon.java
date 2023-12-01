@@ -1,23 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.web.internal.object.definitions.portlet.configuration.icon;
 
 import com.liferay.object.constants.ObjectPortletKeys;
-import com.liferay.object.web.internal.configuration.activator.FFExportImportObjectDefinitionTypeConfigurationActivator;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.configuration.icon.BaseJSPPortletConfigurationIcon;
 import com.liferay.portal.kernel.portlet.configuration.icon.PortletConfigurationIcon;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+
+import java.util.Map;
 
 import javax.portlet.PortletRequest;
 
@@ -30,12 +25,25 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	immediate = true,
 	property = "javax.portlet.name=" + ObjectPortletKeys.OBJECT_DEFINITIONS,
 	service = PortletConfigurationIcon.class
 )
 public class ImportObjectDefinitionPortletConfigurationIcon
 	extends BaseJSPPortletConfigurationIcon {
+
+	@Override
+	public Map<String, Object> getContext(PortletRequest portletRequest) {
+		return HashMapBuilder.<String, Object>put(
+			"action", getNamespace(portletRequest) + "importObjectDefinition"
+		).put(
+			"globalAction", true
+		).build();
+	}
+
+	@Override
+	public String getIconCssClass() {
+		return "download";
+	}
 
 	@Override
 	public String getJspPath() {
@@ -44,21 +52,29 @@ public class ImportObjectDefinitionPortletConfigurationIcon
 	}
 
 	@Override
-	public boolean isShow(PortletRequest portletRequest) {
-		return _ffExportImportObjectDefinitionTypeConfigurationActivator.
-			enabled();
+	public String getMessage(PortletRequest portletRequest) {
+		return _language.get(
+			getLocale(portletRequest), "import-object-definition");
 	}
 
 	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.object.web)", unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
+	public boolean isShow(PortletRequest portletRequest) {
+		if (FeatureFlagManagerUtil.isEnabled("LPS-148856")) {
+			return false;
+		}
+
+		return true;
+	}
+
+	@Override
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	@Reference
-	private FFExportImportObjectDefinitionTypeConfigurationActivator
-		_ffExportImportObjectDefinitionTypeConfigurationActivator;
+	private Language _language;
+
+	@Reference(target = "(osgi.web.symbolicname=com.liferay.object.web)")
+	private ServletContext _servletContext;
 
 }

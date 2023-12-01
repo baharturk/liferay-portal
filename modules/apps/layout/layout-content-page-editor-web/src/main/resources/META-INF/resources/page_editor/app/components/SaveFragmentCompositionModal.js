@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -25,16 +16,14 @@ import React, {useState} from 'react';
 
 import Button from '../../common/components/Button';
 import InvisibleFieldset from '../../common/components/InvisibleFieldset';
-import {openImageSelector} from '../../core/openImageSelector';
+import {openImageSelector} from '../../common/openImageSelector';
 import {config} from '../config/index';
 import {useActiveItemId} from '../contexts/ControlsContext';
 import {useDispatch, useSelector} from '../contexts/StoreContext';
-import selectSegmentsExperienceId from '../selectors/selectSegmentsExperienceId';
 import addFragmentComposition from '../thunks/addFragmentComposition';
 
-const SaveFragmentCompositionModal = ({onCloseModal}) => {
+const SaveFragmentCompositionModal = ({itemId, onCloseModal}) => {
 	const dispatch = useDispatch();
-	const segmentsExperienceId = useSelector(selectSegmentsExperienceId);
 
 	const activeItemId = useActiveItemId();
 	const isMounted = useIsMounted();
@@ -44,7 +33,7 @@ const SaveFragmentCompositionModal = ({onCloseModal}) => {
 	const [name, setName] = useState(undefined);
 	const [description, setDescription] = useState('');
 	const [fragmentCollectionId, setFragmentCollectionId] = useState(
-		collections.length > 0 ? collections[0].fragmentCollectionId : -1
+		collections.length ? collections[0].fragmentCollectionId : -1
 	);
 
 	const [saveInlineContent, setSaveInlineContent] = useState(false);
@@ -76,12 +65,11 @@ const SaveFragmentCompositionModal = ({onCloseModal}) => {
 				addFragmentComposition({
 					description,
 					fragmentCollectionId,
-					itemId: activeItemId,
+					itemId: itemId || activeItemId,
 					name,
 					previewImageURL: thumbnail.url,
 					saveInlineContent,
 					saveMappingConfiguration,
-					segmentsExperienceId,
 				})
 			)
 				.then(() => {
@@ -136,9 +124,17 @@ const SaveFragmentCompositionModal = ({onCloseModal}) => {
 							<ClayInput
 								autoFocus
 								id={nameInputId}
+								maxlength={
+									config.fragmentCompositionNameMaxLength
+								}
 								onChange={(event) =>
 									setName(event.target.value)
 								}
+								onClick={(event) => {
+									if (Liferay.Browser.isFirefox()) {
+										event.target.focus();
+									}
+								}}
 								placeholder={Liferay.Language.get('name')}
 								required
 								type="text"
@@ -168,7 +164,7 @@ const SaveFragmentCompositionModal = ({onCloseModal}) => {
 												handleThumbnailSelected
 											)
 										}
-										small
+										size="sm"
 										value={Liferay.Language.get(
 											'upload-thumbnail'
 										)}
@@ -202,7 +198,9 @@ const SaveFragmentCompositionModal = ({onCloseModal}) => {
 
 							<ClayInput
 								component="textarea"
-								id={descriptionInputId}
+								maxlength={
+									config.fragmentCompositionDescriptionMaxLength
+								}
 								onChange={(event) =>
 									setDescription(event.target.value)
 								}
@@ -249,11 +247,11 @@ const SaveFragmentCompositionModal = ({onCloseModal}) => {
 						</ClayForm.Group>
 
 						<ClayForm.Group>
-							{collections.length > 0 ? (
+							{collections.length ? (
 								<>
 									<p className="sheet-tertiary-title">
 										{Liferay.Language.get(
-											'select-collection'
+											'select-fragment-set'
 										)}
 									</p>
 
@@ -322,7 +320,7 @@ const SaveFragmentCompositionModal = ({onCloseModal}) => {
 									/>
 
 									{Liferay.Language.get(
-										'this-fragment-will-be-saved-in-a-new-collection-called-saved-fragments'
+										'this-fragment-will-be-saved-in-a-new-fragment-set-called-saved-fragments'
 									)}
 								</div>
 							)}
@@ -358,6 +356,7 @@ const SaveFragmentCompositionModal = ({onCloseModal}) => {
 };
 
 SaveFragmentCompositionModal.propTypes = {
+	itemId: PropTypes.string,
 	onCloseModal: PropTypes.func.isRequired,
 };
 

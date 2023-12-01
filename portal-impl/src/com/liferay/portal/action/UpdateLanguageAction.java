@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.action;
@@ -34,12 +25,13 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.struts.Action;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.admin.util.AdminUtil;
 
 import java.util.Locale;
@@ -103,6 +95,10 @@ public class UpdateLanguageAction implements Action {
 				getRedirect(httpServletRequest, themeDisplay, locale));
 		}
 		catch (IllegalArgumentException | NoSuchLayoutException exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
 			httpServletResponse.sendError(
 				HttpServletResponse.SC_BAD_REQUEST,
 				httpServletRequest.getRequestURI());
@@ -121,6 +117,14 @@ public class UpdateLanguageAction implements Action {
 
 		if (Validator.isNull(redirect)) {
 			throw new IllegalArgumentException();
+		}
+
+		String contextPath = httpServletRequest.getContextPath();
+
+		if (Validator.isNotNull(contextPath) &&
+			!contextPath.equals(StringPool.SLASH)) {
+
+			redirect = redirect.substring(contextPath.length());
 		}
 
 		String layoutURL = redirect;
@@ -191,10 +195,10 @@ public class UpdateLanguageAction implements Action {
 			layoutURL = layoutURL.substring(0, friendlyURLSeparatorIndex);
 		}
 
+		Locale currentLocale = themeDisplay.getLocale();
+
 		if (themeDisplay.isI18n()) {
 			String i18nPath = themeDisplay.getI18nPath();
-
-			Locale currentLocale = themeDisplay.getLocale();
 
 			String currentLocalePath =
 				StringPool.SLASH + currentLocale.toLanguageTag();
@@ -207,14 +211,25 @@ public class UpdateLanguageAction implements Action {
 			}
 		}
 
-		if (isFriendlyURLResolver(layoutURL) || layout.isTypeControlPanel()) {
+		int localePrependFriendlyURLStyle = PrefsPropsUtil.getInteger(
+			PortalUtil.getCompanyId(httpServletRequest),
+			PropsKeys.LOCALE_PREPEND_FRIENDLY_URL_STYLE);
+
+		if (!Validator.isBlank(themeDisplay.getPathMain()) &&
+			layoutURL.startsWith(themeDisplay.getPathMain())) {
+
+			redirect = layoutURL;
+		}
+		else if (isFriendlyURLResolver(layoutURL) ||
+				 layout.isTypeControlPanel()) {
+
 			redirect = layoutURL + friendlyURLSeparatorPart;
 		}
 		else if (layoutURL.equals(StringPool.SLASH) ||
 				 isGroupFriendlyURL(
-					 layout.getGroup(), layout, layoutURL, locale)) {
+					 layout.getGroup(), layout, layoutURL, currentLocale)) {
 
-			if (PropsValues.LOCALE_PREPEND_FRIENDLY_URL_STYLE == 0) {
+			if (localePrependFriendlyURLStyle == 0) {
 				redirect = layoutURL;
 			}
 			else {
@@ -233,7 +248,7 @@ public class UpdateLanguageAction implements Action {
 			}
 		}
 		else {
-			if (PropsValues.LOCALE_PREPEND_FRIENDLY_URL_STYLE == 0) {
+			if (localePrependFriendlyURLStyle == 0) {
 				redirect = PortalUtil.getLayoutURL(
 					layout, themeDisplay, locale);
 			}

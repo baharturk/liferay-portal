@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -26,8 +17,8 @@ taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
 page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
 page import="com.liferay.portal.kernel.util.ParamUtil" %><%@
 page import="com.liferay.portal.kernel.util.PortalUtil" %><%@
-page import="com.liferay.portal.search.web.internal.result.display.builder.SearchResultContentDisplayBuilder" %><%@
-page import="com.liferay.portal.search.web.internal.result.display.context.SearchResultContentDisplayContext" %>
+page import="com.liferay.portal.search.web.internal.result.display.context.SearchResultContentDisplayContext" %><%@
+page import="com.liferay.portal.search.web.internal.result.display.context.builder.SearchResultContentDisplayContextBuilder" %>
 
 <liferay-theme:defineObjects />
 
@@ -36,17 +27,17 @@ page import="com.liferay.portal.search.web.internal.result.display.context.Searc
 <%
 portletDisplay.setShowBackIcon(false);
 
-SearchResultContentDisplayBuilder searchResultContentDisplayBuilder = new SearchResultContentDisplayBuilder();
+SearchResultContentDisplayContextBuilder searchResultContentDisplayContextBuilder = new SearchResultContentDisplayContextBuilder();
 
-searchResultContentDisplayBuilder.setAssetEntryId(ParamUtil.getLong(request, "assetEntryId"));
-searchResultContentDisplayBuilder.setLocale(locale);
-searchResultContentDisplayBuilder.setPermissionChecker(permissionChecker);
-searchResultContentDisplayBuilder.setPortal(PortalUtil.getPortal());
-searchResultContentDisplayBuilder.setRenderRequest(renderRequest);
-searchResultContentDisplayBuilder.setRenderResponse(renderResponse);
-searchResultContentDisplayBuilder.setType(ParamUtil.getString(request, "type"));
+searchResultContentDisplayContextBuilder.setAssetEntryId(ParamUtil.getLong(request, "assetEntryId"));
+searchResultContentDisplayContextBuilder.setLocale(locale);
+searchResultContentDisplayContextBuilder.setPermissionChecker(permissionChecker);
+searchResultContentDisplayContextBuilder.setPortal(PortalUtil.getPortal());
+searchResultContentDisplayContextBuilder.setRenderRequest(renderRequest);
+searchResultContentDisplayContextBuilder.setRenderResponse(renderResponse);
+searchResultContentDisplayContextBuilder.setType(ParamUtil.getString(request, "type"));
 
-SearchResultContentDisplayContext searchResultContentDisplayContext = searchResultContentDisplayBuilder.build();
+SearchResultContentDisplayContext searchResultContentDisplayContext = searchResultContentDisplayContextBuilder.build();
 %>
 
 <liferay-ui:success key='<%= portletDisplay.getId() + "requestProcessed" %>' message="your-request-completed-successfully" />

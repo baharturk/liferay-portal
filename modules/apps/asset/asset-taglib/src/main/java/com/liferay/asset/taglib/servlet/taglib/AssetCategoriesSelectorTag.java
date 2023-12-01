@@ -1,38 +1,37 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.taglib.servlet.taglib;
 
-import com.liferay.asset.categories.configuration.AssetCategoriesCompanyConfiguration;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetCategoryConstants;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.model.AssetVocabularyConstants;
 import com.liferay.asset.kernel.service.AssetCategoryServiceUtil;
 import com.liferay.asset.kernel.service.AssetVocabularyServiceUtil;
+import com.liferay.asset.taglib.internal.item.selector.ItemSelectorUtil;
 import com.liferay.asset.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.asset.taglib.internal.util.AssetCategoryUtil;
 import com.liferay.asset.taglib.internal.util.AssetVocabularyUtil;
 import com.liferay.depot.util.SiteConnectedGroupGroupProviderUtil;
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.item.selector.criteria.InfoItemItemSelectorReturnType;
+import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
+import com.liferay.learn.LearnMessage;
+import com.liferay.learn.LearnMessageUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
-import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -42,7 +41,6 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.vulcan.util.TransformUtil;
 import com.liferay.portlet.asset.util.comparator.AssetVocabularyGroupLocalizedTitleComparator;
 import com.liferay.taglib.aui.AUIUtil;
 import com.liferay.taglib.util.IncludeTag;
@@ -96,6 +94,10 @@ public class AssetCategoriesSelectorTag extends IncludeTag {
 		return _ignoreRequestValue;
 	}
 
+	public boolean isShowLabel() {
+		return _showLabel;
+	}
+
 	public boolean isShowOnlyRequiredVocabularies() {
 		return _showOnlyRequiredVocabularies;
 	}
@@ -147,6 +149,10 @@ public class AssetCategoriesSelectorTag extends IncludeTag {
 		setServletContext(ServletContextUtil.getServletContext());
 	}
 
+	public void setShowLabel(boolean showLabel) {
+		_showLabel = showLabel;
+	}
+
 	public void setShowOnlyRequiredVocabularies(
 		boolean showOnlyRequiredVocabularies) {
 
@@ -178,6 +184,7 @@ public class AssetCategoriesSelectorTag extends IncludeTag {
 		_id = null;
 		_ignoreRequestValue = false;
 		_namespace = null;
+		_showLabel = true;
 		_showOnlyRequiredVocabularies = false;
 		_showRequiredLabel = true;
 		_singleSelect = false;
@@ -246,7 +253,7 @@ public class AssetCategoriesSelectorTag extends IncludeTag {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -279,7 +286,7 @@ public class AssetCategoriesSelectorTag extends IncludeTag {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -292,34 +299,33 @@ public class AssetCategoriesSelectorTag extends IncludeTag {
 	}
 
 	protected PortletURL getPortletURL() {
-		try {
-			HttpServletRequest httpServletRequest = getRequest();
+		ItemSelector itemSelector = ItemSelectorUtil.getItemSelector();
 
-			PortletURL portletURL = PortletProviderUtil.getPortletURL(
-				httpServletRequest, AssetCategory.class.getName(),
-				PortletProvider.Action.BROWSE);
+		HttpServletRequest httpServletRequest = getRequest();
 
-			if (portletURL == null) {
-				return null;
-			}
+		RequestBackedPortletURLFactory requestBackedPortletURLFactory =
+			RequestBackedPortletURLFactoryUtil.create(httpServletRequest);
 
-			portletURL.setParameter("eventName", getEventName());
-			portletURL.setParameter(
-				"selectedCategories", "{selectedCategories}");
-			portletURL.setParameter("singleSelect", "{singleSelect}");
-			portletURL.setParameter("vocabularyIds", "{vocabularyIds}");
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
-			portletURL.setWindowState(LiferayWindowState.POP_UP);
+		InfoItemItemSelectorCriterion itemSelectorCriterion =
+			new InfoItemItemSelectorCriterion();
 
-			return portletURL;
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
-			}
-		}
+		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new InfoItemItemSelectorReturnType());
+		itemSelectorCriterion.setItemType(AssetCategory.class.getName());
+		itemSelectorCriterion.setMultiSelection(true);
 
-		return null;
+		return PortletURLBuilder.create(
+			itemSelector.getItemSelectorURL(
+				requestBackedPortletURLFactory, themeDisplay.getScopeGroup(),
+				themeDisplay.getScopeGroupId(), getEventName(),
+				itemSelectorCriterion)
+		).setParameter(
+			"showAddCategoryButton", true
+		).buildPortletURL();
 	}
 
 	protected List<Map<String, Object>> getVocabularies() throws Exception {
@@ -387,7 +393,7 @@ public class AssetCategoriesSelectorTag extends IncludeTag {
 						return selectedItems;
 					}
 				).put(
-					"singleSelect", !vocabulary.isMultiValued()
+					"singleSelect", _singleSelect || !vocabulary.isMultiValued()
 				).put(
 					"title",
 					vocabulary.getUnambiguousTitle(
@@ -413,31 +419,33 @@ public class AssetCategoriesSelectorTag extends IncludeTag {
 				).put(
 					"inputName", _getInputName()
 				).put(
-					"learnHowURL",
+					"learnHowLink",
 					() -> {
 						ThemeDisplay themeDisplay =
 							(ThemeDisplay)httpServletRequest.getAttribute(
 								WebKeys.THEME_DISPLAY);
 
-						AssetCategoriesCompanyConfiguration
-							assetCategoriesCompanyConfiguration =
-								ConfigurationProviderUtil.
-									getCompanyConfiguration(
-										AssetCategoriesCompanyConfiguration.
-											class,
-										themeDisplay.getCompanyId());
+						LearnMessage learnMessage =
+							LearnMessageUtil.getLearnMessage(
+								"general", themeDisplay.getLanguageId(),
+								"asset-taglib");
 
-						return assetCategoriesCompanyConfiguration.
-							linkToDocumentationURL();
+						return JSONUtil.put(
+							"message", learnMessage.getMessage()
+						).put(
+							"url", learnMessage.getURL()
+						);
 					}
 				).put(
 					"portletURL", String.valueOf(getPortletURL())
+				).put(
+					"showLabel", isShowLabel()
 				).put(
 					"vocabularies", getVocabularies()
 				).build());
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -485,7 +493,8 @@ public class AssetCategoriesSelectorTag extends IncludeTag {
 		List<AssetVocabulary> vocabularies = new ArrayList<>();
 
 		vocabularies.addAll(
-			AssetVocabularyServiceUtil.getGroupVocabularies(getGroupIds()));
+			AssetVocabularyServiceUtil.getGroupVocabularies(
+				getGroupIds(), _visibilityTypes));
 
 		HttpServletRequest httpServletRequest = getRequest();
 
@@ -535,6 +544,7 @@ public class AssetCategoriesSelectorTag extends IncludeTag {
 	private String _id;
 	private boolean _ignoreRequestValue;
 	private String _namespace;
+	private boolean _showLabel = true;
 	private boolean _showOnlyRequiredVocabularies;
 	private boolean _showRequiredLabel = true;
 	private boolean _singleSelect;

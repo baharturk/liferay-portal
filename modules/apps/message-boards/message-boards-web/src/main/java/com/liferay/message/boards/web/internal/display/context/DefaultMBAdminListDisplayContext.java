@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.display.context;
@@ -112,15 +103,14 @@ public class DefaultMBAdminListDisplayContext
 			long searchCategoryId = ParamUtil.getLong(
 				_httpServletRequest, "searchCategoryId");
 
-			List<Long> categoryIds = new ArrayList<>();
-
-			categoryIds.add(Long.valueOf(searchCategoryId));
+			List<Long> categoryIds = new ArrayList<Long>() {
+				{
+					add(Long.valueOf(searchCategoryId));
+				}
+			};
 
 			MBCategoryServiceUtil.getSubcategoryIds(
 				categoryIds, themeDisplay.getScopeGroupId(), searchCategoryId);
-
-			long[] categoryIdsArray = StringUtil.split(
-				StringUtil.merge(categoryIds), 0L);
 
 			Indexer<MBMessage> indexer = IndexerRegistryUtil.getIndexer(
 				MBMessage.class);
@@ -129,20 +119,16 @@ public class DefaultMBAdminListDisplayContext
 				_httpServletRequest);
 
 			searchContext.setAttribute("paginationType", "more");
-			searchContext.setCategoryIds(categoryIdsArray);
+			searchContext.setCategoryIds(
+				StringUtil.split(StringUtil.merge(categoryIds), 0L));
 			searchContext.setEnd(searchContainer.getEnd());
 			searchContext.setIncludeAttachments(true);
 			searchContext.setIncludeInternalAssetCategories(true);
-
-			String keywords = ParamUtil.getString(
-				_httpServletRequest, "keywords");
-
-			searchContext.setKeywords(keywords);
+			searchContext.setKeywords(
+				ParamUtil.getString(_httpServletRequest, "keywords"));
 
 			String orderByCol = searchContainer.getOrderByCol();
 			String orderByType = searchContainer.getOrderByType();
-
-			Sort sort = null;
 
 			boolean orderByAsc = false;
 
@@ -150,15 +136,18 @@ public class DefaultMBAdminListDisplayContext
 				orderByAsc = true;
 			}
 
+			Sort sort = null;
+
 			if (Objects.equals(orderByCol, "modified-date")) {
 				sort = new Sort(
 					Field.MODIFIED_DATE, Sort.LONG_TYPE, !orderByAsc);
 			}
 			else if (Objects.equals(orderByCol, "title")) {
-				String sortFieldName = Field.getSortableFieldName(
-					"localized_title_".concat(themeDisplay.getLanguageId()));
-
-				sort = new Sort(sortFieldName, Sort.STRING_TYPE, !orderByAsc);
+				sort = new Sort(
+					Field.getSortableFieldName(
+						"localized_title_".concat(
+							themeDisplay.getLanguageId())),
+					Sort.STRING_TYPE, !orderByAsc);
 			}
 
 			searchContext.setSorts(sort);
@@ -167,11 +156,15 @@ public class DefaultMBAdminListDisplayContext
 
 			Hits hits = indexer.search(searchContext);
 
-			searchContainer.setResults(
-				SearchResultUtil.getSearchResults(
-					hits, _httpServletRequest.getLocale()));
-
-			searchContainer.setTotal(hits.getLength());
+			try {
+				searchContainer.setResultsAndTotal(
+					() -> SearchResultUtil.getSearchResults(
+						hits, _httpServletRequest.getLocale()),
+					hits.getLength());
+			}
+			catch (Throwable throwable) {
+				throw new PortalException(throwable);
+			}
 		}
 		else {
 			String entriesNavigation = ParamUtil.getString(
@@ -195,14 +188,18 @@ public class DefaultMBAdminListDisplayContext
 					searchContainer.getStart(), searchContainer.getEnd(),
 					searchContainer.getOrderByComparator());
 
-				searchContainer.setTotal(
-					MBCategoryServiceUtil.getCategoriesAndThreadsCount(
-						themeDisplay.getScopeGroupId(), _categoryId,
-						queryDefinition));
-				searchContainer.setResults(
-					MBCategoryServiceUtil.getCategoriesAndThreads(
-						themeDisplay.getScopeGroupId(), _categoryId,
-						queryDefinition));
+				try {
+					searchContainer.setResultsAndTotal(
+						() -> MBCategoryServiceUtil.getCategoriesAndThreads(
+							themeDisplay.getScopeGroupId(), _categoryId,
+							queryDefinition),
+						MBCategoryServiceUtil.getCategoriesAndThreadsCount(
+							themeDisplay.getScopeGroupId(), _categoryId,
+							queryDefinition));
+				}
+				catch (Throwable throwable) {
+					throw new PortalException(throwable);
+				}
 			}
 			else if (Objects.equals(entriesNavigation, "threads")) {
 				int status = WorkflowConstants.STATUS_APPROVED;
@@ -223,14 +220,18 @@ public class DefaultMBAdminListDisplayContext
 						searchContainer.getStart(), searchContainer.getEnd(),
 						searchContainer.getOrderByComparator());
 
-				searchContainer.setTotal(
-					MBThreadServiceUtil.getThreadsCount(
-						themeDisplay.getScopeGroupId(), _categoryId,
-						queryDefinition));
-				searchContainer.setResults(
-					MBThreadServiceUtil.getThreads(
-						themeDisplay.getScopeGroupId(), _categoryId,
-						queryDefinition));
+				try {
+					searchContainer.setResultsAndTotal(
+						() -> MBThreadServiceUtil.getThreads(
+							themeDisplay.getScopeGroupId(), _categoryId,
+							queryDefinition),
+						MBThreadServiceUtil.getThreadsCount(
+							themeDisplay.getScopeGroupId(), _categoryId,
+							queryDefinition));
+				}
+				catch (Throwable throwable) {
+					throw new PortalException(throwable);
+				}
 			}
 			else if (Objects.equals(entriesNavigation, "categories")) {
 				int status = WorkflowConstants.STATUS_APPROVED;
@@ -251,14 +252,18 @@ public class DefaultMBAdminListDisplayContext
 						searchContainer.getStart(), searchContainer.getEnd(),
 						searchContainer.getOrderByComparator());
 
-				searchContainer.setTotal(
-					MBCategoryServiceUtil.getCategoriesCount(
-						themeDisplay.getScopeGroupId(), _categoryId,
-						queryDefinition));
-				searchContainer.setResults(
-					MBCategoryServiceUtil.getCategories(
-						themeDisplay.getScopeGroupId(), _categoryId,
-						queryDefinition));
+				try {
+					searchContainer.setResultsAndTotal(
+						() -> MBCategoryServiceUtil.getCategories(
+							themeDisplay.getScopeGroupId(), _categoryId,
+							queryDefinition),
+						MBCategoryServiceUtil.getCategoriesCount(
+							themeDisplay.getScopeGroupId(), _categoryId,
+							queryDefinition));
+				}
+				catch (Throwable throwable) {
+					throw new PortalException(throwable);
+				}
 			}
 		}
 	}

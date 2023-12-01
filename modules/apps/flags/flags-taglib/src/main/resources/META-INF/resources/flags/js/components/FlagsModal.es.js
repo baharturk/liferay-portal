@@ -1,24 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
 import ClayModal from '@clayui/modal';
 import PropTypes from 'prop-types';
-import React, {useContext} from 'react';
+import React from 'react';
 
-import ThemeContext from '../ThemeContext.es';
 import {
 	OTHER_REASON_VALUE,
 	STATUS_ERROR,
@@ -29,10 +19,14 @@ import {
 import {sub} from '../utils.es';
 import Captcha from './Captcha.es';
 
+const OTHER_REASON_MAX_LENGTH = 75;
+
 const ModalContentForm = ({
 	captchaURI,
 	error,
+	form = {},
 	handleClose,
+	namespace,
 	handleInputChange,
 	handleSubmit,
 	isSending,
@@ -41,8 +35,6 @@ const ModalContentForm = ({
 	selectedReason,
 	signedIn,
 }) => {
-	const {namespace} = useContext(ThemeContext);
-
 	return (
 		<form
 			aria-label={Liferay.Language.get('report-inappropriate-content')}
@@ -106,14 +98,21 @@ const ModalContentForm = ({
 							htmlFor={`${namespace}otherReason`}
 						>
 							{Liferay.Language.get('other-reason')}
+
+							{` (${
+								OTHER_REASON_MAX_LENGTH -
+								(form.otherReason?.length ?? 0)
+							} ${Liferay.Language.get('characters')})`}
 						</label>
 
 						<input
 							autoFocus
 							className="form-control"
 							id={`${namespace}otherReason`}
+							maxLength={OTHER_REASON_MAX_LENGTH}
 							name="otherReason"
 							onChange={handleInputChange}
+							value={form.otherReason}
 						/>
 					</div>
 				)}
@@ -223,10 +222,12 @@ const FlagsModal = ({
 	captchaURI,
 	companyName,
 	error,
+	form,
 	handleClose,
 	handleInputChange,
 	handleSubmit,
 	isSending,
+	namespace,
 	observer,
 	pathTermsOfUse,
 	reasons,
@@ -244,10 +245,12 @@ const FlagsModal = ({
 				<ModalContentForm
 					captchaURI={captchaURI}
 					error={error}
+					form={form}
 					handleClose={handleClose}
 					handleInputChange={handleInputChange}
 					handleSubmit={handleSubmit}
 					isSending={isSending}
+					namespace={namespace}
 					pathTermsOfUse={pathTermsOfUse}
 					reasons={reasons}
 					selectedReason={selectedReason}

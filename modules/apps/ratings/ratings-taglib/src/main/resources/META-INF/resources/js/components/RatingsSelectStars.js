@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -19,6 +10,8 @@ import ClayLayout from '@clayui/layout';
 import React, {useState} from 'react';
 
 import Lang from '../utils/lang';
+
+const ID_PREFIX = 'rsd_';
 
 export default function RatingsSelectStars({
 	averageScore,
@@ -32,10 +25,17 @@ export default function RatingsSelectStars({
 	totalEntries,
 }) {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+	const [focusId, setFocusId] = useState();
 
 	const handleOnClick = (index) => {
 		setIsDropdownOpen(false);
 		onVote(index);
+	};
+
+	const handleInitialFocus = () => {
+		if (!focusId) {
+			setFocusId(`${ID_PREFIX}0`);
+		}
 	};
 
 	return (
@@ -51,9 +51,13 @@ export default function RatingsSelectStars({
 						className: 'ratings-stars-dropdown',
 					}}
 					onActiveChange={(isActive) => setIsDropdownOpen(isActive)}
+					onFocus={handleInitialFocus}
+					role="listbox"
 					trigger={
 						<ClayButton
-							aria-pressed={!!score}
+							aria-expanded={isDropdownOpen}
+							aria-haspopup="listbox"
+							aria-label={getTitle()}
 							borderless
 							className="ratings-stars-dropdown-toggle"
 							disabled={disabled}
@@ -63,7 +67,10 @@ export default function RatingsSelectStars({
 							value={score}
 						>
 							<span className="inline-item inline-item-before">
-								<ClayIcon symbol={score ? 'star' : 'star-o'} />
+								<ClayIcon
+									aria-label={Liferay.Language.get('votes')}
+									symbol={score ? 'star' : 'star-o'}
+								/>
 							</span>
 
 							<span className="inline-item ratings-stars-button-text">
@@ -72,7 +79,10 @@ export default function RatingsSelectStars({
 						</ClayButton>
 					}
 				>
-					<ClayDropDown.ItemList>
+					<ClayDropDown.ItemList
+						aria-activedescendant={focusId}
+						role="listbox"
+					>
 						{starScores.map(({label}, index) => {
 							const srMessage =
 								index === 0
@@ -86,10 +96,15 @@ export default function RatingsSelectStars({
 							return (
 								<ClayDropDown.Item
 									active={label === score}
+									id={`${ID_PREFIX}index`}
 									key={index}
 									onClick={() => {
 										handleOnClick(index);
 									}}
+									onFocus={() => {
+										setFocusId(`${ID_PREFIX}index`);
+									}}
+									roleItem="option"
 								>
 									{label}
 
@@ -105,7 +120,16 @@ export default function RatingsSelectStars({
 
 						<ClayDropDown.Item
 							disabled={score === 0}
+							id={`${ID_PREFIX}${Liferay.Language.get('delete')}`}
 							onClick={handleOnClick}
+							onFocus={() => {
+								setFocusId(
+									`${ID_PREFIX}${Liferay.Language.get(
+										'delete'
+									)}`
+								);
+							}}
+							roleItem="option"
 						>
 							{Liferay.Language.get('delete')}
 						</ClayDropDown.Item>
@@ -117,6 +141,7 @@ export default function RatingsSelectStars({
 				<span className="ratings-stars-average">
 					<span className="inline-item inline-item-before">
 						<ClayIcon
+							aria-label={Liferay.Language.get('average')}
 							className="ratings-stars-average-icon"
 							symbol="star"
 						/>

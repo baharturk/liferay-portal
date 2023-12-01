@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.evaluator.internal.helper;
@@ -18,16 +9,9 @@ import com.liferay.dynamic.data.mapping.expression.UpdateFieldPropertyRequest;
 import com.liferay.dynamic.data.mapping.form.evaluator.internal.expression.DDMFormEvaluatorExpressionObserver;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormRule;
-import com.liferay.dynamic.data.mapping.model.LocalizedValue;
-import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.util.GetterUtil;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * @author Rafael Praxedes
@@ -44,47 +28,17 @@ public class DDMFormEvaluatorRuleHelper {
 	}
 
 	public void checkFieldAffectedByAction(DDMFormRule ddmFormRule) {
-		Collection<DDMFormField> fieldNameSet = _ddmFormFieldsMap.values();
-
-		Stream<DDMFormField> stream = fieldNameSet.stream();
-
-		stream.forEach(field -> checkFieldAffectedByAction(ddmFormRule, field));
+		for (DDMFormField ddmFormField : _ddmFormFieldsMap.values()) {
+			checkFieldAffectedByAction(ddmFormRule, ddmFormField);
+		}
 	}
 
 	protected void checkFieldAffectedByAction(
 		DDMFormRule ddmFormRule, DDMFormField ddmFormField) {
 
-		_checkFieldAffectedByCalculateAction(ddmFormRule, ddmFormField);
 		_checkFieldAffectedBySetReadOnlyAction(ddmFormRule, ddmFormField);
 		_checkFieldAffectedBySetRequiredAction(ddmFormRule, ddmFormField);
 		_checkFieldAffectedBySetVisibleAction(ddmFormRule, ddmFormField);
-	}
-
-	private void _checkFieldAffectedByCalculateAction(
-		DDMFormRule ddmFormRule, DDMFormField ddmFormField) {
-
-		if (_containsAction(
-				ddmFormRule, "calculate", ddmFormField.getName(),
-				GetterUtil.getString(ddmFormField.getProperty("value")))) {
-
-			String newValue = StringPool.BLANK;
-
-			LocalizedValue predefinedValue = ddmFormField.getPredefinedValue();
-
-			if (predefinedValue != null) {
-				newValue = GetterUtil.getString(
-					predefinedValue.getString(
-						new Locale(
-							(String)ddmFormField.getProperty("locale"))));
-			}
-
-			UpdateFieldPropertyRequest.Builder builder =
-				UpdateFieldPropertyRequest.Builder.newBuilder(
-					ddmFormField.getName(), "value", newValue);
-
-			_ddmFormEvaluatorExpressionObserver.updateFieldProperty(
-				builder.build());
-		}
 	}
 
 	private void _checkFieldAffectedBySetReadOnlyAction(
@@ -138,17 +92,18 @@ public class DDMFormEvaluatorRuleHelper {
 
 	private boolean _containsAction(
 		DDMFormRule ddmFormRule, String functionName, String ddmFormFieldName,
-		Object defaultValue) {
+		boolean defaultValue) {
 
-		String setPropertyAction = String.format(
+		String setBooleanPropertyAction = String.format(
 			"%s('%s', %s)", functionName, ddmFormFieldName, defaultValue);
 
-		List<String> actions = ddmFormRule.getActions();
+		for (String action : ddmFormRule.getActions()) {
+			if (Objects.equals(setBooleanPropertyAction, action)) {
+				return true;
+			}
+		}
 
-		Stream<String> stream = actions.stream();
-
-		return stream.anyMatch(
-			action -> Objects.equals(setPropertyAction, action));
+		return false;
 	}
 
 	private final DDMFormEvaluatorExpressionObserver

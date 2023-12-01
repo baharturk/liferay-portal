@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.site.setting.resource.v1_0.test;
@@ -28,6 +19,7 @@ import com.liferay.headless.commerce.admin.site.setting.client.pagination.Page;
 import com.liferay.headless.commerce.admin.site.setting.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.site.setting.client.resource.v1_0.WarehouseResource;
 import com.liferay.headless.commerce.admin.site.setting.client.serdes.v1_0.WarehouseSerDes;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -42,6 +34,7 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
@@ -50,24 +43,24 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtilsBean;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -180,8 +173,6 @@ public abstract class BaseWarehouseResourceTestCase {
 		Warehouse warehouse = randomWarehouse();
 
 		warehouse.setCity(regex);
-		warehouse.setDescription(regex);
-		warehouse.setName(regex);
 		warehouse.setStreet1(regex);
 		warehouse.setStreet2(regex);
 		warehouse.setStreet3(regex);
@@ -194,8 +185,6 @@ public abstract class BaseWarehouseResourceTestCase {
 		warehouse = WarehouseSerDes.toDTO(json);
 
 		Assert.assertEquals(regex, warehouse.getCity());
-		Assert.assertEquals(regex, warehouse.getDescription());
-		Assert.assertEquals(regex, warehouse.getName());
 		Assert.assertEquals(regex, warehouse.getStreet1());
 		Assert.assertEquals(regex, warehouse.getStreet2());
 		Assert.assertEquals(regex, warehouse.getStreet3());
@@ -215,7 +204,7 @@ public abstract class BaseWarehouseResourceTestCase {
 			warehouseResource.getCommerceAdminSiteSettingGroupWarehousePage(
 				groupId, null, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantGroupId != null) {
 			Warehouse irrelevantWarehouse =
@@ -224,14 +213,17 @@ public abstract class BaseWarehouseResourceTestCase {
 
 			page =
 				warehouseResource.getCommerceAdminSiteSettingGroupWarehousePage(
-					irrelevantGroupId, null, Pagination.of(1, 2));
+					irrelevantGroupId, null,
+					Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantWarehouse),
-				(List<Warehouse>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantWarehouse, (List<Warehouse>)page.getItems());
+			assertValid(
+				page,
+				testGetCommerceAdminSiteSettingGroupWarehousePage_getExpectedActions(
+					irrelevantGroupId));
 		}
 
 		Warehouse warehouse1 =
@@ -245,16 +237,28 @@ public abstract class BaseWarehouseResourceTestCase {
 		page = warehouseResource.getCommerceAdminSiteSettingGroupWarehousePage(
 			groupId, null, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(warehouse1, warehouse2),
-			(List<Warehouse>)page.getItems());
-		assertValid(page);
+		assertContains(warehouse1, (List<Warehouse>)page.getItems());
+		assertContains(warehouse2, (List<Warehouse>)page.getItems());
+		assertValid(
+			page,
+			testGetCommerceAdminSiteSettingGroupWarehousePage_getExpectedActions(
+				groupId));
 
 		warehouseResource.deleteWarehouse(warehouse1.getId());
 
 		warehouseResource.deleteWarehouse(warehouse2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetCommerceAdminSiteSettingGroupWarehousePage_getExpectedActions(
+				Long groupId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -263,6 +267,12 @@ public abstract class BaseWarehouseResourceTestCase {
 
 		Long groupId =
 			testGetCommerceAdminSiteSettingGroupWarehousePage_getGroupId();
+
+		Page<Warehouse> warehousePage =
+			warehouseResource.getCommerceAdminSiteSettingGroupWarehousePage(
+				groupId, null, null);
+
+		int totalCount = GetterUtil.getInteger(warehousePage.getTotalCount());
 
 		Warehouse warehouse1 =
 			testGetCommerceAdminSiteSettingGroupWarehousePage_addWarehouse(
@@ -278,17 +288,18 @@ public abstract class BaseWarehouseResourceTestCase {
 
 		Page<Warehouse> page1 =
 			warehouseResource.getCommerceAdminSiteSettingGroupWarehousePage(
-				groupId, null, Pagination.of(1, 2));
+				groupId, null, Pagination.of(1, totalCount + 2));
 
 		List<Warehouse> warehouses1 = (List<Warehouse>)page1.getItems();
 
-		Assert.assertEquals(warehouses1.toString(), 2, warehouses1.size());
+		Assert.assertEquals(
+			warehouses1.toString(), totalCount + 2, warehouses1.size());
 
 		Page<Warehouse> page2 =
 			warehouseResource.getCommerceAdminSiteSettingGroupWarehousePage(
-				groupId, null, Pagination.of(2, 2));
+				groupId, null, Pagination.of(2, totalCount + 2));
 
-		Assert.assertEquals(3, page2.getTotalCount());
+		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
 
 		List<Warehouse> warehouses2 = (List<Warehouse>)page2.getItems();
 
@@ -296,11 +307,11 @@ public abstract class BaseWarehouseResourceTestCase {
 
 		Page<Warehouse> page3 =
 			warehouseResource.getCommerceAdminSiteSettingGroupWarehousePage(
-				groupId, null, Pagination.of(1, 3));
+				groupId, null, Pagination.of(1, (int)totalCount + 3));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(warehouse1, warehouse2, warehouse3),
-			(List<Warehouse>)page3.getItems());
+		assertContains(warehouse1, (List<Warehouse>)page3.getItems());
+		assertContains(warehouse2, (List<Warehouse>)page3.getItems());
+		assertContains(warehouse3, (List<Warehouse>)page3.getItems());
 	}
 
 	protected Warehouse
@@ -373,7 +384,7 @@ public abstract class BaseWarehouseResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteWarehouse() throws Exception {
-		Warehouse warehouse = testGraphQLWarehouse_addWarehouse();
+		Warehouse warehouse = testGraphQLDeleteWarehouse_addWarehouse();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -386,7 +397,6 @@ public abstract class BaseWarehouseResourceTestCase {
 							}
 						})),
 				"JSONObject/data", "Object/deleteWarehouse"));
-
 		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
@@ -400,6 +410,12 @@ public abstract class BaseWarehouseResourceTestCase {
 			"JSONArray/errors");
 
 		Assert.assertTrue(errorsJSONArray.length() > 0);
+	}
+
+	protected Warehouse testGraphQLDeleteWarehouse_addWarehouse()
+		throws Exception {
+
+		return testGraphQLWarehouse_addWarehouse();
 	}
 
 	@Test
@@ -420,7 +436,7 @@ public abstract class BaseWarehouseResourceTestCase {
 
 	@Test
 	public void testGraphQLGetWarehouse() throws Exception {
-		Warehouse warehouse = testGraphQLWarehouse_addWarehouse();
+		Warehouse warehouse = testGraphQLGetWarehouse_addWarehouse();
 
 		Assert.assertTrue(
 			equals(
@@ -457,6 +473,12 @@ public abstract class BaseWarehouseResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+	}
+
+	protected Warehouse testGraphQLGetWarehouse_addWarehouse()
+		throws Exception {
+
+		return testGraphQLWarehouse_addWarehouse();
 	}
 
 	@Test
@@ -675,6 +697,13 @@ public abstract class BaseWarehouseResourceTestCase {
 	}
 
 	protected void assertValid(Page<Warehouse> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Warehouse> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Warehouse> warehouses = page.getItems();
@@ -689,6 +718,25 @@ public abstract class BaseWarehouseResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -802,9 +850,9 @@ public abstract class BaseWarehouseResourceTestCase {
 			}
 
 			if (Objects.equals("description", additionalAssertFieldName)) {
-				if (!Objects.deepEquals(
-						warehouse1.getDescription(),
-						warehouse2.getDescription())) {
+				if (!equals(
+						(Map)warehouse1.getDescription(),
+						(Map)warehouse2.getDescription())) {
 
 					return false;
 				}
@@ -864,8 +912,8 @@ public abstract class BaseWarehouseResourceTestCase {
 			}
 
 			if (Objects.equals("name", additionalAssertFieldName)) {
-				if (!Objects.deepEquals(
-						warehouse1.getName(), warehouse2.getName())) {
+				if (!equals(
+						(Map)warehouse1.getName(), (Map)warehouse2.getName())) {
 
 					return false;
 				}
@@ -960,14 +1008,16 @@ public abstract class BaseWarehouseResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -984,6 +1034,10 @@ public abstract class BaseWarehouseResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -993,18 +1047,18 @@ public abstract class BaseWarehouseResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1026,9 +1080,47 @@ public abstract class BaseWarehouseResourceTestCase {
 		}
 
 		if (entityFieldName.equals("city")) {
-			sb.append("'");
-			sb.append(String.valueOf(warehouse.getCity()));
-			sb.append("'");
+			Object object = warehouse.getCity();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1044,11 +1136,8 @@ public abstract class BaseWarehouseResourceTestCase {
 		}
 
 		if (entityFieldName.equals("description")) {
-			sb.append("'");
-			sb.append(String.valueOf(warehouse.getDescription()));
-			sb.append("'");
-
-			return sb.toString();
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
 		}
 
 		if (entityFieldName.equals("groupId")) {
@@ -1062,13 +1151,15 @@ public abstract class BaseWarehouseResourceTestCase {
 		}
 
 		if (entityFieldName.equals("latitude")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(warehouse.getLatitude()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("longitude")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(warehouse.getLongitude()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("mvccVersion")) {
@@ -1077,11 +1168,8 @@ public abstract class BaseWarehouseResourceTestCase {
 		}
 
 		if (entityFieldName.equals("name")) {
-			sb.append("'");
-			sb.append(String.valueOf(warehouse.getName()));
-			sb.append("'");
-
-			return sb.toString();
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
 		}
 
 		if (entityFieldName.equals("primary")) {
@@ -1090,33 +1178,185 @@ public abstract class BaseWarehouseResourceTestCase {
 		}
 
 		if (entityFieldName.equals("street1")) {
-			sb.append("'");
-			sb.append(String.valueOf(warehouse.getStreet1()));
-			sb.append("'");
+			Object object = warehouse.getStreet1();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("street2")) {
-			sb.append("'");
-			sb.append(String.valueOf(warehouse.getStreet2()));
-			sb.append("'");
+			Object object = warehouse.getStreet2();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("street3")) {
-			sb.append("'");
-			sb.append(String.valueOf(warehouse.getStreet3()));
-			sb.append("'");
+			Object object = warehouse.getStreet3();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("zip")) {
-			sb.append("'");
-			sb.append(String.valueOf(warehouse.getZip()));
-			sb.append("'");
+			Object object = warehouse.getZip();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1169,13 +1409,10 @@ public abstract class BaseWarehouseResourceTestCase {
 				city = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				commerceCountryId = RandomTestUtil.randomLong();
 				commerceRegionId = RandomTestUtil.randomLong();
-				description = StringUtil.toLowerCase(
-					RandomTestUtil.randomString());
 				groupId = RandomTestUtil.randomLong();
 				id = RandomTestUtil.randomLong();
 				latitude = RandomTestUtil.randomDouble();
 				longitude = RandomTestUtil.randomDouble();
-				name = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				primary = RandomTestUtil.randomBoolean();
 				street1 = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				street2 = StringUtil.toLowerCase(RandomTestUtil.randomString());
@@ -1199,6 +1436,115 @@ public abstract class BaseWarehouseResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1274,18 +1620,6 @@ public abstract class BaseWarehouseResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseWarehouseResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -28,10 +19,10 @@ String name = BeanParamUtil.getString(commerceChannel, request, "name");
 String commerceCurrencyCode = BeanParamUtil.getString(commerceChannel, request, "commerceCurrencyCode");
 String type = BeanParamUtil.getString(commerceChannel, request, "type");
 
-boolean isViewOnly = false;
+boolean viewOnly = false;
 
 if (commerceChannel != null) {
-	isViewOnly = !commerceChannelDisplayContext.hasPermission(commerceChannelId, ActionKeys.UPDATE);
+	viewOnly = !commerceChannelDisplayContext.hasPermission(commerceChannelId, ActionKeys.UPDATE);
 }
 
 PortletURL editCommerceChannelRenderURL = commerceChannelDisplayContext.getEditCommerceChannelRenderURL();
@@ -47,7 +38,7 @@ PortletURL editCommerceChannelRenderURL = commerceChannelDisplayContext.getEditC
 		<div class="lfr-form-content">
 			<aui:model-context bean="<%= commerceChannel %>" model="<%= CommerceChannel.class %>" />
 
-			<aui:input autoFocus="<%= true %>" disabled="<%= isViewOnly %>" name="name" value="<%= name %>" />
+			<aui:input disabled="<%= viewOnly %>" name="name" value="<%= name %>" />
 
 			<aui:select label="currency" name="currencyCode" required="<%= true %>" title="currency">
 
@@ -63,7 +54,7 @@ PortletURL editCommerceChannelRenderURL = commerceChannelDisplayContext.getEditC
 
 			</aui:select>
 
-			<aui:select disabled="<%= isViewOnly %>" name="type" showEmptyOption="<%= true %>">
+			<aui:select disabled="<%= viewOnly %>" name="type" showEmptyOption="<%= true %>">
 
 				<%
 				for (CommerceChannelType commerceChannelType : commerceChannelTypes) {

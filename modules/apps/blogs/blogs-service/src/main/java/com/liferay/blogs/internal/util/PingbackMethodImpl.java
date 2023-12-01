@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.internal.util;
@@ -20,7 +11,7 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.comment.CommentManager;
 import com.liferay.portal.kernel.comment.DuplicateCommentException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Portlet;
@@ -43,8 +34,8 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xmlrpc.Method;
 import com.liferay.portal.kernel.xmlrpc.Response;
 import com.liferay.portal.kernel.xmlrpc.XmlRpcConstants;
-import com.liferay.portal.kernel.xmlrpc.XmlRpcUtil;
 import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.xmlrpc.XmlRpcUtil;
 
 import java.net.InetAddress;
 import java.net.URL;
@@ -103,7 +94,7 @@ public class PingbackMethodImpl implements Method {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return XmlRpcUtil.createFault(
@@ -131,7 +122,7 @@ public class PingbackMethodImpl implements Method {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return false;
@@ -194,14 +185,14 @@ public class PingbackMethodImpl implements Method {
 			return response;
 		}
 
-		long userId = _userLocalService.getDefaultUserId(companyId);
+		long userId = _userLocalService.getGuestUserId(companyId);
 		long groupId = entry.getGroupId();
 		String className = BlogsEntry.class.getName();
 		long classPK = entry.getEntryId();
 
 		String body = StringBundler.concat(
 			"[...] ", _getExcerpt(), " [...] <a href=", _sourceURI, ">",
-			LanguageUtil.get(LocaleUtil.getSiteDefault(), "read-more"), "</a>");
+			_language.get(LocaleUtil.getSiteDefault(), "read-more"), "</a>");
 
 		ServiceContext serviceContext = _buildServiceContext(
 			companyId, groupId, entry.getUrlTitle());
@@ -219,7 +210,7 @@ public class PingbackMethodImpl implements Method {
 
 		ServiceContext serviceContext = new ServiceContext();
 
-		String pingbackUserName = LanguageUtil.get(
+		String pingbackUserName = _language.get(
 			LocaleUtil.getSiteDefault(), "pingback");
 
 		serviceContext.setAttribute("pingbackUserName", pingbackUserName);
@@ -248,7 +239,6 @@ public class PingbackMethodImpl implements Method {
 		sb.append(urlTitle);
 
 		serviceContext.setAttribute("redirect", sb.toString());
-
 		serviceContext.setLayoutFullURL(layoutFullURL);
 
 		return serviceContext;
@@ -274,10 +264,9 @@ public class PingbackMethodImpl implements Method {
 		FriendlyURLMapperThreadLocal.setPRPIdentifiers(
 			new HashMap<String, String>());
 
-		String portletId = _getPortletId(
-			BlogsEntry.class.getName(), PortletProvider.Action.VIEW);
-
-		Portlet portlet = _portletLocalService.getPortletById(portletId);
+		Portlet portlet = _portletLocalService.getPortletById(
+			_getPortletId(
+				BlogsEntry.class.getName(), PortletProvider.Action.VIEW));
 
 		FriendlyURLMapper friendlyURLMapper =
 			portlet.getFriendlyURLMapperInstance();
@@ -371,10 +360,9 @@ public class PingbackMethodImpl implements Method {
 		String[] paramArray = params.get(name);
 
 		if (paramArray == null) {
-			String portletId = _getPortletId(
-				BlogsEntry.class.getName(), PortletProvider.Action.VIEW);
-
-			String namespace = _portal.getPortletNamespace(portletId);
+			String namespace = _portal.getPortletNamespace(
+				_getPortletId(
+					BlogsEntry.class.getName(), PortletProvider.Action.VIEW));
 
 			paramArray = params.get(namespace + name);
 		}
@@ -413,7 +401,7 @@ public class PingbackMethodImpl implements Method {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -434,7 +422,7 @@ public class PingbackMethodImpl implements Method {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return XmlRpcUtil.createFault(
@@ -469,6 +457,10 @@ public class PingbackMethodImpl implements Method {
 	private Http _http;
 
 	private InetAddressLookup _inetAddressLookup;
+
+	@Reference
+	private Language _language;
+
 	private PingbackProperties _pingbackProperties;
 
 	@Reference

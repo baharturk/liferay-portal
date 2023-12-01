@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.sample.web.internal.display.context;
@@ -136,48 +127,55 @@ public class ClaySampleManagementToolbarsDisplayContext
 	}
 
 	@Override
-	public List<DropdownItem> getFilterDropdownItems() {
+	public List<DropdownItem> getFilterNavigationDropdownItems() {
 		if (_filterDropdownItems != null) {
 			return _filterDropdownItems;
 		}
 
-		_filterDropdownItems = DropdownItemListBuilder.addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					DropdownItemListBuilder.add(
-						dropdownItem -> {
-							dropdownItem.setHref("#1");
-							dropdownItem.setLabel("Filter 1");
-						}
-					).add(
-						dropdownItem -> {
-							dropdownItem.setHref("#2");
-							dropdownItem.setLabel("Filter 2");
-						}
-					).build());
-
-				dropdownGroupItem.setLabel("Filter By");
+		_filterDropdownItems = DropdownItemListBuilder.add(
+			dropdownItem -> {
+				dropdownItem.setHref("#1");
+				dropdownItem.setLabel("Filter 1");
 			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					DropdownItemListBuilder.add(
-						dropdownItem -> {
-							dropdownItem.setHref("#3");
-							dropdownItem.setLabel("Order 1");
-						}
-					).add(
-						dropdownItem -> {
-							dropdownItem.setHref("#4");
-							dropdownItem.setLabel("Order 2");
-						}
-					).build());
-
-				dropdownGroupItem.setLabel("Order By");
+		).add(
+			dropdownItem -> {
+				dropdownItem.setHref("#2");
+				dropdownItem.setLabel("Filter 2");
 			}
 		).build();
 
 		return _filterDropdownItems;
+	}
+
+	@Override
+	public String getFilterNavigationDropdownItemsLabel() {
+		return "Filter By";
+	}
+
+	@Override
+	public List<DropdownItem> getOrderByDropdownItems() {
+		if (_orderDropdownItems != null) {
+			return _orderDropdownItems;
+		}
+
+		_orderDropdownItems = DropdownItemListBuilder.add(
+			dropdownItem -> {
+				dropdownItem.setHref("#3");
+				dropdownItem.setLabel("Order 1");
+			}
+		).add(
+			dropdownItem -> {
+				dropdownItem.setHref("#4");
+				dropdownItem.setLabel("Order 2");
+			}
+		).build();
+
+		return _orderDropdownItems;
+	}
+
+	@Override
+	public String getOrderByDropdownItemsLabel() {
+		return "Order By";
 	}
 
 	@Override
@@ -223,6 +221,7 @@ public class ClaySampleManagementToolbarsDisplayContext
 	private List<DropdownItem> _actionDropdownItems;
 	private CreationMenu _creationMenu;
 	private List<DropdownItem> _filterDropdownItems;
+	private List<DropdownItem> _orderDropdownItems;
 	private List<ViewTypeItem> _viewTypeItems;
 
 }

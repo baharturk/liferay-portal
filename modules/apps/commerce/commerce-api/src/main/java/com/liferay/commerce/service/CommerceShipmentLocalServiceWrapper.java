@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link CommerceShipmentLocalService}.
@@ -76,25 +68,26 @@ public class CommerceShipmentLocalServiceWrapper
 
 	@Override
 	public com.liferay.commerce.model.CommerceShipment addCommerceShipment(
-			long groupId, long commerceAccountId, long commerceAddressId,
-			long commerceShippingMethodId, String commerceShippingOptionName,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceShipmentLocalService.addCommerceShipment(
-			groupId, commerceAccountId, commerceAddressId,
-			commerceShippingMethodId, commerceShippingOptionName,
-			serviceContext);
-	}
-
-	@Override
-	public com.liferay.commerce.model.CommerceShipment addCommerceShipment(
 			long commerceOrderId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceShipmentLocalService.addCommerceShipment(
 			commerceOrderId, serviceContext);
+	}
+
+	@Override
+	public com.liferay.commerce.model.CommerceShipment addCommerceShipment(
+			String externalReferenceCode, long groupId, long commerceAccountId,
+			long commerceAddressId, long commerceShippingMethodId,
+			String commerceShippingOptionName,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceShipmentLocalService.addCommerceShipment(
+			externalReferenceCode, groupId, commerceAccountId,
+			commerceAddressId, commerceShippingMethodId,
+			commerceShippingOptionName, serviceContext);
 	}
 
 	@Override
@@ -306,6 +299,31 @@ public class CommerceShipmentLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.commerce.model.CommerceShipment
+		fetchCommerceShipmentByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _commerceShipmentLocalService.
+			fetchCommerceShipmentByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the commerce shipment matching the UUID and group.
+	 *
+	 * @param uuid the commerce shipment's UUID
+	 * @param groupId the primary key of the group
+	 * @return the matching commerce shipment, or <code>null</code> if a matching commerce shipment could not be found
+	 */
+	@Override
+	public com.liferay.commerce.model.CommerceShipment
+		fetchCommerceShipmentByUuidAndGroupId(String uuid, long groupId) {
+
+		return _commerceShipmentLocalService.
+			fetchCommerceShipmentByUuidAndGroupId(uuid, groupId);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -326,6 +344,34 @@ public class CommerceShipmentLocalServiceWrapper
 
 		return _commerceShipmentLocalService.getCommerceShipment(
 			commerceShipmentId);
+	}
+
+	@Override
+	public com.liferay.commerce.model.CommerceShipment
+			getCommerceShipmentByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceShipmentLocalService.
+			getCommerceShipmentByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the commerce shipment matching the UUID and group.
+	 *
+	 * @param uuid the commerce shipment's UUID
+	 * @param groupId the primary key of the group
+	 * @return the matching commerce shipment
+	 * @throws PortalException if a matching commerce shipment could not be found
+	 */
+	@Override
+	public com.liferay.commerce.model.CommerceShipment
+			getCommerceShipmentByUuidAndGroupId(String uuid, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceShipmentLocalService.
+			getCommerceShipmentByUuidAndGroupId(uuid, groupId);
 	}
 
 	/**
@@ -404,6 +450,44 @@ public class CommerceShipmentLocalServiceWrapper
 	}
 
 	/**
+	 * Returns all the commerce shipments matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the commerce shipments
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce shipments, or an empty list if no matches were found
+	 */
+	@Override
+	public java.util.List<com.liferay.commerce.model.CommerceShipment>
+		getCommerceShipmentsByUuidAndCompanyId(String uuid, long companyId) {
+
+		return _commerceShipmentLocalService.
+			getCommerceShipmentsByUuidAndCompanyId(uuid, companyId);
+	}
+
+	/**
+	 * Returns a range of commerce shipments matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the commerce shipments
+	 * @param companyId the primary key of the company
+	 * @param start the lower bound of the range of commerce shipments
+	 * @param end the upper bound of the range of commerce shipments (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the range of matching commerce shipments, or an empty list if no matches were found
+	 */
+	@Override
+	public java.util.List<com.liferay.commerce.model.CommerceShipment>
+		getCommerceShipmentsByUuidAndCompanyId(
+			String uuid, long companyId, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<com.liferay.commerce.model.CommerceShipment>
+					orderByComparator) {
+
+		return _commerceShipmentLocalService.
+			getCommerceShipmentsByUuidAndCompanyId(
+				uuid, companyId, start, end, orderByComparator);
+	}
+
+	/**
 	 * Returns the number of commerce shipments.
 	 *
 	 * @return the number of commerce shipments
@@ -457,6 +541,16 @@ public class CommerceShipmentLocalServiceWrapper
 
 		return _commerceShipmentLocalService.
 			getCommerceShipmentStatusesByCommerceOrderId(commerceOrderId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return _commerceShipmentLocalService.getExportActionableDynamicQuery(
+			portletDataContext);
 	}
 
 	@Override
@@ -549,11 +643,13 @@ public class CommerceShipmentLocalServiceWrapper
 
 	@Override
 	public com.liferay.commerce.model.CommerceShipment updateCarrierDetails(
-			long commerceShipmentId, String carrier, String trackingNumber)
+			long commerceShipmentId, long commerceShippingMethodId,
+			String carrier, String trackingNumber, String trackingURL)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceShipmentLocalService.updateCarrierDetails(
-			commerceShipmentId, carrier, trackingNumber);
+			commerceShipmentId, commerceShippingMethodId, carrier,
+			trackingNumber, trackingURL);
 	}
 
 	/**
@@ -576,40 +672,45 @@ public class CommerceShipmentLocalServiceWrapper
 
 	@Override
 	public com.liferay.commerce.model.CommerceShipment updateCommerceShipment(
-			long commerceShipmentId, String carrier, String trackingNumber,
-			int status, int shippingDateMonth, int shippingDateDay,
-			int shippingDateYear, int shippingDateHour, int shippingDateMinute,
-			int expectedDateMonth, int expectedDateDay, int expectedDateYear,
-			int expectedDateHour, int expectedDateMinute)
+			long commerceShipmentId, long commerceShippingMethodId,
+			String carrier, int expectedDateMonth, int expectedDateDay,
+			int expectedDateYear, int expectedDateHour, int expectedDateMinute,
+			int shippingDateMonth, int shippingDateDay, int shippingDateYear,
+			int shippingDateHour, int shippingDateMinute, String trackingNumber,
+			String trackingURL, int status,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceShipmentLocalService.updateCommerceShipment(
-			commerceShipmentId, carrier, trackingNumber, status,
-			shippingDateMonth, shippingDateDay, shippingDateYear,
-			shippingDateHour, shippingDateMinute, expectedDateMonth,
-			expectedDateDay, expectedDateYear, expectedDateHour,
-			expectedDateMinute);
+			commerceShipmentId, commerceShippingMethodId, carrier,
+			expectedDateMonth, expectedDateDay, expectedDateYear,
+			expectedDateHour, expectedDateMinute, shippingDateMonth,
+			shippingDateDay, shippingDateYear, shippingDateHour,
+			shippingDateMinute, trackingNumber, trackingURL, status,
+			serviceContext);
 	}
 
 	@Override
 	public com.liferay.commerce.model.CommerceShipment updateCommerceShipment(
-			long commerceShipmentId, String name, String description,
+			long commerceShipmentId, long commerceShippingMethodId,
+			String carrier, int expectedDateMonth, int expectedDateDay,
+			int expectedDateYear, int expectedDateHour, int expectedDateMinute,
+			int shippingDateMonth, int shippingDateDay, int shippingDateYear,
+			int shippingDateHour, int shippingDateMinute, String trackingNumber,
+			String trackingURL, int status, String name, String description,
 			String street1, String street2, String street3, String city,
 			String zip, long regionId, long countryId, String phoneNumber,
-			String carrier, String trackingNumber, int status,
-			int shippingDateMonth, int shippingDateDay, int shippingDateYear,
-			int shippingDateHour, int shippingDateMinute, int expectedDateMonth,
-			int expectedDateDay, int expectedDateYear, int expectedDateHour,
-			int expectedDateMinute)
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceShipmentLocalService.updateCommerceShipment(
-			commerceShipmentId, name, description, street1, street2, street3,
-			city, zip, regionId, countryId, phoneNumber, carrier,
-			trackingNumber, status, shippingDateMonth, shippingDateDay,
-			shippingDateYear, shippingDateHour, shippingDateMinute,
+			commerceShipmentId, commerceShippingMethodId, carrier,
 			expectedDateMonth, expectedDateDay, expectedDateYear,
-			expectedDateHour, expectedDateMinute);
+			expectedDateHour, expectedDateMinute, shippingDateMonth,
+			shippingDateDay, shippingDateYear, shippingDateHour,
+			shippingDateMinute, trackingNumber, trackingURL, status, name,
+			description, street1, street2, street3, city, zip, regionId,
+			countryId, phoneNumber, serviceContext);
 	}
 
 	@Override
@@ -621,6 +722,16 @@ public class CommerceShipmentLocalServiceWrapper
 		return _commerceShipmentLocalService.updateExpectedDate(
 			commerceShipmentId, expectedDateMonth, expectedDateDay,
 			expectedDateYear, expectedDateHour, expectedDateMinute);
+	}
+
+	@Override
+	public com.liferay.commerce.model.CommerceShipment
+			updateExternalReferenceCode(
+				long commerceShipmentId, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceShipmentLocalService.updateExternalReferenceCode(
+			commerceShipmentId, externalReferenceCode);
 	}
 
 	@Override
@@ -641,6 +752,11 @@ public class CommerceShipmentLocalServiceWrapper
 
 		return _commerceShipmentLocalService.updateStatus(
 			commerceShipmentId, status);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _commerceShipmentLocalService.getBasePersistence();
 	}
 
 	@Override

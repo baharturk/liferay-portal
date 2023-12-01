@@ -1,25 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model;
 
+import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -43,6 +37,8 @@ public class CommerceCatalogWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
+		attributes.put("uuid", getUuid());
 		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("commerceCatalogId", getCommerceCatalogId());
 		attributes.put("companyId", getCompanyId());
@@ -50,6 +46,7 @@ public class CommerceCatalogWrapper
 		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
+		attributes.put("accountEntryId", getAccountEntryId());
 		attributes.put("name", getName());
 		attributes.put("commerceCurrencyCode", getCommerceCurrencyCode());
 		attributes.put(
@@ -65,6 +62,18 @@ public class CommerceCatalogWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
+		}
+
+		String uuid = (String)attributes.get("uuid");
+
+		if (uuid != null) {
+			setUuid(uuid);
 		}
 
 		String externalReferenceCode = (String)attributes.get(
@@ -110,6 +119,12 @@ public class CommerceCatalogWrapper
 			setModifiedDate(modifiedDate);
 		}
 
+		Long accountEntryId = (Long)attributes.get("accountEntryId");
+
+		if (accountEntryId != null) {
+			setAccountEntryId(accountEntryId);
+		}
+
 		String name = (String)attributes.get("name");
 
 		if (name != null) {
@@ -140,6 +155,16 @@ public class CommerceCatalogWrapper
 	@Override
 	public CommerceCatalog cloneWithOriginalValues() {
 		return wrap(model.cloneWithOriginalValues());
+	}
+
+	/**
+	 * Returns the account entry ID of this commerce catalog.
+	 *
+	 * @return the account entry ID of this commerce catalog
+	 */
+	@Override
+	public long getAccountEntryId() {
+		return model.getAccountEntryId();
 	}
 
 	/**
@@ -190,6 +215,16 @@ public class CommerceCatalogWrapper
 	@Override
 	public Date getCreateDate() {
 		return model.getCreateDate();
+	}
+
+	/**
+	 * Returns the ct collection ID of this commerce catalog.
+	 *
+	 * @return the ct collection ID of this commerce catalog
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
 	}
 
 	/**
@@ -293,6 +328,16 @@ public class CommerceCatalogWrapper
 	}
 
 	/**
+	 * Returns the uuid of this commerce catalog.
+	 *
+	 * @return the uuid of this commerce catalog
+	 */
+	@Override
+	public String getUuid() {
+		return model.getUuid();
+	}
+
+	/**
 	 * Returns <code>true</code> if this commerce catalog is system.
 	 *
 	 * @return <code>true</code> if this commerce catalog is system; <code>false</code> otherwise
@@ -305,6 +350,16 @@ public class CommerceCatalogWrapper
 	@Override
 	public void persist() {
 		model.persist();
+	}
+
+	/**
+	 * Sets the account entry ID of this commerce catalog.
+	 *
+	 * @param accountEntryId the account entry ID of this commerce catalog
+	 */
+	@Override
+	public void setAccountEntryId(long accountEntryId) {
+		model.setAccountEntryId(accountEntryId);
 	}
 
 	/**
@@ -355,6 +410,16 @@ public class CommerceCatalogWrapper
 	@Override
 	public void setCreateDate(Date createDate) {
 		model.setCreateDate(createDate);
+	}
+
+	/**
+	 * Sets the ct collection ID of this commerce catalog.
+	 *
+	 * @param ctCollectionId the ct collection ID of this commerce catalog
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
 	}
 
 	/**
@@ -445,6 +510,40 @@ public class CommerceCatalogWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	/**
+	 * Sets the uuid of this commerce catalog.
+	 *
+	 * @param uuid the uuid of this commerce catalog
+	 */
+	@Override
+	public void setUuid(String uuid) {
+		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CommerceCatalog, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CommerceCatalog, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
+	}
+
+	@Override
+	public StagedModelType getStagedModelType() {
+		return model.getStagedModelType();
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.builder;
@@ -39,12 +30,13 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FastDateFormatConstants;
 import com.liferay.portal.kernel.util.FastDateFormatFactory;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.legacy.document.DocumentBuilderFactory;
 import com.liferay.portal.search.similar.results.web.internal.display.context.SimilarResultsDocumentDisplayContext;
+import com.liferay.portal.search.similar.results.web.internal.portlet.SimilarResultsPortletPreferences;
+import com.liferay.portal.search.similar.results.web.internal.portlet.SimilarResultsPortletPreferencesImpl;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
 import com.liferay.portal.search.similar.results.web.spi.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.DestinationHelper;
@@ -59,7 +51,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
+import java.util.Objects;
 
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
@@ -91,7 +83,10 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
+			}
+			else if (_log.isWarnEnabled()) {
+				_log.warn(exception.toString());
 			}
 
 			return _buildTemporarilyUnavailable();
@@ -144,12 +139,6 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		boolean highlightEnabled) {
 
 		_highlightEnabled = highlightEnabled;
-
-		return this;
-	}
-
-	public SimilarResultsDocumentDisplayContextBuilder setHttp(Http http) {
-		_http = http;
 
 		return this;
 	}
@@ -286,7 +275,6 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 
 		similarResultsDocumentDisplayContext.setTitle(
 			getTitle(assetEntry, summary));
-
 		similarResultsDocumentDisplayContext.setViewURL(
 			_getViewURL(assetEntry, assetRenderer, className, classPK));
 
@@ -353,15 +341,27 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		SimilarResultsDocumentDisplayContext
 			similarResultsDocumentDisplayContext) {
 
-		Optional<String> dateStringOptional = SearchStringUtil.maybe(
+		String dateString = SearchStringUtil.maybe(
 			_getFieldValueString(Field.CREATE_DATE));
 
-		Optional<Date> dateOptional = dateStringOptional.map(
-			this::_parseDateStringFieldValue);
+		if (dateString == null) {
+			return;
+		}
 
-		dateOptional.ifPresent(
-			date -> similarResultsDocumentDisplayContext.setCreationDateString(
-				_formatCreationDate(date)));
+		DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+
+		try {
+			Date date = dateFormat.parse(dateString);
+
+			if (date != null) {
+				similarResultsDocumentDisplayContext.setCreationDateString(
+					_formatCreationDate(date));
+			}
+		}
+		catch (Exception exception) {
+			throw new IllegalArgumentException(
+				"Unable to parse date string: " + dateString, exception);
+		}
 	}
 
 	private void _buildCreatorUserName(
@@ -596,6 +596,30 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		AssetEntry assetEntry, AssetRenderer<?> assetRenderer, String className,
 		long classPK) {
 
+		SimilarResultsPortletPreferences similarResultsPortletPreferences =
+			new SimilarResultsPortletPreferencesImpl(
+				_renderRequest.getPreferences());
+
+		if (Objects.equals(
+				similarResultsPortletPreferences.getLinkBehavior(),
+				"view-in-context")) {
+
+			try {
+				String url = assetRenderer.getURLViewInContext(
+					_portal.getLiferayPortletRequest(_renderRequest),
+					_portal.getLiferayPortletResponse(_renderResponse), null);
+
+				if (!Validator.isBlank(url)) {
+					return url;
+				}
+			}
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception);
+				}
+			}
+		}
+
 		String currentURL = _portal.getCurrentURL(_renderRequest);
 
 		if (_similarResultsRoute == null) {
@@ -606,7 +630,7 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 			_similarResultsRoute.getContributor();
 
 		DestinationBuilderImpl destinationBuilderImpl =
-			new DestinationBuilderImpl(currentURL, _http);
+			new DestinationBuilderImpl(currentURL);
 
 		DestinationHelper destinationHelper = new DestinationHelper() {
 
@@ -618,6 +642,22 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 			@Override
 			public AssetRenderer<?> getAssetRenderer() {
 				return assetRenderer;
+			}
+
+			@Override
+			public String getAssetViewURL() {
+				try {
+					return assetRenderer.getURLView(
+						_portal.getLiferayPortletResponse(_renderResponse),
+						_renderRequest.getWindowState());
+				}
+				catch (Exception exception) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(exception);
+					}
+				}
+
+				return null;
 			}
 
 			@Override
@@ -636,6 +676,11 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 			}
 
 			@Override
+			public long getScopeGroupId() {
+				return _themeDisplay.getScopeGroupId();
+			}
+
+			@Override
 			public String getUID() {
 				return _getFieldValueString(Field.UID);
 			}
@@ -648,19 +693,6 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		return destinationBuilderImpl.build();
 	}
 
-	private Date _parseDateStringFieldValue(String dateStringFieldValue) {
-		DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
-
-		try {
-			return dateFormat.parse(dateStringFieldValue);
-		}
-		catch (Exception exception) {
-			throw new IllegalArgumentException(
-				"Unable to parse date string: " + dateStringFieldValue,
-				exception);
-		}
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		SimilarResultsDocumentDisplayContextBuilder.class);
 
@@ -669,7 +701,6 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 	private DocumentBuilderFactory _documentBuilderFactory;
 	private FastDateFormatFactory _fastDateFormatFactory;
 	private boolean _highlightEnabled;
-	private Http _http;
 	private IndexerRegistry _indexerRegistry;
 	private com.liferay.portal.kernel.search.Document _legacyDocument;
 	private Locale _locale;

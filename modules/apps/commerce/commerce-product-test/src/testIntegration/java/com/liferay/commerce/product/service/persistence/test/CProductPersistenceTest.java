@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.exception.DuplicateCProductExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCProductException;
 import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.service.CProductLocalServiceUtil;
@@ -126,6 +118,8 @@ public class CProductPersistenceTest {
 
 		newCProduct.setMvccVersion(RandomTestUtil.nextLong());
 
+		newCProduct.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCProduct.setUuid(RandomTestUtil.randomString());
 
 		newCProduct.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -153,6 +147,9 @@ public class CProductPersistenceTest {
 
 		Assert.assertEquals(
 			existingCProduct.getMvccVersion(), newCProduct.getMvccVersion());
+		Assert.assertEquals(
+			existingCProduct.getCtCollectionId(),
+			newCProduct.getCtCollectionId());
 		Assert.assertEquals(existingCProduct.getUuid(), newCProduct.getUuid());
 		Assert.assertEquals(
 			existingCProduct.getExternalReferenceCode(),
@@ -179,6 +176,26 @@ public class CProductPersistenceTest {
 		Assert.assertEquals(
 			existingCProduct.getLatestVersion(),
 			newCProduct.getLatestVersion());
+	}
+
+	@Test(expected = DuplicateCProductExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CProduct cProduct = addCProduct();
+
+		CProduct newCProduct = addCProduct();
+
+		newCProduct.setCompanyId(cProduct.getCompanyId());
+
+		newCProduct = _persistence.update(newCProduct);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCProduct);
+
+		newCProduct.setExternalReferenceCode(
+			cProduct.getExternalReferenceCode());
+
+		_persistence.update(newCProduct);
 	}
 
 	@Test
@@ -216,12 +233,12 @@ public class CProductPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -249,11 +266,11 @@ public class CProductPersistenceTest {
 
 	protected OrderByComparator<CProduct> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CProduct", "mvccVersion", true, "uuid", true,
-			"externalReferenceCode", true, "CProductId", true, "groupId", true,
-			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "modifiedDate", true, "publishedCPDefinitionId", true,
-			"latestVersion", true);
+			"CProduct", "mvccVersion", true, "ctCollectionId", true, "uuid",
+			true, "externalReferenceCode", true, "CProductId", true, "groupId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"createDate", true, "modifiedDate", true, "publishedCPDefinitionId",
+			true, "latestVersion", true);
 	}
 
 	@Test
@@ -525,15 +542,15 @@ public class CProductPersistenceTest {
 				new Class<?>[] {String.class}, "groupId"));
 
 		Assert.assertEquals(
-			Long.valueOf(cProduct.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				cProduct, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			cProduct.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				cProduct, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(cProduct.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				cProduct, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CProduct addCProduct() throws Exception {
@@ -542,6 +559,8 @@ public class CProductPersistenceTest {
 		CProduct cProduct = _persistence.create(pk);
 
 		cProduct.setMvccVersion(RandomTestUtil.nextLong());
+
+		cProduct.setCtCollectionId(RandomTestUtil.nextLong());
 
 		cProduct.setUuid(RandomTestUtil.randomString());
 

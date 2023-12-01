@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.template.freemarker.internal.helper;
@@ -17,6 +8,8 @@ package com.liferay.portal.template.freemarker.internal.helper;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.template.TemplateContextContributor;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -24,28 +17,23 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.template.TemplateContextHelper;
 import com.liferay.portal.template.TemplatePortletPreferences;
+import com.liferay.portal.template.engine.TemplateContextHelper;
 import com.liferay.portal.template.freemarker.configuration.FreeMarkerEngineConfiguration;
 import com.liferay.portal.template.freemarker.internal.LiferayObjectConstructor;
 
 import freemarker.ext.beans.BeansWrapper;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Mika Koivisto
@@ -53,10 +41,7 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
  */
 @Component(
 	configurationPid = "com.liferay.portal.template.freemarker.configuration.FreeMarkerEngineConfiguration",
-	configurationPolicy = ConfigurationPolicy.OPTIONAL, immediate = true,
-	service = {
-		FreeMarkerTemplateContextHelper.class, TemplateContextHelper.class
-	}
+	service = TemplateContextHelper.class
 )
 public class FreeMarkerTemplateContextHelper extends TemplateContextHelper {
 
@@ -101,6 +86,19 @@ public class FreeMarkerTemplateContextHelper extends TemplateContextHelper {
 			// Init
 
 			contextObjects.put("init", fullTemplatesPath + "/init.ftl");
+
+			// Navigation items
+
+			if (_freeMarkerEngineConfiguration.includeNavItemsInTheContext() &&
+				(themeDisplay.getLayout() != null)) {
+
+				try {
+					contextObjects.put("navItems", themeDisplay.getNavItems());
+				}
+				catch (Exception exception) {
+					_log.error(exception);
+				}
+			}
 		}
 
 		// Insert custom ftl variables
@@ -122,7 +120,7 @@ public class FreeMarkerTemplateContextHelper extends TemplateContextHelper {
 		// Custom template context contributors
 
 		for (TemplateContextContributor templateContextContributor :
-				_templateContextContributors) {
+				getTemplateContextContributors()) {
 
 			templateContextContributor.prepare(
 				contextObjects, httpServletRequest);
@@ -139,12 +137,21 @@ public class FreeMarkerTemplateContextHelper extends TemplateContextHelper {
 
 	@Activate
 	@Modified
-	protected void activate(Map<String, Object> properties) {
+	protected void activate(
+		Map<String, Object> properties, BundleContext bundleContext) {
+
+		init(bundleContext);
+
 		_freeMarkerEngineConfiguration = ConfigurableUtil.createConfigurable(
 			FreeMarkerEngineConfiguration.class, properties);
 
 		_restrictedVariables = SetUtil.fromArray(
 			_freeMarkerEngineConfiguration.restrictedVariables());
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		destory();
 	}
 
 	@Override
@@ -176,30 +183,13 @@ public class FreeMarkerTemplateContextHelper extends TemplateContextHelper {
 		helperUtilities.put("staticUtil", beansWrapper.getStaticModels());
 	}
 
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY,
-		target = "(type=" + TemplateContextContributor.TYPE_GLOBAL + ")"
-	)
-	protected void registerTemplateContextContributor(
-		TemplateContextContributor templateContextContributor) {
-
-		_templateContextContributors.add(templateContextContributor);
-	}
-
-	protected void unregisterTemplateContextContributor(
-		TemplateContextContributor templateContextContributor) {
-
-		_templateContextContributors.remove(templateContextContributor);
-	}
+	private static final Log _log = LogFactoryUtil.getLog(
+		FreeMarkerTemplateContextHelper.class);
 
 	private BeansWrapper _defaultBeansWrapper;
 	private volatile FreeMarkerEngineConfiguration
 		_freeMarkerEngineConfiguration;
 	private BeansWrapper _restrictedBeansWrapper;
 	private volatile Set<String> _restrictedVariables;
-	private final List<TemplateContextContributor>
-		_templateContextContributors = new CopyOnWriteArrayList<>();
 
 }

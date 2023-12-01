@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {
 	isValidEvent,
+	validateAttributeType,
 	validateEmptyString,
 	validateIsString,
 	validateMaxLength,
@@ -129,6 +121,44 @@ describe('isValidEvent()', () => {
 
 		expect(isValidEvent(event)).toBe(false);
 		expect(console.error).toBeCalledTimes(2);
+	});
+});
+
+describe('validateAttributeType()', () => {
+	it('returns nothing when attribute is a string', () => {
+		const errorMsg = validateAttributeType('testLabel');
+
+		expect(errorMsg).toBeFalsy();
+	});
+
+	it('returns nothing when attribute is a number', () => {
+		const errorMsg = validateAttributeType(123);
+
+		expect(errorMsg).toBeFalsy();
+	});
+
+	it('returns nothing when attribute is a boolean', () => {
+		const errorMsg = validateAttributeType(false);
+
+		expect(errorMsg).toBeFalsy();
+	});
+
+	it('returns an error msg when attribute is an object', () => {
+		const errorMsg = validateAttributeType({test: 'test'});
+
+		expect(errorMsg).toBeTruthy();
+	});
+
+	it('returns an error msg when attribute is an array', () => {
+		const errorMsg = validateAttributeType([1, 2, 3]);
+
+		expect(errorMsg).toBeTruthy();
+	});
+
+	it('returns an error msg when attribute is a function', () => {
+		const errorMsg = validateAttributeType(() => {});
+
+		expect(errorMsg).toBeTruthy();
 	});
 });
 

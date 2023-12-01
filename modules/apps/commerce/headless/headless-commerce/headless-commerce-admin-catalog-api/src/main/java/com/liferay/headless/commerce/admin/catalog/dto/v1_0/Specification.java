@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.dto.v1_0;
@@ -62,7 +53,7 @@ public class Specification implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Specification.class, json);
 	}
 
-	@Schema
+	@Schema(example = "{hu_HU=Horvatorszag, hr_HR=Hrvatska, en_US=Croatia}")
 	@Valid
 	public Map<String, String> getDescription() {
 		return description;
@@ -92,7 +83,7 @@ public class Specification implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> description;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getFacetable() {
 		return facetable;
 	}
@@ -121,7 +112,7 @@ public class Specification implements Serializable {
 	protected Boolean facetable;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "31130")
 	public Long getId() {
 		return id;
 	}
@@ -147,7 +138,7 @@ public class Specification implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@Schema(example = "specification-key")
 	public String getKey() {
 		return key;
 	}
@@ -204,7 +195,7 @@ public class Specification implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected OptionCategory optionCategory;
 
-	@Schema
+	@Schema(example = "{en_US=Croatia, hr_HR=Hrvatska, hu_HU=Horvatorszag}")
 	@Valid
 	public Map<String, String> getTitle() {
 		return title;
@@ -419,5 +410,7 @@ public class Specification implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service.persistence;
@@ -667,7 +658,7 @@ public interface DLFileEntryTypePersistence
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DLFileEntryTypeModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param start the lower bound of the range of document library file entry types
 	 * @param end the upper bound of the range of document library file entry types (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -1021,16 +1012,18 @@ public interface DLFileEntryTypePersistence
 	 *
 	 * @param pk the primary key of the document library file entry type
 	 * @param dlFolderPK the primary key of the document library folder
+	 * @return <code>true</code> if an association between the document library file entry type and the document library folder was added; <code>false</code> if they were already associated
 	 */
-	public void addDLFolder(long pk, long dlFolderPK);
+	public boolean addDLFolder(long pk, long dlFolderPK);
 
 	/**
 	 * Adds an association between the document library file entry type and the document library folder. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the document library file entry type
 	 * @param dlFolder the document library folder
+	 * @return <code>true</code> if an association between the document library file entry type and the document library folder was added; <code>false</code> if they were already associated
 	 */
-	public void addDLFolder(
+	public boolean addDLFolder(
 		long pk, com.liferay.document.library.kernel.model.DLFolder dlFolder);
 
 	/**
@@ -1038,16 +1031,18 @@ public interface DLFileEntryTypePersistence
 	 *
 	 * @param pk the primary key of the document library file entry type
 	 * @param dlFolderPKs the primary keys of the document library folders
+	 * @return <code>true</code> if at least one association between the document library file entry type and the document library folders was added; <code>false</code> if they were all already associated
 	 */
-	public void addDLFolders(long pk, long[] dlFolderPKs);
+	public boolean addDLFolders(long pk, long[] dlFolderPKs);
 
 	/**
 	 * Adds an association between the document library file entry type and the document library folders. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the document library file entry type
 	 * @param dlFolders the document library folders
+	 * @return <code>true</code> if at least one association between the document library file entry type and the document library folders was added; <code>false</code> if they were all already associated
 	 */
-	public void addDLFolders(
+	public boolean addDLFolders(
 		long pk,
 		java.util.List<com.liferay.document.library.kernel.model.DLFolder>
 			dlFolders);

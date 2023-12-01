@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.java.parser.util;
@@ -853,11 +844,10 @@ public class JavaParserUtil {
 			_parseParameterValueJavaExpressions(
 				literalNewDetailAST.findFirstToken(TokenTypes.ELIST)));
 
-		boolean statementCondition = DetailASTUtil.hasParentWithTokenType(
-			literalNewDetailAST, TokenTypes.LITERAL_FOR, TokenTypes.LITERAL_IF,
-			TokenTypes.LITERAL_WHILE);
-
-		javaClassCall.setStatementCondition(statementCondition);
+		javaClassCall.setStatementCondition(
+			DetailASTUtil.hasParentWithTokenType(
+				literalNewDetailAST, TokenTypes.LITERAL_FOR,
+				TokenTypes.LITERAL_IF, TokenTypes.LITERAL_WHILE));
 
 		DetailAST objBlockDetailAST = literalNewDetailAST.findFirstToken(
 			TokenTypes.OBJBLOCK);
@@ -1427,12 +1417,10 @@ public class JavaParserUtil {
 		javaMethodCall.setParameterValueJavaExpressions(
 			_parseParameterValueJavaExpressions(
 				methodCallDetailAST.findFirstToken(TokenTypes.ELIST)));
-
-		boolean insideConstructorCall = DetailASTUtil.hasParentWithTokenType(
-			methodCallDetailAST, TokenTypes.CTOR_CALL,
-			TokenTypes.SUPER_CTOR_CALL);
-
-		javaMethodCall.setInsideConstructorCall(insideConstructorCall);
+		javaMethodCall.setInsideConstructorCall(
+			DetailASTUtil.hasParentWithTokenType(
+				methodCallDetailAST, TokenTypes.CTOR_CALL,
+				TokenTypes.SUPER_CTOR_CALL));
 
 		if (javaExpression == null) {
 			javaMethodCall.setMethodCallWithinClass(true);
@@ -1779,10 +1767,10 @@ public class JavaParserUtil {
 			childDetailAST = childDetailAST.getFirstChild();
 		}
 
-		FullIdent typeIdent = FullIdent.createFullIdent(childDetailAST);
+		FullIdent typeFullIdent = FullIdent.createFullIdent(childDetailAST);
 
 		JavaType javaType = new JavaType(
-			typeIdent.getText(), javaAnnotations, arrayDimension);
+			typeFullIdent.getText(), javaAnnotations, arrayDimension);
 
 		DetailAST typeInfoDetailAST = childDetailAST;
 
@@ -1794,7 +1782,6 @@ public class JavaParserUtil {
 			_parseGenericJavaTypes(
 				typeInfoDetailAST.findFirstToken(TokenTypes.TYPE_ARGUMENTS),
 				TokenTypes.TYPE_ARGUMENT));
-
 		javaType.setLowerBoundJavaTypes(
 			_parseGenericBoundJavaTypes(
 				typeInfoDetailAST, TokenTypes.TYPE_LOWER_BOUNDS));

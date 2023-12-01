@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.item.selector.web.internal.display.context;
@@ -22,15 +13,19 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPDefinitionService;
 import com.liferay.commerce.product.type.CPType;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
+import com.liferay.commerce.product.type.CPTypeRegistry;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import java.text.Format;
 
 import java.util.List;
 import java.util.Locale;
@@ -48,14 +43,14 @@ public class CPDefinitionItemSelectorViewDisplayContext
 	public CPDefinitionItemSelectorViewDisplayContext(
 		HttpServletRequest httpServletRequest, PortletURL portletURL,
 		String itemSelectedEventName, CPDefinitionService cpDefinitionService,
-		CPTypeServicesTracker cpTypeServicesTracker) {
+		CPTypeRegistry cpTypeRegistry) {
 
 		super(
 			httpServletRequest, portletURL, itemSelectedEventName,
 			CPDefinitionItemSelectorView.class.getSimpleName());
 
 		_cpDefinitionService = cpDefinitionService;
-		_cpTypeServicesTracker = cpTypeServicesTracker;
+		_cpTypeRegistry = cpTypeRegistry;
 
 		setDefaultOrderByCol("name");
 	}
@@ -65,7 +60,16 @@ public class CPDefinitionItemSelectorViewDisplayContext
 	}
 
 	public CPType getCPType(String name) {
-		return _cpTypeServicesTracker.getCPType(name);
+		return _cpTypeRegistry.getCPType(name);
+	}
+
+	public String getModifiedDate(
+		CPDefinition cpDefinition, ThemeDisplay themeDisplay) {
+
+		Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(
+			themeDisplay.getLocale(), themeDisplay.getTimeZone());
+
+		return dateTimeFormat.format(cpDefinition.getModifiedDate());
 	}
 
 	@Override
@@ -83,6 +87,18 @@ public class CPDefinitionItemSelectorViewDisplayContext
 					httpServletRequest, "checkedCPDefinitionIds"));
 		}
 
+		long commerceChannelGroupId = ParamUtil.getLong(
+			httpServletRequest, CPField.COMMERCE_CHANNEL_GROUP_ID);
+
+		portletURL.setParameter(
+			CPField.COMMERCE_CHANNEL_GROUP_ID,
+			String.valueOf(commerceChannelGroupId));
+
+		portletURL.setParameter(
+			"ignoreCommerceAccountGroup",
+			Boolean.toString(
+				ParamUtil.getBoolean(
+					httpServletRequest, "ignoreCommerceAccountGroup")));
 		portletURL.setParameter(
 			"singleSelection", Boolean.toString(isSingleSelection()));
 
@@ -115,19 +131,24 @@ public class CPDefinitionItemSelectorViewDisplayContext
 		long commerceChannelGroupId = ParamUtil.getLong(
 			httpServletRequest, CPField.COMMERCE_CHANNEL_GROUP_ID);
 
+		boolean ignoreCommerceAccountGroup = ParamUtil.getBoolean(
+			httpServletRequest, "ignoreCommerceAccountGroup");
+
 		if (commerceChannelGroupId != 0) {
 			cpDefinitionBaseModelSearchResult =
 				_cpDefinitionService.searchCPDefinitionsByChannelGroupId(
 					cpRequestHelper.getCompanyId(), commerceChannelGroupId,
 					getKeywords(), WorkflowConstants.STATUS_APPROVED,
-					searchContainer.getStart(), searchContainer.getEnd(), sort);
+					ignoreCommerceAccountGroup, searchContainer.getStart(),
+					searchContainer.getEnd(), sort);
 		}
 		else {
 			cpDefinitionBaseModelSearchResult =
 				_cpDefinitionService.searchCPDefinitions(
 					cpRequestHelper.getCompanyId(), getKeywords(),
 					WorkflowConstants.STATUS_APPROVED,
-					searchContainer.getStart(), searchContainer.getEnd(), sort);
+					ignoreCommerceAccountGroup, searchContainer.getStart(),
+					searchContainer.getEnd(), sort);
 		}
 
 		searchContainer.setResultsAndTotal(cpDefinitionBaseModelSearchResult);
@@ -168,6 +189,6 @@ public class CPDefinitionItemSelectorViewDisplayContext
 	}
 
 	private final CPDefinitionService _cpDefinitionService;
-	private final CPTypeServicesTracker _cpTypeServicesTracker;
+	private final CPTypeRegistry _cpTypeRegistry;
 
 }

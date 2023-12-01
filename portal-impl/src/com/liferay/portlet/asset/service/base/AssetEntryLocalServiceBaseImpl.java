@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.service.base;
@@ -35,12 +26,13 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -48,8 +40,6 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -313,6 +303,11 @@ public abstract class AssetEntryLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement AssetEntryLocalServiceImpl#deleteAssetEntry(AssetEntry) to avoid orphaned data");
+		}
+
 		return assetEntryLocalService.deleteAssetEntry(
 			(AssetEntry)persistedModel);
 	}
@@ -377,31 +372,31 @@ public abstract class AssetEntryLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addAssetTagAssetEntry(long tagId, long entryId) {
-		assetTagPersistence.addAssetEntry(tagId, entryId);
+	public boolean addAssetTagAssetEntry(long tagId, long entryId) {
+		return assetTagPersistence.addAssetEntry(tagId, entryId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addAssetTagAssetEntry(long tagId, AssetEntry assetEntry) {
-		assetTagPersistence.addAssetEntry(tagId, assetEntry);
+	public boolean addAssetTagAssetEntry(long tagId, AssetEntry assetEntry) {
+		return assetTagPersistence.addAssetEntry(tagId, assetEntry);
 	}
 
 	/**
 	 */
 	@Override
-	public void addAssetTagAssetEntries(long tagId, long[] entryIds) {
-		assetTagPersistence.addAssetEntries(tagId, entryIds);
+	public boolean addAssetTagAssetEntries(long tagId, long[] entryIds) {
+		return assetTagPersistence.addAssetEntries(tagId, entryIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addAssetTagAssetEntries(
+	public boolean addAssetTagAssetEntries(
 		long tagId, List<AssetEntry> assetEntries) {
 
-		assetTagPersistence.addAssetEntries(tagId, assetEntries);
+		return assetTagPersistence.addAssetEntries(tagId, assetEntries);
 	}
 
 	/**
@@ -589,18 +584,11 @@ public abstract class AssetEntryLocalServiceBaseImpl
 	}
 
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register(
-			"com.liferay.asset.kernel.model.AssetEntry",
-			assetEntryLocalService);
-
-		_setLocalServiceUtilService(assetEntryLocalService);
+		AssetEntryLocalServiceUtil.setService(assetEntryLocalService);
 	}
 
 	public void destroy() {
-		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.asset.kernel.model.AssetEntry");
-
-		_setLocalServiceUtilService(null);
+		AssetEntryLocalServiceUtil.setService(null);
 	}
 
 	/**
@@ -660,22 +648,6 @@ public abstract class AssetEntryLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		try {
-			Field field = AssetEntryLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, assetEntryLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	@BeanReference(type = AssetEntryLocalService.class)
 	protected AssetEntryLocalService assetEntryLocalService;
 
@@ -694,8 +666,7 @@ public abstract class AssetEntryLocalServiceBaseImpl
 	@BeanReference(type = AssetTagPersistence.class)
 	protected AssetTagPersistence assetTagPersistence;
 
-	@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry
-		persistedModelLocalServiceRegistry;
+	private static final Log _log = LogFactoryUtil.getLog(
+		AssetEntryLocalServiceBaseImpl.class);
 
 }

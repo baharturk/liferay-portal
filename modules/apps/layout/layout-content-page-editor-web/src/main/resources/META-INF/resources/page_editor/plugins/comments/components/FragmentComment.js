@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -17,7 +8,8 @@ import ClayDropDown from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
 import classNames from 'classnames';
-import {openToast} from 'frontend-js-web';
+import {useSessionState} from 'frontend-js-components-web';
+import {openToast, sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useEffect, useState} from 'react';
 
@@ -52,6 +44,9 @@ export default function FragmentComment({
 	const [editing, setEditing] = useState(false);
 	const [hidden, setHidden] = useState(false);
 	const [highlighted, setHighlighted] = useState(false);
+	const [highlightedMessageId, setHighlightedMessageId] = useSessionState(
+		HIGHLIGHTED_COMMENT_ID_KEY
+	);
 	const [showDeleteMask, setShowDeleteMask] = useState(false);
 	const [showResolveMask, setShowResolveMask] = useState(false);
 
@@ -92,7 +87,6 @@ export default function FragmentComment({
 		FragmentService.editComment({
 			body,
 			commentId,
-			onNetworkStatus: dispatch,
 			resolved: !resolved,
 		})
 			.then((comment) => {
@@ -123,16 +117,11 @@ export default function FragmentComment({
 	};
 
 	useEffect(() => {
-		const highlightMessageId = window.sessionStorage.getItem(
-			HIGHLIGHTED_COMMENT_ID_KEY
-		);
-
-		if (highlightMessageId === commentId) {
-			window.sessionStorage.removeItem(HIGHLIGHTED_COMMENT_ID_KEY);
-
+		if (highlightedMessageId === commentId) {
 			setHighlighted(true);
+			setHighlightedMessageId(null);
 		}
-	}, [commentId]);
+	}, [commentId, highlightedMessageId, setHighlightedMessageId]);
 
 	return (
 		<article className={commentClassname}>
@@ -155,7 +144,7 @@ export default function FragmentComment({
 						})}
 						data-title={
 							showModifiedDateTooltip &&
-							Liferay.Util.sub(
+							sub(
 								Liferay.Language.get('edited-x'),
 								modifiedDateDescription
 							)
@@ -185,12 +174,13 @@ export default function FragmentComment({
 						onActiveChange={setDropDownActive}
 						trigger={
 							<ClayButton
+								aria-label={Liferay.Language.get('options')}
 								borderless
 								disabled={editing}
 								displayType="secondary"
 								monospaced
 								outline
-								small
+								size="sm"
 							>
 								<ClayIcon symbol="ellipsis-v" />
 							</ClayButton>

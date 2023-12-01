@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.inactive.request.handler.internal;
@@ -17,7 +8,7 @@ package com.liferay.portal.inactive.request.handler.internal;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.inactive.request.handler.configuration.InactiveRequestHandlerConfiguration;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.InactiveRequestHandler;
@@ -25,14 +16,14 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.URLUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 
 import java.net.URL;
 
-import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -50,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.inactive.request.handler.configuration.InactiveRequestHandlerConfiguration",
-	immediate = true, service = InactiveRequestHandler.class
+	service = InactiveRequestHandler.class
 )
 public class InactiveRequestHandlerImpl implements InactiveRequestHandler {
 
@@ -75,14 +66,11 @@ public class InactiveRequestHandlerImpl implements InactiveRequestHandler {
 
 		PrintWriter printWriter = httpServletResponse.getWriter();
 
-		Locale locale = _portal.getLocale(httpServletRequest);
+		String message = _language.get(
+			_portal.getLocale(httpServletRequest), messageKey,
+			StringPool.BLANK);
 
-		String message = null;
-
-		if (LanguageUtil.isValidLanguageKey(locale, messageKey)) {
-			message = LanguageUtil.get(locale, messageKey);
-		}
-		else {
+		if (Validator.isNull(message)) {
 			message = HtmlUtil.escape(messageKey);
 		}
 
@@ -109,8 +97,8 @@ public class InactiveRequestHandlerImpl implements InactiveRequestHandler {
 			return;
 		}
 
-		try (InputStream inputStream = url.openStream()) {
-			_content = StringUtil.read(inputStream);
+		try {
+			_content = URLUtil.toString(url);
 		}
 		catch (IOException ioException) {
 			if (_log.isWarnEnabled()) {
@@ -138,6 +126,9 @@ public class InactiveRequestHandlerImpl implements InactiveRequestHandler {
 		InactiveRequestHandlerImpl.class);
 
 	private String _content = StringPool.BLANK;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

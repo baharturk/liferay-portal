@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -24,7 +15,7 @@ import {
 	VIEW_DETAILS,
 } from '../../../src/main/resources/META-INF/resources/components/mini_cart/util/constants';
 import {DEFAULT_LABELS} from '../../../src/main/resources/META-INF/resources/components/mini_cart/util/labels';
-import * as BaseUtils from '../../../src/main/resources/META-INF/resources/utilities';
+import * as Basetests_utilities from '../../../src/main/resources/META-INF/resources/utilities';
 import {PRODUCT_REMOVED_FROM_CART} from '../../../src/main/resources/META-INF/resources/utilities/eventsDefinitions';
 
 describe('MiniCart Items List Actions', () => {
@@ -56,7 +47,7 @@ describe('MiniCart Items List Actions', () => {
 			.fn()
 			.mockReturnValue(Promise.resolve());
 
-		jest.spyOn(BaseUtils, 'liferayNavigate');
+		jest.spyOn(Basetests_utilities, 'liferayNavigate');
 
 		window.Liferay = {
 			Language: {
@@ -231,7 +222,9 @@ describe('MiniCart Items List Actions', () => {
 					});
 
 					await wait(() => {
-						expect(BaseUtils.liferayNavigate).toHaveBeenCalledWith(
+						expect(
+							Basetests_utilities.liferayNavigate
+						).toHaveBeenCalledWith(
 							WITH_ITEMS_CONTEXT_MOCK.actionURLs.orderDetailURL
 						);
 					});

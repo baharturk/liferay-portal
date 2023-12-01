@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {fetch} from 'frontend-js-web';
@@ -33,10 +24,13 @@ const eventObserver = new EventObserver();
 
 export default function WorkflowInstanceTracker({workflowInstanceId}) {
 	const [currentNodes, setCurrentNodes] = useState([]);
+	const [definitionElements, setDefinitionElements] = useState({});
+	const [filteredCurrentNodes, setFilteredCurrentNodes] = useState([]);
 	const [nodes, setNodes] = useState([]);
 	const [transitions, setTransitions] = useState([]);
 	const [visitedNodes, setVisitedNodes] = useState([]);
-	const [definitionElements, setDefinitionElements] = useState({});
+
+	const languageId = themeDisplay.getLanguageId().replaceAll('_', '-');
 
 	useEffect(() => {
 		fetch(
@@ -50,6 +44,9 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 				fetch(
 					`/o/headless-admin-workflow/v1.0/workflow-definitions/by-name/${data.workflowDefinitionName}`,
 					{
+						headers: {
+							'Accept-Language': languageId,
+						},
 						method: 'GET',
 						params: {
 							version: data.workflowDefinitionVersion,
@@ -57,12 +54,12 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 					}
 				)
 					.then((response) => response.json())
-					.then((data) =>
+					.then((data) => {
 						setDefinitionElements({
 							nodes: data.nodes,
 							transitions: data.transitions,
-						})
-					);
+						});
+					});
 			});
 
 		fetch(
@@ -92,7 +89,11 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 					return {
 						data: {
 							current: isCurrent(currentNodes, node),
-							done: isVisited(visitedNodes, node),
+							done: isVisited(
+								visitedNodes,
+								transitionElements,
+								node
+							),
 							initial: node.type === 'INITIAL_STATE',
 							label: node.label,
 							notifyVisibilityChange: (visible) => () => {
@@ -128,6 +129,18 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [definitionElements, visitedNodes]);
 
+	useEffect(() => {
+		const filteredCurrentNodes = [];
+
+		nodes.map((node) => {
+			if (node.data.current) {
+				filteredCurrentNodes.push(node.id);
+			}
+		});
+
+		setFilteredCurrentNodes(filteredCurrentNodes);
+	}, [nodes]);
+
 	const elements = nodes.concat(transitions);
 
 	const layoutedElements = getLayoutedElements(elements);
@@ -136,7 +149,7 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 		reactFlowInstance.fitView();
 	};
 
-	if (layoutedElements.length === 0) {
+	if (!layoutedElements.length) {
 		return <ErrorFeedback />;
 	}
 
@@ -154,7 +167,7 @@ export default function WorkflowInstanceTracker({workflowInstanceId}) {
 
 					<Controls showInteractive={false} />
 
-					<CurrentNodes nodesNames={currentNodes} />
+					<CurrentNodes nodesNames={filteredCurrentNodes} />
 				</ReactFlowProvider>
 			)}
 		</div>

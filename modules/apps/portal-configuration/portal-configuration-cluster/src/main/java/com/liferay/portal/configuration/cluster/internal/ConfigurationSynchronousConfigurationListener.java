@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.configuration.cluster.internal;
 
 import com.liferay.portal.configuration.cluster.internal.constants.ConfigurationClusterDestinationNames;
+import com.liferay.portal.configuration.persistence.InMemoryOnlyConfigurationThreadLocal;
 import com.liferay.portal.kernel.cluster.ClusterLink;
 import com.liferay.portal.kernel.cluster.Priority;
 import com.liferay.portal.kernel.messaging.Destination;
@@ -29,16 +21,15 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Raymond Augé
  */
-@Component(
-	enabled = false, immediate = true,
-	service = SynchronousConfigurationListener.class
-)
+@Component(enabled = false, service = SynchronousConfigurationListener.class)
 public class ConfigurationSynchronousConfigurationListener
 	implements SynchronousConfigurationListener {
 
 	@Override
 	public void configurationEvent(ConfigurationEvent configurationEvent) {
-		if (ConfigurationThreadLocal.isLocalUpdate()) {
+		if (ConfigurationThreadLocal.isLocalUpdate() ||
+			InMemoryOnlyConfigurationThreadLocal.isInMemoryOnly()) {
+
 			return;
 		}
 
@@ -54,18 +45,12 @@ public class ConfigurationSynchronousConfigurationListener
 		_clusterLink.sendMulticastMessage(message, Priority.LEVEL10);
 	}
 
-	@Reference(unbind = "-")
-	protected void setClusterLink(ClusterLink clusterLink) {
-		_clusterLink = clusterLink;
-	}
+	@Reference
+	private ClusterLink _clusterLink;
 
 	@Reference(
-		target = "(destination.name=" + ConfigurationClusterDestinationNames.CONFIGURATION + ")",
-		unbind = "-"
+		target = "(destination.name=" + ConfigurationClusterDestinationNames.CONFIGURATION + ")"
 	)
-	protected void setDestination(Destination destination) {
-	}
-
-	private ClusterLink _clusterLink;
+	private Destination _destination;
 
 }

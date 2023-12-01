@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.search;
@@ -33,7 +24,7 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
@@ -51,7 +42,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CPSpecificationOptionIndexer
 	extends BaseIndexer<CPSpecificationOption> {
 
@@ -100,10 +91,10 @@ public class CPSpecificationOptionIndexer
 		addSearchLocalizedTerm(
 			searchQuery, searchContext, CPField.CP_OPTION_CATEGORY_TITLE,
 			false);
+		addSearchTerm(searchQuery, searchContext, CPField.KEY, false);
 		addSearchLocalizedTerm(
 			searchQuery, searchContext, Field.DESCRIPTION, false);
 		addSearchTerm(searchQuery, searchContext, Field.ENTRY_CLASS_PK, false);
-		addSearchTerm(searchQuery, searchContext, CPField.KEY, false);
 		addSearchTerm(searchQuery, searchContext, Field.TITLE, false);
 		addSearchLocalizedTerm(searchQuery, searchContext, Field.TITLE, false);
 		addSearchTerm(searchQuery, searchContext, Field.USER_NAME, false);
@@ -136,7 +127,8 @@ public class CPSpecificationOptionIndexer
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Indexing specification option " + cpSpecificationOption);
+				"Indexing commerce product specification option " +
+					cpSpecificationOption);
 		}
 
 		Document document = getBaseModelDocument(
@@ -146,44 +138,43 @@ public class CPSpecificationOptionIndexer
 			_cpOptionCategoryLocalService.fetchCPOptionCategory(
 				cpSpecificationOption.getCPOptionCategoryId());
 
-		String[] languageIds = LocalizationUtil.getAvailableLanguageIds(
+		String[] languageIds = _localization.getAvailableLanguageIds(
 			cpSpecificationOption.getTitle());
 
 		for (String languageId : languageIds) {
-			String title = cpSpecificationOption.getTitle(languageId);
-
-			document.addText(
-				LocalizationUtil.getLocalizedName(Field.TITLE, languageId),
-				title);
-
-			String description = cpSpecificationOption.getDescription(
-				languageId);
-
-			document.addText(
-				LocalizationUtil.getLocalizedName(
-					Field.DESCRIPTION, languageId),
-				description);
-
 			if (cpOptionCategory != null) {
-				document.addText(
-					LocalizationUtil.getLocalizedName(
-						CPField.CP_OPTION_CATEGORY_TITLE, languageId),
-					cpOptionCategory.getTitle(languageId));
-
 				document.addKeyword(
 					CPField.CP_OPTION_CATEGORY_ID,
 					cpOptionCategory.getCPOptionCategoryId());
+				document.addText(
+					_localization.getLocalizedName(
+						CPField.CP_OPTION_CATEGORY_TITLE, languageId),
+					cpOptionCategory.getTitle(languageId));
 			}
 
 			document.addKeyword(
 				CPField.FACETABLE, cpSpecificationOption.isFacetable());
 			document.addText(CPField.KEY, cpSpecificationOption.getKey());
+
+			String title = cpSpecificationOption.getTitle(languageId);
+
 			document.addText(Field.CONTENT, title);
+
+			String description = cpSpecificationOption.getDescription(
+				languageId);
+
+			document.addText(
+				_localization.getLocalizedName(Field.DESCRIPTION, languageId),
+				description);
+
+			document.addText(
+				_localization.getLocalizedName(Field.TITLE, languageId), title);
 		}
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Document " + cpSpecificationOption + " indexed successfully");
+				"Commerce product specification option " +
+					cpSpecificationOption + " indexed successfully");
 		}
 
 		return document;
@@ -207,8 +198,8 @@ public class CPSpecificationOptionIndexer
 		throws Exception {
 
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), cpSpecificationOption.getCompanyId(),
-			getDocument(cpSpecificationOption), isCommitImmediately());
+			cpSpecificationOption.getCompanyId(),
+			getDocument(cpSpecificationOption));
 	}
 
 	@Override
@@ -241,17 +232,13 @@ public class CPSpecificationOptionIndexer
 				}
 				catch (PortalException portalException) {
 					if (_log.isWarnEnabled()) {
-						long cpSpecificationOptionId =
-							cpSpecificationOption.getCPSpecificationOptionId();
-
 						_log.warn(
 							"Unable to index commerce product specification " +
-								"option " + cpSpecificationOptionId,
+								"option " + cpSpecificationOption,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}
@@ -268,5 +255,8 @@ public class CPSpecificationOptionIndexer
 
 	@Reference
 	private IndexWriterHelper _indexWriterHelper;
+
+	@Reference
+	private Localization _localization;
 
 }

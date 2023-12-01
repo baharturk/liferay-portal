@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.controller;
 
-import com.liferay.asset.kernel.model.adapter.StagedAssetLink;
+import com.liferay.asset.link.model.adapter.StagedAssetLink;
 import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.controller.PortletExportController;
 import com.liferay.exportimport.internal.lar.DeletionSystemEventExporter;
@@ -35,7 +26,7 @@ import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
 import com.liferay.portal.background.task.model.BackgroundTask;
 import com.liferay.portal.background.task.service.BackgroundTaskLocalService;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskThreadLocal;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -43,7 +34,6 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutPrototype;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
-import com.liferay.portal.kernel.model.adapter.ModelAdapterUtil;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutPrototypeLocalService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
@@ -65,6 +55,7 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.zip.ZipWriter;
+import com.liferay.portal.model.adapter.util.ModelAdapterUtil;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.site.model.adapter.StagedGroup;
 
@@ -92,9 +83,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Máté Thurzó
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.portal.kernel.model.Layout",
-	service = {ExportImportController.class, LayoutExportController.class}
+	service = ExportImportController.class
 )
 public class LayoutExportController implements ExportController {
 
@@ -166,7 +156,7 @@ public class LayoutExportController implements ExportController {
 
 		long companyId = portletDataContext.getCompanyId();
 
-		long defaultUserId = _userLocalService.getDefaultUserId(companyId);
+		long guestUserId = _userLocalService.getGuestUserId(companyId);
 
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.popServiceContext();
@@ -186,7 +176,7 @@ public class LayoutExportController implements ExportController {
 			serviceContext.setUserId(backgroundTask.getUserId());
 		}
 		else {
-			serviceContext.setUserId(defaultUserId);
+			serviceContext.setUserId(guestUserId);
 		}
 
 		serviceContext.setAttribute("exporting", Boolean.TRUE);
@@ -218,7 +208,7 @@ public class LayoutExportController implements ExportController {
 		headerElement.addAttribute(
 			"available-locales",
 			StringUtil.merge(
-				LanguageUtil.getAvailableLocales(
+				_language.getAvailableLocales(
 					portletDataContext.getScopeGroupId())));
 
 		headerElement.addAttribute(
@@ -279,12 +269,8 @@ public class LayoutExportController implements ExportController {
 
 		headerElement.addAttribute("type", type);
 		portletDataContext.setType(type);
-
-		Element missingReferencesElement = rootElement.addElement(
-			"missing-references");
-
 		portletDataContext.setMissingReferencesElement(
-			missingReferencesElement);
+			rootElement.addElement("missing-references"));
 
 		rootElement.addElement("site-portlets");
 		rootElement.addElement("site-services");
@@ -301,7 +287,7 @@ public class LayoutExportController implements ExportController {
 			portletDataContext.getParameterMap(),
 			PortletDataHandlerKeys.LAYOUT_SET_PROTOTYPE_SETTINGS);
 
-		if (!group.isStaged() && Validator.isNotNull(layoutSetPrototypeUuid) &&
+		if (Validator.isNotNull(layoutSetPrototypeUuid) &&
 			layoutSetPrototypeSettings) {
 
 			LayoutSetPrototype layoutSetPrototype =
@@ -328,10 +314,12 @@ public class LayoutExportController implements ExportController {
 		_portletExportController.exportAssetLinks(portletDataContext);
 		_portletExportController.exportLocks(portletDataContext);
 
-		portletDataContext.addDeletionSystemEventStagedModelTypes(
-			new StagedModelType(SegmentsExperience.class, Layout.class));
-		portletDataContext.addDeletionSystemEventStagedModelTypes(
-			new StagedModelType(StagedAssetLink.class));
+		if (Objects.equals(portletDataContext.getType(), "layout-set")) {
+			portletDataContext.addDeletionSystemEventStagedModelTypes(
+				new StagedModelType(SegmentsExperience.class, Layout.class));
+			portletDataContext.addDeletionSystemEventStagedModelTypes(
+				new StagedModelType(StagedAssetLink.class));
+		}
 
 		_deletionSystemEventExporter.exportDeletionSystemEvents(
 			portletDataContext);
@@ -431,6 +419,9 @@ public class LayoutExportController implements ExportController {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private LayoutPrototypeLocalService _layoutPrototypeLocalService;

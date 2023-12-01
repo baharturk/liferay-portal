@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model.impl;
 
+import com.liferay.object.entry.util.ObjectEntryValuesUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
@@ -24,8 +16,8 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.cache.CacheField;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 
 import java.io.Serializable;
 
@@ -49,8 +41,7 @@ public class ObjectEntryImpl extends ObjectEntryBaseImpl {
 
 	@Override
 	public String getModelClassName() {
-		return "com.liferay.object.model.ObjectDefinition#" +
-			getObjectDefinitionId();
+		return ObjectDefinition.class.getName() + "#" + getObjectDefinitionId();
 	}
 
 	@Override
@@ -85,9 +76,13 @@ public class ObjectEntryImpl extends ObjectEntryBaseImpl {
 					objectDefinition.getTitleObjectFieldId());
 
 			if (objectField != null) {
-				Map<String, Serializable> values = getValues();
-
-				return String.valueOf(values.get(objectField.getName()));
+				return ObjectEntryValuesUtil.getValueString(
+					objectField,
+					HashMapBuilder.create(
+						getValues()
+					).putAll(
+						ObjectEntryLocalServiceUtil.getSystemValues(this)
+					).build());
 			}
 		}
 
@@ -105,7 +100,7 @@ public class ObjectEntryImpl extends ObjectEntryBaseImpl {
 				_values = ObjectEntryLocalServiceUtil.getValues(this);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 
 				return new HashMap<>();
 			}
@@ -132,8 +127,6 @@ public class ObjectEntryImpl extends ObjectEntryBaseImpl {
 		ObjectEntryImpl.class);
 
 	private Map<String, Serializable> _transientValues;
-
-	@CacheField(propagateToInterface = true)
 	private Map<String, Serializable> _values;
 
 }

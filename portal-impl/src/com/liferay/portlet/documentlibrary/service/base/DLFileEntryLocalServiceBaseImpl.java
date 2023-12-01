@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.base;
@@ -42,12 +33,13 @@ import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -55,8 +47,6 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -266,48 +256,21 @@ public abstract class DLFileEntryLocalServiceBaseImpl
 		return dlFileEntryPersistence.fetchByUUID_G(uuid, groupId);
 	}
 
-	/**
-	 * Returns the document library file entry with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the document library file entry's external reference code
-	 * @return the matching document library file entry, or <code>null</code> if a matching document library file entry could not be found
-	 */
 	@Override
 	public DLFileEntry fetchDLFileEntryByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
-		return dlFileEntryPersistence.fetchByG_ERC(
-			groupId, externalReferenceCode);
+		return dlFileEntryPersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchDLFileEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public DLFileEntry fetchDLFileEntryByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return fetchDLFileEntryByExternalReferenceCode(
-			groupId, externalReferenceCode);
-	}
-
-	/**
-	 * Returns the document library file entry with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the document library file entry's external reference code
-	 * @return the matching document library file entry
-	 * @throws PortalException if a matching document library file entry could not be found
-	 */
 	@Override
 	public DLFileEntry getDLFileEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException {
 
-		return dlFileEntryPersistence.findByG_ERC(
-			groupId, externalReferenceCode);
+		return dlFileEntryPersistence.findByERC_G(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -474,6 +437,11 @@ public abstract class DLFileEntryLocalServiceBaseImpl
 	@Override
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
+
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement DLFileEntryLocalServiceImpl#deleteDLFileEntry(DLFileEntry) to avoid orphaned data");
+		}
 
 		return dlFileEntryLocalService.deleteDLFileEntry(
 			(DLFileEntry)persistedModel);
@@ -666,18 +634,11 @@ public abstract class DLFileEntryLocalServiceBaseImpl
 	}
 
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register(
-			"com.liferay.document.library.kernel.model.DLFileEntry",
-			dlFileEntryLocalService);
-
-		_setLocalServiceUtilService(dlFileEntryLocalService);
+		DLFileEntryLocalServiceUtil.setService(dlFileEntryLocalService);
 	}
 
 	public void destroy() {
-		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.document.library.kernel.model.DLFileEntry");
-
-		_setLocalServiceUtilService(null);
+		DLFileEntryLocalServiceUtil.setService(null);
 	}
 
 	/**
@@ -737,22 +698,6 @@ public abstract class DLFileEntryLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		DLFileEntryLocalService dlFileEntryLocalService) {
-
-		try {
-			Field field = DLFileEntryLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, dlFileEntryLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	@BeanReference(type = DLFileEntryLocalService.class)
 	protected DLFileEntryLocalService dlFileEntryLocalService;
 
@@ -768,8 +713,7 @@ public abstract class DLFileEntryLocalServiceBaseImpl
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry
-		persistedModelLocalServiceRegistry;
+	private static final Log _log = LogFactoryUtil.getLog(
+		DLFileEntryLocalServiceBaseImpl.class);
 
 }

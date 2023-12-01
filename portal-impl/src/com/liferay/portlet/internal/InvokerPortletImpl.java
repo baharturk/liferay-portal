@@ -1,23 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.internal;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.deploy.auto.PortletAutoDeployer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -38,7 +30,6 @@ import com.liferay.portal.kernel.util.ClassUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -121,7 +112,7 @@ public class InvokerPortletImpl
 		Class<? extends Portlet> portletClass = portlet.getClass();
 
 		if (ClassUtil.isSubclass(
-				portletClass, PortletAutoDeployer.JSF_STANDARD)) {
+				portletClass, "javax.portlet.faces.GenericFacesPortlet")) {
 
 			facesPortlet = true;
 		}
@@ -148,23 +139,20 @@ public class InvokerPortletImpl
 			return;
 		}
 
-		Thread currentThread = Thread.currentThread();
+		ClassLoader classLoader = _portletClassLoader;
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
+		if (classLoader == null) {
+			Thread currentThread = Thread.currentThread();
 
-		try {
-			if (_portletClassLoader != null) {
-				currentThread.setContextClassLoader(_portletClassLoader);
-			}
+			classLoader = currentThread.getContextClassLoader();
+		}
+
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				classLoader)) {
 
 			cleanUp();
 
 			_portlet.destroy();
-		}
-		finally {
-			if (_portletClassLoader != null) {
-				currentThread.setContextClassLoader(contextClassLoader);
-			}
 		}
 	}
 
@@ -195,15 +183,23 @@ public class InvokerPortletImpl
 
 	@Override
 	public ClassLoader getPortletClassLoader() {
+		if (_portlet instanceof InvokerPortlet) {
+			InvokerPortlet invokerPortlet = (InvokerPortlet)_portlet;
+
+			return invokerPortlet.getPortletClassLoader();
+		}
+
 		ClassLoader classLoader =
 			(ClassLoader)_liferayPortletContext.getAttribute(
 				PluginContextListener.PLUGIN_CLASS_LOADER);
 
-		if (classLoader == null) {
-			classLoader = PortalClassLoaderUtil.getClassLoader();
+		if (classLoader != null) {
+			return classLoader;
 		}
 
-		return classLoader;
+		Class<?> portletClass = _portlet.getClass();
+
+		return portletClass.getClassLoader();
 	}
 
 	@Override
@@ -235,16 +231,18 @@ public class InvokerPortletImpl
 	public void init(PortletConfig portletConfig) throws PortletException {
 		_liferayPortletConfig = (LiferayPortletConfig)portletConfig;
 
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
 		_portletClassLoader = getPortletClassLoader();
 
-		try {
-			if (_portletClassLoader != null) {
-				currentThread.setContextClassLoader(_portletClassLoader);
-			}
+		ClassLoader classLoader = _portletClassLoader;
+
+		if (classLoader == null) {
+			Thread currentThread = Thread.currentThread();
+
+			classLoader = currentThread.getContextClassLoader();
+		}
+
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				classLoader)) {
 
 			_portlet.init(portletConfig);
 		}
@@ -252,11 +250,6 @@ public class InvokerPortletImpl
 			cleanUp();
 
 			throw throwable;
-		}
-		finally {
-			if (_portletClassLoader != null) {
-				currentThread.setContextClassLoader(contextClassLoader);
-			}
 		}
 	}
 
@@ -378,7 +371,6 @@ public class InvokerPortletImpl
 			}
 			else if ((response.getTime() < now) && (_expCache.intValue() > 0)) {
 				response.setTitle(invokeRender(renderRequest, renderResponse));
-
 				response.setContent(bufferCacheServletResponse.getString());
 				response.setTime(now + (Time.SECOND * _expCache.intValue()));
 			}

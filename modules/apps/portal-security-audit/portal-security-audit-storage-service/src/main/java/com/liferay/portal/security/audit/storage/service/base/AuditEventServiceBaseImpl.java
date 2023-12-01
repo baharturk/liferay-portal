@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.audit.storage.service.base;
@@ -20,6 +11,8 @@ import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.BaseServiceImpl;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -27,8 +20,6 @@ import com.liferay.portal.security.audit.storage.model.AuditEvent;
 import com.liferay.portal.security.audit.storage.service.AuditEventService;
 import com.liferay.portal.security.audit.storage.service.AuditEventServiceUtil;
 import com.liferay.portal.security.audit.storage.service.persistence.AuditEventPersistence;
-
-import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -57,7 +48,7 @@ public abstract class AuditEventServiceBaseImpl
 	 */
 	@Deactivate
 	protected void deactivate() {
-		_setServiceUtilService(null);
+		AuditEventServiceUtil.setService(null);
 	}
 
 	@Override
@@ -71,7 +62,7 @@ public abstract class AuditEventServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		auditEventService = (AuditEventService)aopProxy;
 
-		_setServiceUtilService(auditEventService);
+		AuditEventServiceUtil.setService(auditEventService);
 	}
 
 	/**
@@ -116,20 +107,6 @@ public abstract class AuditEventServiceBaseImpl
 		}
 	}
 
-	private void _setServiceUtilService(AuditEventService auditEventService) {
-		try {
-			Field field = AuditEventServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, auditEventService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	@Reference
 	protected
 		com.liferay.portal.security.audit.storage.service.AuditEventLocalService
@@ -144,23 +121,7 @@ public abstract class AuditEventServiceBaseImpl
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameService
-		classNameService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserService userService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		AuditEventServiceBaseImpl.class);
 
 }

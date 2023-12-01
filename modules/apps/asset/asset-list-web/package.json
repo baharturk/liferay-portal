@@ -1,9 +1,20 @@
 {
 	"dependencies": {
-		"@clayui/button": "3.40.0",
-		"@clayui/icon": "3.40.0",
+		"@clayui/button": "3.107.0",
+		"@clayui/drop-down": "3.107.1",
+		"@clayui/empty-state": "3.106.1",
+		"@clayui/form": "3.107.0",
+		"@clayui/icon": "3.106.1",
+		"@clayui/link": "3.106.1",
+		"@clayui/list": "3.107.1",
+		"@clayui/tooltip": "3.107.0",
 		"asset-taglib": "*",
-		"frontend-js-web": "*"
+		"classnames": "2.3.1",
+		"frontend-js-web": "*",
+		"prop-types": "15.7.2",
+		"react": "16.12.0",
+		"react-dnd": "11.1.1",
+		"react-dnd-html5-backend": "11.1.1"
 	},
 	"jest": {
 		"modulePathIgnorePatterns": [
@@ -17,5 +28,5 @@
 		"format": "liferay-npm-scripts fix",
 		"test": "liferay-npm-scripts test"
 	},
-	"version": "3.0.27"
+	"version": "3.0.103"
 }

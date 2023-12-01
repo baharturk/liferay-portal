@@ -1,35 +1,46 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-export default function ({namespace}) {
-	const addButton = document.getElementById(`${namespace}addButton`);
+import {fetch, getOpener, openToast} from 'frontend-js-web';
 
+export default function ({namespace}) {
+	const loading = document.querySelector('.add-group-loading');
+	const container = document.querySelector('.add-group-container');
+	const content = document.querySelector(
+		'.add-group-form .add-group-content'
+	);
+	const footer = document.querySelector('.add-group-form .sheet-footer');
 	const form = document.getElementById(`${namespace}fm`);
+	const formInput = document.getElementById(`${namespace}name`);
+
+	setTimeout(() => {
+		formInput.focus();
+	}, 100);
 
 	form.addEventListener('submit', (event) => {
 		event.preventDefault();
 		event.stopPropagation();
 
-		if (addButton.disabled) {
-			return;
+		const alertContainer = document.querySelector(
+			'.add-group-alert-container'
+		);
+
+		if (alertContainer.hasChildNodes()) {
+			alertContainer.firstChild.remove();
 		}
 
-		addButton.disabled = true;
+		content.classList.toggle('d-none');
+		loading.classList.add('d-flex');
+		loading.classList.remove('d-none');
+		footer.classList.toggle('d-none');
+
+		container.classList.add('align-items-center', 'd-flex', 'h-100');
 
 		const formData = new FormData(form);
 
-		Liferay.Util.fetch(form.action, {
+		fetch(form.action, {
 			body: formData,
 			method: 'POST',
 		})
@@ -45,7 +56,7 @@ export default function ({namespace}) {
 
 					redirectURL.searchParams.set('p_p_state', 'normal');
 
-					const opener = Liferay.Util.getOpener();
+					const opener = getOpener();
 
 					opener.Liferay.fire('closeModal', {
 						id: `${namespace}addSiteDialog`,
@@ -53,12 +64,27 @@ export default function ({namespace}) {
 					});
 				}
 				else {
-					Liferay.Util.openToast({
+					openToast({
+						autoClose: false,
+						container: alertContainer,
 						message: response.error,
+						toastProps: {
+							onClose: null,
+						},
 						type: 'danger',
+						variant: 'stripe',
 					});
 
-					addButton.disabled = false;
+					content.classList.toggle('d-none');
+					loading.classList.remove('d-flex');
+					loading.classList.add('d-none');
+					footer.classList.toggle('d-none');
+
+					container.classList.remove(
+						'align-items-center',
+						'd-flex',
+						'h-100'
+					);
 				}
 			});
 	});

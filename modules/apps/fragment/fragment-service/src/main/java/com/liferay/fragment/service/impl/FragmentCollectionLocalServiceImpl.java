@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.impl;
@@ -87,7 +78,7 @@ public class FragmentCollectionLocalServiceImpl
 			serviceContext = new ServiceContext();
 		}
 
-		validate(name);
+		_validate(name);
 
 		if (Validator.isNull(fragmentCollectionKey)) {
 			fragmentCollectionKey = generateFragmentCollectionKey(
@@ -97,7 +88,7 @@ public class FragmentCollectionLocalServiceImpl
 		fragmentCollectionKey = _getFragmentCollectionKey(
 			fragmentCollectionKey);
 
-		validateFragmentCollectionKey(groupId, fragmentCollectionKey);
+		_validateFragmentCollectionKey(groupId, fragmentCollectionKey);
 
 		long fragmentCollectionId = counterLocalService.increment();
 
@@ -126,7 +117,7 @@ public class FragmentCollectionLocalServiceImpl
 			FragmentCollection fragmentCollection)
 		throws PortalException {
 
-		/// Fragment collection
+		// Fragment collection
 
 		fragmentCollectionPersistence.remove(fragmentCollection);
 
@@ -256,6 +247,32 @@ public class FragmentCollectionLocalServiceImpl
 	}
 
 	@Override
+	public String getUniqueFragmentCollectionName(long groupId, String name) {
+		FragmentCollection fragmentCollection =
+			fragmentCollectionPersistence.fetchByG_LikeN_First(
+				groupId, name, null);
+
+		if (fragmentCollection == null) {
+			return name;
+		}
+
+		int count = 1;
+
+		while (true) {
+			String newName = StringUtil.appendParentheticalSuffix(
+				name, count++);
+
+			fragmentCollection =
+				fragmentCollectionPersistence.fetchByG_LikeN_First(
+					groupId, newName, null);
+
+			if (fragmentCollection == null) {
+				return newName;
+			}
+		}
+	}
+
+	@Override
 	public FragmentCollection updateFragmentCollection(
 			long fragmentCollectionId, String name, String description)
 		throws PortalException {
@@ -264,7 +281,7 @@ public class FragmentCollectionLocalServiceImpl
 			fragmentCollectionPersistence.findByPrimaryKey(
 				fragmentCollectionId);
 
-		validate(name);
+		_validate(name);
 
 		fragmentCollection.setModifiedDate(new Date());
 		fragmentCollection.setName(name);
@@ -273,7 +290,17 @@ public class FragmentCollectionLocalServiceImpl
 		return fragmentCollectionPersistence.update(fragmentCollection);
 	}
 
-	protected void validate(String name) throws PortalException {
+	private String _getFragmentCollectionKey(String fragmentCollectionKey) {
+		if (fragmentCollectionKey != null) {
+			fragmentCollectionKey = fragmentCollectionKey.trim();
+
+			return StringUtil.toLowerCase(fragmentCollectionKey);
+		}
+
+		return StringPool.BLANK;
+	}
+
+	private void _validate(String name) throws PortalException {
 		if (Validator.isNull(name)) {
 			throw new FragmentCollectionNameException("Name must not be null");
 		}
@@ -286,7 +313,7 @@ public class FragmentCollectionLocalServiceImpl
 		}
 	}
 
-	protected void validateFragmentCollectionKey(
+	private void _validateFragmentCollectionKey(
 			long groupId, String fragmentCollectionKey)
 		throws PortalException {
 
@@ -300,16 +327,6 @@ public class FragmentCollectionLocalServiceImpl
 		if (fragmentCollection != null) {
 			throw new DuplicateFragmentCollectionKeyException();
 		}
-	}
-
-	private String _getFragmentCollectionKey(String fragmentCollectionKey) {
-		if (fragmentCollectionKey != null) {
-			fragmentCollectionKey = fragmentCollectionKey.trim();
-
-			return StringUtil.toLowerCase(fragmentCollectionKey);
-		}
-
-		return StringPool.BLANK;
 	}
 
 	@Reference

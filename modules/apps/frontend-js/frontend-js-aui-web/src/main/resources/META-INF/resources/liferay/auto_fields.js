@@ -1,27 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-auto-fields',
 	(A) => {
 		// eslint-disable-next-line @liferay/aui/no-object
-		var AObject = A.Object;
-		var Lang = A.Lang;
+		const AObject = A.Object;
+		const Lang = A.Lang;
 
-		var CSS_ICON_LOADING = 'loading-animation';
+		const CSS_ICON_LOADING = 'loading-animation';
 
-		var CSS_VALIDATION_HELPER_CLASSES = [
+		const CSS_VALIDATION_HELPER_CLASSES = [
 			'error',
 			'error-field',
 			'has-error',
@@ -29,29 +20,29 @@ AUI.add(
 			'success-field',
 		];
 
-		var TPL_ADD_BUTTON =
-			'<button class="add-row btn btn-icon-only btn-monospaced btn-secondary toolbar-first toolbar-item" title="' +
+		const TPL_ADD_BUTTON =
+			'<button class="add-row btn btn-icon-only btn-monospaced btn-primary toolbar-first toolbar-item" title="' +
 			Liferay.Language.get('add') +
 			'" type="button">' +
 			Liferay.Util.getLexiconIconTpl('plus') +
 			'</button>';
 
-		var TPL_DELETE_BUTTON =
-			'<button class="btn btn-icon-only btn-monospaced btn-secondary delete-row toolbar-item toolbar-last" title="' +
+		const TPL_DELETE_BUTTON =
+			'<button class="btn btn-icon-only btn-monospaced btn-primary delete-row toolbar-item toolbar-last" title="' +
 			Liferay.Language.get('remove') +
 			'" type="button">' +
 			Liferay.Util.getLexiconIconTpl('hr') +
 			'</button>';
 
-		var TPL_AUTOROW_CONTROLS =
+		const TPL_AUTOROW_CONTROLS =
 			'<span class="lfr-autorow-controls toolbar toolbar-horizontal">' +
 			'<span class="toolbar-content">' +
-			TPL_ADD_BUTTON +
 			TPL_DELETE_BUTTON +
+			TPL_ADD_BUTTON +
 			'</span>' +
 			'</span>';
 
-		var TPL_LOADING = '<div class="' + CSS_ICON_LOADING + '"></div>';
+		const TPL_LOADING = '<div class="' + CSS_ICON_LOADING + '"></div>';
 
 		/**
 		 * OPTIONS
@@ -67,7 +58,7 @@ AUI.add(
 		 *
 		 */
 
-		var AutoFields = A.Component.create({
+		const AutoFields = A.Component.create({
 			AUGMENTS: [Liferay.PortletBase],
 
 			EXTENDS: A.Base,
@@ -76,9 +67,9 @@ AUI.add(
 
 			prototype: {
 				_addHandleClass(node) {
-					var instance = this;
+					const instance = this;
 
-					var sortableHandle = instance.config.sortableHandle;
+					const sortableHandle = instance.config.sortableHandle;
 
 					if (sortableHandle) {
 						node.all(sortableHandle).addClass(
@@ -98,9 +89,9 @@ AUI.add(
 
 				_clearForm(node) {
 					node.all('input, select, textarea').each((item) => {
-						var tag = item.get('nodeName').toLowerCase();
+						const tag = item.get('nodeName').toLowerCase();
 
-						var type = item.getAttribute('type');
+						const type = item.getAttribute('type');
 
 						if (
 							type === 'text' ||
@@ -113,7 +104,7 @@ AUI.add(
 							item.attr('checked', false);
 						}
 						else if (tag === 'select') {
-							var selectedIndex = 0;
+							let selectedIndex = 0;
 
 							if (item.getAttribute('showEmptyOption')) {
 								selectedIndex = -1;
@@ -129,7 +120,7 @@ AUI.add(
 				},
 
 				_clearHiddenRows(item) {
-					var instance = this;
+					const instance = this;
 
 					if (instance._isHiddenRow(item)) {
 						item.remove(true);
@@ -138,41 +129,41 @@ AUI.add(
 
 				_clearInputsLocalized(node) {
 					node.all('.language-value').attr('placeholder', '');
-					node.all('.form-text').setHTML('');
+					node.all('.form-text:not(.form-text-repeat)').setHTML('');
 				},
 
 				_createClone(node) {
-					var instance = this;
+					const instance = this;
 
-					var currentRow = node;
+					const currentRow = node;
 
-					var clone = currentRow.clone();
+					const clone = currentRow.clone();
 
-					var guid = instance._guid++;
+					const guid = instance._guid++;
 
-					var formValidator = instance._getFormValidator(node);
+					const formValidator = instance._getFormValidator(node);
 
-					var paletteIsCloned =
+					const paletteIsCloned =
 						clone.one("[id$='PaletteBoundingBox']") !== null;
 
-					var inputsLocalized = node.all('.language-value');
+					const inputsLocalized = node.all('.language-value');
 
-					var clonedRow;
+					let clonedRow;
 
-					if (inputsLocalized && !paletteIsCloned) {
-						var palette = document.querySelector(
+					if (!!inputsLocalized._nodes.length && !paletteIsCloned) {
+						const palette = document.querySelector(
 							"[id$='PaletteBoundingBox']"
 						);
 
-						var trigger = clone.one('button');
+						const trigger = clone.one('button');
 
-						var list = A.Node.create(
+						const list = A.Node.create(
 							'<ul class="dropdown-menu dropdown-menu-left-side"></ul>'
 						);
 
 						trigger.placeAfter(list);
 
-						list.append(palette);
+						list.append(palette.cloneNode(true));
 					}
 
 					if (instance.url) {
@@ -196,11 +187,11 @@ AUI.add(
 					formValidator,
 					inputsLocalized
 				) {
-					var instance = this;
+					const instance = this;
 
-					var fieldStrings;
+					let fieldStrings;
 
-					var rules;
+					let rules;
 
 					if (formValidator) {
 						fieldStrings = formValidator.get('fieldStrings');
@@ -210,12 +201,12 @@ AUI.add(
 
 					node.all('button, input, select, textarea, span, div').each(
 						(item) => {
-							var inputNodeName = item.attr('nodeName');
-							var inputType = item.attr('type');
+							const inputNodeName = item.attr('nodeName');
+							const inputType = item.attr('type');
 
-							var oldName = item.attr('name') || item.attr('id');
+							let oldName = item.attr('name') || item.attr('id');
 
-							var newName = oldName.replace(
+							const newName = oldName.replace(
 								/([0-9]+)([_A-Za-z]*)$/,
 								guid + '$2'
 							);
@@ -267,7 +258,7 @@ AUI.add(
 
 					instance.once('clone', () => {
 						inputsLocalized.each((item) => {
-							var inputId = item.attr('id');
+							const inputId = item.attr('id');
 
 							instance._registerInputLocalized(
 								Liferay.InputLocalized._instances[inputId],
@@ -287,23 +278,23 @@ AUI.add(
 				},
 
 				_createCloneFromURL(node, guid) {
-					var instance = this;
+					const instance = this;
 
-					var contentBox = node.one('> div');
+					const contentBox = node.one('> div');
 
 					contentBox.html(TPL_LOADING);
 
 					contentBox.plug(A.Plugin.ParseContent);
 
-					var data = {
+					const data = {
 						index: guid,
 					};
 
-					var namespace = instance.urlNamespace
+					const namespace = instance.urlNamespace
 						? instance.urlNamespace
 						: instance.namespace;
 
-					var namespacedData = Liferay.Util.ns(namespace, data);
+					const namespacedData = Liferay.Util.ns(namespace, data);
 
 					Liferay.Util.fetch(instance.url, {
 						body: Liferay.Util.objectToFormData(namespacedData),
@@ -316,12 +307,12 @@ AUI.add(
 				},
 
 				_getFormValidator(node) {
-					var formValidator;
+					let formValidator;
 
-					var form = node.ancestor('form');
+					const form = node.ancestor('form');
 
 					if (form) {
-						var formId = form.attr('id');
+						const formId = form.attr('id');
 
 						formValidator = Liferay.Form.get(formId).formValidator;
 					}
@@ -336,9 +327,9 @@ AUI.add(
 				},
 
 				_makeSortable(sortableHandle) {
-					var instance = this;
+					const instance = this;
 
-					var rows = instance._contentBox.all('.lfr-form-row');
+					const rows = instance._contentBox.all('.lfr-form-row');
 
 					instance._addHandleClass(rows);
 
@@ -359,17 +350,21 @@ AUI.add(
 				},
 
 				_registerInputLocalized(inputLocalized, guid) {
-					var inputLocalizedId = inputLocalized
+					const inputLocalizedId = inputLocalized
 						.get('id')
 						.replace(/([0-9]+)$/, guid);
 
-					var inputLocalizedNamespace = inputLocalized.get(
+					const inputLocalizedNamespace = inputLocalized.get(
 						'namespace'
 					);
 
-					var inputLocalizedNamespaceId = `${inputLocalizedNamespace}${inputLocalizedId}`;
+					const inputLocalizedNamespaceId = `${inputLocalizedNamespace}${inputLocalizedId}`;
 
 					Liferay.InputLocalized.register(inputLocalizedNamespaceId, {
+						adminMode: inputLocalized.get('adminMode'),
+						availableLocales: inputLocalized.get(
+							'availableLocales'
+						),
 						boundingBox: `#${inputLocalizedNamespaceId}PaletteBoundingBox`,
 						columns: inputLocalized.get('columns'),
 						contentBox: `#${inputLocalizedNamespaceId}PaletteContentBox`,
@@ -380,35 +375,54 @@ AUI.add(
 						fieldPrefixSeparator: inputLocalized.get(
 							'fieldPrefixSeparator'
 						),
+						frontendJsComponentsWebModule: inputLocalized.get(
+							'frontendJsComponentsWebModule'
+						),
+						frontendJsReactWebModule: inputLocalized.get(
+							'frontendJsReactWebModule'
+						),
+						frontendJsStateWebModule: inputLocalized.get(
+							'frontendJsStateWebModule'
+						),
 						helpMessage: inputLocalized.get('helpMessage'),
 						id: inputLocalizedId,
 						inputBox: `#${inputLocalizedNamespaceId}BoundingBox`,
 						inputPlaceholder: '#' + inputLocalizedNamespaceId,
 						items: inputLocalized.get('items'),
 						itemsError: inputLocalized.get('itemsError'),
+						languagesDropdownDirection: inputLocalized.get(
+							'languagesDropdownDirection'
+						),
+						languagesTranslationsAriaLabels: inputLocalized.get(
+							'languagesTranslationsAriaLabels'
+						),
+						lazy: inputLocalized.get('lazy'),
 						name: inputLocalizedId,
 						namespace: inputLocalized.get('namespace'),
 						selected: inputLocalized
 							.get('items')
 							.indexOf(inputLocalized.getSelectedLanguageId()),
+						selectedLanguageId: inputLocalized.get(
+							'selectedLanguageId'
+						),
 						toggleSelection: inputLocalized.get('toggleSelection'),
 						translatedLanguages: inputLocalized.get(
 							'translatedLanguages'
 						),
 					});
 
-					var inputLocalizedMenuId = `${inputLocalizedNamespace}${inputLocalizedNamespaceId}Menu`;
+					const inputLocalizedMenuId = `${inputLocalizedNamespace}${inputLocalizedNamespaceId}Menu`;
 
 					Liferay.Menu.register(inputLocalizedMenuId);
 				},
 
 				_updateContentButtons() {
-					var instance = this;
+					const instance = this;
 
-					var minimumRows = instance.minimumRows;
+					const minimumRows = instance.minimumRows;
 
 					if (minimumRows) {
-						var deleteRowButtons = instance._contentBox.all(
+						const deleteRowButtons = instance._contentBox.all(
 							'.lfr-form-row:not(.hide) .delete-row'
 						);
 
@@ -420,15 +434,15 @@ AUI.add(
 				},
 
 				addRow(node) {
-					var instance = this;
+					const instance = this;
 
-					var clone = instance._createClone(node);
+					const clone = instance._createClone(node);
 
 					clone.resetId();
 
 					node.placeAfter(clone);
 
-					var input = clone.one(
+					const input = clone.one(
 						'input[type=text], input[type=password], textarea'
 					);
 
@@ -450,29 +464,40 @@ AUI.add(
 				},
 
 				deleteRow(node) {
-					var instance = this;
+					const instance = this;
 
-					var contentBox = instance._contentBox;
+					const contentBox = instance._contentBox;
 
-					var visibleRows = contentBox.all('.lfr-form-row:visible');
+					const visibleRows = contentBox
+						.all('.lfr-form-row')
+						.getDOMNodes()
+						.filter((node) => {
+							const computedStyle = window.getComputedStyle(node);
 
-					var visibleRowsSize = visibleRows.size();
+							return (
+								computedStyle.display !== 'none' &&
+								computedStyle.visibility !== 'collapse' &&
+								computedStyle.visibility !== 'hidden'
+							);
+						});
 
-					var deleteRow = visibleRowsSize > 1;
+					const visibleRowsLength = visibleRows.length;
 
-					if (visibleRowsSize === 1) {
+					let deleteRow = visibleRowsLength > 1;
+
+					if (visibleRowsLength === 1) {
 						instance.addRow(node);
 
 						deleteRow = true;
 					}
 
 					if (deleteRow) {
-						var form = node.ancestor('form');
+						const form = node.ancestor('form');
 
 						node.hide();
 
 						CSS_VALIDATION_HELPER_CLASSES.forEach((item) => {
-							var disabledClass = item + '-disabled';
+							const disabledClass = item + '-disabled';
 
 							node.all('.' + item).replaceClass(
 								item,
@@ -480,19 +505,20 @@ AUI.add(
 							);
 						});
 
-						var rules;
+						let rules;
 
-						var deletedRules = {};
+						const deletedRules = {};
 
-						var formValidator = instance._getFormValidator(node);
+						const formValidator = instance._getFormValidator(node);
 
 						if (formValidator) {
-							var errors = formValidator.errors;
+							const errors = formValidator.errors;
 
 							rules = formValidator.get('rules');
 
 							node.all('input, select, textarea').each((item) => {
-								var name = item.attr('name') || item.attr('id');
+								const name =
+									item.attr('name') || item.attr('id');
 
 								if (rules && rules[name]) {
 									deletedRules[name] = rules[name];
@@ -514,7 +540,7 @@ AUI.add(
 							}
 
 							CSS_VALIDATION_HELPER_CLASSES.forEach((item) => {
-								var disabledClass = item + '-disabled';
+								const disabledClass = item + '-disabled';
 
 								node.all('.' + disabledClass).replaceClass(
 									disabledClass,
@@ -545,22 +571,22 @@ AUI.add(
 				},
 
 				initializer(config) {
-					var instance = this;
+					const instance = this;
 
 					instance.config = config;
 				},
 
 				render() {
-					var instance = this;
+					const instance = this;
 
-					var baseContainer = A.Node.create(
+					const baseContainer = A.Node.create(
 						'<div class="lfr-form-row"><div class="row-fields"></div></div>'
 					);
 
-					var config = instance.config;
-					var contentBox = A.one(config.contentBox);
+					const config = instance.config;
+					const contentBox = A.one(config.contentBox);
 
-					var baseRows = contentBox.all(
+					const baseRows = contentBox.all(
 						config.baseRows || '.lfr-form-row'
 					);
 
@@ -598,9 +624,9 @@ AUI.add(
 					contentBox.delegate(
 						'click',
 						(event) => {
-							var link = event.currentTarget;
+							const link = event.currentTarget;
 
-							var currentRow = link.ancestor('.lfr-form-row');
+							const currentRow = link.ancestor('.lfr-form-row');
 
 							if (link.hasClass('add-row')) {
 								instance.addRow(currentRow);
@@ -615,8 +641,8 @@ AUI.add(
 					);
 
 					baseRows.each((item, index) => {
-						var firstChild;
-						var formRow;
+						let firstChild;
+						let formRow;
 
 						if (item.hasClass('lfr-form-row')) {
 							formRow = item;
@@ -661,9 +687,9 @@ AUI.add(
 				},
 
 				reset() {
-					var instance = this;
+					const instance = this;
 
-					var contentBox = instance._contentBox;
+					const contentBox = instance._contentBox;
 
 					contentBox.all('.lfr-form-row').each((item) => {
 						instance.deleteRow(item);
@@ -673,27 +699,27 @@ AUI.add(
 				},
 
 				save(form) {
-					var instance = this;
+					const instance = this;
 
-					var contentBox = form || instance._contentBox;
+					const contentBox = form || instance._contentBox;
 
 					contentBox
 						.all('.lfr-form-row')
 						.each(instance._clearHiddenRows, instance);
 
-					var fieldOrder = instance.serialize();
+					const fieldOrder = instance.serialize();
 
 					instance._fieldIndexes.val(fieldOrder);
 				},
 
 				serialize(filter) {
-					var instance = this;
+					const instance = this;
 
-					var visibleRows = instance._contentBox
+					const visibleRows = instance._contentBox
 						.all('.lfr-form-row')
 						.each(instance._clearHiddenRows, instance);
 
-					var serializedData = [];
+					let serializedData = [];
 
 					if (filter) {
 						serializedData =
@@ -701,9 +727,11 @@ AUI.add(
 					}
 					else {
 						visibleRows.each((item) => {
-							var formField = item.one('input, textarea, select');
+							const formField = item.one(
+								'input, textarea, select'
+							);
 
-							var fieldId = formField.attr('id');
+							let fieldId = formField.attr('id');
 
 							if (!fieldId) {
 								fieldId = formField.attr('name');

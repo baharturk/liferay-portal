@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayLayout from '@clayui/layout';
@@ -23,6 +14,8 @@ import ColorGuide from './guides/ColorGuide';
 import FormGuide from './guides/FormGuide';
 import GeneralGuide from './guides/GeneralGuide';
 import LabelGuide from './guides/LabelGuide';
+import TableGuide from './guides/TableGuide';
+import TabsGuide from './guides/TabsGuide';
 import TypographyGuide from './guides/TypographyGuide';
 
 const TABS = [
@@ -61,6 +54,16 @@ const TABS = [
 		hash: '#labels',
 		label: Liferay.Language.get('labels'),
 	},
+	{
+		content: <TableGuide />,
+		hash: '#tables',
+		label: Liferay.Language.get('tables'),
+	},
+	{
+		content: <TabsGuide />,
+		hash: '#tabs',
+		label: Liferay.Language.get('tabs'),
+	},
 ];
 
 export default function App() {
@@ -81,7 +84,7 @@ export default function App() {
 					</ClayLayout.Col>
 				</ClayLayout.Row>
 
-				<ClayTabs modern>
+				<ClayTabs>
 					{TABS.map((tab, i) => (
 						<ClayTabs.Item
 							active={activeTabKeyValue === tab.hash}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useResource} from '@clayui/data-provider';
@@ -20,8 +11,12 @@ import React from 'react';
 
 import './Report.scss';
 
-export function Report() {
-	const {formReportDataURL} = useConfig();
+export default function Report() {
+	const {
+		dataEngineModule,
+		displayChartAsTable,
+		formReportDataURL,
+	} = useConfig();
 	const {resource} = useResource({link: formReportDataURL});
 	const {
 		data,
@@ -34,7 +29,7 @@ export function Report() {
 
 	return (
 		<>
-			<div className="lfr-ddm__form-report__header">
+			<div className="lfr-ddm__form-report__header" tabIndex={0}>
 				<div className="container-fluid container-fluid-max-xl">
 					<h2 className="lfr-ddm__form-report__title text-truncate">
 						{Liferay.Util.sub(
@@ -58,24 +53,21 @@ export function Report() {
 				triggerLabel={Liferay.Language.get('summary')}
 			>
 				<ClayNavigationBar.Item active>
-					<ClayLink className="nav-link" displayType="unstyled">
-						{Liferay.Language.get('summary')}
-					</ClayLink>
+					<ClayLink>{Liferay.Language.get('summary')}</ClayLink>
 				</ClayNavigationBar.Item>
 			</ClayNavigationBar>
 
 			<hr className="m-0" />
-
-			<div className="container-fluid container-fluid-max-xl">
-				<FormReport
-					data={data}
-					fields={fields}
-					formReportRecordsFieldValuesURL={
-						formReportRecordsFieldValuesURL
-					}
-					portletNamespace={portletNamespace}
-				/>
-			</div>
+			<FormReport
+				data={data}
+				dataEngineModule={dataEngineModule}
+				displayChartAsTable={displayChartAsTable}
+				fields={fields}
+				formReportRecordsFieldValuesURL={
+					formReportRecordsFieldValuesURL
+				}
+				portletNamespace={portletNamespace}
+			/>
 		</>
 	);
 }

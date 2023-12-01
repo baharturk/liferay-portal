@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.dto.v1_0;
@@ -166,6 +157,63 @@ public class ObjectField implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BusinessType businessType;
 
+	@Schema(deprecated = true)
+	public String getDefaultValue() {
+		return defaultValue;
+	}
+
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
+	}
+
+	@JsonIgnore
+	public void setDefaultValue(
+		UnsafeSupplier<String, Exception> defaultValueUnsafeSupplier) {
+
+		try {
+			defaultValue = defaultValueUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Deprecated
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String defaultValue;
+
+	@Schema
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String externalReferenceCode;
+
 	@Schema
 	public Long getId() {
 		return id;
@@ -306,6 +354,39 @@ public class ObjectField implements Serializable {
 	protected Map<String, String> label;
 
 	@Schema
+	public String getListTypeDefinitionExternalReferenceCode() {
+		return listTypeDefinitionExternalReferenceCode;
+	}
+
+	public void setListTypeDefinitionExternalReferenceCode(
+		String listTypeDefinitionExternalReferenceCode) {
+
+		this.listTypeDefinitionExternalReferenceCode =
+			listTypeDefinitionExternalReferenceCode;
+	}
+
+	@JsonIgnore
+	public void setListTypeDefinitionExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			listTypeDefinitionExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			listTypeDefinitionExternalReferenceCode =
+				listTypeDefinitionExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String listTypeDefinitionExternalReferenceCode;
+
+	@Schema
 	public Long getListTypeDefinitionId() {
 		return listTypeDefinitionId;
 	}
@@ -334,6 +415,34 @@ public class ObjectField implements Serializable {
 	protected Long listTypeDefinitionId;
 
 	@Schema
+	public Boolean getLocalized() {
+		return localized;
+	}
+
+	public void setLocalized(Boolean localized) {
+		this.localized = localized;
+	}
+
+	@JsonIgnore
+	public void setLocalized(
+		UnsafeSupplier<Boolean, Exception> localizedUnsafeSupplier) {
+
+		try {
+			localized = localizedUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean localized;
+
+	@Schema
 	public String getName() {
 		return name;
 	}
@@ -358,6 +467,108 @@ public class ObjectField implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
+
+	@Schema
+	@Valid
+	public ObjectFieldSetting[] getObjectFieldSettings() {
+		return objectFieldSettings;
+	}
+
+	public void setObjectFieldSettings(
+		ObjectFieldSetting[] objectFieldSettings) {
+
+		this.objectFieldSettings = objectFieldSettings;
+	}
+
+	@JsonIgnore
+	public void setObjectFieldSettings(
+		UnsafeSupplier<ObjectFieldSetting[], Exception>
+			objectFieldSettingsUnsafeSupplier) {
+
+		try {
+			objectFieldSettings = objectFieldSettingsUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected ObjectFieldSetting[] objectFieldSettings;
+
+	@Schema
+	@Valid
+	public ReadOnly getReadOnly() {
+		return readOnly;
+	}
+
+	@JsonIgnore
+	public String getReadOnlyAsString() {
+		if (readOnly == null) {
+			return null;
+		}
+
+		return readOnly.toString();
+	}
+
+	public void setReadOnly(ReadOnly readOnly) {
+		this.readOnly = readOnly;
+	}
+
+	@JsonIgnore
+	public void setReadOnly(
+		UnsafeSupplier<ReadOnly, Exception> readOnlyUnsafeSupplier) {
+
+		try {
+			readOnly = readOnlyUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected ReadOnly readOnly;
+
+	@Schema
+	public String getReadOnlyConditionExpression() {
+		return readOnlyConditionExpression;
+	}
+
+	public void setReadOnlyConditionExpression(
+		String readOnlyConditionExpression) {
+
+		this.readOnlyConditionExpression = readOnlyConditionExpression;
+	}
+
+	@JsonIgnore
+	public void setReadOnlyConditionExpression(
+		UnsafeSupplier<String, Exception>
+			readOnlyConditionExpressionUnsafeSupplier) {
+
+		try {
+			readOnlyConditionExpression =
+				readOnlyConditionExpressionUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String readOnlyConditionExpression;
 
 	@Schema
 	@Valid
@@ -426,6 +637,62 @@ public class ObjectField implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean required;
 
+	@Schema
+	public Boolean getState() {
+		return state;
+	}
+
+	public void setState(Boolean state) {
+		this.state = state;
+	}
+
+	@JsonIgnore
+	public void setState(
+		UnsafeSupplier<Boolean, Exception> stateUnsafeSupplier) {
+
+		try {
+			state = stateUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean state;
+
+	@Schema
+	public Boolean getSystem() {
+		return system;
+	}
+
+	public void setSystem(Boolean system) {
+		this.system = system;
+	}
+
+	@JsonIgnore
+	public void setSystem(
+		UnsafeSupplier<Boolean, Exception> systemUnsafeSupplier) {
+
+		try {
+			system = systemUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean system;
+
 	@Schema(deprecated = true)
 	@Valid
 	public Type getType() {
@@ -462,6 +729,34 @@ public class ObjectField implements Serializable {
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Type type;
+
+	@Schema
+	public Boolean getUnique() {
+		return unique;
+	}
+
+	public void setUnique(Boolean unique) {
+		this.unique = unique;
+	}
+
+	@JsonIgnore
+	public void setUnique(
+		UnsafeSupplier<Boolean, Exception> uniqueUnsafeSupplier) {
+
+		try {
+			unique = uniqueUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Boolean unique;
 
 	@Override
 	public boolean equals(Object object) {
@@ -528,6 +823,34 @@ public class ObjectField implements Serializable {
 			sb.append("\"");
 		}
 
+		if (defaultValue != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"defaultValue\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(defaultValue));
+
+			sb.append("\"");
+		}
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -582,6 +905,20 @@ public class ObjectField implements Serializable {
 			sb.append(_toJSON(label));
 		}
 
+		if (listTypeDefinitionExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"listTypeDefinitionExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(listTypeDefinitionExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
 		if (listTypeDefinitionId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -590,6 +927,16 @@ public class ObjectField implements Serializable {
 			sb.append("\"listTypeDefinitionId\": ");
 
 			sb.append(listTypeDefinitionId);
+		}
+
+		if (localized != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"localized\": ");
+
+			sb.append(localized);
 		}
 
 		if (name != null) {
@@ -602,6 +949,54 @@ public class ObjectField implements Serializable {
 			sb.append("\"");
 
 			sb.append(_escape(name));
+
+			sb.append("\"");
+		}
+
+		if (objectFieldSettings != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectFieldSettings\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < objectFieldSettings.length; i++) {
+				sb.append(String.valueOf(objectFieldSettings[i]));
+
+				if ((i + 1) < objectFieldSettings.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		if (readOnly != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"readOnly\": ");
+
+			sb.append("\"");
+
+			sb.append(readOnly);
+
+			sb.append("\"");
+		}
+
+		if (readOnlyConditionExpression != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"readOnlyConditionExpression\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(readOnlyConditionExpression));
 
 			sb.append("\"");
 		}
@@ -630,6 +1025,26 @@ public class ObjectField implements Serializable {
 			sb.append(required);
 		}
 
+		if (state != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"state\": ");
+
+			sb.append(state);
+		}
+
+		if (system != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"system\": ");
+
+			sb.append(system);
+		}
+
 		if (type != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -642,6 +1057,16 @@ public class ObjectField implements Serializable {
 			sb.append(type);
 
 			sb.append("\"");
+		}
+
+		if (unique != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"unique\": ");
+
+			sb.append(unique);
 		}
 
 		sb.append("}");
@@ -659,10 +1084,13 @@ public class ObjectField implements Serializable {
 	@GraphQLName("BusinessType")
 	public static enum BusinessType {
 
-		BOOLEAN("Boolean"), DATE("Date"), DECIMAL("Decimal"),
-		INTEGER("Integer"), LONG_INTEGER("LongInteger"), LONG_TEXT("LongText"),
+		AGGREGATION("Aggregation"), ATTACHMENT("Attachment"),
+		AUTO_INCREMENT("AutoIncrement"), BOOLEAN("Boolean"), DATE("Date"),
+		DATE_TIME("DateTime"), DECIMAL("Decimal"), ENCRYPTED("Encrypted"),
+		FORMULA("Formula"), INTEGER("Integer"), LONG_INTEGER("LongInteger"),
+		LONG_TEXT("LongText"), MULTISELECT_PICKLIST("MultiselectPicklist"),
 		PICKLIST("Picklist"), PRECISION_DECIMAL("PrecisionDecimal"),
-		RELATIONSHIP("Relationship"), TEXT("Text");
+		RELATIONSHIP("Relationship"), RICH_TEXT("RichText"), TEXT("Text");
 
 		@JsonCreator
 		public static BusinessType create(String value) {
@@ -701,8 +1129,8 @@ public class ObjectField implements Serializable {
 	public static enum DBType {
 
 		BIG_DECIMAL("BigDecimal"), BOOLEAN("Boolean"), CLOB("Clob"),
-		DATE("Date"), DOUBLE("Double"), INTEGER("Integer"), LONG("Long"),
-		STRING("String");
+		DATE("Date"), DATE_TIME("DateTime"), DOUBLE("Double"),
+		INTEGER("Integer"), LONG("Long"), STRING("String");
 
 		@JsonCreator
 		public static DBType create(String value) {
@@ -730,6 +1158,44 @@ public class ObjectField implements Serializable {
 		}
 
 		private DBType(String value) {
+			_value = value;
+		}
+
+		private final String _value;
+
+	}
+
+	@GraphQLName("ReadOnly")
+	public static enum ReadOnly {
+
+		CONDITIONAL("conditional"), FALSE("false"), TRUE("true");
+
+		@JsonCreator
+		public static ReadOnly create(String value) {
+			if ((value == null) || value.equals("")) {
+				return null;
+			}
+
+			for (ReadOnly readOnly : values()) {
+				if (Objects.equals(readOnly.getValue(), value)) {
+					return readOnly;
+				}
+			}
+
+			throw new IllegalArgumentException("Invalid enum value: " + value);
+		}
+
+		@JsonValue
+		public String getValue() {
+			return _value;
+		}
+
+		@Override
+		public String toString() {
+			return _value;
+		}
+
+		private ReadOnly(String value) {
 			_value = value;
 		}
 
@@ -779,8 +1245,8 @@ public class ObjectField implements Serializable {
 	public static enum Type {
 
 		BIG_DECIMAL("BigDecimal"), BOOLEAN("Boolean"), CLOB("Clob"),
-		DATE("Date"), DOUBLE("Double"), INTEGER("Integer"), LONG("Long"),
-		STRING("String");
+		DATE("Date"), DATE_TIME("DateTime"), DOUBLE("Double"),
+		INTEGER("Integer"), LONG("Long"), STRING("String");
 
 		@JsonCreator
 		public static Type create(String value) {
@@ -897,5 +1363,7 @@ public class ObjectField implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

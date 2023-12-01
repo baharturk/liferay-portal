@@ -1,17 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
+
+import {openWindow} from 'frontend-js-web';
 
 import DocumentLibraryOpener from '../../src/main/resources/META-INF/resources/js/DocumentLibraryOpener.es';
 
 const realSetTimeout = setTimeout;
+
+jest.mock('frontend-js-web', () => ({
+	...jest.requireActual('frontend-js-web'),
+	getWindow: jest.fn(() => ({hide: jest.fn()})),
+	openWindow: jest.fn().mockImplementation((_, callback) => callback()),
+}));
 
 function replyAndWait({body = {}, ms}) {
 	return () => {
@@ -34,10 +36,6 @@ describe('DocumentLibraryOpener', () => {
 	beforeEach(() => {
 		jest.spyOn(window, 'open').mockImplementation(() => {});
 		global.Liferay.Portlet = {refresh: jest.fn()};
-		global.Liferay.Util.openWindow = jest
-			.fn()
-			.mockImplementation((_, callback) => callback());
-		global.Liferay.Util.getWindow = () => ({hide: jest.fn()});
 		global.themeDisplay = {
 			getPathThemeImages: jest.fn().mockImplementation(() => '//images/'),
 		};
@@ -50,12 +48,11 @@ describe('DocumentLibraryOpener', () => {
 
 	afterEach(() => {
 		window.open.mockRestore();
-		delete global.Liferay.Util.openWindow;
-		delete global.Liferay.Util.getWindow;
 		delete global.themeDisplay;
 		delete global.Liferay.Portlet.refresh;
 
 		jest.useRealTimers();
+		jest.clearAllMocks();
 	});
 
 	describe('.edit()', () => {
@@ -82,10 +79,9 @@ describe('DocumentLibraryOpener', () => {
 			});
 
 			it('opens the loading modal', () => {
-				expect(global.Liferay.Util.openWindow).toHaveBeenCalledTimes(1);
+				expect(openWindow).toHaveBeenCalledTimes(1);
 				expect(
-					global.Liferay.Util.openWindow.mock.calls[0][0].dialog
-						.bodyContent
+					openWindow.mock.calls[0][0].dialog.bodyContent
 				).toContain(
 					'you-are-being-redirected-to-an-external-editor-to-edit-this-document'
 				);
@@ -136,10 +132,9 @@ describe('DocumentLibraryOpener', () => {
 			});
 
 			it('opens the loading modal', () => {
-				expect(global.Liferay.Util.openWindow).toHaveBeenCalledTimes(1);
+				expect(openWindow).toHaveBeenCalledTimes(1);
 				expect(
-					global.Liferay.Util.openWindow.mock.calls[0][0].dialog
-						.bodyContent
+					openWindow.mock.calls[0][0].dialog.bodyContent
 				).toContain(
 					'you-are-being-redirected-to-an-external-editor-to-edit-this-document'
 				);
@@ -193,10 +188,9 @@ describe('DocumentLibraryOpener', () => {
 			});
 
 			it('opens the loading modal', () => {
-				expect(global.Liferay.Util.openWindow).toHaveBeenCalledTimes(1);
+				expect(openWindow).toHaveBeenCalledTimes(1);
 				expect(
-					global.Liferay.Util.openWindow.mock.calls[0][0].dialog
-						.bodyContent
+					openWindow.mock.calls[0][0].dialog.bodyContent
 				).toContain(
 					'you-are-being-redirected-to-an-external-editor-to-edit-this-document'
 				);
@@ -241,10 +235,9 @@ describe('DocumentLibraryOpener', () => {
 			});
 
 			it('opens the loading modal with the creation message', () => {
-				expect(global.Liferay.Util.openWindow).toHaveBeenCalledTimes(1);
+				expect(openWindow).toHaveBeenCalledTimes(1);
 				expect(
-					global.Liferay.Util.openWindow.mock.calls[0][0].dialog
-						.bodyContent
+					openWindow.mock.calls[0][0].dialog.bodyContent
 				).toContain(
 					'you-are-being-redirected-to-an-external-editor-to-create-this-document'
 				);
@@ -285,10 +278,9 @@ describe('DocumentLibraryOpener', () => {
 			});
 
 			it('opens the loading modal with the creation message', () => {
-				expect(global.Liferay.Util.openWindow).toHaveBeenCalledTimes(1);
+				expect(openWindow).toHaveBeenCalledTimes(1);
 				expect(
-					global.Liferay.Util.openWindow.mock.calls[0][0].dialog
-						.bodyContent
+					openWindow.mock.calls[0][0].dialog.bodyContent
 				).toContain(
 					'you-are-being-redirected-to-an-external-editor-to-create-this-document'
 				);

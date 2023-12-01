@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 /* eslint-disable @liferay/empty-line-between-elements */
@@ -18,6 +12,7 @@ import ClayModal, {useModal} from '@clayui/modal';
 import ClayPopover from '@clayui/popover';
 import ClayTable from '@clayui/table';
 import WorkflowInstanceTracker from '@liferay/portal-workflow-instance-tracker-web/js/components/WorkflowInstanceTracker';
+import {sub} from 'frontend-js-web';
 import React, {useContext, useState} from 'react';
 
 import useDebounceCallback from '../../hooks/useDebounceCallback.es';
@@ -28,7 +23,8 @@ import {capitalize, getSLAStatusIconInfo} from '../../shared/util/util.es';
 import {AppContext} from '../AppContext.es';
 import {InstanceListContext} from './InstanceListPageProvider.es';
 import {ModalContext} from './modal/ModalProvider.es';
-function Item({totalCount, ...instance}) {
+
+function Item({isAdmin, totalCount, ...instance}) {
 	const {userId} = useContext(AppContext);
 	const {
 		selectedItems = [],
@@ -67,7 +63,11 @@ function Item({totalCount, ...instance}) {
 	const assigneeNames = assignees.map((user) => user.name).join(', ');
 	const {reviewer} = assignees.find(({id}) => id === -1) || {};
 
-	const disableCheckbox = (!assignedToUser && !reviewer) || completed;
+	let disableCheckbox = completed;
+
+	if (!isAdmin) {
+		disableCheckbox = !assignedToUser && !reviewer;
+	}
 
 	const formattedAssignees = !completed
 		? assigneeNames
@@ -93,6 +93,11 @@ function Item({totalCount, ...instance}) {
 			<ClayTable.Cell>
 				<div className="table-first-element-group">
 					<ClayCheckbox
+						aria-label={sub(
+							Liferay.Language.get('select-x-x'),
+							assetType,
+							assetTitle
+						)}
 						checked={checked}
 						disabled={disableCheckbox}
 						onChange={handleCheck}
@@ -163,9 +168,9 @@ function Item({totalCount, ...instance}) {
 			</ClayTable.Cell>
 
 			<ClayTable.Cell>
-				{moment
-					.utc(dateCreated)
-					.format(Liferay.Language.get('mmm-dd-yyyy-lt'))}
+				{moment(dateCreated).format(
+					Liferay.Language.get('mmm-dd-yyyy-lt')
+				)}
 			</ClayTable.Cell>
 
 			<ClayTable.Cell style={{paddingRight: '0rem'}}>
@@ -223,7 +228,7 @@ function QuickActionMenu({disabled, instance, setShowInstanceTrackerModal}) {
 		},
 	];
 
-	if (transitions.length > 0) {
+	if (transitions.length) {
 		const transitionItems = [
 			{
 				type: 'divider',
@@ -249,7 +254,7 @@ function QuickActionMenu({disabled, instance, setShowInstanceTrackerModal}) {
 
 		kebabItems.push(...transitionItems);
 	}
-	else if (transitions.length === 0 && taskNames.length > 1) {
+	else if (!transitions.length && taskNames.length > 1) {
 		kebabItems.splice(
 			1,
 			1,
@@ -300,7 +305,7 @@ function DueDateSLAResults({slaResults, slaStatusIconInfo}) {
 				: Liferay.Language.get('mmm-dd-yyyy');
 		}
 
-		return moment.utc(dateOverdue).format(format);
+		return moment(dateOverdue).format(format);
 	};
 
 	const instanceSlaResults = slaResults.slice(0, 2).map((slaResult) => {
@@ -347,6 +352,7 @@ function DueDateSLAResults({slaResults, slaStatusIconInfo}) {
 					header={Liferay.Language.get('due-date')}
 					onMouseEnter={() => setPopover(true)}
 					onMouseLeave={() => setPopover(false)}
+					onShowChange={setPopover}
 					show={popover}
 					trigger={
 						<div

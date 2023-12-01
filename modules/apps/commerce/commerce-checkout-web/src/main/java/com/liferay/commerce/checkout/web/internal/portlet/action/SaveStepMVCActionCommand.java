@@ -1,25 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.checkout.web.internal.portlet.action;
 
 import com.liferay.commerce.constants.CommercePortletKeys;
 import com.liferay.commerce.util.CommerceCheckoutStep;
-import com.liferay.commerce.util.CommerceCheckoutStepServicesTracker;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.commerce.util.CommerceCheckoutStepRegistry;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -37,7 +28,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_CHECKOUT,
 		"mvc.command.name=/commerce_checkout/save_step"
@@ -64,7 +54,7 @@ public class SaveStepMVCActionCommand extends BaseMVCActionCommand {
 		}
 
 		CommerceCheckoutStep commerceCheckoutStep =
-			_commerceCheckoutStepServicesTracker.getNextCommerceCheckoutStep(
+			_commerceCheckoutStepRegistry.getNextCommerceCheckoutStep(
 				checkoutStepName, _portal.getHttpServletRequest(actionRequest),
 				_portal.getHttpServletResponse(actionResponse));
 
@@ -85,7 +75,7 @@ public class SaveStepMVCActionCommand extends BaseMVCActionCommand {
 			actionRequest, "checkoutStepName");
 
 		CommerceCheckoutStep commerceCheckoutStep =
-			_commerceCheckoutStepServicesTracker.getCommerceCheckoutStep(
+			_commerceCheckoutStepRegistry.getCommerceCheckoutStep(
 				checkoutStepName);
 
 		commerceCheckoutStep.processAction(actionRequest, actionResponse);
@@ -113,8 +103,7 @@ public class SaveStepMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	@Reference
-	private CommerceCheckoutStepServicesTracker
-		_commerceCheckoutStepServicesTracker;
+	private CommerceCheckoutStepRegistry _commerceCheckoutStepRegistry;
 
 	@Reference
 	private Portal _portal;

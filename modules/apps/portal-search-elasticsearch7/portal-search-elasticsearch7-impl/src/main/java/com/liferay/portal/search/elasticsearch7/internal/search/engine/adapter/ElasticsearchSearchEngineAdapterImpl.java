@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter;
@@ -45,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Dylan Rebelak
  */
 @Component(
-	immediate = true, property = "search.engine.impl=Elasticsearch",
+	property = "search.engine.impl=Elasticsearch",
 	service = SearchEngineAdapter.class
 )
 public class ElasticsearchSearchEngineAdapterImpl
@@ -131,55 +122,6 @@ public class ElasticsearchSearchEngineAdapterImpl
 		}
 	}
 
-	@Reference(target = "(search.engine.impl=Elasticsearch)", unbind = "-")
-	protected void setCCRRequestExecutor(
-		CCRRequestExecutor ccrRequestExecutor) {
-
-		_ccrRequestExecutor = ccrRequestExecutor;
-	}
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)", unbind = "-")
-	protected void setClusterRequestExecutor(
-		ClusterRequestExecutor clusterRequestExecutor) {
-
-		_clusterRequestExecutor = clusterRequestExecutor;
-	}
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)", unbind = "-")
-	protected void setDocumentRequestExecutor(
-		DocumentRequestExecutor documentRequestExecutor) {
-
-		_documentRequestExecutor = documentRequestExecutor;
-	}
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)", unbind = "-")
-	protected void setIndexRequestExecutor(
-		IndexRequestExecutor indexRequestExecutor) {
-
-		_indexRequestExecutor = indexRequestExecutor;
-	}
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)", unbind = "-")
-	protected void setQueryTranslator(
-		QueryTranslator<QueryBuilder> queryTranslator) {
-
-		_queryTranslator = queryTranslator;
-	}
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)", unbind = "-")
-	protected void setSearchRequestExecutor(
-		SearchRequestExecutor searchRequestExecutor) {
-
-		_searchRequestExecutor = searchRequestExecutor;
-	}
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)", unbind = "-")
-	protected void setSnapshotRequestExecutor(
-		SnapshotRequestExecutor snapshotRequestExecutor) {
-
-		_snapshotRequestExecutor = snapshotRequestExecutor;
-	}
-
 	protected void setThrowOriginalExceptions(boolean throwOriginalExceptions) {
 		_throwOriginalExceptions = throwOriginalExceptions;
 	}
@@ -211,13 +153,27 @@ public class ElasticsearchSearchEngineAdapterImpl
 		return runtimeException1;
 	}
 
+	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private CCRRequestExecutor _ccrRequestExecutor;
+
+	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private ClusterRequestExecutor _clusterRequestExecutor;
+
+	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private DocumentRequestExecutor _documentRequestExecutor;
+
+	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private IndexRequestExecutor _indexRequestExecutor;
+
+	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private QueryTranslator<QueryBuilder> _queryTranslator;
+
+	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private SearchRequestExecutor _searchRequestExecutor;
+
+	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private SnapshotRequestExecutor _snapshotRequestExecutor;
+
 	private boolean _throwOriginalExceptions;
 
 }

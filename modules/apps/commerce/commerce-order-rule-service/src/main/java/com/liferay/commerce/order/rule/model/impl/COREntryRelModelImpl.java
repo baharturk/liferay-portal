@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.model.impl;
 
 import com.liferay.commerce.order.rule.model.COREntryRel;
 import com.liferay.commerce.order.rule.model.COREntryRelModel;
-import com.liferay.commerce.order.rule.model.COREntryRelSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -38,18 +28,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -157,58 +144,6 @@ public class COREntryRelModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static COREntryRel toModel(COREntryRelSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		COREntryRel model = new COREntryRelImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCOREntryRelId(soapModel.getCOREntryRelId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setCOREntryId(soapModel.getCOREntryId());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<COREntryRel> toModels(COREntryRelSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<COREntryRel> models = new ArrayList<COREntryRel>(
-			soapModels.length);
-
-		for (COREntryRelSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public COREntryRelModelImpl() {
 	}
 
@@ -285,101 +220,93 @@ public class COREntryRelModelImpl
 	public Map<String, Function<COREntryRel, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<COREntryRel, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, COREntryRel>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			COREntryRel.class.getClassLoader(), COREntryRel.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<COREntryRel, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<COREntryRel> constructor =
-				(Constructor<COREntryRel>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<COREntryRel, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<COREntryRel, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", COREntryRel::getMvccVersion);
+			attributeGetterFunctions.put(
+				"COREntryRelId", COREntryRel::getCOREntryRelId);
+			attributeGetterFunctions.put(
+				"companyId", COREntryRel::getCompanyId);
+			attributeGetterFunctions.put("userId", COREntryRel::getUserId);
+			attributeGetterFunctions.put("userName", COREntryRel::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", COREntryRel::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", COREntryRel::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", COREntryRel::getClassNameId);
+			attributeGetterFunctions.put("classPK", COREntryRel::getClassPK);
+			attributeGetterFunctions.put(
+				"COREntryId", COREntryRel::getCOREntryId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<COREntryRel, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<COREntryRel, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<COREntryRel, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<COREntryRel, Object>>();
-		Map<String, BiConsumer<COREntryRel, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<COREntryRel, ?>>();
+		private static final Map<String, BiConsumer<COREntryRel, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", COREntryRel::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<COREntryRel, Long>)COREntryRel::setMvccVersion);
-		attributeGetterFunctions.put(
-			"COREntryRelId", COREntryRel::getCOREntryRelId);
-		attributeSetterBiConsumers.put(
-			"COREntryRelId",
-			(BiConsumer<COREntryRel, Long>)COREntryRel::setCOREntryRelId);
-		attributeGetterFunctions.put("companyId", COREntryRel::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<COREntryRel, Long>)COREntryRel::setCompanyId);
-		attributeGetterFunctions.put("userId", COREntryRel::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<COREntryRel, Long>)COREntryRel::setUserId);
-		attributeGetterFunctions.put("userName", COREntryRel::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<COREntryRel, String>)COREntryRel::setUserName);
-		attributeGetterFunctions.put("createDate", COREntryRel::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<COREntryRel, Date>)COREntryRel::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", COREntryRel::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<COREntryRel, Date>)COREntryRel::setModifiedDate);
-		attributeGetterFunctions.put(
-			"classNameId", COREntryRel::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<COREntryRel, Long>)COREntryRel::setClassNameId);
-		attributeGetterFunctions.put("classPK", COREntryRel::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK", (BiConsumer<COREntryRel, Long>)COREntryRel::setClassPK);
-		attributeGetterFunctions.put("COREntryId", COREntryRel::getCOREntryId);
-		attributeSetterBiConsumers.put(
-			"COREntryId",
-			(BiConsumer<COREntryRel, Long>)COREntryRel::setCOREntryId);
+		static {
+			Map<String, BiConsumer<COREntryRel, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<COREntryRel, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<COREntryRel, Long>)COREntryRel::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"COREntryRelId",
+				(BiConsumer<COREntryRel, Long>)COREntryRel::setCOREntryRelId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<COREntryRel, Long>)COREntryRel::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<COREntryRel, Long>)COREntryRel::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<COREntryRel, String>)COREntryRel::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<COREntryRel, Date>)COREntryRel::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<COREntryRel, Date>)COREntryRel::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<COREntryRel, Long>)COREntryRel::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<COREntryRel, Long>)COREntryRel::setClassPK);
+			attributeSetterBiConsumers.put(
+				"COREntryId",
+				(BiConsumer<COREntryRel, Long>)COREntryRel::setCOREntryId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -874,41 +801,12 @@ public class COREntryRelModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<COREntryRel, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<COREntryRel, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<COREntryRel, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((COREntryRel)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, COREntryRel>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					COREntryRel.class, ModelWrapper.class);
 
 	}
 
@@ -925,8 +823,9 @@ public class COREntryRelModelImpl
 	private long _COREntryId;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<COREntryRel, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<COREntryRel, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

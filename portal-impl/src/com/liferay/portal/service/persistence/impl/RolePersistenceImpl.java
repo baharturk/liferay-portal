@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -60,7 +51,6 @@ import com.liferay.portal.model.impl.RoleModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -202,7 +192,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -935,7 +925,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {uuid};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1165,7 +1156,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -1946,7 +1937,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {uuid, companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2180,7 +2172,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -2868,7 +2860,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {companyId};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -3056,7 +3049,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -3789,7 +3782,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {name};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -4001,7 +3995,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -4682,7 +4676,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {type};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -4873,7 +4868,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -5611,7 +5606,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {subtype};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -5795,21 +5791,21 @@ public class RolePersistenceImpl
 
 		name = Objects.toString(name, "");
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {companyId, name};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_N, finderArgs);
+				_finderPathFetchByC_N, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			Role.class);
 
 		if (result instanceof Role) {
 			Role role = (Role)result;
@@ -5819,6 +5815,14 @@ public class RolePersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						Role.class, role.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -5928,7 +5932,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {companyId, name};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -6095,7 +6100,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -6992,7 +6997,7 @@ public class RolePersistenceImpl
 	 * </p>
 	 *
 	 * @param companyId the company ID
-	 * @param type the type
+	 * @param types the types
 	 * @param start the lower bound of the range of roles
 	 * @param end the upper bound of the range of roles (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -7039,7 +7044,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				_finderPathWithPaginationFindByC_T, finderArgs);
+				_finderPathWithPaginationFindByC_T, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -7157,7 +7162,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {companyId, type};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -7228,7 +7234,7 @@ public class RolePersistenceImpl
 			finderArgs = new Object[] {companyId, StringUtil.merge(types)};
 
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathWithPaginationCountByC_T, finderArgs);
+				_finderPathWithPaginationCountByC_T, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -7525,7 +7531,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -8301,7 +8307,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {type, subtype};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -8516,7 +8523,7 @@ public class RolePersistenceImpl
 	 *
 	 * @param companyId the company ID
 	 * @param classNameId the class name ID
-	 * @param classPK the class pk
+	 * @param classPKs the class pks
 	 * @param start the lower bound of the range of roles
 	 * @param end the upper bound of the range of roles (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -8575,7 +8582,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				_finderPathWithPaginationFindByC_C_C, finderArgs);
+				_finderPathWithPaginationFindByC_C_C, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -8727,21 +8734,21 @@ public class RolePersistenceImpl
 		long companyId, long classNameId, long classPK,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {companyId, classNameId, classPK};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_C_C, finderArgs);
+				_finderPathFetchByC_C_C, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			Role.class);
 
 		if (result instanceof Role) {
 			Role role = (Role)result;
@@ -8752,6 +8759,14 @@ public class RolePersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						Role.class, role.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -8854,7 +8869,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {companyId, classNameId, classPK};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -8932,7 +8948,7 @@ public class RolePersistenceImpl
 			};
 
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathWithPaginationCountByC_C_C, finderArgs);
+				_finderPathWithPaginationCountByC_C_C, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -9230,7 +9246,7 @@ public class RolePersistenceImpl
 	 *
 	 * @param companyId the company ID
 	 * @param classNameId the class name ID
-	 * @param classPK the class pk
+	 * @param classPKs the class pks
 	 * @param type the type
 	 * @param start the lower bound of the range of roles
 	 * @param end the upper bound of the range of roles (not inclusive)
@@ -9292,7 +9308,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				_finderPathWithPaginationFindByC_C_C_T, finderArgs);
+				_finderPathWithPaginationFindByC_C_C_T, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Role role : list) {
@@ -9461,21 +9477,21 @@ public class RolePersistenceImpl
 		long companyId, long classNameId, long classPK, int type,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {companyId, classNameId, classPK, type};
 		}
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_C_C_T, finderArgs);
+				_finderPathFetchByC_C_C_T, finderArgs, this);
 		}
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			Role.class);
 
 		if (result instanceof Role) {
 			Role role = (Role)result;
@@ -9486,6 +9502,14 @@ public class RolePersistenceImpl
 
 				result = null;
 			}
+			else if (!CTPersistenceHelperUtil.isProductionMode(
+						Role.class, role.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -9597,7 +9621,8 @@ public class RolePersistenceImpl
 
 			finderArgs = new Object[] {companyId, classNameId, classPK, type};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+			count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -9682,7 +9707,7 @@ public class RolePersistenceImpl
 			};
 
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathWithPaginationCountByC_C_C_T, finderArgs);
+				_finderPathWithPaginationCountByC_C_C_T, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -10316,7 +10341,7 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public Role fetchByPrimaryKey(Serializable primaryKey) {
-		if (CTPersistenceHelperUtil.isProductionMode(Role.class)) {
+		if (CTPersistenceHelperUtil.isProductionMode(Role.class, primaryKey)) {
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -10530,7 +10555,7 @@ public class RolePersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -10606,7 +10631,7 @@ public class RolePersistenceImpl
 
 		if (productionMode) {
 			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -10747,17 +10772,18 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param groupPK the primary key of the group
+	 * @return <code>true</code> if an association between the role and the group was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addGroup(long pk, long groupPK) {
+	public boolean addGroup(long pk, long groupPK) {
 		Role role = fetchByPrimaryKey(pk);
 
 		if (role == null) {
-			roleToGroupTableMapper.addTableMapping(
+			return roleToGroupTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, groupPK);
 		}
 		else {
-			roleToGroupTableMapper.addTableMapping(
+			return roleToGroupTableMapper.addTableMapping(
 				role.getCompanyId(), pk, groupPK);
 		}
 	}
@@ -10767,17 +10793,20 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param group the group
+	 * @return <code>true</code> if an association between the role and the group was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addGroup(long pk, com.liferay.portal.kernel.model.Group group) {
+	public boolean addGroup(
+		long pk, com.liferay.portal.kernel.model.Group group) {
+
 		Role role = fetchByPrimaryKey(pk);
 
 		if (role == null) {
-			roleToGroupTableMapper.addTableMapping(
+			return roleToGroupTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, group.getPrimaryKey());
 		}
 		else {
-			roleToGroupTableMapper.addTableMapping(
+			return roleToGroupTableMapper.addTableMapping(
 				role.getCompanyId(), pk, group.getPrimaryKey());
 		}
 	}
@@ -10787,9 +10816,10 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param groupPKs the primary keys of the groups
+	 * @return <code>true</code> if at least one association between the role and the groups was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addGroups(long pk, long[] groupPKs) {
+	public boolean addGroups(long pk, long[] groupPKs) {
 		long companyId = 0;
 
 		Role role = fetchByPrimaryKey(pk);
@@ -10801,7 +10831,14 @@ public class RolePersistenceImpl
 			companyId = role.getCompanyId();
 		}
 
-		roleToGroupTableMapper.addTableMappings(companyId, pk, groupPKs);
+		long[] addedKeys = roleToGroupTableMapper.addTableMappings(
+			companyId, pk, groupPKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -10809,12 +10846,13 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param groups the groups
+	 * @return <code>true</code> if at least one association between the role and the groups was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addGroups(
+	public boolean addGroups(
 		long pk, List<com.liferay.portal.kernel.model.Group> groups) {
 
-		addGroups(
+		return addGroups(
 			pk,
 			ListUtil.toLongArray(
 				groups,
@@ -11057,17 +11095,18 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param userPK the primary key of the user
+	 * @return <code>true</code> if an association between the role and the user was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addUser(long pk, long userPK) {
+	public boolean addUser(long pk, long userPK) {
 		Role role = fetchByPrimaryKey(pk);
 
 		if (role == null) {
-			roleToUserTableMapper.addTableMapping(
+			return roleToUserTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, userPK);
 		}
 		else {
-			roleToUserTableMapper.addTableMapping(
+			return roleToUserTableMapper.addTableMapping(
 				role.getCompanyId(), pk, userPK);
 		}
 	}
@@ -11077,17 +11116,18 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param user the user
+	 * @return <code>true</code> if an association between the role and the user was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addUser(long pk, com.liferay.portal.kernel.model.User user) {
+	public boolean addUser(long pk, com.liferay.portal.kernel.model.User user) {
 		Role role = fetchByPrimaryKey(pk);
 
 		if (role == null) {
-			roleToUserTableMapper.addTableMapping(
+			return roleToUserTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, user.getPrimaryKey());
 		}
 		else {
-			roleToUserTableMapper.addTableMapping(
+			return roleToUserTableMapper.addTableMapping(
 				role.getCompanyId(), pk, user.getPrimaryKey());
 		}
 	}
@@ -11097,9 +11137,10 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param userPKs the primary keys of the users
+	 * @return <code>true</code> if at least one association between the role and the users was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addUsers(long pk, long[] userPKs) {
+	public boolean addUsers(long pk, long[] userPKs) {
 		long companyId = 0;
 
 		Role role = fetchByPrimaryKey(pk);
@@ -11111,7 +11152,14 @@ public class RolePersistenceImpl
 			companyId = role.getCompanyId();
 		}
 
-		roleToUserTableMapper.addTableMappings(companyId, pk, userPKs);
+		long[] addedKeys = roleToUserTableMapper.addTableMappings(
+			companyId, pk, userPKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -11119,12 +11167,13 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param users the users
+	 * @return <code>true</code> if at least one association between the role and the users was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addUsers(
+	public boolean addUsers(
 		long pk, List<com.liferay.portal.kernel.model.User> users) {
 
-		addUsers(
+		return addUsers(
 			pk,
 			ListUtil.toLongArray(
 				users, com.liferay.portal.kernel.model.User.USER_ID_ACCESSOR));
@@ -11623,29 +11672,16 @@ public class RolePersistenceImpl
 			new String[] {"companyId", "classNameId", "classPK", "type_"},
 			false);
 
-		_setRoleUtilPersistence(this);
+		RoleUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setRoleUtilPersistence(null);
+		RoleUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(RoleImpl.class.getName());
 
 		TableMapperFactory.removeTableMapper("Groups_Roles");
 		TableMapperFactory.removeTableMapper("Users_Roles");
-	}
-
-	private void _setRoleUtilPersistence(RolePersistence rolePersistence) {
-		try {
-			Field field = RoleUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, rolePersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@BeanReference(type = GroupPersistence.class)

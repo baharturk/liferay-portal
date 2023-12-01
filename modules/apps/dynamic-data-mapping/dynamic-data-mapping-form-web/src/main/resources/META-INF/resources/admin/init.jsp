@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -54,7 +45,7 @@ page import="com.liferay.dynamic.data.mapping.storage.DDMFormValues" %><%@
 page import="com.liferay.dynamic.data.mapping.validator.DDMFormLayoutValidationException" %><%@
 page import="com.liferay.dynamic.data.mapping.validator.DDMFormValidationException" %><%@
 page import="com.liferay.dynamic.data.mapping.validator.DDMFormValuesValidationException" %><%@
-page import="com.liferay.petra.portlet.url.builder.PortletURLBuilder" %><%@
+page import="com.liferay.object.model.ObjectDefinition" %><%@
 page import="com.liferay.petra.string.StringBundler" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
 page import="com.liferay.portal.kernel.bean.BeanParamUtil" %><%@
@@ -63,8 +54,10 @@ page import="com.liferay.portal.kernel.exception.ModelListenerException" %><%@
 page import="com.liferay.portal.kernel.json.JSONArray" %><%@
 page import="com.liferay.portal.kernel.json.JSONObject" %><%@
 page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
-page import="com.liferay.portal.kernel.language.UnicodeLanguageUtil" %><%@
 page import="com.liferay.portal.kernel.portlet.LiferayWindowState" %><%@
+page import="com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder" %><%@
+page import="com.liferay.portal.kernel.upload.FileItem" %><%@
+page import="com.liferay.portal.kernel.upload.LiferayFileItemException" %><%@
 page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
 page import="com.liferay.portal.kernel.util.LocaleUtil" %><%@
@@ -98,7 +91,6 @@ String dataProviderInstancesURL = ddmFormAdminDisplayContext.getDataProviderInst
 String displayStyle = ddmFormAdminDisplayContext.getDisplayStyle();
 JSONObject functionsMetadataJSONObject = ddmFormAdminDisplayContext.getFunctionsMetadataJSONObject();
 String functionsURL = ddmFormAdminDisplayContext.getFunctionsURL();
-String mainRequire = ddmFormAdminDisplayContext.getMainRequire();
 String rolesURL = ddmFormAdminDisplayContext.getRolesURL();
 JSONArray ddmFormRulesJSONArray = ddmFormAdminDisplayContext.getDDMFormRulesJSONArray();
 JSONObject formBuilderContextJSONObject = ddmFormAdminDisplayContext.getFormBuilderContextJSONObject();

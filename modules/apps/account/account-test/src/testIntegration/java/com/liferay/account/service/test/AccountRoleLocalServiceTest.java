@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.test;
@@ -19,7 +10,6 @@ import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountEntryUserRel;
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.model.AccountRoleTable;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.account.service.AccountRoleLocalServiceUtil;
@@ -94,12 +84,9 @@ public class AccountRoleLocalServiceTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_accountEntry1 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-		_accountEntry2 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-		_accountEntry3 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+		_accountEntry1 = AccountEntryTestUtil.addAccountEntry();
+		_accountEntry2 = AccountEntryTestUtil.addAccountEntry();
+		_accountEntry3 = AccountEntryTestUtil.addAccountEntry();
 	}
 
 	@Test
@@ -477,7 +464,7 @@ public class AccountRoleLocalServiceTest {
 			AccountRoleLocalServiceUtil.searchAccountRoles(
 				_accountEntry1.getCompanyId(),
 				new long[] {_accountEntry1.getAccountEntryId()}, keywords, null,
-				0, 2, null);
+				0, 2, new RoleNameComparator(true));
 
 		Assert.assertEquals(
 			expectedAccountRoles.toString(), 5,
@@ -505,23 +492,18 @@ public class AccountRoleLocalServiceTest {
 	public void testSearchAccountRolesWithParams() throws Exception {
 		AccountRole accountRole1 = _accountRoleLocalService.addAccountRole(
 			TestPropsValues.getUserId(), _accountEntry1.getAccountEntryId(),
-			RandomTestUtil.randomString(), null, null);
+			RandomTestUtil.randomString() + " " + RandomTestUtil.randomString(),
+			null, null);
 		AccountRole accountRole2 = _accountRoleLocalService.addAccountRole(
 			TestPropsValues.getUserId(), _accountEntry1.getAccountEntryId(),
-			RandomTestUtil.randomString(), null, null);
+			RandomTestUtil.randomString() + " " + RandomTestUtil.randomString(),
+			null, null);
 
 		_testSearchAccountRolesWithParams(
 			accountRole1.getCompanyId(),
-			new long[] {accountRole1.getAccountEntryId()},
+			new long[] {_accountEntry1.getAccountEntryId()},
 			LinkedHashMapBuilder.<String, Object>put(
 				"excludedRoleNames", new String[] {accountRole1.getRoleName()}
-			).build(),
-			Collections.singletonList(accountRole2));
-		_testSearchAccountRolesWithParams(
-			accountRole1.getCompanyId(),
-			new long[] {accountRole1.getAccountEntryId()},
-			LinkedHashMapBuilder.<String, Object>put(
-				"excludedRoleIds", new Long[] {accountRole1.getRoleId()}
 			).build(),
 			Collections.singletonList(accountRole2));
 	}
@@ -569,7 +551,7 @@ public class AccountRoleLocalServiceTest {
 
 	private void _testDeleteAccountRole(
 			UnsafeFunction<AccountRole, AccountRole, PortalException>
-				deleteAccountRoleFunction)
+				deleteAccountRoleUnsafeFunction)
 		throws Exception {
 
 		AccountRole accountRole = _addAccountRole(
@@ -586,7 +568,7 @@ public class AccountRoleLocalServiceTest {
 		Assert.assertTrue(
 			ArrayUtil.contains(_getRoleIds(user), accountRole.getRoleId()));
 
-		deleteAccountRoleFunction.apply(accountRole);
+		deleteAccountRoleUnsafeFunction.apply(accountRole);
 
 		Assert.assertFalse(
 			ArrayUtil.contains(
@@ -618,9 +600,6 @@ public class AccountRoleLocalServiceTest {
 
 	@DeleteAfterTestRun
 	private AccountEntry _accountEntry3;
-
-	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Inject
 	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;

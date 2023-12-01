@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,7 +12,7 @@
 </c:if>
 
 <c:choose>
-	<c:when test="<%= Validator.isNotNull(escapedHREF) %>">
+	<c:when test='<%= Validator.isNotNull(escapedHREF) && !type.equals("cancel") %>'>
 		<a
 			class="<%= AUIUtil.buildCss(AUIUtil.BUTTON_PREFIX, disabled, false, false, cssClass) %>"
 			href="<%= escapedHREF %>"
@@ -30,6 +21,8 @@
 			<c:if test="<%= Validator.isNotNull(onClick) %>">
 				onClick="<%= onClick %>"
 			</c:if>
+
+			role="button"
 
 			<%= AUIUtil.buildData(data) %>
 			<%= InlineUtil.buildDynamicAttributes(dynamicAttributes) %>
@@ -49,9 +42,14 @@
 				name="<%= namespace %><%= name %>"
 			</c:if>
 
-			<c:if test="<%= Validator.isNotNull(onClick) %>">
-				onClick="<%= onClick %>"
-			</c:if>
+			<c:choose>
+				<c:when test="<%= Validator.isNotNull(onClick) %>">
+					onClick="<%= onClick %>"
+				</c:when>
+				<c:when test="<%= Validator.isNotNull(escapedHREF) %>">
+					onClick="Liferay.Util.navigate('<%= escapedHREF %>')"
+				</c:when>
+			</c:choose>
 
 			type="<%= type.equals("cancel") ? "button" : type %>"
 
@@ -66,7 +64,7 @@
 </c:if>
 
 <c:if test="<%= Validator.isNotNull(value) %>">
-	<span class="lfr-btn-label"><%= LanguageUtil.get(resourceBundle, value) %></span>
+	<span class="lfr-btn-label"><liferay-ui:message key="<%= value %>" /></span>
 </c:if>
 
 <c:if test='<%= Validator.isNotNull(icon) && iconAlign.equals("right") %>'>
@@ -83,7 +81,7 @@
 </c:choose>
 
 <c:if test="<%= dropdown %>">
-	<button aria-expanded="false" class="btn btn-primary dropdown-toggle <%= cssClass %>" data-toggle="liferay-dropdown" <%= disabled ? "disabled" : StringPool.BLANK %> id="<%= id %>Toggle" type="button">
+	<button aria-expanded="false" aria-haspopup="true" class="btn btn-primary dropdown-toggle <%= cssClass %>" data-toggle="liferay-dropdown" <%= disabled ? "disabled" : StringPool.BLANK %> id="<%= id %>Toggle" type="button">
 		<span class="caret"></span>
 
 		<span class="sr-only"><liferay-ui:message key="toggle-dropdown" /></span>
@@ -102,13 +100,12 @@
 		Liferay.delegateClick(
 			'<%= namespace + name %>',
 			function(event) {
-				Liferay.Util.openInDialog(
-					event,
-					{
-						dialogIframe: {
-							bodyCssClass: 'dialog-with-footer'
-						}
-					}
+				event.preventDefault();
+
+				Liferay.Util.openWindow({
+					dialogIframe: {
+						bodyCssClass: 'dialog-with-footer'
+					}}
 				);
 			}
 		);

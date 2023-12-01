@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -20,16 +14,16 @@ import getCN from 'classnames';
 import {PropTypes} from 'prop-types';
 import React, {useContext, useEffect, useState} from 'react';
 
+import {ASSET_CATEGORY_ID} from '../../utils/constants';
 import {DEFAULT_SXP_ELEMENT_ICON} from '../../utils/data';
-import {INPUT_TYPES} from '../../utils/inputTypes';
-import {
-	cleanUIConfiguration,
-	getConfigurationEntry,
-	isDefined,
-} from '../../utils/utils';
+import isDefined from '../../utils/functions/is_defined';
+import cleanUIConfiguration from '../../utils/sxp_element/clean_ui_configuration';
+import getSXPElementJSON from '../../utils/sxp_element/get_sxp_element_json';
+import getSXPElementTitleAndDescription from '../../utils/sxp_element/get_sxp_element_title_and_description';
+import isElementInactiveFromNonCompanyIndex from '../../utils/sxp_element/is_element_inactive_from_noncompany_index';
+import {INPUT_TYPES} from '../../utils/types/inputTypes';
 import {PreviewModalWithCopyDownload} from '../PreviewModal';
 import ThemeContext from '../ThemeContext';
-import {getLocalizedText} from './../../utils/language';
 import DateInput from './DateInput';
 import FieldInput from './FieldInput';
 import FieldListInput from './FieldListInput';
@@ -40,6 +34,7 @@ import NumberInput from './NumberInput';
 import SelectInput from './SelectInput';
 import SliderInput from './SliderInput';
 import TextInput from './TextInput';
+import CategorySelectorInput from './category_selector_input/index';
 
 /**
  * Converts the searchable types to be compatible with ClaySelect options prop.
@@ -60,6 +55,7 @@ function SXPElement({
 	id,
 	index,
 	indexFields = [],
+	isIndexCompany,
 	isSubmitting,
 	onBlur = () => {},
 	onChange = () => {},
@@ -77,8 +73,10 @@ function SXPElement({
 	const [collapse, setCollapse] = useState(false);
 	const [active, setActive] = useState(false);
 
-	const description = getLocalizedText(sxpElement.description_i18n, locale);
-	const title = getLocalizedText(sxpElement.title_i18n, locale);
+	const [title, description] = getSXPElementTitleAndDescription(
+		sxpElement,
+		locale
+	);
 
 	const fieldSets = cleanUIConfiguration(
 		sxpElement.elementDefinition?.uiConfiguration
@@ -121,7 +119,10 @@ function SXPElement({
 		!!error.uiConfigurationValues?.[config.name];
 
 	const _renderInput = (config) => {
-		const disabled = !_isEnabled() || isSubmitting;
+		const disabled =
+			!_isEnabled() ||
+			isElementInactiveFromNonCompanyIndex(isIndexCompany, sxpElement) ||
+			isSubmitting;
 		const inputId = _getInputId(id, config.name);
 		const inputName = _getInputName(config.name);
 		const typeOptions = config.typeOptions || {};
@@ -172,7 +173,7 @@ function SXPElement({
 						entityJSON={entityJSON}
 						id={inputId}
 						itemType={typeOptions.itemType}
-						label={config.label}
+						label={config.labelLocalized || config.label}
 						name={inputName}
 						setFieldTouched={setFieldTouched}
 						setFieldValue={setFieldValue}
@@ -183,7 +184,7 @@ function SXPElement({
 				return (
 					<JSONInput
 						disabled={disabled}
-						label={config.label}
+						label={config.labelLocalized || config.label}
 						name={inputName}
 						nullable={typeOptions.nullable}
 						required={typeOptions.required}
@@ -193,11 +194,26 @@ function SXPElement({
 					/>
 				);
 			case INPUT_TYPES.MULTISELECT:
+				if (config.name === `${ASSET_CATEGORY_ID}s`) {
+					return (
+						<CategorySelectorInput
+							disabled={disabled}
+							id={inputId}
+							label={config.labelLocalized || config.label}
+							multiple={true}
+							name={inputName}
+							setFieldTouched={setFieldTouched}
+							setFieldValue={setFieldValue}
+							value={uiConfigurationValues[config.name]}
+						/>
+					);
+				}
+
 				return (
 					<MultiSelectInput
 						disabled={disabled}
 						id={inputId}
-						label={config.label}
+						label={config.labelLocalized || config.label}
 						name={inputName}
 						setFieldTouched={setFieldTouched}
 						setFieldValue={setFieldValue}
@@ -205,12 +221,27 @@ function SXPElement({
 					/>
 				);
 			case INPUT_TYPES.NUMBER:
+				if (config.name === ASSET_CATEGORY_ID) {
+					return (
+						<CategorySelectorInput
+							disabled={disabled}
+							id={inputId}
+							label={config.labelLocalized || config.label}
+							multiple={false}
+							name={inputName}
+							setFieldTouched={setFieldTouched}
+							setFieldValue={setFieldValue}
+							value={uiConfigurationValues[config.name]}
+						/>
+					);
+				}
+
 				return (
 					<NumberInput
 						configKey={config.name}
 						disabled={disabled}
 						id={inputId}
-						label={config.label}
+						label={config.labelLocalized || config.label}
 						max={typeOptions.max}
 						min={typeOptions.min}
 						name={inputName}
@@ -228,7 +259,7 @@ function SXPElement({
 						configKey={config.name}
 						disabled={disabled}
 						id={inputId}
-						label={config.label}
+						label={config.labelLocalized || config.label}
 						name={inputName}
 						nullable={typeOptions.nullable}
 						onBlur={onBlur}
@@ -246,7 +277,7 @@ function SXPElement({
 						configKey={config.name}
 						disabled={disabled}
 						id={inputId}
-						label={config.label}
+						label={config.labelLocalized || config.label}
 						name={inputName}
 						nullable={typeOptions.nullable}
 						onBlur={onBlur}
@@ -261,7 +292,7 @@ function SXPElement({
 					<SliderInput
 						disabled={disabled}
 						id={inputId}
-						label={config.label}
+						label={config.labelLocalized || config.label}
 						max={typeOptions.max}
 						min={typeOptions.min}
 						name={inputName}
@@ -278,7 +309,7 @@ function SXPElement({
 					<TextInput
 						disabled={disabled}
 						id={inputId}
-						label={config.label}
+						label={config.labelLocalized || config.label}
 						name={inputName}
 						onBlur={onBlur}
 						onChange={onChange}
@@ -291,7 +322,12 @@ function SXPElement({
 	return (
 		<div
 			className={getCN('sxp-element', 'sheet', {
-				disabled: !_isEnabled(),
+				disabled:
+					!_isEnabled() ||
+					isElementInactiveFromNonCompanyIndex(
+						isIndexCompany,
+						sxpElement
+					),
 			})}
 			id={prefixedId}
 		>
@@ -320,15 +356,34 @@ function SXPElement({
 						)}
 					</ClayList.ItemField>
 
-					<ClayToggle
-						aria-label={
-							_isEnabled()
-								? Liferay.Language.get('enabled')
-								: Liferay.Language.get('disabled')
-						}
-						onToggle={_handleToggle}
-						toggled={_isEnabled()}
-					/>
+					{isElementInactiveFromNonCompanyIndex(
+						isIndexCompany,
+						sxpElement
+					) ? (
+						<ClayTooltipProvider>
+							<div
+								data-tooltip-align="top"
+								title={Liferay.Language.get(
+									'query-element-inactive-from-index-help'
+								)}
+							>
+								<ClayToggle
+									aria-disabled="true"
+									toggled={false}
+								/>
+							</div>
+						</ClayTooltipProvider>
+					) : (
+						<ClayToggle
+							aria-label={
+								_isEnabled()
+									? Liferay.Language.get('enabled')
+									: Liferay.Language.get('disabled')
+							}
+							onToggle={_handleToggle}
+							toggled={_isEnabled()}
+						/>
+					)}
 
 					<ClayDropDown
 						active={active}
@@ -355,10 +410,10 @@ function SXPElement({
 								fileName="sxpElement.json"
 								size="lg"
 								text={JSON.stringify(
-									getConfigurationEntry({
+									getSXPElementJSON(
 										sxpElement,
-										uiConfigurationValues,
-									}),
+										uiConfigurationValues
+									),
 									null,
 									'\t'
 								)}
@@ -377,7 +432,7 @@ function SXPElement({
 						</ClayDropDown.ItemList>
 					</ClayDropDown>
 
-					{fieldSets.length > 0 && (
+					{!!fieldSets.length && (
 						<ClayList.ItemField>
 							<ClayButton
 								aria-label={
@@ -404,7 +459,7 @@ function SXPElement({
 				</ClayList.Item>
 			</ClayList>
 
-			{!collapse && fieldSets.length > 0 && (
+			{!collapse && !!fieldSets.length && (
 				<ClayList className="configuration-form-list">
 					{fieldSets.map(({fields}) => {
 						return fields.map((config) => (
@@ -421,7 +476,8 @@ function SXPElement({
 												config.name
 											)}
 										>
-											{config.label}
+											{config.labelLocalized ||
+												config.label}
 
 											{((isDefined(
 												config.typeOptions?.required
@@ -436,12 +492,14 @@ function SXPElement({
 												</span>
 											)}
 
-											{config.helpText && (
+											{config.helpTextLocalized && (
 												<ClayTooltipProvider>
 													<ClaySticker
 														displayType="unstyled"
 														size="sm"
-														title={config.helpText}
+														title={
+															config.helpTextLocalized
+														}
 													>
 														<ClayIcon
 															data-tooltip-align="top"
@@ -492,6 +550,7 @@ SXPElement.propTypes = {
 	id: PropTypes.number,
 	index: PropTypes.number,
 	indexFields: PropTypes.arrayOf(PropTypes.object),
+	isIndexCompany: PropTypes.bool,
 	isSubmitting: PropTypes.bool,
 	onBlur: PropTypes.func,
 	onChange: PropTypes.func,

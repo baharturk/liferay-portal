@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.asset.util;
@@ -24,17 +15,16 @@ import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.web.internal.security.permission.resource.JournalArticlePermission;
 import com.liferay.layout.model.LayoutClassedModelUsage;
 import com.liferay.layout.util.LayoutClassedModelUsageActionMenuContributor;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -52,7 +42,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.journal.model.JournalArticle",
 	service = LayoutClassedModelUsageActionMenuContributor.class
 )
@@ -84,12 +73,12 @@ public class JournalArticleLayoutClassedModelUsageActionMenuContributor
 						dropdownItem -> {
 							dropdownItem.setHref(
 								_getURL(
-									layoutClassedModelUsage,
+									article, layoutClassedModelUsage,
 									AssetRendererFactory.TYPE_LATEST_APPROVED,
 									InfoItemIdentifier.VERSION_LATEST_APPROVED,
 									httpServletRequest));
 							dropdownItem.setLabel(
-								LanguageUtil.get(
+								_language.get(
 									themeDisplay.getLocale(), "view-in-page"));
 						});
 				}
@@ -111,14 +100,14 @@ public class JournalArticleLayoutClassedModelUsageActionMenuContributor
 								key = "preview-scheduled-in-page";
 							}
 
-							String label = LanguageUtil.get(
+							String label = _language.get(
 								themeDisplay.getLocale(), key);
 
 							add(
 								dropdownItem -> {
 									dropdownItem.setHref(
 										_getURL(
-											layoutClassedModelUsage,
+											article, layoutClassedModelUsage,
 											AssetRendererFactory.TYPE_LATEST,
 											InfoItemIdentifier.VERSION_LATEST,
 											httpServletRequest));
@@ -137,6 +126,7 @@ public class JournalArticleLayoutClassedModelUsageActionMenuContributor
 	}
 
 	private String _getURL(
+			JournalArticle article,
 			LayoutClassedModelUsage layoutClassedModelUsage, int previewType,
 			String previewVersion, HttpServletRequest httpServletRequest)
 		throws PortalException {
@@ -150,20 +140,20 @@ public class JournalArticleLayoutClassedModelUsageActionMenuContributor
 		if (layoutClassedModelUsage.getContainerType() ==
 				_portal.getClassNameId(FragmentEntryLink.class)) {
 
-			Layout layout = _layoutLocalService.fetchLayout(
-				layoutClassedModelUsage.getPlid());
+			layoutURL = _portal.getLayoutFriendlyURL(
+				_layoutLocalService.fetchLayout(
+					layoutClassedModelUsage.getPlid()),
+				themeDisplay);
 
-			layoutURL = _portal.getLayoutFriendlyURL(layout, themeDisplay);
-
-			layoutURL = _http.setParameter(
+			layoutURL = HttpComponentsUtil.setParameter(
 				layoutURL, "previewClassNameId",
 				String.valueOf(layoutClassedModelUsage.getClassNameId()));
-			layoutURL = _http.setParameter(
+			layoutURL = HttpComponentsUtil.setParameter(
 				layoutURL, "previewClassPK",
 				String.valueOf(layoutClassedModelUsage.getClassPK()));
-			layoutURL = _http.setParameter(
+			layoutURL = HttpComponentsUtil.setParameter(
 				layoutURL, "previewType", String.valueOf(previewType));
-			layoutURL = _http.setParameter(
+			layoutURL = HttpComponentsUtil.setParameter(
 				layoutURL, "previewVersion", previewVersion);
 		}
 		else {
@@ -184,8 +174,9 @@ public class JournalArticleLayoutClassedModelUsageActionMenuContributor
 			).buildString();
 		}
 
-		String portletURLString = _http.setParameter(
-			layoutURL, "p_l_back_url", themeDisplay.getURLCurrent());
+		String portletURLString = HttpComponentsUtil.addParameters(
+			layoutURL, "p_l_back_url", themeDisplay.getURLCurrent(),
+			"p_l_back_url_title", article.getTitle(themeDisplay.getLocale()));
 
 		return portletURLString + "#portlet_" +
 			layoutClassedModelUsage.getContainerKey();
@@ -195,10 +186,10 @@ public class JournalArticleLayoutClassedModelUsageActionMenuContributor
 		JournalArticleLayoutClassedModelUsageActionMenuContributor.class);
 
 	@Reference
-	private Http _http;
+	private JournalArticleLocalService _journalArticleLocalService;
 
 	@Reference
-	private JournalArticleLocalService _journalArticleLocalService;
+	private Language _language;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

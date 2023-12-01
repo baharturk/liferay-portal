@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.set.prototype.web.internal.display.context;
@@ -21,15 +12,16 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItemList;
 import com.liferay.layout.set.prototype.constants.LayoutSetPrototypePortletKeys;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.layout.set.prototype.web.internal.servlet.taglib.util.LayoutSetPrototypeActionDropdownItemsProvider;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
-import com.liferay.portal.kernel.portlet.PortalPreferences;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
@@ -120,13 +112,9 @@ public class LayoutSetPrototypeDisplayContext {
 			return _displayStyle;
 		}
 
-		PortalPreferences portalPreferences =
-			PortletPreferencesFactoryUtil.getPortalPreferences(
-				_httpServletRequest);
-
-		_displayStyle = portalPreferences.getValue(
-			LayoutSetPrototypePortletKeys.LAYOUT_SET_PROTOTYPE, "display-style",
-			"list");
+		_displayStyle = SearchDisplayStyleUtil.getDisplayStyle(
+			_httpServletRequest,
+			LayoutSetPrototypePortletKeys.LAYOUT_SET_PROTOTYPE, "list");
 
 		return _displayStyle;
 	}
@@ -140,12 +128,26 @@ public class LayoutSetPrototypeDisplayContext {
 					LanguageUtil.get(_httpServletRequest, "filter-by-status"));
 			}
 		).addGroup(
+			() -> !FeatureFlagManagerUtil.isEnabled("LPS-144527"),
 			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(_getOrderByDropdownItems());
+				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
 				dropdownGroupItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "order-by"));
 			}
 		).build();
+	}
+
+	public List<DropdownItem> getLayoutSetPrototypeActionDropdownItems(
+			LayoutSetPrototype layoutSetPrototype)
+		throws Exception {
+
+		LayoutSetPrototypeActionDropdownItemsProvider
+			layoutSetPrototypeActionDropdownItemsProvider =
+				new LayoutSetPrototypeActionDropdownItemsProvider(
+					layoutSetPrototype, _renderRequest, _renderResponse);
+
+		return layoutSetPrototypeActionDropdownItemsProvider.
+			getActionDropdownItems();
 	}
 
 	public String getOrderByCol() {
@@ -158,6 +160,18 @@ public class LayoutSetPrototypeDisplayContext {
 			LayoutSetPrototypePortletKeys.LAYOUT_SET_PROTOTYPE, "create-date");
 
 		return _orderByCol;
+	}
+
+	public List<DropdownItem> getOrderByDropdownItems() {
+		return DropdownItemListBuilder.add(
+			dropdownItem -> {
+				dropdownItem.setActive(true);
+				dropdownItem.setHref(
+					getPortletURL(), "orderByCol", "createDate");
+				dropdownItem.setLabel(
+					LanguageUtil.get(_httpServletRequest, "create-date"));
+			}
+		).build();
 	}
 
 	public String getOrderByType() {
@@ -208,14 +222,14 @@ public class LayoutSetPrototypeDisplayContext {
 		searchContainer.setOrderByComparator(
 			new LayoutSetPrototypeCreateDateComparator(orderByAsc));
 		searchContainer.setOrderByType(getOrderByType());
-		searchContainer.setResults(
-			LayoutSetPrototypeLocalServiceUtil.search(
+		searchContainer.setResultsAndTotal(
+			() -> LayoutSetPrototypeLocalServiceUtil.search(
 				themeDisplay.getCompanyId(), getActive(),
 				searchContainer.getStart(), searchContainer.getEnd(),
-				searchContainer.getOrderByComparator()));
+				searchContainer.getOrderByComparator()),
+			_getTotal());
 		searchContainer.setRowChecker(
 			new EmptyOnClickRowChecker(_renderResponse));
-		searchContainer.setTotal(_getTotal());
 
 		return searchContainer;
 	}
@@ -264,14 +278,6 @@ public class LayoutSetPrototypeDisplayContext {
 		}
 
 		return false;
-	}
-
-	public boolean isDisabledManagementBar() {
-		if ((_getTotal() > 0) || !Objects.equals(_getNavigation(), "all")) {
-			return false;
-		}
-
-		return true;
 	}
 
 	public boolean isIconView() {
@@ -341,28 +347,6 @@ public class LayoutSetPrototypeDisplayContext {
 		return _keywords;
 	}
 
-	private String _getNavigation() {
-		if (Validator.isNotNull(_navigation)) {
-			return _navigation;
-		}
-
-		_navigation = ParamUtil.getString(_httpServletRequest, "navigation");
-
-		return _navigation;
-	}
-
-	private List<DropdownItem> _getOrderByDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(true);
-				dropdownItem.setHref(
-					getPortletURL(), "orderByCol", "createDate");
-				dropdownItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "create-date"));
-			}
-		).build();
-	}
-
 	private int _getTotal() {
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)_httpServletRequest.getAttribute(
@@ -375,7 +359,6 @@ public class LayoutSetPrototypeDisplayContext {
 	private String _displayStyle;
 	private final HttpServletRequest _httpServletRequest;
 	private String _keywords;
-	private String _navigation;
 	private String _orderByCol;
 	private String _orderByType;
 	private final RenderRequest _renderRequest;

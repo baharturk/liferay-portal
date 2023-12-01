@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {EventEmitter, EventHandler, debounce, delegate} from 'frontend-js-web';
@@ -413,9 +404,9 @@ class App extends EventEmitter {
 			return this.activeScreen;
 		}
 		/* jshint newcap: false */
-		var screen = this.screens[path];
+		let screen = this.screens[path];
 		if (!screen) {
-			var handler = route.getHandler();
+			const handler = route.getHandler();
 			if (
 				handler === Screen ||
 				Screen.isImplementedBy(handler.prototype)
@@ -460,7 +451,7 @@ class App extends EventEmitter {
 	 * @return {Promise} Returns a pending request cancellable promise.
 	 */
 	doNavigate_(path, opt_replaceHistory) {
-		var route = this.findRoute(path);
+		const route = this.findRoute(path);
 		if (!route) {
 			return Promise.reject(new Error('No route for ' + path));
 		}
@@ -468,7 +459,7 @@ class App extends EventEmitter {
 		this.stopPendingNavigate_();
 		this.isNavigationPending = true;
 
-		var nextScreen = this.createScreenInstance(path, route);
+		const nextScreen = this.createScreenInstance(path, route);
 
 		return this.maybePreventDeactivate_()
 			.then(() => this.maybePreventActivate_(nextScreen))
@@ -563,8 +554,8 @@ class App extends EventEmitter {
 	 */
 	findRoute(path) {
 		path = this.getRoutePath(path);
-		for (var i = 0; i < this.routes.length; i++) {
-			var route = this.routes[i];
+		for (let i = 0; i < this.routes.length; i++) {
+			const route = this.routes[i];
 			if (route.matchesPath(path)) {
 				return route;
 			}
@@ -689,7 +680,7 @@ class App extends EventEmitter {
 	 * @return {boolean}
 	 */
 	hasRoutes() {
-		return this.routes.length > 0;
+		return !!this.routes.length;
 	}
 
 	/**
@@ -720,7 +711,7 @@ class App extends EventEmitter {
 	 * @protected
 	 */
 	lockHistoryScrollPosition_() {
-		var state = window.history.state;
+		const state = window.history.state;
 		if (!state) {
 			return;
 		}
@@ -734,8 +725,8 @@ class App extends EventEmitter {
 		// behaviors can happen even on the same browser, hence the race will decide
 		// the winner.
 
-		var winner = false;
-		var switchScrollPositionRace = function () {
+		let winner = false;
+		const switchScrollPositionRace = function () {
 			document.removeEventListener(
 				'scroll',
 				switchScrollPositionRace,
@@ -807,7 +798,7 @@ class App extends EventEmitter {
 			return;
 		}
 
-		var navigateFailed = false;
+		let navigateFailed = false;
 		try {
 			this.navigate(getUrlPath(href), false, event);
 		}
@@ -937,11 +928,19 @@ class App extends EventEmitter {
 	 * @param {!string} path Path containing anchor
 	 */
 	maybeUpdateScrollPositionState_() {
-		var hash = window.location.hash;
-		var anchorElement = document.getElementById(hash.substring(1));
-		if (anchorElement) {
-			const {offsetLeft, offsetTop} = getNodeOffset(anchorElement);
-			this.saveHistoryCurrentPageScrollPosition_(offsetTop, offsetLeft);
+		const hash = window.location.hash;
+
+		if (hash) {
+			const anchorElement = document.getElementById(hash.substring(1));
+
+			if (anchorElement) {
+				const {offsetLeft, offsetTop} = getNodeOffset(anchorElement);
+
+				this.saveHistoryCurrentPageScrollPosition_(
+					offsetTop,
+					offsetLeft
+				);
+			}
 		}
 	}
 
@@ -1019,7 +1018,7 @@ class App extends EventEmitter {
 	 * @protected
 	 */
 	onBeforeUnloadDefault_(event) {
-		var func = window._onbeforeunload;
+		const func = window._onbeforeunload;
 		if (func && !func._overloaded && func()) {
 			event.preventDefault();
 		}
@@ -1051,7 +1050,7 @@ class App extends EventEmitter {
 	 * @protected
 	 */
 	onDocSubmitDelegate_(event) {
-		var form = event.delegateTarget;
+		const form = event.delegateTarget;
 		if (form.method === 'get') {
 			return;
 		}
@@ -1112,7 +1111,7 @@ class App extends EventEmitter {
 			return;
 		}
 
-		var state = event.state;
+		const state = event.state;
 
 		if (!state) {
 			if (window.location.hash) {
@@ -1193,7 +1192,7 @@ class App extends EventEmitter {
 		this.captureScrollPositionFromScrollEvent = false;
 		document.documentElement.classList.add(this.loadingCssClass);
 
-		var endNavigatePayload = {
+		const endNavigatePayload = {
 			form: event.form,
 			path: event.path,
 		};
@@ -1229,12 +1228,12 @@ class App extends EventEmitter {
 	 * @return {Promise} Returns a pending request cancellable promise.
 	 */
 	prefetch(path) {
-		var route = this.findRoute(path);
+		const route = this.findRoute(path);
 		if (!route) {
 			return Promise.reject(new Error('No route for ' + path));
 		}
 
-		var nextScreen = this.createScreenInstance(path, route);
+		const nextScreen = this.createScreenInstance(path, route);
 
 		return nextScreen
 			.load(path)
@@ -1296,7 +1295,7 @@ class App extends EventEmitter {
 	 */
 	prepareNavigateSurfaces_(nextScreen, surfaces, params) {
 		Object.keys(surfaces).forEach((id) => {
-			var surfaceContent = nextScreen.getSurfaceContent(id, params);
+			const surfaceContent = nextScreen.getSurfaceContent(id, params);
 			surfaces[id].addContent(nextScreen.getId(), surfaceContent);
 		});
 	}
@@ -1328,7 +1327,7 @@ class App extends EventEmitter {
 	 * @param {!string} path Path containing the querystring part.
 	 */
 	removeScreen(path) {
-		var screen = this.screens[path];
+		const screen = this.screens[path];
 		if (screen) {
 			Object.keys(this.surfaces).forEach((surfaceId) =>
 				this.surfaces[surfaceId].remove(screen.getId())
@@ -1344,7 +1343,7 @@ class App extends EventEmitter {
 	 * @param {!number} scrollLeft Number containing the left scroll position to be saved.
 	 */
 	saveHistoryCurrentPageScrollPosition_(scrollTop, scrollLeft) {
-		var state = window.history.state;
+		const state = window.history.state;
 		if (state && state.senna) {
 			[state.scrollTop, state.scrollLeft] = [scrollTop, scrollLeft];
 			window.history.replaceState(state, null, null);
@@ -1456,15 +1455,15 @@ class App extends EventEmitter {
 	 * @return {?Promise=}
 	 */
 	syncScrollPositionSyncThenAsync_() {
-		var state = window.history.state;
+		const state = window.history.state;
 		if (!state) {
 			return;
 		}
 
-		var scrollTop = state.scrollTop;
-		var scrollLeft = state.scrollLeft;
+		const scrollTop = state.scrollTop;
+		const scrollLeft = state.scrollLeft;
 
-		var sync = () => {
+		const sync = () => {
 			if (this.updateScrollPosition) {
 				window.scrollTo(scrollLeft, scrollTop);
 			}

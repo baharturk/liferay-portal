@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service.persistence.test;
@@ -128,6 +119,8 @@ public class ObjectEntryPersistenceTest {
 
 		newObjectEntry.setUuid(RandomTestUtil.randomString());
 
+		newObjectEntry.setExternalReferenceCode(RandomTestUtil.randomString());
+
 		newObjectEntry.setGroupId(RandomTestUtil.nextLong());
 
 		newObjectEntry.setCompanyId(RandomTestUtil.nextLong());
@@ -140,9 +133,9 @@ public class ObjectEntryPersistenceTest {
 
 		newObjectEntry.setModifiedDate(RandomTestUtil.nextDate());
 
-		newObjectEntry.setExternalReferenceCode(RandomTestUtil.randomString());
-
 		newObjectEntry.setObjectDefinitionId(RandomTestUtil.nextLong());
+
+		newObjectEntry.setRootObjectEntryId(RandomTestUtil.nextLong());
 
 		newObjectEntry.setLastPublishDate(RandomTestUtil.nextDate());
 
@@ -165,6 +158,9 @@ public class ObjectEntryPersistenceTest {
 		Assert.assertEquals(
 			existingObjectEntry.getUuid(), newObjectEntry.getUuid());
 		Assert.assertEquals(
+			existingObjectEntry.getExternalReferenceCode(),
+			newObjectEntry.getExternalReferenceCode());
+		Assert.assertEquals(
 			existingObjectEntry.getObjectEntryId(),
 			newObjectEntry.getObjectEntryId());
 		Assert.assertEquals(
@@ -182,11 +178,11 @@ public class ObjectEntryPersistenceTest {
 			Time.getShortTimestamp(existingObjectEntry.getModifiedDate()),
 			Time.getShortTimestamp(newObjectEntry.getModifiedDate()));
 		Assert.assertEquals(
-			existingObjectEntry.getExternalReferenceCode(),
-			newObjectEntry.getExternalReferenceCode());
-		Assert.assertEquals(
 			existingObjectEntry.getObjectDefinitionId(),
 			newObjectEntry.getObjectDefinitionId());
+		Assert.assertEquals(
+			existingObjectEntry.getRootObjectEntryId(),
+			newObjectEntry.getRootObjectEntryId());
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingObjectEntry.getLastPublishDate()),
 			Time.getShortTimestamp(newObjectEntry.getLastPublishDate()));
@@ -246,6 +242,14 @@ public class ObjectEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByU_ODI() throws Exception {
+		_persistence.countByU_ODI(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByU_ODI(0L, 0L);
+	}
+
+	@Test
 	public void testCountByODI_NotS() throws Exception {
 		_persistence.countByODI_NotS(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
@@ -254,13 +258,23 @@ public class ObjectEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_C_ERC() throws Exception {
-		_persistence.countByG_C_ERC(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "");
+	public void testCountByERC_G_C() throws Exception {
+		_persistence.countByERC_G_C(
+			"", RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
-		_persistence.countByG_C_ERC(0L, 0L, "null");
+		_persistence.countByERC_G_C("null", 0L, 0L);
 
-		_persistence.countByG_C_ERC(0L, 0L, (String)null);
+		_persistence.countByERC_G_C((String)null, 0L, 0L);
+	}
+
+	@Test
+	public void testCountByERC_C_ODI() throws Exception {
+		_persistence.countByERC_C_ODI(
+			"", RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C_ODI("null", 0L, 0L);
+
+		_persistence.countByERC_C_ODI((String)null, 0L, 0L);
 	}
 
 	@Test
@@ -297,12 +311,13 @@ public class ObjectEntryPersistenceTest {
 
 	protected OrderByComparator<ObjectEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"ObjectEntry", "mvccVersion", true, "uuid", true, "objectEntryId",
-			true, "groupId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true,
-			"externalReferenceCode", true, "objectDefinitionId", true,
-			"lastPublishDate", true, "status", true, "statusByUserId", true,
-			"statusByUserName", true, "statusDate", true);
+			"ObjectEntry", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true, "objectEntryId", true, "groupId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"createDate", true, "modifiedDate", true, "objectDefinitionId",
+			true, "rootObjectEntryId", true, "lastPublishDate", true, "status",
+			true, "statusByUserId", true, "statusByUserName", true,
+			"statusDate", true);
 	}
 
 	@Test
@@ -579,6 +594,11 @@ public class ObjectEntryPersistenceTest {
 				new Class<?>[] {String.class}, "groupId"));
 
 		Assert.assertEquals(
+			objectEntry.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				objectEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
 			Long.valueOf(objectEntry.getGroupId()),
 			ReflectionTestUtil.<Long>invoke(
 				objectEntry, "getColumnOriginalValue",
@@ -588,11 +608,22 @@ public class ObjectEntryPersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				objectEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "companyId"));
+
 		Assert.assertEquals(
 			objectEntry.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				objectEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(objectEntry.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				objectEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
+		Assert.assertEquals(
+			Long.valueOf(objectEntry.getObjectDefinitionId()),
+			ReflectionTestUtil.<Long>invoke(
+				objectEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "objectDefinitionId"));
 	}
 
 	protected ObjectEntry addObjectEntry() throws Exception {
@@ -603,6 +634,8 @@ public class ObjectEntryPersistenceTest {
 		objectEntry.setMvccVersion(RandomTestUtil.nextLong());
 
 		objectEntry.setUuid(RandomTestUtil.randomString());
+
+		objectEntry.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		objectEntry.setGroupId(RandomTestUtil.nextLong());
 
@@ -616,9 +649,9 @@ public class ObjectEntryPersistenceTest {
 
 		objectEntry.setModifiedDate(RandomTestUtil.nextDate());
 
-		objectEntry.setExternalReferenceCode(RandomTestUtil.randomString());
-
 		objectEntry.setObjectDefinitionId(RandomTestUtil.nextLong());
+
+		objectEntry.setRootObjectEntryId(RandomTestUtil.nextLong());
 
 		objectEntry.setLastPublishDate(RandomTestUtil.nextDate());
 

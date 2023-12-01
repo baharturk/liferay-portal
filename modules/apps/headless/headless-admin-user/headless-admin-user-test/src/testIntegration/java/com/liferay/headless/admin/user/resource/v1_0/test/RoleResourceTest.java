@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.resource.v1_0.test;
@@ -67,77 +58,54 @@ public class RoleResourceTest extends BaseRoleResourceTestCase {
 
 	@Override
 	@Test
-	public void testDeleteOrganizationRoleUserAccountAssociation()
-		throws Exception {
-
-		Role role = testDeleteOrganizationRoleUserAccountAssociation_addRole();
-		Organization organization = OrganizationTestUtil.addOrganization();
-
-		assertHttpResponseStatusCode(
-			204,
-			roleResource.
-				deleteOrganizationRoleUserAccountAssociationHttpResponse(
-					role.getId(), _user.getUserId(),
-					organization.getOrganizationId()));
-	}
-
-	@Override
-	@Test
-	public void testDeleteRoleUserAccountAssociation() throws Exception {
-		Role role = testDeleteRoleUserAccountAssociation_addRole();
-
-		assertHttpResponseStatusCode(
-			204,
-			roleResource.deleteRoleUserAccountAssociationHttpResponse(
-				role.getId(), _user.getUserId()));
-	}
-
-	@Override
-	@Test
-	public void testDeleteSiteRoleUserAccountAssociation() throws Exception {
-		Role role = testDeleteSiteRoleUserAccountAssociation_addRole();
-
-		assertHttpResponseStatusCode(
-			204,
-			roleResource.deleteSiteRoleUserAccountAssociationHttpResponse(
-				role.getId(), _user.getUserId(), testGroup.getGroupId()));
-	}
-
-	@Override
-	@Test
 	public void testGetRolesPage() throws Exception {
 		Page<Role> page = roleResource.getRolesPage(
-			null, Pagination.of(1, 100));
+			null, null, Pagination.of(1, 100));
 
 		List<Role> roles = new ArrayList<>(page.getItems());
 
-		roles.add(_addRole(randomRole()));
-		roles.add(_addRole(randomRole()));
+		Role role1 = _addRole(randomRole());
 
-		page = roleResource.getRolesPage(null, Pagination.of(1, roles.size()));
+		roles.add(role1);
+
+		Role role2 = _addRole(randomRole());
+
+		roles.add(role2);
+
+		page = roleResource.getRolesPage(
+			null, null, Pagination.of(1, roles.size()));
 
 		Assert.assertEquals(roles.size(), page.getTotalCount());
 
 		assertEqualsIgnoringOrder(roles, (List<Role>)page.getItems());
 		assertValid(page);
+
+		page = roleResource.getRolesPage(
+			null, role1.getName(), Pagination.of(1, roles.size()));
+
+		roles = (List<Role>)page.getItems();
+
+		assertEquals(role1, roles.get(0));
 	}
 
 	@Override
 	@Test
 	public void testGetRolesPageWithPagination() throws Exception {
-		Page<Role> rolesPage = roleResource.getRolesPage(null, null);
+		Page<Role> rolesPage = roleResource.getRolesPage(null, null, null);
 
 		testGetRolesPage_addRole(randomRole());
 		testGetRolesPage_addRole(randomRole());
 		testGetRolesPage_addRole(randomRole());
 
-		Page<Role> page1 = roleResource.getRolesPage(null, Pagination.of(1, 2));
+		Page<Role> page1 = roleResource.getRolesPage(
+			null, null, Pagination.of(1, 2));
 
 		List<Role> roles1 = (List<Role>)page1.getItems();
 
 		Assert.assertEquals(roles1.toString(), 2, roles1.size());
 
-		Page<Role> page2 = roleResource.getRolesPage(null, Pagination.of(2, 2));
+		Page<Role> page2 = roleResource.getRolesPage(
+			null, null, Pagination.of(2, 2));
 
 		Assert.assertEquals(
 			rolesPage.getTotalCount() + 3, page2.getTotalCount());
@@ -292,6 +260,24 @@ public class RoleResourceTest extends BaseRoleResourceTestCase {
 	}
 
 	@Override
+	protected Long
+			testDeleteOrganizationRoleUserAccountAssociation_getOrganizationId()
+		throws Exception {
+
+		Organization organization = OrganizationTestUtil.addOrganization();
+
+		return organization.getOrganizationId();
+	}
+
+	@Override
+	protected Long
+			testDeleteOrganizationRoleUserAccountAssociation_getUserAccountId()
+		throws Exception {
+
+		return _user.getUserId();
+	}
+
+	@Override
 	protected Role testDeleteRoleUserAccountAssociation_addRole()
 		throws Exception {
 
@@ -299,10 +285,31 @@ public class RoleResourceTest extends BaseRoleResourceTestCase {
 	}
 
 	@Override
+	protected Long testDeleteRoleUserAccountAssociation_getUserAccountId()
+		throws Exception {
+
+		return _user.getUserId();
+	}
+
+	@Override
 	protected Role testDeleteSiteRoleUserAccountAssociation_addRole()
 		throws Exception {
 
 		return _addRole(RoleConstants.TYPE_SITE);
+	}
+
+	@Override
+	protected Long testDeleteSiteRoleUserAccountAssociation_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	@Override
+	protected Long testDeleteSiteRoleUserAccountAssociation_getUserAccountId()
+		throws Exception {
+
+		return _user.getUserId();
 	}
 
 	@Override

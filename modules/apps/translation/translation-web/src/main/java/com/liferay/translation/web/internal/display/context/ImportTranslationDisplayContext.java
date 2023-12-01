@@ -1,30 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.translation.web.internal.display.context;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
+import com.liferay.portal.kernel.servlet.MultiSessionErrors;
+import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.translation.exception.XLIFFFileException;
 import com.liferay.translation.model.TranslationEntry;
 import com.liferay.translation.service.TranslationEntryLocalService;
 
+import javax.portlet.PortletRequest;
 import javax.portlet.PortletURL;
 
 import javax.servlet.http.HttpServletRequest;
@@ -53,6 +49,23 @@ public class ImportTranslationDisplayContext {
 			workflowDefinitionLinkLocalService;
 	}
 
+	public String getErrorMessage() {
+		PortletRequest portletRequest =
+			(PortletRequest)_httpServletRequest.getAttribute(
+				JavaConstants.JAVAX_PORTLET_REQUEST);
+
+		if (!MultiSessionErrors.contains(
+				portletRequest,
+				XLIFFFileException.MustBeValid.class.getName())) {
+
+			return null;
+		}
+
+		return LanguageUtil.get(
+			_httpServletRequest,
+			"please-enter-a-file-with-a-valid-xliff-file-extension");
+	}
+
 	public PortletURL getImportTranslationURL() throws PortalException {
 		return PortletURLBuilder.createActionURL(
 			_liferayPortletResponse
@@ -73,7 +86,7 @@ public class ImportTranslationDisplayContext {
 		if (_workflowDefinitionLinkLocalService.hasWorkflowDefinitionLink(
 				_companyId, _groupId, TranslationEntry.class.getName())) {
 
-			return "submit-for-publication";
+			return "submit-for-workflow";
 		}
 
 		return "publish";

@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openModal, openSelectionModal} from 'frontend-js-web';
+import {openModal, openSelectionModal, openToast} from 'frontend-js-web';
+
+import openDeleteFragmentCollectionModal from './openDeleteFragmentCollectionModal';
 
 export const ACTIONS = {
 	deleteCollections({
@@ -22,7 +15,7 @@ export const ACTIONS = {
 	}) {
 		this.openFragmentCollectionsItemSelector(
 			Liferay.Language.get('delete'),
-			Liferay.Language.get('delete-collection'),
+			Liferay.Language.get('delete-fragment-set'),
 			viewDeleteFragmentCollectionsURL,
 			(selectedItems) => {
 				if (!selectedItems?.length) {
@@ -35,22 +28,23 @@ export const ACTIONS = {
 					return;
 				}
 
-				if (
-					confirm(
-						Liferay.Language.get(
-							'are-you-sure-you-want-to-delete-the-selected-entries'
-						)
-					)
-				) {
-					const input = document.createElement('input');
+				openDeleteFragmentCollectionModal({
+					multiple: true,
+					onDelete: () => {
+						let input = form.elements[`${portletNamespace}rowIds`];
 
-					input.name = `${portletNamespace}rowIds`;
-					input.value = selectedItems.map((item) => item.value);
+						if (!input) {
+							input = document.createElement('input');
+							input.name = `${portletNamespace}rowIds`;
+						}
 
-					form.appendChild(input);
-				}
+						input.value = selectedItems.map((item) => item.value);
 
-				submitForm(form, deleteFragmentCollectionURL);
+						form.appendChild(input);
+
+						submitForm(form, deleteFragmentCollectionURL);
+					},
+				});
 			},
 			null,
 			portletNamespace
@@ -66,7 +60,7 @@ export const ACTIONS = {
 
 		this.openFragmentCollectionsItemSelector(
 			Liferay.Language.get('export'),
-			Liferay.Language.get('export-collection'),
+			Liferay.Language.get('export-fragment-set'),
 			viewExportFragmentCollectionsURL,
 			(selectedItems) => {
 				if (!selectedItems?.length) {
@@ -79,9 +73,13 @@ export const ACTIONS = {
 					return;
 				}
 
-				const input = document.createElement('input');
+				let input = form.elements[`${portletNamespace}rowIds`];
 
-				input.name = `${portletNamespace}rowIds`;
+				if (!input) {
+					input = document.createElement('input');
+					input.name = `${portletNamespace}rowIds`;
+				}
+
 				input.value = selectedItems.map((item) => item.value);
 				input.setAttribute('type', 'hidden');
 
@@ -93,7 +91,7 @@ export const ACTIONS = {
 			},
 			() => {
 				if (processed) {
-					Liferay.Util.openToast({
+					openToast({
 						message: Liferay.Language.get(
 							'your-request-processed-successfully'
 						),

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -130,7 +121,7 @@ describe('A11yPanel', () => {
 			describe('by Impact', () => {
 				it('when selecting CRITICAL impact it shows only CRITICAL violations', () => {
 					const {
-						getAllByRole,
+						container,
 						getByLabelText,
 						getByTestId,
 					} = renderA11yToolSidebar();
@@ -146,7 +137,11 @@ describe('A11yPanel', () => {
 					expect(getByTestId('moderate')).not.toBeChecked();
 					expect(getByTestId('minor')).not.toBeChecked();
 
-					expect(getAllByRole('tab').length).toBe(1);
+					const tabs = container.querySelectorAll(
+						'button[role="tab"]'
+					);
+
+					expect(tabs.length).toBe(1);
 				});
 
 				it('when selecting CRITICAL, SERIOUS impacts it shows only corresponding violations', () => {
@@ -266,7 +261,7 @@ describe('A11yPanel', () => {
 
 				it('when clicking in a valid category, it will show the violations labelled with this category', () => {
 					const {
-						getAllByRole,
+						container,
 						getByLabelText,
 						getByTestId,
 						getByText,
@@ -278,7 +273,11 @@ describe('A11yPanel', () => {
 
 					fireEvent.click(getByTestId('wcag2aa'));
 
-					expect(getAllByRole('tab').length).toBe(1);
+					const tabs = container.querySelectorAll(
+						'button[role="tab"]'
+					);
+
+					expect(tabs.length).toBe(1);
 					expect(
 						getByText('aria-required-parent-mod')
 					).toBeInTheDocument();
@@ -301,7 +300,7 @@ describe('A11yPanel', () => {
 
 			expect(occurrences.length).toBe(3);
 
-			expect(getAllByText('occurrence-x').length).toBe(3);
+			expect(getAllByText(/occurrence-[1-3]{1}$/).length).toBe(3);
 		});
 
 		it('navigates to the desired occurrence when clicking', () => {
@@ -327,9 +326,9 @@ describe('A11yPanel', () => {
 				)
 			).toBeInTheDocument();
 
-			expect(getAllByText('occurrence-x')[0]).toBeInTheDocument();
+			expect(getAllByText('occurrence-1')[0]).toBeInTheDocument();
 
-			expect(getAllByText('occurrence-x')[2]).toBeUndefined();
+			expect(getAllByText('occurrence-1')[2]).toBeUndefined();
 		});
 	});
 

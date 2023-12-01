@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.store.service.persistence.impl;
@@ -36,7 +27,6 @@ import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -49,7 +39,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -80,7 +69,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Shuyang Zhou
  * @generated
  */
-@Component(service = {CTSContentPersistence.class, BasePersistence.class})
+@Component(service = CTSContentPersistence.class)
 public class CTSContentPersistenceImpl
 	extends BasePersistenceImpl<CTSContent> implements CTSContentPersistence {
 
@@ -220,7 +209,7 @@ public class CTSContentPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<CTSContent>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CTSContent ctsContent : list) {
@@ -671,7 +660,7 @@ public class CTSContentPersistenceImpl
 
 			finderArgs = new Object[] {companyId, repositoryId, storeType};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -868,7 +857,7 @@ public class CTSContentPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<CTSContent>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CTSContent ctsContent : list) {
@@ -1367,7 +1356,7 @@ public class CTSContentPersistenceImpl
 				companyId, repositoryId, path, storeType
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -1572,7 +1561,7 @@ public class CTSContentPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<CTSContent>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CTSContent ctsContent : list) {
@@ -2073,7 +2062,7 @@ public class CTSContentPersistenceImpl
 				companyId, repositoryId, path, storeType
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2259,12 +2248,9 @@ public class CTSContentPersistenceImpl
 		version = Objects.toString(version, "");
 		storeType = Objects.toString(storeType, "");
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			CTSContent.class);
-
 		Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			finderArgs = new Object[] {
 				companyId, repositoryId, path, version, storeType
 			};
@@ -2272,10 +2258,13 @@ public class CTSContentPersistenceImpl
 
 		Object result = null;
 
-		if (useFinderCache && productionMode) {
+		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByC_R_P_V_S, finderArgs);
+				_finderPathFetchByC_R_P_V_S, finderArgs, this);
 		}
+
+		boolean productionMode = ctPersistenceHelper.isProductionMode(
+			CTSContent.class);
 
 		if (result instanceof CTSContent) {
 			CTSContent ctsContent = (CTSContent)result;
@@ -2288,6 +2277,14 @@ public class CTSContentPersistenceImpl
 
 				result = null;
 			}
+			else if (!ctPersistenceHelper.isProductionMode(
+						CTSContent.class, ctsContent.getPrimaryKey())) {
+
+				result = null;
+			}
+		}
+		else if (!productionMode && (result instanceof List<?>)) {
+			result = null;
 		}
 
 		if (result == null) {
@@ -2447,7 +2444,7 @@ public class CTSContentPersistenceImpl
 				companyId, repositoryId, path, version, storeType
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (count == null) {
@@ -2915,7 +2912,9 @@ public class CTSContentPersistenceImpl
 	 */
 	@Override
 	public CTSContent fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(CTSContent.class)) {
+		if (ctPersistenceHelper.isProductionMode(
+				CTSContent.class, primaryKey)) {
+
 			return super.fetchByPrimaryKey(primaryKey);
 		}
 
@@ -3131,7 +3130,7 @@ public class CTSContentPersistenceImpl
 
 		if (useFinderCache && productionMode) {
 			list = (List<CTSContent>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3207,7 +3206,7 @@ public class CTSContentPersistenceImpl
 
 		if (productionMode) {
 			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 		}
 
 		if (count == null) {
@@ -3437,29 +3436,14 @@ public class CTSContentPersistenceImpl
 			},
 			false);
 
-		_setCTSContentUtilPersistence(this);
+		CTSContentUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setCTSContentUtilPersistence(null);
+		CTSContentUtil.setPersistence(null);
 
 		entityCache.removeCache(CTSContentImpl.class.getName());
-	}
-
-	private void _setCTSContentUtilPersistence(
-		CTSContentPersistence ctsContentPersistence) {
-
-		try {
-			Field field = CTSContentUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, ctsContentPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -3527,8 +3511,5 @@ public class CTSContentPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private CTSContentModelArgumentsResolver _ctsContentModelArgumentsResolver;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.multi.factor.authentication.fido2.credential.service.base;
@@ -32,6 +23,8 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -44,8 +37,6 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
-
-import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -342,6 +333,11 @@ public abstract class MFAFIDO2CredentialEntryLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement MFAFIDO2CredentialEntryLocalServiceImpl#deleteMFAFIDO2CredentialEntry(MFAFIDO2CredentialEntry) to avoid orphaned data");
+		}
+
 		return mfaFIDO2CredentialEntryLocalService.
 			deleteMFAFIDO2CredentialEntry(
 				(MFAFIDO2CredentialEntry)persistedModel);
@@ -412,7 +408,7 @@ public abstract class MFAFIDO2CredentialEntryLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
+		MFAFIDO2CredentialEntryLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -428,7 +424,8 @@ public abstract class MFAFIDO2CredentialEntryLocalServiceBaseImpl
 		mfaFIDO2CredentialEntryLocalService =
 			(MFAFIDO2CredentialEntryLocalService)aopProxy;
 
-		_setLocalServiceUtilService(mfaFIDO2CredentialEntryLocalService);
+		MFAFIDO2CredentialEntryLocalServiceUtil.setService(
+			mfaFIDO2CredentialEntryLocalService);
 	}
 
 	/**
@@ -474,24 +471,6 @@ public abstract class MFAFIDO2CredentialEntryLocalServiceBaseImpl
 		}
 	}
 
-	private void _setLocalServiceUtilService(
-		MFAFIDO2CredentialEntryLocalService
-			mfaFIDO2CredentialEntryLocalService) {
-
-		try {
-			Field field =
-				MFAFIDO2CredentialEntryLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, mfaFIDO2CredentialEntryLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
 	protected MFAFIDO2CredentialEntryLocalService
 		mfaFIDO2CredentialEntryLocalService;
 
@@ -502,5 +481,8 @@ public abstract class MFAFIDO2CredentialEntryLocalServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		MFAFIDO2CredentialEntryLocalServiceBaseImpl.class);
 
 }

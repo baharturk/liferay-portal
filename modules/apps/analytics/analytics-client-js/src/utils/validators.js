@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {
+	DXP_APPLICATION_IDS,
 	VALIDATION_PROPERTIES_MAXIMUM_LENGTH,
 	VALIDATION_PROPERTY_NAME_MAXIMUM_LENGTH,
 	VALIDATION_PROPERTY_VALUE_MAXIMUM_LENGTH,
 } from './constants';
 
-const isValidEvent = ({eventId, eventProps}) => {
+const isValidEvent = ({applicationId, eventId, eventProps}) => {
 	const validationsEventId = _validate([
 		validateIsString('eventId'),
 		validateEmptyString('eventId'),
@@ -29,9 +21,18 @@ const isValidEvent = ({eventId, eventProps}) => {
 		validateEmptyString('eventPropKey'),
 		validateMaxLength(),
 	]);
-	const validationsValue = _validate([
+	const validateValue = [
 		validateMaxLength(VALIDATION_PROPERTY_VALUE_MAXIMUM_LENGTH),
-	]);
+	];
+
+	// Ignore validation by attribute if applicationId is from DXP
+
+	if (!DXP_APPLICATION_IDS.includes(applicationId)) {
+		validateValue.push(validateAttributeType);
+	}
+
+	const validationsValue = _validate(validateValue);
+
 	let errors = [];
 
 	errors = errors.concat(validationsEventId(eventId));
@@ -54,6 +55,20 @@ const isValidEvent = ({eventId, eventProps}) => {
 	}
 
 	return true;
+};
+
+const validateAttributeType = (attributeValue) => {
+	let error = '';
+
+	const valid = ['string', 'number', 'boolean'].includes(
+		typeof attributeValue
+	);
+
+	if (!valid) {
+		error = 'Attribute must be a String, Number, or Boolean.';
+	}
+
+	return error;
 };
 
 const validateEmptyString = (labelField) => (str) => {
@@ -114,6 +129,7 @@ const _showErrors = (errorsArr) =>
 
 export {
 	isValidEvent,
+	validateAttributeType,
 	validateEmptyString,
 	validateMaxLength,
 	validatePropsLength,

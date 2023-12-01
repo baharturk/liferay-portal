@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.exception.DuplicateCPMeasurementUnitExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCPMeasurementUnitException;
 import com.liferay.commerce.product.model.CPMeasurementUnit;
 import com.liferay.commerce.product.service.CPMeasurementUnitLocalServiceUtil;
@@ -128,7 +120,12 @@ public class CPMeasurementUnitPersistenceTest {
 
 		newCPMeasurementUnit.setMvccVersion(RandomTestUtil.nextLong());
 
+		newCPMeasurementUnit.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCPMeasurementUnit.setUuid(RandomTestUtil.randomString());
+
+		newCPMeasurementUnit.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		newCPMeasurementUnit.setGroupId(RandomTestUtil.nextLong());
 
@@ -165,8 +162,14 @@ public class CPMeasurementUnitPersistenceTest {
 			existingCPMeasurementUnit.getMvccVersion(),
 			newCPMeasurementUnit.getMvccVersion());
 		Assert.assertEquals(
+			existingCPMeasurementUnit.getCtCollectionId(),
+			newCPMeasurementUnit.getCtCollectionId());
+		Assert.assertEquals(
 			existingCPMeasurementUnit.getUuid(),
 			newCPMeasurementUnit.getUuid());
+		Assert.assertEquals(
+			existingCPMeasurementUnit.getExternalReferenceCode(),
+			newCPMeasurementUnit.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingCPMeasurementUnit.getCPMeasurementUnitId(),
 			newCPMeasurementUnit.getCPMeasurementUnitId());
@@ -209,6 +212,28 @@ public class CPMeasurementUnitPersistenceTest {
 			Time.getShortTimestamp(
 				existingCPMeasurementUnit.getLastPublishDate()),
 			Time.getShortTimestamp(newCPMeasurementUnit.getLastPublishDate()));
+	}
+
+	@Test(
+		expected = DuplicateCPMeasurementUnitExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CPMeasurementUnit cpMeasurementUnit = addCPMeasurementUnit();
+
+		CPMeasurementUnit newCPMeasurementUnit = addCPMeasurementUnit();
+
+		newCPMeasurementUnit.setCompanyId(cpMeasurementUnit.getCompanyId());
+
+		newCPMeasurementUnit = _persistence.update(newCPMeasurementUnit);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCPMeasurementUnit);
+
+		newCPMeasurementUnit.setExternalReferenceCode(
+			cpMeasurementUnit.getExternalReferenceCode());
+
+		_persistence.update(newCPMeasurementUnit);
 	}
 
 	@Test
@@ -272,6 +297,15 @@ public class CPMeasurementUnitPersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		CPMeasurementUnit newCPMeasurementUnit = addCPMeasurementUnit();
 
@@ -296,12 +330,12 @@ public class CPMeasurementUnitPersistenceTest {
 
 	protected OrderByComparator<CPMeasurementUnit> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CPMeasurementUnit", "mvccVersion", true, "uuid", true,
-			"CPMeasurementUnitId", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "name", true, "key", true, "rate", true,
-			"primary", true, "priority", true, "type", true, "lastPublishDate",
-			true);
+			"CPMeasurementUnit", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "externalReferenceCode", true, "CPMeasurementUnitId",
+			true, "groupId", true, "companyId", true, "userId", true,
+			"userName", true, "createDate", true, "modifiedDate", true, "name",
+			true, "key", true, "rate", true, "primary", true, "priority", true,
+			"type", true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -598,6 +632,17 @@ public class CPMeasurementUnitPersistenceTest {
 			ReflectionTestUtil.invoke(
 				cpMeasurementUnit, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "key_"));
+
+		Assert.assertEquals(
+			cpMeasurementUnit.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				cpMeasurementUnit, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(cpMeasurementUnit.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				cpMeasurementUnit, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CPMeasurementUnit addCPMeasurementUnit() throws Exception {
@@ -607,7 +652,12 @@ public class CPMeasurementUnitPersistenceTest {
 
 		cpMeasurementUnit.setMvccVersion(RandomTestUtil.nextLong());
 
+		cpMeasurementUnit.setCtCollectionId(RandomTestUtil.nextLong());
+
 		cpMeasurementUnit.setUuid(RandomTestUtil.randomString());
+
+		cpMeasurementUnit.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		cpMeasurementUnit.setGroupId(RandomTestUtil.nextLong());
 

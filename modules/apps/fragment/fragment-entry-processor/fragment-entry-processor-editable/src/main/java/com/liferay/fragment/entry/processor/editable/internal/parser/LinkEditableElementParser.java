@@ -1,27 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.entry.processor.editable.internal.parser;
 
-import com.liferay.fragment.entry.processor.editable.EditableFragmentEntryProcessor;
 import com.liferay.fragment.entry.processor.editable.parser.EditableElementParser;
 import com.liferay.fragment.entry.processor.editable.parser.util.EditableElementParserUtil;
 import com.liferay.fragment.exception.FragmentEntryContentException;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -34,19 +24,17 @@ import java.util.ResourceBundle;
 import org.jsoup.nodes.Element;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jürgen Kappler
  */
-@Component(
-	immediate = true, property = "type=link",
-	service = EditableElementParser.class
-)
+@Component(property = "type=link", service = EditableElementParser.class)
 public class LinkEditableElementParser implements EditableElementParser {
 
 	@Override
 	public JSONObject getAttributes(Element element) {
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
 		List<Element> elements = element.getElementsByTag("a");
 
@@ -66,11 +54,6 @@ public class LinkEditableElementParser implements EditableElementParser {
 	}
 
 	@Override
-	public String getFieldTemplate() {
-		return _TMPL_LINK_FIELD_TEMPLATE;
-	}
-
-	@Override
 	public String getValue(Element element) {
 		List<Element> elements = element.getElementsByTag("a");
 
@@ -86,7 +69,7 @@ public class LinkEditableElementParser implements EditableElementParser {
 			ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 				"content.Language", getClass());
 
-			return LanguageUtil.get(resourceBundle, "example-link");
+			return _language.get(resourceBundle, "example-link");
 		}
 
 		return html;
@@ -164,16 +147,17 @@ public class LinkEditableElementParser implements EditableElementParser {
 				"content.Language", getClass());
 
 			throw new FragmentEntryContentException(
-				LanguageUtil.format(
+				_language.format(
 					resourceBundle,
-					"each-editable-image-element-must-contain-an-a-tag",
+					"each-editable-link-element-must-contain-an-a-tag",
 					new Object[] {"<em>", "</em>"}, false));
 		}
 	}
 
-	private static final String _TMPL_LINK_FIELD_TEMPLATE = StringUtil.read(
-		EditableFragmentEntryProcessor.class,
-		"/META-INF/resources/fragment/entry/processor/editable" +
-			"/link_field_template.tmpl");
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
 
 }

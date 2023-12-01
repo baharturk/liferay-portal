@@ -1,26 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.template.freemarker.internal;
 
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.SwappableSecurityManager;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.test.rule.NewEnv;
+import com.liferay.portal.kernel.test.util.ReflectionUtilTestUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
-import com.liferay.portal.test.aspects.ReflectionUtilAdvice;
-import com.liferay.portal.test.rule.AdviseWith;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import freemarker.ext.beans.EnumerationModel;
@@ -161,15 +152,15 @@ public class LiferayObjectWrapperTest extends BaseObjectWrapperTestCase {
 		_assertModelFactoryCache("_STRING_MODEL_FACTORY", Version.class);
 	}
 
-	@AdviseWith(adviceClasses = ReflectionUtilAdvice.class)
 	@NewEnv(type = NewEnv.Type.CLASSLOADER)
 	@Test
 	public void testInitializationFailure() throws Exception {
-		Exception exception = new Exception();
+		SecurityException securityException = new SecurityException();
 
-		ReflectionUtilAdvice.setDeclaredFieldThrowable(exception);
+		try (SwappableSecurityManager swappableSecurityManager =
+				ReflectionUtilTestUtil.throwForSuppressAccessChecks(
+					securityException)) {
 
-		try {
 			Class.forName(
 				"com.liferay.portal.template.freemarker.internal." +
 					"LiferayObjectWrapper");
@@ -177,7 +168,7 @@ public class LiferayObjectWrapperTest extends BaseObjectWrapperTestCase {
 			Assert.fail("ExceptionInInitializerError was not thrown");
 		}
 		catch (ExceptionInInitializerError eiie) {
-			Assert.assertSame(exception, eiie.getCause());
+			Assert.assertSame(securityException, eiie.getCause());
 		}
 	}
 

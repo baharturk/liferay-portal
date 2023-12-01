@@ -1,23 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useIsMounted} from '@liferay/frontend-js-react-web';
-import {ImageEditor} from 'item-selector-taglib';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
-import ReactDOM from 'react-dom';
 
+import ImageEditor from '../../image_editor/ImageEditor';
 import Carousel from './Carousel.es';
 import Footer from './Footer.es';
 import Header from './Header.es';
@@ -32,8 +22,10 @@ const KEY_CODE = {
 
 const noop = () => {};
 
+const itemIsImage = ({mimeType, type}) =>
+	type === 'image' || Boolean(mimeType?.match(/image.*/));
+
 const ItemSelectorPreview = ({
-	container,
 	currentIndex = 0,
 	editImageURL,
 	handleClose = noop,
@@ -45,6 +37,7 @@ const ItemSelectorPreview = ({
 }) => {
 	const [currentItemIndex, setCurrentItemIndex] = useState(currentIndex);
 	const [isEditing, setIsEditing] = useState();
+	const [isImage, setIsImage] = useState(itemIsImage(items[currentIndex]));
 	const [itemList, setItemList] = useState(items);
 	const [reloadOnHide, setReloadOnHide] = useState(initialReloadOnHide);
 
@@ -54,20 +47,12 @@ const ItemSelectorPreview = ({
 
 	const isMounted = useIsMounted();
 
-	const close = useCallback(() => {
-		handleClose();
-
-		if (container) {
-			ReactDOM.unmountComponentAtNode(container);
-		}
-	}, [container, handleClose]);
-
 	const handleCancelEditing = () => {
 		setIsEditing(false);
 	};
 
 	const handleClickBack = () => {
-		close();
+		handleClose();
 
 		if (reloadOnHide) {
 			const frame = window.frameElement;
@@ -124,13 +109,13 @@ const ItemSelectorPreview = ({
 				case KEY_CODE.ESC:
 					event.preventDefault();
 					event.stopPropagation();
-					close();
+					handleClose();
 					break;
 				default:
 					break;
 			}
 		},
-		[close, handleClickNext, handleClickPrevious, isMounted]
+		[handleClickNext, handleClickPrevious, handleClose, isMounted]
 	);
 
 	const handleSaveEditedImage = ({file, success}) => {
@@ -160,7 +145,7 @@ const ItemSelectorPreview = ({
 
 			setIsEditing(false);
 
-			close();
+			handleClose();
 			handleSelectedItem(newItem);
 		}
 	};
@@ -215,7 +200,15 @@ const ItemSelectorPreview = ({
 				width: '320px',
 			});
 		}
+
+		return () => {
+			Liferay.SideNavigation.destroy(sidenavToggle);
+		};
 	}, [infoButtonRef]);
+
+	useEffect(() => {
+		setIsImage(itemIsImage(currentItem));
+	}, [currentItem]);
 
 	return (
 		<div className="fullscreen item-selector-preview">
@@ -226,7 +219,7 @@ const ItemSelectorPreview = ({
 				handleClickEdit={handleClickEdit}
 				headerTitle={headerTitle}
 				infoButtonRef={infoButtonRef}
-				showEditIcon={true}
+				showEditIcon={isImage}
 				showInfoIcon={!!currentItem.metadata}
 				showNavbar={!isEditing}
 			/>
@@ -246,6 +239,7 @@ const ItemSelectorPreview = ({
 						currentItem={currentItem}
 						handleClickNext={handleClickNext}
 						handleClickPrevious={handleClickPrevious}
+						isImage={isImage}
 						showArrows={itemList.length > 1}
 					/>
 
@@ -261,7 +255,6 @@ const ItemSelectorPreview = ({
 };
 
 ItemSelectorPreview.propTypes = {
-	container: PropTypes.instanceOf(Element),
 	currentIndex: PropTypes.number,
 	editImageURL: PropTypes.string,
 	handleSelectedItem: PropTypes.func.isRequired,

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -28,18 +19,20 @@ CommercePriceList basePromotionCommercePriceList = commerceCatalogDisplayContext
 
 long fileEntryId = BeanParamUtil.getLong(fileEntry, request, "fileEntryId");
 
-boolean isViewOnly = !commerceCatalogDisplayContext.hasPermission(commerceCatalog.getCommerceCatalogId(), ActionKeys.UPDATE);
+boolean viewOnly = !commerceCatalogDisplayContext.hasModelResourcePermission(commerceCatalog.getCommerceCatalogId(), ActionKeys.UPDATE);
 %>
 
 <portlet:actionURL name="/commerce_catalogs/edit_commerce_catalog" var="editCommerceCatalogActionURL" />
 
 <aui:form action="<%= editCommerceCatalogActionURL %>" cssClass="mt-4" method="post" name="fm">
 	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= (commerceCatalog == null) ? Constants.ADD : Constants.UPDATE %>" />
-	<aui:input name="redirect" type="hidden" value="<%= backURL %>" />
+	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 	<aui:input name="baseCommercePriceListId" type="hidden" value="<%= commerceCatalogDisplayContext.getBaseCommercePriceListId(CommercePriceListConstants.TYPE_PRICE_LIST) %>" />
 	<aui:input name="basePromotionCommercePriceListId" type="hidden" value="<%= commerceCatalogDisplayContext.getBaseCommercePriceListId(CommercePriceListConstants.TYPE_PROMOTION) %>" />
 	<aui:input name="commerceCatalogId" type="hidden" value="<%= (commerceCatalog == null) ? 0 : commerceCatalog.getCommerceCatalogId() %>" />
 
+	<liferay-ui:error exception="<%= AccountEntryStatusException.class %>" message="please-select-a-valid-supplier" />
+	<liferay-ui:error exception="<%= AccountEntryTypeException.class %>" message="please-select-a-valid-supplier" />
 	<liferay-ui:error exception="<%= NoSuchFileEntryException.class %>" message="please-select-an-existing-file" />
 	<liferay-ui:error exception="<%= NoSuchPriceListException.class %>" message="please-select-an-existing-price-list-or-promotion" />
 
@@ -50,9 +43,9 @@ boolean isViewOnly = !commerceCatalogDisplayContext.hasPermission(commerceCatalo
 				title='<%= LanguageUtil.get(request, "details") %>'
 			>
 				<div class="col-12 lfr-form-content">
-					<aui:input bean="<%= commerceCatalog %>" disabled="<%= isViewOnly %>" model="<%= CommerceCatalog.class %>" name="name" required="<%= true %>" />
+					<aui:input bean="<%= commerceCatalog %>" disabled="<%= viewOnly %>" model="<%= CommerceCatalog.class %>" name="name" required="<%= true %>" />
 
-					<aui:select disabled="<%= isViewOnly %>" helpMessage="the-default-language-for-the-content-within-this-catalog" label="default-catalog-language" name="catalogDefaultLanguageId" required="<%= true %>" title="language">
+					<aui:select disabled="<%= viewOnly %>" helpMessage="the-default-language-for-the-content-within-this-catalog" label="default-catalog-language" name="catalogDefaultLanguageId" required="<%= true %>" title="language">
 
 						<%
 						String catalogDefaultLanguageId = themeDisplay.getLanguageId();
@@ -74,7 +67,7 @@ boolean isViewOnly = !commerceCatalogDisplayContext.hasPermission(commerceCatalo
 
 					</aui:select>
 
-					<aui:select disabled="<%= isViewOnly %>" label="currency" name="commerceCurrencyCode" required="<%= true %>" title="currency">
+					<aui:select disabled="<%= viewOnly %>" label="currency" name="commerceCurrencyCode" required="<%= true %>" title="currency">
 
 						<%
 						for (CommerceCurrency commerceCurrency : commerceCurrencies) {
@@ -89,15 +82,29 @@ boolean isViewOnly = !commerceCatalogDisplayContext.hasPermission(commerceCatalo
 
 					</aui:select>
 
+					<aui:select label="inventory-method-key" name="inventorySettings--inventoryMethodKey--" required="<%= true %>">
+
+						<%
+						for (CommerceInventoryMethod commerceInventoryMethod : commerceCatalogDisplayContext.getCommerceInventoryMethods()) {
+						%>
+
+							<aui:option label="<%= commerceInventoryMethod.getLabel(locale) %>" selected="<%= commerceCatalogDisplayContext.isCommerceInventoryMethodSelected(commerceCatalog.getGroupId(), commerceInventoryMethod.getKey()) %>" value="<%= commerceInventoryMethod.getKey() %>" />
+
+						<%
+						}
+						%>
+
+					</aui:select>
+
 					<c:if test="<%= commerceCatalogDisplayContext.showBasePriceListInputs() %>">
-						<label class="control-label" for="baseCommercePriceListId"><%= LanguageUtil.get(request, "base-price-list") %></label>
+						<label class="control-label" for="baseCommercePriceListId"><liferay-ui:message key="base-price-list" /></label>
 
 						<div class="mb-4" id="base-price-list-autocomplete-root"></div>
 
 						<aui:script require="commerce-frontend-js/components/autocomplete/entry as autocomplete, commerce-frontend-js/utilities/eventsDefinitions as events">
 							autocomplete.default('autocomplete', 'base-price-list-autocomplete-root', {
 								apiUrl:
-									'<%= commerceCatalogDisplayContext.getPriceListsApiUrl(CommercePriceListConstants.TYPE_PRICE_LIST) %>',
+									'<%= commerceCatalogDisplayContext.getPriceListsAPIURL(CommercePriceListConstants.TYPE_PRICE_LIST) %>',
 								initialLabel:
 									'<%= (baseCommercePriceList == null) ? StringPool.BLANK : HtmlUtil.escapeJS(baseCommercePriceList.getName()) %>',
 								initialValue:
@@ -123,14 +130,14 @@ boolean isViewOnly = !commerceCatalogDisplayContext.hasPermission(commerceCatalo
 							});
 						</aui:script>
 
-						<label class="control-label" for="basePromotionCommercePriceListId"><%= LanguageUtil.get(request, "base-promotion") %></label>
+						<label class="control-label" for="basePromotionCommercePriceListId"><liferay-ui:message key="base-promotion" /></label>
 
 						<div class="mb-4" id="base-promotion-autocomplete-root"></div>
 
 						<aui:script require="commerce-frontend-js/components/autocomplete/entry as autocomplete, commerce-frontend-js/utilities/eventsDefinitions as events">
 							autocomplete.default('autocomplete', 'base-promotion-autocomplete-root', {
 								apiUrl:
-									'<%= commerceCatalogDisplayContext.getPriceListsApiUrl(CommercePriceListConstants.TYPE_PROMOTION) %>',
+									'<%= commerceCatalogDisplayContext.getPriceListsAPIURL(CommercePriceListConstants.TYPE_PROMOTION) %>',
 								initialLabel:
 									'<%= (basePromotionCommercePriceList == null) ? StringPool.BLANK : HtmlUtil.escapeJS(basePromotionCommercePriceList.getName()) %>',
 								initialValue:
@@ -156,13 +163,46 @@ boolean isViewOnly = !commerceCatalogDisplayContext.hasPermission(commerceCatalo
 							});
 						</aui:script>
 					</c:if>
+
+					<c:if test='<%= FeatureFlagManagerUtil.isEnabled(themeDisplay.getCompanyId(), "COMMERCE-10890") %>'>
+
+						<%
+						AccountEntry accountEntry = commerceCatalogDisplayContext.getAccountEntry();
+						%>
+
+						<c:choose>
+							<c:when test="<%= commerceCatalogDisplayContext.hasManageLinkSupplierPermission(Constants.UPDATE) && !viewOnly %>">
+								<label class="control-label" for="accountEntryId"><liferay-ui:message key="link-catalog-to-a-supplier" /></label>
+
+								<div class="mb-4" id="link-account-entry-autocomplete-root"></div>
+
+								<aui:script require="commerce-frontend-js/components/autocomplete/entry as autocomplete">
+									autocomplete.default('autocomplete', 'link-account-entry-autocomplete-root', {
+										apiUrl: '<%= commerceCatalogDisplayContext.getAccountEntriesAPIURL() %>',
+										initialLabel:
+											'<%= (accountEntry == null) ? StringPool.BLANK : HtmlUtil.escapeJS(accountEntry.getName()) %>',
+										initialValue:
+											'<%= (accountEntry == null) ? 0 : accountEntry.getAccountEntryId() %>',
+										inputId: '<%= liferayPortletResponse.getNamespace() %>accountEntryId',
+										inputName: '<%= liferayPortletResponse.getNamespace() %>accountEntryId',
+										itemsKey: 'id',
+										itemsLabel: 'name',
+										required: false,
+									});
+								</aui:script>
+							</c:when>
+							<c:otherwise>
+								<aui:input disabled="<%= true %>" label="link-catalog-to-a-supplier" name="" value="<%= (accountEntry != null) ? accountEntry.getName() : StringPool.BLANK %>" />
+							</c:otherwise>
+						</c:choose>
+					</c:if>
 				</div>
 			</commerce-ui:panel>
 		</div>
 
 		<div class="col-4">
 			<commerce-ui:panel
-				elementClasses="flex-fill h-100"
+				elementClasses="flex-fill"
 				title='<%= LanguageUtil.get(request, "default-catalog-image") %>'
 			>
 				<div class="row">
@@ -176,7 +216,7 @@ boolean isViewOnly = !commerceCatalogDisplayContext.hasPermission(commerceCatalo
 								draggableImage="vertical"
 								fileEntryId="<%= fileEntryId %>"
 								itemSelectorEventName="addFileEntry"
-								itemSelectorURL="<%= commerceCatalogDisplayContext.getImageItemSelectorUrl() %>"
+								itemSelectorURL="<%= commerceCatalogDisplayContext.getImageItemSelectorURL() %>"
 								maxFileSize="<%= commerceCatalogDisplayContext.getImageMaxSize() %>"
 								paramName="fileEntry"
 								uploadURL="<%= uploadCommerceMediaDefaultImageActionURL %>"

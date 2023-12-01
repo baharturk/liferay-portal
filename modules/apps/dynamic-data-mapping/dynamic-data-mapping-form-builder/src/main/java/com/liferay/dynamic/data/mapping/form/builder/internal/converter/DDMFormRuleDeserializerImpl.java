@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.builder.internal.converter;
@@ -44,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Rafael Praxedes
  */
-@Component(immediate = true, service = DDMFormRuleDeserializer.class)
+@Component(service = DDMFormRuleDeserializer.class)
 public class DDMFormRuleDeserializerImpl implements DDMFormRuleDeserializer {
 
 	@Override
@@ -92,18 +83,12 @@ public class DDMFormRuleDeserializerImpl implements DDMFormRuleDeserializer {
 		spiDDMFormRule.setName(
 			LocalizedValueUtil.toLocalizedValue(
 				ruleJSONObject.getJSONObject("name")));
-
-		List<SPIDDMFormRuleAction> spiDDMFormRuleActions =
+		spiDDMFormRule.setSPIDDMFormRuleActions(
 			_deserializeSPIDDMFormRuleActions(
-				ruleJSONObject.getJSONArray("actions"));
-
-		spiDDMFormRule.setSPIDDMFormRuleActions(spiDDMFormRuleActions);
-
-		List<SPIDDMFormRuleCondition> spiDDMFormRuleConditions =
+				ruleJSONObject.getJSONArray("actions")));
+		spiDDMFormRule.setSPIDDMFormRuleConditions(
 			_deserializeSPIDDMFormRuleConditions(
-				ruleJSONObject.getJSONArray("conditions"));
-
-		spiDDMFormRule.setSPIDDMFormRuleConditions(spiDDMFormRuleConditions);
+				ruleJSONObject.getJSONArray("conditions")));
 
 		return spiDDMFormRule;
 	}
@@ -116,7 +101,7 @@ public class DDMFormRuleDeserializerImpl implements DDMFormRuleDeserializer {
 			_jsonFactory.createJSONDeserializer();
 
 		return jsonDeserializer.deserialize(
-			actionJSONObject.toJSONString(), targetClass);
+			actionJSONObject.toString(), targetClass);
 	}
 
 	private List<SPIDDMFormRuleAction> _deserializeSPIDDMFormRuleActions(
@@ -149,7 +134,7 @@ public class DDMFormRuleDeserializerImpl implements DDMFormRuleDeserializer {
 
 		SPIDDMFormRuleCondition[] spiDDMFormRuleConditions =
 			jsonDeserializer.deserialize(
-				conditionsJSONArray.toJSONString(),
+				conditionsJSONArray.toString(),
 				SPIDDMFormRuleCondition[].class);
 
 		return ListUtil.fromArray(spiDDMFormRuleConditions);

@@ -1,6 +1,6 @@
 {
 	"description_i18n": {
-		"en_US": "Boost contents with longer content translation for the current language."
+		"en_US": "boost-longer-contents-description"
 	},
 	"elementDefinition": {
 		"category": "boost",
@@ -17,14 +17,15 @@
 										"boost": "${configuration.boost}",
 										"field_value_factor": {
 											"factor": "${configuration.factor}",
-											"field": "content_${context.language_id}_length_sortable",
+											"field": "contentLength_${context.language_id}_sortable",
 											"missing": 1,
 											"modifier": "${configuration.modifier}"
 										}
 									}
 								}
 							}
-						]
+						],
+						"enabled": true
 					}
 				]
 			}
@@ -36,7 +37,7 @@
 					"fields": [
 						{
 							"defaultValue": 30,
-							"label": "Boost",
+							"label": "boost",
 							"name": "boost",
 							"type": "number",
 							"typeOptions": {
@@ -45,7 +46,7 @@
 						},
 						{
 							"defaultValue": 1.5,
-							"label": "Factor",
+							"label": "factor",
 							"name": "factor",
 							"type": "number",
 							"typeOptions": {
@@ -54,7 +55,7 @@
 						},
 						{
 							"defaultValue": "ln",
-							"label": "Modifier",
+							"label": "modifier",
 							"name": "modifier",
 							"type": "select",
 							"typeOptions": {
@@ -107,7 +108,8 @@
 			]
 		}
 	},
+	"externalReferenceCode": "BOOST_LONGER_CONTENTS",
 	"title_i18n": {
-		"en_US": "Boost Longer Contents"
+		"en_US": "boost-longer-contents"
 	}
 }

@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.ldap.internal.exportimport;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
-import com.liferay.expando.kernel.util.ExpandoConverterUtil;
+import com.liferay.expando.util.ExpandoConverterUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
+import com.liferay.portal.kernel.bean.BeanProperties;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.PwdEncryptorException;
 import com.liferay.portal.kernel.exception.SystemException;
@@ -36,7 +27,6 @@ import com.liferay.portal.kernel.security.pwd.PasswordEncryptorUtil;
 import com.liferay.portal.kernel.service.ImageLocalService;
 import com.liferay.portal.kernel.service.ListTypeService;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.exportimport.UserOperation;
 import com.liferay.portal.security.ldap.ContactConverterKeys;
@@ -78,7 +68,7 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
  * @author Marcellus Tavares
  * @author Wesley Gong
  */
-@Component(immediate = true, service = PortalToLDAPConverter.class)
+@Component(service = PortalToLDAPConverter.class)
 public class DefaultPortalToLDAPConverter implements PortalToLDAPConverter {
 
 	public DefaultPortalToLDAPConverter() {
@@ -135,12 +125,11 @@ public class DefaultPortalToLDAPConverter implements PortalToLDAPConverter {
 		String rdnType = GetterUtil.getString(
 			groupMappings.getProperty(GroupConverterKeys.GROUP_NAME),
 			_DEFAULT_DN);
-		SafeLdapName groupsDNSafeLdapName =
-			_safePortalLDAP.getGroupsDNSafeLdapName(
-				ldapServerId, userGroup.getCompanyId());
 
 		return SafeLdapNameFactory.from(
-			rdnType, userGroup.getName(), groupsDNSafeLdapName);
+			rdnType, userGroup.getName(),
+			_safePortalLDAP.getGroupsDNSafeLdapName(
+				ldapServerId, userGroup.getCompanyId()));
 	}
 
 	@Override
@@ -436,7 +425,7 @@ public class DefaultPortalToLDAPConverter implements PortalToLDAPConverter {
 			GetterUtil.getString(
 				userMappings.getProperty(_userDNFieldName), _DEFAULT_DN),
 			StringPool.EQUAL,
-			BeanPropertiesUtil.getStringSilent(user, _userDNFieldName),
+			_beanProperties.getStringSilent(user, _userDNFieldName),
 			StringPool.COMMA,
 			_safePortalLDAP.getUsersDNSafeLdapName(
 				ldapServerId, user.getCompanyId()));
@@ -457,13 +446,13 @@ public class DefaultPortalToLDAPConverter implements PortalToLDAPConverter {
 
 		String rdnType = GetterUtil.getString(
 			userMappings.getProperty(_userDNFieldName), _DEFAULT_DN);
-		String rdnValue = BeanPropertiesUtil.getStringSilent(
+		String rdnValue = _beanProperties.getStringSilent(
 			user, _userDNFieldName);
-		SafeLdapName usersDNSafeLdapName =
-			_safePortalLDAP.getUsersDNSafeLdapName(
-				ldapServerId, user.getCompanyId());
 
-		return SafeLdapNameFactory.from(rdnType, rdnValue, usersDNSafeLdapName);
+		return SafeLdapNameFactory.from(
+			rdnType, rdnValue,
+			_safePortalLDAP.getUsersDNSafeLdapName(
+				ldapServerId, user.getCompanyId()));
 	}
 
 	public void setContactReservedFieldNames(
@@ -484,43 +473,6 @@ public class DefaultPortalToLDAPConverter implements PortalToLDAPConverter {
 			_reservedUserFieldNames.put(
 				reservedUserFieldName, reservedUserFieldName);
 		}
-	}
-
-	@Reference(unbind = "-")
-	protected void setImageLocalService(ImageLocalService imageLocalService) {
-		_imageLocalService = imageLocalService;
-	}
-
-	@Reference(
-		target = "(factoryPid=com.liferay.portal.security.ldap.authenticator.configuration.LDAPAuthConfiguration)",
-		unbind = "-"
-	)
-	protected void setLDAPAuthConfigurationProvider(
-		ConfigurationProvider<LDAPAuthConfiguration>
-			ldapAuthConfigurationProvider) {
-
-		_ldapAuthConfigurationProvider = ldapAuthConfigurationProvider;
-	}
-
-	@Reference(
-		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration)",
-		unbind = "-"
-	)
-	protected void setLDAPServerConfigurationProvider(
-		ConfigurationProvider<LDAPServerConfiguration>
-			ldapServerConfigurationProvider) {
-
-		_ldapServerConfigurationProvider = ldapServerConfigurationProvider;
-	}
-
-	@Reference(unbind = "-")
-	protected void setLdapSettings(LDAPSettings ldapSettings) {
-		_ldapSettings = ldapSettings;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPasswordEncryptor(PasswordEncryptor passwordEncryptor) {
-		_passwordEncryptor = passwordEncryptor;
 	}
 
 	private void _addAttributeMapping(
@@ -564,15 +516,15 @@ public class DefaultPortalToLDAPConverter implements PortalToLDAPConverter {
 		boolean listTypeFieldName = false;
 
 		if (fieldName.equals(ContactConverterKeys.PREFIX)) {
-			fieldName = "prefixId";
+			fieldName = "prefixListTypeId";
 			listTypeFieldName = true;
 		}
 		else if (fieldName.equals(ContactConverterKeys.SUFFIX)) {
-			fieldName = "suffixId";
+			fieldName = "suffixListTypeId";
 			listTypeFieldName = true;
 		}
 
-		Object attributeValue = BeanPropertiesUtil.getObjectSilent(
+		Object attributeValue = _beanProperties.getObjectSilent(
 			object, fieldName);
 
 		if ((attributeValue != null) && listTypeFieldName) {
@@ -602,10 +554,10 @@ public class DefaultPortalToLDAPConverter implements PortalToLDAPConverter {
 		String algorithm = ldapAuthConfiguration.passwordEncryptionAlgorithm();
 
 		if (Validator.isNotNull(algorithm) &&
-			!algorithm.equals(PasswordEncryptorUtil.TYPE_NONE)) {
+			!algorithm.equals(PasswordEncryptor.TYPE_NONE)) {
 
 			try {
-				password = _passwordEncryptor.encrypt(
+				password = PasswordEncryptorUtil.encrypt(
 					algorithm, password, null);
 			}
 			catch (PwdEncryptorException pwdEncryptorException) {
@@ -745,20 +697,29 @@ public class DefaultPortalToLDAPConverter implements PortalToLDAPConverter {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DefaultPortalToLDAPConverter.class);
 
+	@Reference
+	private BeanProperties _beanProperties;
+
+	@Reference
 	private ImageLocalService _imageLocalService;
+
+	@Reference(
+		target = "(factoryPid=com.liferay.portal.security.ldap.authenticator.configuration.LDAPAuthConfiguration)"
+	)
 	private ConfigurationProvider<LDAPAuthConfiguration>
 		_ldapAuthConfigurationProvider;
+
+	@Reference(
+		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration)"
+	)
 	private ConfigurationProvider<LDAPServerConfiguration>
 		_ldapServerConfigurationProvider;
+
+	@Reference
 	private LDAPSettings _ldapSettings;
 
 	@Reference
 	private ListTypeService _listTypeService;
-
-	private PasswordEncryptor _passwordEncryptor;
-
-	@Reference
-	private Props _props;
 
 	private final Map<String, String> _reservedContactFieldNames =
 		new HashMap<>();

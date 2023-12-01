@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -49,18 +40,21 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 		MultiPattern multiPattern = new MultiPattern(
 			ciTestRelevantBypassFilePathPatterns.split("\\s*,\\s*"));
 
-		List<String> modifiedFilePaths = new ArrayList<>();
+		List<String> filePaths = new ArrayList<>();
 
 		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
 
 		for (File modifiedFile : gitWorkingDirectory.getModifiedFilesList()) {
-			modifiedFilePaths.add(
+			filePaths.add(
 				JenkinsResultsParserUtil.getCanonicalPath(modifiedFile));
 		}
 
-		if (!multiPattern.matchesAll(
-				modifiedFilePaths.toArray(new String[0]))) {
+		for (File deletedFile : gitWorkingDirectory.getDeletedFilesList()) {
+			filePaths.add(
+				JenkinsResultsParserUtil.getCanonicalPath(deletedFile));
+		}
 
+		if (!multiPattern.matchesAll(filePaths.toArray(new String[0]))) {
 			return false;
 		}
 
@@ -218,7 +212,17 @@ public class PortalWorkspaceGitRepository extends BaseWorkspaceGitRepository {
 	}
 
 	private Properties _getPortalTestProperties() {
-		return getProperties("portal.test.properties");
+		Properties testProperties = getProperties("portal.test.properties");
+
+		String companyDefaultLocale = System.getenv(
+			"TEST_COMPANY_DEFAULT_LOCALE");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(companyDefaultLocale)) {
+			testProperties.setProperty(
+				"test.company.default.locale", companyDefaultLocale);
+		}
+
+		return testProperties;
 	}
 
 	private void _writeAppServerPropertiesFile() {

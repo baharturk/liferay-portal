@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -41,14 +32,14 @@ public class EmailAddressLocalServiceImpl
 	@Override
 	public EmailAddress addEmailAddress(
 			long userId, String className, long classPK, String address,
-			long typeId, boolean primary, ServiceContext serviceContext)
+			long listTypeId, boolean primary, ServiceContext serviceContext)
 		throws PortalException {
 
 		User user = _userPersistence.findByPrimaryKey(userId);
 		long classNameId = _classNameLocalService.getClassNameId(className);
 
 		validate(
-			0, user.getCompanyId(), classNameId, classPK, address, typeId,
+			0, user.getCompanyId(), classNameId, classPK, address, listTypeId,
 			primary);
 
 		long emailAddressId = counterLocalService.increment();
@@ -63,7 +54,7 @@ public class EmailAddressLocalServiceImpl
 		emailAddress.setClassNameId(classNameId);
 		emailAddress.setClassPK(classPK);
 		emailAddress.setAddress(address);
-		emailAddress.setTypeId(typeId);
+		emailAddress.setListTypeId(listTypeId);
 		emailAddress.setPrimary(primary);
 
 		return emailAddressPersistence.update(emailAddress);
@@ -119,16 +110,17 @@ public class EmailAddressLocalServiceImpl
 
 	@Override
 	public EmailAddress updateEmailAddress(
-			long emailAddressId, String address, long typeId, boolean primary)
+			long emailAddressId, String address, long listTypeId,
+			boolean primary)
 		throws PortalException {
 
-		validate(emailAddressId, 0, 0, 0, address, typeId, primary);
+		validate(emailAddressId, 0, 0, 0, address, listTypeId, primary);
 
 		EmailAddress emailAddress = emailAddressPersistence.findByPrimaryKey(
 			emailAddressId);
 
 		emailAddress.setAddress(address);
-		emailAddress.setTypeId(typeId);
+		emailAddress.setListTypeId(listTypeId);
 		emailAddress.setPrimary(primary);
 
 		return emailAddressPersistence.update(emailAddress);
@@ -161,7 +153,7 @@ public class EmailAddressLocalServiceImpl
 
 	protected void validate(
 			long emailAddressId, long companyId, long classNameId, long classPK,
-			String address, long typeId, boolean primary)
+			String address, long listTypeId, boolean primary)
 		throws PortalException {
 
 		if (!Validator.isEmailAddress(address)) {
@@ -178,7 +170,7 @@ public class EmailAddressLocalServiceImpl
 		}
 
 		_listTypeLocalService.validate(
-			typeId, classNameId, ListTypeConstants.EMAIL_ADDRESS);
+			listTypeId, classNameId, ListTypeConstants.EMAIL_ADDRESS);
 
 		validate(emailAddressId, companyId, classNameId, classPK, primary);
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import * as FormSupport from '../../utils/FormSupport.es';
@@ -69,6 +60,90 @@ export function deleteField({
 
 		return page;
 	});
+}
+
+function isParameterRelatedToField(parameter, fieldName) {
+
+	/* TODO: enforce parameter type consistency and remove this normalization */
+	const json =
+		typeof parameter === 'string' ? parameter : JSON.stringify(parameter);
+
+	return json.includes(fieldName);
+}
+
+/* TODO: enforce parameter type consistency and remove this function */
+function normalizeParameter(parameter, defaultLanguageId) {
+	let normalizedParameter = parameter;
+
+	if (typeof normalizedParameter === 'string') {
+		normalizedParameter = JSON.parse(parameter);
+	}
+
+	if (normalizedParameter[defaultLanguageId]) {
+		normalizedParameter = normalizedParameter[defaultLanguageId];
+	}
+
+	return normalizedParameter;
+}
+
+function updateFieldAffectedByActivatingRepeatable({
+	defaultLanguageId,
+	editingLanguageId,
+	field,
+	fieldNameGenerator,
+	generateFieldNameUsingFieldLabel,
+	repeatableFieldName,
+}) {
+	if (
+		field.type === 'date' &&
+		field.validation?.parameter &&
+		isParameterRelatedToField(
+			field.validation.parameter,
+			repeatableFieldName
+		)
+	) {
+		const {endsOn, startsFrom} = normalizeParameter(
+			field.validation.parameter,
+			defaultLanguageId
+		);
+
+		const removeDateField = (validation) => {
+			if (repeatableFieldName !== validation.dateFieldName) {
+				return;
+			}
+
+			if (validation.type === 'dateField') {
+				validation.type = 'responseDate';
+			}
+			delete validation.dateFieldName;
+		};
+		removeDateField(endsOn);
+		removeDateField(startsFrom);
+
+		const validation = {
+			...field.validation,
+
+			/* TODO: define a proper parameter type and apply it here */
+			parameter: JSON.stringify({
+				endsOn,
+				startsFrom,
+			}),
+		};
+
+		return updateField(
+			{
+				defaultLanguageId,
+				editingLanguageId,
+				fieldNameGenerator,
+				generateFieldNameUsingFieldLabel,
+			},
+			field,
+			'validation',
+			validation
+		);
+	}
+
+	return field;
 }
 
 const updateFieldProperty = ({
@@ -298,6 +373,16 @@ export default function fieldEditableReducer(state, action, config) {
 					(field) => {
 						if (field.fieldName === newFocusedField.fieldName) {
 							return newFocusedField;
+						}
+						if (propertyValue && propertyName === 'repeatable') {
+							return updateFieldAffectedByActivatingRepeatable({
+								defaultLanguageId,
+								editingLanguageId,
+								field,
+								fieldNameGenerator,
+								generateFieldNameUsingFieldLabel,
+								repeatableFieldName: newFocusedField.fieldName,
+							});
 						}
 
 						return field;
@@ -551,6 +636,22 @@ export default function fieldEditableReducer(state, action, config) {
 			return {
 				fieldHovered: action.payload,
 			};
+		case EVENT_TYPES.DND.MOVE: {
+			const {focusedField, pages} = state;
+
+			if (!focusedField.fieldName) {
+				return state;
+			}
+
+			const updatedFocusedField = FormSupport.findFieldByFieldName(
+				pages,
+				focusedField.fieldName
+			);
+
+			return {
+				focusedField: updatedFocusedField,
+			};
+		}
 		case EVENT_TYPES.SECTION.ADD: {
 			const {
 				activePage,

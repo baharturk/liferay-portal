@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.item.selector.taglib.internal.display.context;
 
-import com.liferay.document.library.constants.DLContentTypes;
 import com.liferay.document.library.kernel.util.ImageProcessorUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -25,6 +15,7 @@ import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PropsValues;
@@ -79,7 +70,8 @@ public class RepositoryEntryBrowserDisplayContext {
 				PropsValues.DL_FILE_ENTRY_PREVIEW_VIDEO_MIME_TYPES,
 				fileVersion.getMimeType()) ||
 			Objects.equals(
-				DLContentTypes.VIDEO_EXTERNAL_SHORTCUT,
+				ContentTypes.
+					APPLICATION_VND_LIFERAY_VIDEO_EXTERNAL_SHORTCUT_HTML,
 				fileVersion.getMimeType())) {
 
 			return "video";
@@ -98,7 +90,8 @@ public class RepositoryEntryBrowserDisplayContext {
 				fileVersion.getMimeType()) ||
 			ImageProcessorUtil.isImageSupported(fileVersion.getMimeType()) ||
 			Objects.equals(
-				DLContentTypes.VIDEO_EXTERNAL_SHORTCUT,
+				ContentTypes.
+					APPLICATION_VND_LIFERAY_VIDEO_EXTERNAL_SHORTCUT_HTML,
 				fileVersion.getMimeType())) {
 
 			return true;

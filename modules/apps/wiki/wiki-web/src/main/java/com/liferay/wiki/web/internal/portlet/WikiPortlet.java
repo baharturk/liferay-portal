@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.portlet;
@@ -36,7 +27,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Iván Zaera
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.application-type=full-page-application",
@@ -64,7 +54,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.supported-public-render-parameter=nodeName;http://www.liferay.com/public-render-parameters/wiki",
 		"javax.portlet.supported-public-render-parameter=resetCur",
 		"javax.portlet.supported-public-render-parameter=tag",
-		"javax.portlet.supported-public-render-parameter=title;http://www.liferay.com/public-render-parameters/wiki"
+		"javax.portlet.supported-public-render-parameter=title;http://www.liferay.com/public-render-parameters/wiki",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -81,15 +72,13 @@ public class WikiPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.wiki.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
-	)
-	protected void setRelease(Release release) {
-	}
-
 	@Reference
 	private AssetHelper _assetHelper;
+
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.wiki.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))"
+	)
+	private Release _release;
 
 	@Reference
 	private TrashHelper _trashHelper;

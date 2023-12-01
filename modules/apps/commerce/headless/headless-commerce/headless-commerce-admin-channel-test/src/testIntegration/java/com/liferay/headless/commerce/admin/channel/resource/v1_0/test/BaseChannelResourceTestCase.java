@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.channel.resource.v1_0.test;
@@ -29,6 +20,7 @@ import com.liferay.headless.commerce.admin.channel.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.channel.client.resource.v1_0.ChannelResource;
 import com.liferay.headless.commerce.admin.channel.client.serdes.v1_0.ChannelSerDes;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -53,7 +45,7 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
@@ -62,18 +54,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
@@ -221,11 +211,20 @@ public abstract class BaseChannelResourceTestCase {
 
 		assertContains(channel1, (List<Channel>)page.getItems());
 		assertContains(channel2, (List<Channel>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetChannelsPage_getExpectedActions());
 
 		channelResource.deleteChannel(channel1.getId());
 
 		channelResource.deleteChannel(channel2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetChannelsPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -253,9 +252,32 @@ public abstract class BaseChannelResourceTestCase {
 	}
 
 	@Test
+	public void testGetChannelsPageWithFilterDoubleEquals() throws Exception {
+		testGetChannelsPageWithFilter("eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetChannelsPageWithFilterStringContains() throws Exception {
+		testGetChannelsPageWithFilter("contains", EntityField.Type.STRING);
+	}
+
+	@Test
 	public void testGetChannelsPageWithFilterStringEquals() throws Exception {
-		List<EntityField> entityFields = getEntityFields(
-			EntityField.Type.STRING);
+		testGetChannelsPageWithFilter("eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetChannelsPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetChannelsPageWithFilter("startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetChannelsPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
 
 		if (entityFields.isEmpty()) {
 			return;
@@ -268,7 +290,7 @@ public abstract class BaseChannelResourceTestCase {
 
 		for (EntityField entityField : entityFields) {
 			Page<Channel> page = channelResource.getChannelsPage(
-				null, getFilterString(entityField, "eq", channel1),
+				null, getFilterString(entityField, operator, channel1),
 				Pagination.of(1, 2), null);
 
 			assertEquals(
@@ -279,10 +301,10 @@ public abstract class BaseChannelResourceTestCase {
 
 	@Test
 	public void testGetChannelsPageWithPagination() throws Exception {
-		Page<Channel> totalPage = channelResource.getChannelsPage(
+		Page<Channel> channelPage = channelResource.getChannelsPage(
 			null, null, null, null);
 
-		int totalCount = GetterUtil.getInteger(totalPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(channelPage.getTotalCount());
 
 		Channel channel1 = testGetChannelsPage_addChannel(randomChannel());
 
@@ -308,7 +330,7 @@ public abstract class BaseChannelResourceTestCase {
 		Assert.assertEquals(channels2.toString(), 1, channels2.size());
 
 		Page<Channel> page3 = channelResource.getChannelsPage(
-			null, null, Pagination.of(1, totalCount + 3), null);
+			null, null, Pagination.of(1, (int)totalCount + 3), null);
 
 		assertContains(channel1, (List<Channel>)page3.getItems());
 		assertContains(channel2, (List<Channel>)page3.getItems());
@@ -320,9 +342,19 @@ public abstract class BaseChannelResourceTestCase {
 		testGetChannelsPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, channel1, channel2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					channel1, entityField.getName(),
 					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetChannelsPageWithSortDouble() throws Exception {
+		testGetChannelsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, channel1, channel2) -> {
+				BeanTestUtil.setProperty(channel1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(channel2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -331,8 +363,8 @@ public abstract class BaseChannelResourceTestCase {
 		testGetChannelsPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, channel1, channel2) -> {
-				BeanUtils.setProperty(channel1, entityField.getName(), 0);
-				BeanUtils.setProperty(channel2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(channel1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(channel2, entityField.getName(), 1);
 			});
 	}
 
@@ -345,27 +377,27 @@ public abstract class BaseChannelResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						channel1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						channel2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						channel1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						channel2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -373,12 +405,12 @@ public abstract class BaseChannelResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						channel1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						channel2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -410,22 +442,23 @@ public abstract class BaseChannelResourceTestCase {
 
 		channel2 = testGetChannelsPage_addChannel(channel2);
 
+		Page<Channel> page = channelResource.getChannelsPage(
+			null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<Channel> ascPage = channelResource.getChannelsPage(
-				null, null, Pagination.of(1, 2),
+				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
 				entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(channel1, channel2),
-				(List<Channel>)ascPage.getItems());
+			assertContains(channel1, (List<Channel>)ascPage.getItems());
+			assertContains(channel2, (List<Channel>)ascPage.getItems());
 
 			Page<Channel> descPage = channelResource.getChannelsPage(
-				null, null, Pagination.of(1, 2),
+				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
 				entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(channel2, channel1),
-				(List<Channel>)descPage.getItems());
+			assertContains(channel2, (List<Channel>)descPage.getItems());
+			assertContains(channel1, (List<Channel>)descPage.getItems());
 		}
 	}
 
@@ -455,8 +488,8 @@ public abstract class BaseChannelResourceTestCase {
 
 		long totalCount = channelsJSONObject.getLong("totalCount");
 
-		Channel channel1 = testGraphQLChannel_addChannel();
-		Channel channel2 = testGraphQLChannel_addChannel();
+		Channel channel1 = testGraphQLGetChannelsPage_addChannel();
+		Channel channel2 = testGraphQLGetChannelsPage_addChannel();
 
 		channelsJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
@@ -473,6 +506,10 @@ public abstract class BaseChannelResourceTestCase {
 			channel2,
 			Arrays.asList(
 				ChannelSerDes.toDTOs(channelsJSONObject.getString("items"))));
+	}
+
+	protected Channel testGraphQLGetChannelsPage_addChannel() throws Exception {
+		return testGraphQLChannel_addChannel();
 	}
 
 	@Test
@@ -543,7 +580,8 @@ public abstract class BaseChannelResourceTestCase {
 	public void testGraphQLGetChannelByExternalReferenceCode()
 		throws Exception {
 
-		Channel channel = testGraphQLChannel_addChannel();
+		Channel channel =
+			testGraphQLGetChannelByExternalReferenceCode_addChannel();
 
 		Assert.assertTrue(
 			equals(
@@ -593,6 +631,12 @@ public abstract class BaseChannelResourceTestCase {
 				"Object/code"));
 	}
 
+	protected Channel testGraphQLGetChannelByExternalReferenceCode_addChannel()
+		throws Exception {
+
+		return testGraphQLChannel_addChannel();
+	}
+
 	@Test
 	public void testPatchChannelByExternalReferenceCode() throws Exception {
 		Channel postChannel =
@@ -607,7 +651,7 @@ public abstract class BaseChannelResourceTestCase {
 
 		Channel expectedPatchChannel = postChannel.clone();
 
-		_beanUtilsBean.copyProperties(expectedPatchChannel, randomPatchChannel);
+		BeanTestUtil.copyProperties(randomPatchChannel, expectedPatchChannel);
 
 		Channel getChannel = channelResource.getChannelByExternalReferenceCode(
 			patchChannel.getExternalReferenceCode());
@@ -696,7 +740,7 @@ public abstract class BaseChannelResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteChannel() throws Exception {
-		Channel channel = testGraphQLChannel_addChannel();
+		Channel channel = testGraphQLDeleteChannel_addChannel();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -709,7 +753,6 @@ public abstract class BaseChannelResourceTestCase {
 							}
 						})),
 				"JSONObject/data", "Object/deleteChannel"));
-
 		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
@@ -723,6 +766,10 @@ public abstract class BaseChannelResourceTestCase {
 			"JSONArray/errors");
 
 		Assert.assertTrue(errorsJSONArray.length() > 0);
+	}
+
+	protected Channel testGraphQLDeleteChannel_addChannel() throws Exception {
+		return testGraphQLChannel_addChannel();
 	}
 
 	@Test
@@ -742,7 +789,7 @@ public abstract class BaseChannelResourceTestCase {
 
 	@Test
 	public void testGraphQLGetChannel() throws Exception {
-		Channel channel = testGraphQLChannel_addChannel();
+		Channel channel = testGraphQLGetChannel_addChannel();
 
 		Assert.assertTrue(
 			equals(
@@ -781,6 +828,10 @@ public abstract class BaseChannelResourceTestCase {
 				"Object/code"));
 	}
 
+	protected Channel testGraphQLGetChannel_addChannel() throws Exception {
+		return testGraphQLChannel_addChannel();
+	}
+
 	@Test
 	public void testPatchChannel() throws Exception {
 		Channel postChannel = testPatchChannel_addChannel();
@@ -793,7 +844,7 @@ public abstract class BaseChannelResourceTestCase {
 
 		Channel expectedPatchChannel = postChannel.clone();
 
-		_beanUtilsBean.copyProperties(expectedPatchChannel, randomPatchChannel);
+		BeanTestUtil.copyProperties(randomPatchChannel, expectedPatchChannel);
 
 		Channel getChannel = channelResource.getChannel(patchChannel.getId());
 
@@ -909,6 +960,14 @@ public abstract class BaseChannelResourceTestCase {
 		for (String additionalAssertFieldName :
 				getAdditionalAssertFieldNames()) {
 
+			if (Objects.equals("accountId", additionalAssertFieldName)) {
+				if (channel.getAccountId() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("currencyCode", additionalAssertFieldName)) {
 				if (channel.getCurrencyCode() == null) {
 					valid = false;
@@ -960,6 +1019,12 @@ public abstract class BaseChannelResourceTestCase {
 	}
 
 	protected void assertValid(Page<Channel> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Channel> page, Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Channel> channels = page.getItems();
@@ -974,6 +1039,25 @@ public abstract class BaseChannelResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1041,6 +1125,16 @@ public abstract class BaseChannelResourceTestCase {
 
 		for (String additionalAssertFieldName :
 				getAdditionalAssertFieldNames()) {
+
+			if (Objects.equals("accountId", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						channel1.getAccountId(), channel2.getAccountId())) {
+
+					return false;
+				}
+
+				continue;
+			}
 
 			if (Objects.equals("currencyCode", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
@@ -1141,14 +1235,16 @@ public abstract class BaseChannelResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1165,6 +1261,10 @@ public abstract class BaseChannelResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1174,18 +1274,18 @@ public abstract class BaseChannelResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1201,18 +1301,99 @@ public abstract class BaseChannelResourceTestCase {
 		sb.append(operator);
 		sb.append(" ");
 
+		if (entityFieldName.equals("accountId")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("currencyCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(channel.getCurrencyCode()));
-			sb.append("'");
+			Object object = channel.getCurrencyCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("externalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(channel.getExternalReferenceCode()));
-			sb.append("'");
+			Object object = channel.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1223,9 +1404,47 @@ public abstract class BaseChannelResourceTestCase {
 		}
 
 		if (entityFieldName.equals("name")) {
-			sb.append("'");
-			sb.append(String.valueOf(channel.getName()));
-			sb.append("'");
+			Object object = channel.getName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1236,9 +1455,47 @@ public abstract class BaseChannelResourceTestCase {
 		}
 
 		if (entityFieldName.equals("type")) {
-			sb.append("'");
-			sb.append(String.valueOf(channel.getType()));
-			sb.append("'");
+			Object object = channel.getType();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1287,6 +1544,7 @@ public abstract class BaseChannelResourceTestCase {
 	protected Channel randomChannel() throws Exception {
 		return new Channel() {
 			{
+				accountId = RandomTestUtil.randomLong();
 				currencyCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				externalReferenceCode = StringUtil.toLowerCase(
@@ -1313,6 +1571,115 @@ public abstract class BaseChannelResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1388,18 +1755,6 @@ public abstract class BaseChannelResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseChannelResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

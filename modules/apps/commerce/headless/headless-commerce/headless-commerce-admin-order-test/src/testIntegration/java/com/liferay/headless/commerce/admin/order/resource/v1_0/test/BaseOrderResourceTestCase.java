@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.order.resource.v1_0.test;
@@ -29,6 +20,7 @@ import com.liferay.headless.commerce.admin.order.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.order.client.resource.v1_0.OrderResource;
 import com.liferay.headless.commerce.admin.order.client.serdes.v1_0.OrderSerDes;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -53,7 +45,7 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 
@@ -62,18 +54,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Set;
 
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
@@ -190,10 +180,15 @@ public abstract class BaseOrderResourceTestCase {
 		order.setAdvanceStatus(regex);
 		order.setChannelExternalReferenceCode(regex);
 		order.setCouponCode(regex);
+		order.setCreatorEmailAddress(regex);
 		order.setCurrencyCode(regex);
+		order.setDeliveryTermDescription(regex);
+		order.setDeliveryTermName(regex);
 		order.setExternalReferenceCode(regex);
 		order.setOrderTypeExternalReferenceCode(regex);
 		order.setPaymentMethod(regex);
+		order.setPaymentTermDescription(regex);
+		order.setPaymentTermName(regex);
 		order.setPrintedNote(regex);
 		order.setPurchaseOrderNumber(regex);
 		order.setShippingAmountFormatted(regex);
@@ -223,10 +218,15 @@ public abstract class BaseOrderResourceTestCase {
 		Assert.assertEquals(regex, order.getAdvanceStatus());
 		Assert.assertEquals(regex, order.getChannelExternalReferenceCode());
 		Assert.assertEquals(regex, order.getCouponCode());
+		Assert.assertEquals(regex, order.getCreatorEmailAddress());
 		Assert.assertEquals(regex, order.getCurrencyCode());
+		Assert.assertEquals(regex, order.getDeliveryTermDescription());
+		Assert.assertEquals(regex, order.getDeliveryTermName());
 		Assert.assertEquals(regex, order.getExternalReferenceCode());
 		Assert.assertEquals(regex, order.getOrderTypeExternalReferenceCode());
 		Assert.assertEquals(regex, order.getPaymentMethod());
+		Assert.assertEquals(regex, order.getPaymentTermDescription());
+		Assert.assertEquals(regex, order.getPaymentTermName());
 		Assert.assertEquals(regex, order.getPrintedNote());
 		Assert.assertEquals(regex, order.getPurchaseOrderNumber());
 		Assert.assertEquals(regex, order.getShippingAmountFormatted());
@@ -268,11 +268,20 @@ public abstract class BaseOrderResourceTestCase {
 
 		assertContains(order1, (List<Order>)page.getItems());
 		assertContains(order2, (List<Order>)page.getItems());
-		assertValid(page);
+		assertValid(page, testGetOrdersPage_getExpectedActions());
 
 		orderResource.deleteOrder(order1.getId());
 
 		orderResource.deleteOrder(order2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetOrdersPage_getExpectedActions()
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -300,9 +309,30 @@ public abstract class BaseOrderResourceTestCase {
 	}
 
 	@Test
+	public void testGetOrdersPageWithFilterDoubleEquals() throws Exception {
+		testGetOrdersPageWithFilter("eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetOrdersPageWithFilterStringContains() throws Exception {
+		testGetOrdersPageWithFilter("contains", EntityField.Type.STRING);
+	}
+
+	@Test
 	public void testGetOrdersPageWithFilterStringEquals() throws Exception {
-		List<EntityField> entityFields = getEntityFields(
-			EntityField.Type.STRING);
+		testGetOrdersPageWithFilter("eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetOrdersPageWithFilterStringStartsWith() throws Exception {
+		testGetOrdersPageWithFilter("startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetOrdersPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
 
 		if (entityFields.isEmpty()) {
 			return;
@@ -315,7 +345,7 @@ public abstract class BaseOrderResourceTestCase {
 
 		for (EntityField entityField : entityFields) {
 			Page<Order> page = orderResource.getOrdersPage(
-				null, getFilterString(entityField, "eq", order1),
+				null, getFilterString(entityField, operator, order1),
 				Pagination.of(1, 2), null);
 
 			assertEquals(
@@ -326,10 +356,10 @@ public abstract class BaseOrderResourceTestCase {
 
 	@Test
 	public void testGetOrdersPageWithPagination() throws Exception {
-		Page<Order> totalPage = orderResource.getOrdersPage(
+		Page<Order> orderPage = orderResource.getOrdersPage(
 			null, null, null, null);
 
-		int totalCount = GetterUtil.getInteger(totalPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(orderPage.getTotalCount());
 
 		Order order1 = testGetOrdersPage_addOrder(randomOrder());
 
@@ -354,7 +384,7 @@ public abstract class BaseOrderResourceTestCase {
 		Assert.assertEquals(orders2.toString(), 1, orders2.size());
 
 		Page<Order> page3 = orderResource.getOrdersPage(
-			null, null, Pagination.of(1, totalCount + 3), null);
+			null, null, Pagination.of(1, (int)totalCount + 3), null);
 
 		assertContains(order1, (List<Order>)page3.getItems());
 		assertContains(order2, (List<Order>)page3.getItems());
@@ -366,9 +396,19 @@ public abstract class BaseOrderResourceTestCase {
 		testGetOrdersPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, order1, order2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					order1, entityField.getName(),
 					DateUtils.addMinutes(new Date(), -2));
+			});
+	}
+
+	@Test
+	public void testGetOrdersPageWithSortDouble() throws Exception {
+		testGetOrdersPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, order1, order2) -> {
+				BeanTestUtil.setProperty(order1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(order2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -377,8 +417,8 @@ public abstract class BaseOrderResourceTestCase {
 		testGetOrdersPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, order1, order2) -> {
-				BeanUtils.setProperty(order1, entityField.getName(), 0);
-				BeanUtils.setProperty(order2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(order1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(order2, entityField.getName(), 1);
 			});
 	}
 
@@ -391,27 +431,27 @@ public abstract class BaseOrderResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						order1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						order2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						order1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						order2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -419,12 +459,12 @@ public abstract class BaseOrderResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						order1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						order2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -456,21 +496,22 @@ public abstract class BaseOrderResourceTestCase {
 
 		order2 = testGetOrdersPage_addOrder(order2);
 
+		Page<Order> page = orderResource.getOrdersPage(null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<Order> ascPage = orderResource.getOrdersPage(
-				null, null, Pagination.of(1, 2),
+				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
 				entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(order1, order2), (List<Order>)ascPage.getItems());
+			assertContains(order1, (List<Order>)ascPage.getItems());
+			assertContains(order2, (List<Order>)ascPage.getItems());
 
 			Page<Order> descPage = orderResource.getOrdersPage(
-				null, null, Pagination.of(1, 2),
+				null, null, Pagination.of(1, (int)page.getTotalCount() + 1),
 				entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(order2, order1),
-				(List<Order>)descPage.getItems());
+			assertContains(order2, (List<Order>)descPage.getItems());
+			assertContains(order1, (List<Order>)descPage.getItems());
 		}
 	}
 
@@ -498,8 +539,8 @@ public abstract class BaseOrderResourceTestCase {
 
 		long totalCount = ordersJSONObject.getLong("totalCount");
 
-		Order order1 = testGraphQLOrder_addOrder();
-		Order order2 = testGraphQLOrder_addOrder();
+		Order order1 = testGraphQLGetOrdersPage_addOrder();
+		Order order2 = testGraphQLGetOrdersPage_addOrder();
 
 		ordersJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
@@ -516,6 +557,10 @@ public abstract class BaseOrderResourceTestCase {
 			order2,
 			Arrays.asList(
 				OrderSerDes.toDTOs(ordersJSONObject.getString("items"))));
+	}
+
+	protected Order testGraphQLGetOrdersPage_addOrder() throws Exception {
+		return testGraphQLOrder_addOrder();
 	}
 
 	@Test
@@ -581,7 +626,7 @@ public abstract class BaseOrderResourceTestCase {
 
 	@Test
 	public void testGraphQLGetOrderByExternalReferenceCode() throws Exception {
-		Order order = testGraphQLOrder_addOrder();
+		Order order = testGraphQLGetOrderByExternalReferenceCode_addOrder();
 
 		Assert.assertTrue(
 			equals(
@@ -631,6 +676,12 @@ public abstract class BaseOrderResourceTestCase {
 				"Object/code"));
 	}
 
+	protected Order testGraphQLGetOrderByExternalReferenceCode_addOrder()
+		throws Exception {
+
+		return testGraphQLOrder_addOrder();
+	}
+
 	@Test
 	public void testPatchOrderByExternalReferenceCode() throws Exception {
 		Assert.assertTrue(false);
@@ -658,7 +709,7 @@ public abstract class BaseOrderResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteOrder() throws Exception {
-		Order order = testGraphQLOrder_addOrder();
+		Order order = testGraphQLDeleteOrder_addOrder();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -671,7 +722,6 @@ public abstract class BaseOrderResourceTestCase {
 							}
 						})),
 				"JSONObject/data", "Object/deleteOrder"));
-
 		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
@@ -685,6 +735,10 @@ public abstract class BaseOrderResourceTestCase {
 			"JSONArray/errors");
 
 		Assert.assertTrue(errorsJSONArray.length() > 0);
+	}
+
+	protected Order testGraphQLDeleteOrder_addOrder() throws Exception {
+		return testGraphQLOrder_addOrder();
 	}
 
 	@Test
@@ -704,7 +758,7 @@ public abstract class BaseOrderResourceTestCase {
 
 	@Test
 	public void testGraphQLGetOrder() throws Exception {
-		Order order = testGraphQLOrder_addOrder();
+		Order order = testGraphQLGetOrder_addOrder();
 
 		Assert.assertTrue(
 			equals(
@@ -741,6 +795,10 @@ public abstract class BaseOrderResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+	}
+
+	protected Order testGraphQLGetOrder_addOrder() throws Exception {
+		return testGraphQLOrder_addOrder();
 	}
 
 	@Test
@@ -927,6 +985,16 @@ public abstract class BaseOrderResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"creatorEmailAddress", additionalAssertFieldName)) {
+
+				if (order.getCreatorEmailAddress() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("currencyCode", additionalAssertFieldName)) {
 				if (order.getCurrencyCode() == null) {
 					valid = false;
@@ -937,6 +1005,32 @@ public abstract class BaseOrderResourceTestCase {
 
 			if (Objects.equals("customFields", additionalAssertFieldName)) {
 				if (order.getCustomFields() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"deliveryTermDescription", additionalAssertFieldName)) {
+
+				if (order.getDeliveryTermDescription() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("deliveryTermId", additionalAssertFieldName)) {
+				if (order.getDeliveryTermId() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("deliveryTermName", additionalAssertFieldName)) {
+				if (order.getDeliveryTermName() == null) {
 					valid = false;
 				}
 
@@ -1048,6 +1142,32 @@ public abstract class BaseOrderResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"paymentTermDescription", additionalAssertFieldName)) {
+
+				if (order.getPaymentTermDescription() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("paymentTermId", additionalAssertFieldName)) {
+				if (order.getPaymentTermId() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("paymentTermName", additionalAssertFieldName)) {
+				if (order.getPaymentTermName() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("printedNote", additionalAssertFieldName)) {
 				if (order.getPrintedNote() == null) {
 					valid = false;
@@ -1137,6 +1257,16 @@ public abstract class BaseOrderResourceTestCase {
 					additionalAssertFieldName)) {
 
 				if (order.getShippingDiscountAmountFormatted() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"shippingDiscountAmountValue", additionalAssertFieldName)) {
+
+				if (order.getShippingDiscountAmountValue() == null) {
 					valid = false;
 				}
 
@@ -1568,6 +1698,16 @@ public abstract class BaseOrderResourceTestCase {
 			}
 
 			if (Objects.equals(
+					"totalDiscountAmountValue", additionalAssertFieldName)) {
+
+				if (order.getTotalDiscountAmountValue() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
 					"totalDiscountPercentageLevel1",
 					additionalAssertFieldName)) {
 
@@ -1684,6 +1824,17 @@ public abstract class BaseOrderResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"totalDiscountWithTaxAmountValue",
+					additionalAssertFieldName)) {
+
+				if (order.getTotalDiscountWithTaxAmountValue() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("totalFormatted", additionalAssertFieldName)) {
 				if (order.getTotalFormatted() == null) {
 					valid = false;
@@ -1749,6 +1900,12 @@ public abstract class BaseOrderResourceTestCase {
 	}
 
 	protected void assertValid(Page<Order> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<Order> page, Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<Order> orders = page.getItems();
@@ -1763,6 +1920,25 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1961,6 +2137,19 @@ public abstract class BaseOrderResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"creatorEmailAddress", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						order1.getCreatorEmailAddress(),
+						order2.getCreatorEmailAddress())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("currencyCode", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						order1.getCurrencyCode(), order2.getCurrencyCode())) {
@@ -1975,6 +2164,41 @@ public abstract class BaseOrderResourceTestCase {
 				if (!equals(
 						(Map)order1.getCustomFields(),
 						(Map)order2.getCustomFields())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"deliveryTermDescription", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						order1.getDeliveryTermDescription(),
+						order2.getDeliveryTermDescription())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("deliveryTermId", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						order1.getDeliveryTermId(),
+						order2.getDeliveryTermId())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("deliveryTermName", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						order1.getDeliveryTermName(),
+						order2.getDeliveryTermName())) {
 
 					return false;
 				}
@@ -2124,6 +2348,40 @@ public abstract class BaseOrderResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"paymentTermDescription", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						order1.getPaymentTermDescription(),
+						order2.getPaymentTermDescription())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("paymentTermId", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						order1.getPaymentTermId(), order2.getPaymentTermId())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("paymentTermName", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						order1.getPaymentTermName(),
+						order2.getPaymentTermName())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("printedNote", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						order1.getPrintedNote(), order2.getPrintedNote())) {
@@ -2241,6 +2499,19 @@ public abstract class BaseOrderResourceTestCase {
 				if (!Objects.deepEquals(
 						order1.getShippingDiscountAmountFormatted(),
 						order2.getShippingDiscountAmountFormatted())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"shippingDiscountAmountValue", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						order1.getShippingDiscountAmountValue(),
+						order2.getShippingDiscountAmountValue())) {
 
 					return false;
 				}
@@ -2787,6 +3058,19 @@ public abstract class BaseOrderResourceTestCase {
 			}
 
 			if (Objects.equals(
+					"totalDiscountAmountValue", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						order1.getTotalDiscountAmountValue(),
+						order2.getTotalDiscountAmountValue())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
 					"totalDiscountPercentageLevel1",
 					additionalAssertFieldName)) {
 
@@ -2929,6 +3213,20 @@ public abstract class BaseOrderResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"totalDiscountWithTaxAmountValue",
+					additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						order1.getTotalDiscountWithTaxAmountValue(),
+						order2.getTotalDiscountWithTaxAmountValue())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("totalFormatted", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						order1.getTotalFormatted(),
@@ -3039,14 +3337,16 @@ public abstract class BaseOrderResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -3063,6 +3363,10 @@ public abstract class BaseOrderResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -3072,18 +3376,18 @@ public abstract class BaseOrderResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -3105,9 +3409,47 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("accountExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getAccountExternalReferenceCode()));
-			sb.append("'");
+			Object object = order.getAccountExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3123,9 +3465,47 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("advanceStatus")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getAdvanceStatus()));
-			sb.append("'");
+			Object object = order.getAdvanceStatus();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3146,9 +3526,47 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("channelExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getChannelExternalReferenceCode()));
-			sb.append("'");
+			Object object = order.getChannelExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3159,9 +3577,47 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("couponCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getCouponCode()));
-			sb.append("'");
+			Object object = order.getCouponCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3197,10 +3653,94 @@ public abstract class BaseOrderResourceTestCase {
 			return sb.toString();
 		}
 
+		if (entityFieldName.equals("creatorEmailAddress")) {
+			Object object = order.getCreatorEmailAddress();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("currencyCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getCurrencyCode()));
-			sb.append("'");
+			Object object = order.getCurrencyCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3210,10 +3750,145 @@ public abstract class BaseOrderResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("deliveryTermDescription")) {
+			Object object = order.getDeliveryTermDescription();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("deliveryTermId")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("deliveryTermName")) {
+			Object object = order.getDeliveryTermName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("externalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getExternalReferenceCode()));
-			sb.append("'");
+			Object object = order.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3324,8 +3999,9 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("orderStatus")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(order.getOrderStatus()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("orderStatusInfo")) {
@@ -3334,10 +4010,47 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("orderTypeExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(order.getOrderTypeExternalReferenceCode()));
-			sb.append("'");
+			Object object = order.getOrderTypeExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3348,16 +4061,55 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("paymentMethod")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getPaymentMethod()));
-			sb.append("'");
+			Object object = order.getPaymentMethod();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("paymentStatus")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(order.getPaymentStatus()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("paymentStatusInfo")) {
@@ -3365,18 +4117,191 @@ public abstract class BaseOrderResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("paymentTermDescription")) {
+			Object object = order.getPaymentTermDescription();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("paymentTermId")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("paymentTermName")) {
+			Object object = order.getPaymentTermName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("printedNote")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getPrintedNote()));
-			sb.append("'");
+			Object object = order.getPrintedNote();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("purchaseOrderNumber")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getPurchaseOrderNumber()));
-			sb.append("'");
+			Object object = order.getPurchaseOrderNumber();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3430,16 +4355,55 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("shippingAmountFormatted")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getShippingAmountFormatted()));
-			sb.append("'");
+			Object object = order.getShippingAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("shippingAmountValue")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(order.getShippingAmountValue()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("shippingDiscountAmount")) {
@@ -3448,10 +4412,53 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("shippingDiscountAmountFormatted")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(order.getShippingDiscountAmountFormatted()));
-			sb.append("'");
+			Object object = order.getShippingDiscountAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("shippingDiscountAmountValue")) {
+			sb.append(String.valueOf(order.getShippingDiscountAmountValue()));
 
 			return sb.toString();
 		}
@@ -3510,27 +4517,139 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("shippingDiscountWithTaxAmountFormatted")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(
-					order.getShippingDiscountWithTaxAmountFormatted()));
-			sb.append("'");
+			Object object = order.getShippingDiscountWithTaxAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("shippingMethod")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getShippingMethod()));
-			sb.append("'");
+			Object object = order.getShippingMethod();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("shippingOption")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getShippingOption()));
-			sb.append("'");
+			Object object = order.getShippingOption();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3541,17 +4660,55 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("shippingWithTaxAmountFormatted")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(order.getShippingWithTaxAmountFormatted()));
-			sb.append("'");
+			Object object = order.getShippingWithTaxAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("shippingWithTaxAmountValue")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(order.getShippingWithTaxAmountValue()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("subtotal")) {
@@ -3560,8 +4717,9 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("subtotalAmount")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(order.getSubtotalAmount()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("subtotalDiscountAmount")) {
@@ -3570,10 +4728,47 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("subtotalDiscountAmountFormatted")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(order.getSubtotalDiscountAmountFormatted()));
-			sb.append("'");
+			Object object = order.getSubtotalDiscountAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3632,19 +4827,93 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("subtotalDiscountWithTaxAmountFormatted")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(
-					order.getSubtotalDiscountWithTaxAmountFormatted()));
-			sb.append("'");
+			Object object = order.getSubtotalDiscountWithTaxAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("subtotalFormatted")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getSubtotalFormatted()));
-			sb.append("'");
+			Object object = order.getSubtotalFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3655,17 +4924,55 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("subtotalWithTaxAmountFormatted")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(order.getSubtotalWithTaxAmountFormatted()));
-			sb.append("'");
+			Object object = order.getSubtotalWithTaxAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("subtotalWithTaxAmountValue")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(order.getSubtotalWithTaxAmountValue()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("taxAmount")) {
@@ -3674,16 +4981,55 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("taxAmountFormatted")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getTaxAmountFormatted()));
-			sb.append("'");
+			Object object = order.getTaxAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("taxAmountValue")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(order.getTaxAmountValue()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("total")) {
@@ -3692,8 +5038,9 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("totalAmount")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(order.getTotalAmount()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("totalDiscountAmount")) {
@@ -3702,9 +5049,53 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("totalDiscountAmountFormatted")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getTotalDiscountAmountFormatted()));
-			sb.append("'");
+			Object object = order.getTotalDiscountAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("totalDiscountAmountValue")) {
+			sb.append(String.valueOf(order.getTotalDiscountAmountValue()));
 
 			return sb.toString();
 		}
@@ -3763,18 +5154,100 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("totalDiscountWithTaxAmountFormatted")) {
-			sb.append("'");
+			Object object = order.getTotalDiscountWithTaxAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("totalDiscountWithTaxAmountValue")) {
 			sb.append(
-				String.valueOf(order.getTotalDiscountWithTaxAmountFormatted()));
-			sb.append("'");
+				String.valueOf(order.getTotalDiscountWithTaxAmountValue()));
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("totalFormatted")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getTotalFormatted()));
-			sb.append("'");
+			Object object = order.getTotalFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3785,22 +5258,99 @@ public abstract class BaseOrderResourceTestCase {
 		}
 
 		if (entityFieldName.equals("totalWithTaxAmountFormatted")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getTotalWithTaxAmountFormatted()));
-			sb.append("'");
+			Object object = order.getTotalWithTaxAmountFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("totalWithTaxAmountValue")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(order.getTotalWithTaxAmountValue()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("transactionId")) {
-			sb.append("'");
-			sb.append(String.valueOf(order.getTransactionId()));
-			sb.append("'");
+			Object object = order.getTransactionId();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -3866,7 +5416,14 @@ public abstract class BaseOrderResourceTestCase {
 				couponCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				createDate = RandomTestUtil.nextDate();
+				creatorEmailAddress = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				currencyCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				deliveryTermDescription = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				deliveryTermId = RandomTestUtil.randomLong();
+				deliveryTermName = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				externalReferenceCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
@@ -3881,6 +5438,11 @@ public abstract class BaseOrderResourceTestCase {
 				paymentMethod = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				paymentStatus = RandomTestUtil.randomInt();
+				paymentTermDescription = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				paymentTermId = RandomTestUtil.randomLong();
+				paymentTermName = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				printedNote = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				purchaseOrderNumber = StringUtil.toLowerCase(
@@ -3890,26 +5452,9 @@ public abstract class BaseOrderResourceTestCase {
 				shippingAmountFormatted = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				shippingAmountValue = RandomTestUtil.randomDouble();
-				shippingDiscountAmount = RandomTestUtil.randomDouble();
 				shippingDiscountAmountFormatted = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
-				shippingDiscountPercentageLevel1 =
-					RandomTestUtil.randomDouble();
-				shippingDiscountPercentageLevel1WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				shippingDiscountPercentageLevel2 =
-					RandomTestUtil.randomDouble();
-				shippingDiscountPercentageLevel2WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				shippingDiscountPercentageLevel3 =
-					RandomTestUtil.randomDouble();
-				shippingDiscountPercentageLevel3WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				shippingDiscountPercentageLevel4 =
-					RandomTestUtil.randomDouble();
-				shippingDiscountPercentageLevel4WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				shippingDiscountWithTaxAmount = RandomTestUtil.randomDouble();
+				shippingDiscountAmountValue = RandomTestUtil.randomDouble();
 				shippingDiscountWithTaxAmountFormatted = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				shippingMethod = StringUtil.toLowerCase(
@@ -3920,26 +5465,8 @@ public abstract class BaseOrderResourceTestCase {
 					RandomTestUtil.randomString());
 				shippingWithTaxAmountValue = RandomTestUtil.randomDouble();
 				subtotalAmount = RandomTestUtil.randomDouble();
-				subtotalDiscountAmount = RandomTestUtil.randomDouble();
 				subtotalDiscountAmountFormatted = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
-				subtotalDiscountPercentageLevel1 =
-					RandomTestUtil.randomDouble();
-				subtotalDiscountPercentageLevel1WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				subtotalDiscountPercentageLevel2 =
-					RandomTestUtil.randomDouble();
-				subtotalDiscountPercentageLevel2WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				subtotalDiscountPercentageLevel3 =
-					RandomTestUtil.randomDouble();
-				subtotalDiscountPercentageLevel3WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				subtotalDiscountPercentageLevel4 =
-					RandomTestUtil.randomDouble();
-				subtotalDiscountPercentageLevel4WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				subtotalDiscountWithTaxAmount = RandomTestUtil.randomDouble();
 				subtotalDiscountWithTaxAmountFormatted = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				subtotalFormatted = StringUtil.toLowerCase(
@@ -3951,24 +5478,12 @@ public abstract class BaseOrderResourceTestCase {
 					RandomTestUtil.randomString());
 				taxAmountValue = RandomTestUtil.randomDouble();
 				totalAmount = RandomTestUtil.randomDouble();
-				totalDiscountAmount = RandomTestUtil.randomDouble();
 				totalDiscountAmountFormatted = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
-				totalDiscountPercentageLevel1 = RandomTestUtil.randomDouble();
-				totalDiscountPercentageLevel1WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				totalDiscountPercentageLevel2 = RandomTestUtil.randomDouble();
-				totalDiscountPercentageLevel2WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				totalDiscountPercentageLevel3 = RandomTestUtil.randomDouble();
-				totalDiscountPercentageLevel3WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				totalDiscountPercentageLevel4 = RandomTestUtil.randomDouble();
-				totalDiscountPercentageLevel4WithTaxAmount =
-					RandomTestUtil.randomDouble();
-				totalDiscountWithTaxAmount = RandomTestUtil.randomDouble();
+				totalDiscountAmountValue = RandomTestUtil.randomDouble();
 				totalDiscountWithTaxAmountFormatted = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
+				totalDiscountWithTaxAmountValue = RandomTestUtil.randomDouble();
 				totalFormatted = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				totalWithTaxAmountFormatted = StringUtil.toLowerCase(
@@ -3994,6 +5509,115 @@ public abstract class BaseOrderResourceTestCase {
 	protected Group irrelevantGroup;
 	protected Company testCompany;
 	protected Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = _getSuperClass(source.getClass());
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					sourceClass.getDeclaredFields()) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				Method setMethod = _getMethod(
+					targetClass, field.getName(), "set",
+					getMethod.getReturnType());
+
+				setMethod.invoke(target, getMethod.invoke(source));
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Class<?> _getSuperClass(Class<?> clazz) {
+			Class<?> superClass = clazz.getSuperclass();
+
+			if ((superClass == null) || (superClass == Object.class)) {
+				return clazz;
+			}
+
+			return superClass;
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -4069,18 +5693,6 @@ public abstract class BaseOrderResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseOrderResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
-
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
 	private static DateFormat _dateFormat;
 
 	@Inject

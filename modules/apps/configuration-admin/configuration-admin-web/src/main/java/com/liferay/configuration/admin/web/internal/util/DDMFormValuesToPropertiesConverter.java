@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.configuration.admin.web.internal.util;
@@ -37,6 +28,7 @@ import com.liferay.portal.kernel.settings.LocationVariableProtocol;
 import com.liferay.portal.kernel.settings.LocationVariableResolver;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
@@ -80,6 +72,8 @@ public class DDMFormValuesToPropertiesConverter {
 		_ddmFormFieldsMap = ddmForm.getDDMFormFieldsMap(false);
 
 		_ddmFormFieldValuesMap = ddmFormValues.getDDMFormFieldValuesMap();
+		_ddmFormFieldValuesReferencesMap =
+			ddmFormValues.getDDMFormFieldValuesReferencesMap(false);
 	}
 
 	public Dictionary<String, Object> getProperties() {
@@ -93,6 +87,11 @@ public class DDMFormValuesToPropertiesConverter {
 
 			List<DDMFormFieldValue> ddmFormFieldValues =
 				_ddmFormFieldValuesMap.get(attributeDefinition.getID());
+
+			if (ddmFormFieldValues == null) {
+				ddmFormFieldValues = _ddmFormFieldValuesReferencesMap.get(
+					attributeDefinition.getID());
+			}
 
 			if (attributeDefinition.getCardinality() == 0) {
 				value = _toSimpleValue(ddmFormFieldValues.get(0));
@@ -189,8 +188,10 @@ public class DDMFormValuesToPropertiesConverter {
 		String defaultValue, int type, Object value) {
 
 		if ((_locationVariableResolver == null) ||
-			!_locationVariableResolver.isLocationVariable(
-				defaultValue, LocationVariableProtocol.RESOURCE)) {
+			(!_locationVariableResolver.isLocationVariable(
+				defaultValue, LocationVariableProtocol.LANGUAGE) &&
+			 !_locationVariableResolver.isLocationVariable(
+				 defaultValue, LocationVariableProtocol.RESOURCE))) {
 
 			return false;
 		}
@@ -205,7 +206,7 @@ public class DDMFormValuesToPropertiesConverter {
 		String stringValue = String.valueOf(value);
 
 		if ((type == ExtendedAttributeDefinition.LOCALIZED_VALUES_MAP) &&
-			JSONUtil.isValid(stringValue)) {
+			JSONUtil.isJSONObject(stringValue)) {
 
 			try {
 				JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
@@ -220,7 +221,7 @@ public class DDMFormValuesToPropertiesConverter {
 				}
 			}
 			catch (JSONException jsonException) {
-				_log.error(jsonException, jsonException);
+				_log.error(jsonException);
 			}
 		}
 
@@ -253,7 +254,12 @@ public class DDMFormValuesToPropertiesConverter {
 		Vector<Serializable> values = new Vector<>();
 
 		for (DDMFormFieldValue ddmFormFieldValue : ddmFormFieldValues) {
-			values.add(_toSimpleValue(ddmFormFieldValue));
+			Serializable simpleDDMFormFieldValue = _toSimpleValue(
+				ddmFormFieldValue);
+
+			if (!Validator.isBlank(simpleDDMFormFieldValue.toString())) {
+				values.add(simpleDDMFormFieldValue);
+			}
 		}
 
 		return values;
@@ -265,6 +271,8 @@ public class DDMFormValuesToPropertiesConverter {
 	private final ConfigurationModel _configurationModel;
 	private final Map<String, DDMFormField> _ddmFormFieldsMap;
 	private final Map<String, List<DDMFormFieldValue>> _ddmFormFieldValuesMap;
+	private final Map<String, List<DDMFormFieldValue>>
+		_ddmFormFieldValuesReferencesMap;
 	private final Locale _defaultLocale;
 	private final JSONFactory _jsonFactory;
 	private final Locale _locale;

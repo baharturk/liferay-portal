@@ -1,18 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
+import ClayEmptyState from '@clayui/empty-state';
 import {
 	DRAG_TYPES,
 	EVENT_TYPES,
@@ -21,9 +13,8 @@ import {
 } from 'data-engine-js-components-web';
 import React, {useState} from 'react';
 
-import {getLocalizedValue, getPluralMessage} from '../../utils/lang.es';
+import {getLocalizedValue, getPluralMessage, sub} from '../../utils/lang.es';
 import {getSearchRegex} from '../../utils/search.es';
-import EmptyState from '../empty-state/EmptyState.es';
 import FieldType from '../field-types/FieldType.es';
 import FieldSetModal from './FieldSetModal';
 import useDeleteFieldSet from './actions/useDeleteFieldSet.es';
@@ -156,20 +147,32 @@ export default function FieldSetList({searchTerm}) {
 				</>
 			) : (
 				<div className="mt-2">
-					<EmptyState
-						emptyState={{
-							button: CreateNewFieldsetButton,
-
-							description: Liferay.Language.get(
+					{searchTerm ? (
+						<ClayEmptyState
+							description={sub(
+								Liferay.Language.get(
+									'there-are-no-results-for-x'
+								),
+								[searchTerm]
+							)}
+							imgSrc={`${themeDisplay.getPathThemeImages()}/states/search_state.gif`}
+							small
+							title={Liferay.Language.get('no-results-found')}
+						/>
+					) : (
+						<ClayEmptyState
+							description={Liferay.Language.get(
 								'there-are-no-fieldsets-description'
-							),
-							title: Liferay.Language.get(
+							)}
+							imgSrc={`${themeDisplay.getPathThemeImages()}/states/empty_state.gif`}
+							small
+							title={Liferay.Language.get(
 								'there-are-no-fieldsets'
-							),
-						}}
-						keywords={searchTerm}
-						small
-					/>
+							)}
+						>
+							<CreateNewFieldsetButton />
+						</ClayEmptyState>
+					)}
 				</div>
 			)}
 			{modalState.isVisible && (

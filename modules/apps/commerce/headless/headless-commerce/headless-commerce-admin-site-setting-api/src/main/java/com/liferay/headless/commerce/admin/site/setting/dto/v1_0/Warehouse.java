@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.site.setting.dto.v1_0;
@@ -38,7 +29,6 @@ import javax.annotation.Generated;
 
 import javax.validation.Valid;
 import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 import javax.xml.bind.annotation.XmlRootElement;
@@ -62,7 +52,7 @@ public class Warehouse implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Warehouse.class, json);
 	}
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getActive() {
 		return active;
 	}
@@ -90,7 +80,7 @@ public class Warehouse implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean active;
 
-	@Schema
+	@Schema(example = "Diamond Bar")
 	public String getCity() {
 		return city;
 	}
@@ -117,7 +107,7 @@ public class Warehouse implements Serializable {
 	protected String city;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getCommerceCountryId() {
 		return commerceCountryId;
 	}
@@ -147,7 +137,7 @@ public class Warehouse implements Serializable {
 	protected Long commerceCountryId;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30234")
 	public Long getCommerceRegionId() {
 		return commerceRegionId;
 	}
@@ -175,18 +165,22 @@ public class Warehouse implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long commerceRegionId;
 
-	@Schema
-	public String getDescription() {
+	@Schema(
+		example = "{en_US=Warehouse Description US, hr_HR=Warehouse Description HR, hu_HU=Warehouse Description HU}"
+	)
+	@Valid
+	public Map<String, String> getDescription() {
 		return description;
 	}
 
-	public void setDescription(String description) {
+	public void setDescription(Map<String, String> description) {
 		this.description = description;
 	}
 
 	@JsonIgnore
 	public void setDescription(
-		UnsafeSupplier<String, Exception> descriptionUnsafeSupplier) {
+		UnsafeSupplier<Map<String, String>, Exception>
+			descriptionUnsafeSupplier) {
 
 		try {
 			description = descriptionUnsafeSupplier.get();
@@ -201,10 +195,10 @@ public class Warehouse implements Serializable {
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected String description;
+	protected Map<String, String> description;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "23130")
 	public Long getGroupId() {
 		return groupId;
 	}
@@ -233,7 +227,7 @@ public class Warehouse implements Serializable {
 	protected Long groupId;
 
 	@DecimalMin("0")
-	@Schema
+	@Schema(example = "30130")
 	public Long getId() {
 		return id;
 	}
@@ -259,7 +253,7 @@ public class Warehouse implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@Schema(example = "33.9976884")
 	public Double getLatitude() {
 		return latitude;
 	}
@@ -287,7 +281,7 @@ public class Warehouse implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double latitude;
 
-	@Schema
+	@Schema(example = "-117.8144595")
 	public Double getLongitude() {
 		return longitude;
 	}
@@ -315,7 +309,7 @@ public class Warehouse implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double longitude;
 
-	@Schema
+	@Schema(example = "0")
 	@Valid
 	public Number getMvccVersion() {
 		return mvccVersion;
@@ -344,17 +338,22 @@ public class Warehouse implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Number mvccVersion;
 
-	@Schema
-	public String getName() {
+	@Schema(
+		example = "{en_US=Warehouse Name US, hr_HR=Warehouse Name HR, hu_HU=Warehouse Name HU}"
+	)
+	@Valid
+	public Map<String, String> getName() {
 		return name;
 	}
 
-	public void setName(String name) {
+	public void setName(Map<String, String> name) {
 		this.name = name;
 	}
 
 	@JsonIgnore
-	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
+	public void setName(
+		UnsafeSupplier<Map<String, String>, Exception> nameUnsafeSupplier) {
+
 		try {
 			name = nameUnsafeSupplier.get();
 		}
@@ -368,10 +367,10 @@ public class Warehouse implements Serializable {
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	@NotEmpty
-	protected String name;
+	@NotNull
+	protected Map<String, String> name;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getPrimary() {
 		return primary;
 	}
@@ -399,7 +398,7 @@ public class Warehouse implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean primary;
 
-	@Schema
+	@Schema(example = "1400 Montefino Ave")
 	public String getStreet1() {
 		return street1;
 	}
@@ -427,7 +426,7 @@ public class Warehouse implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String street1;
 
-	@Schema
+	@Schema(example = "1st floor")
 	public String getStreet2() {
 		return street2;
 	}
@@ -455,7 +454,7 @@ public class Warehouse implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String street2;
 
-	@Schema
+	@Schema(example = "suite 200")
 	public String getStreet3() {
 		return street3;
 	}
@@ -483,7 +482,7 @@ public class Warehouse implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String street3;
 
-	@Schema
+	@Schema(example = "91765")
 	public String getZip() {
 		return zip;
 	}
@@ -587,11 +586,7 @@ public class Warehouse implements Serializable {
 
 			sb.append("\"description\": ");
 
-			sb.append("\"");
-
-			sb.append(_escape(description));
-
-			sb.append("\"");
+			sb.append(_toJSON(description));
 		}
 
 		if (groupId != null) {
@@ -651,11 +646,7 @@ public class Warehouse implements Serializable {
 
 			sb.append("\"name\": ");
 
-			sb.append("\"");
-
-			sb.append(_escape(name));
-
-			sb.append("\"");
+			sb.append(_toJSON(name));
 		}
 
 		if (primary != null) {
@@ -818,5 +809,7 @@ public class Warehouse implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

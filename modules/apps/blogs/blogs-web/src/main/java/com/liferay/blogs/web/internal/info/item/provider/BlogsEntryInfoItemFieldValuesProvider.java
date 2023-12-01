@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.web.internal.info.item.provider;
 
-import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
 import com.liferay.asset.info.item.provider.AssetEntryInfoItemFieldSetProvider;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.web.internal.info.item.BlogsEntryInfoItemFields;
@@ -27,6 +17,8 @@ import com.liferay.info.item.InfoItemReference;
 import com.liferay.info.item.field.reader.InfoItemFieldReaderFieldSetProvider;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.type.WebImage;
+import com.liferay.layout.page.template.info.item.provider.DisplayPageInfoItemFieldSetProvider;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -34,6 +26,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.template.info.item.provider.TemplateInfoItemFieldSetProvider;
 
 import java.util.ArrayList;
@@ -48,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jorge Ferrer
  */
 @Component(
-	immediate = true, property = Constants.SERVICE_RANKING + ":Integer=10",
+	property = Constants.SERVICE_RANKING + ":Integer=10",
 	service = InfoItemFieldValuesProvider.class
 )
 public class BlogsEntryInfoItemFieldValuesProvider
@@ -63,6 +56,12 @@ public class BlogsEntryInfoItemFieldValuesProvider
 			).infoFieldValues(
 				_assetEntryInfoItemFieldSetProvider.getInfoFieldValues(
 					BlogsEntry.class.getName(), blogsEntry.getEntryId())
+			).infoFieldValues(
+				_displayPageInfoItemFieldSetProvider.getInfoFieldValues(
+					new InfoItemReference(
+						BlogsEntry.class.getName(), blogsEntry.getEntryId()),
+					StringPool.BLANK, BlogsEntry.class.getSimpleName(),
+					_getThemeDisplay())
 			).infoFieldValues(
 				_expandoInfoItemFieldSetProvider.getInfoFieldValues(
 					BlogsEntry.class.getName(), blogsEntry)
@@ -80,6 +79,9 @@ public class BlogsEntryInfoItemFieldValuesProvider
 		catch (NoSuchInfoItemException noSuchInfoItemException) {
 			throw new RuntimeException(
 				"Caught unexpected exception", noSuchInfoItemException);
+		}
+		catch (Exception exception) {
+			throw new RuntimeException("Unexpected exception", exception);
 		}
 	}
 
@@ -127,8 +129,11 @@ public class BlogsEntryInfoItemFieldValuesProvider
 						BlogsEntryInfoItemFields.smallImageInfoField,
 						smallWebImage));
 
+				String coverImageURL = blogsEntry.getCoverImageURL(
+					themeDisplay);
+
 				WebImage coverWebImage = new WebImage(
-					blogsEntry.getCoverImageURL(themeDisplay),
+					coverImageURL,
 					new InfoItemReference(
 						FileEntry.class.getName(),
 						new ClassPKInfoItemIdentifier(
@@ -140,6 +145,19 @@ public class BlogsEntryInfoItemFieldValuesProvider
 					new InfoFieldValue<>(
 						BlogsEntryInfoItemFields.coverImageInfoField,
 						coverWebImage));
+
+				if (Validator.isNotNull(coverImageURL)) {
+					blogsEntryFieldValues.add(
+						new InfoFieldValue<>(
+							BlogsEntryInfoItemFields.previewImageInfoField,
+							coverWebImage));
+				}
+				else {
+					blogsEntryFieldValues.add(
+						new InfoFieldValue<>(
+							BlogsEntryInfoItemFields.previewImageInfoField,
+							smallWebImage));
+				}
 			}
 
 			blogsEntryFieldValues.add(
@@ -177,14 +195,6 @@ public class BlogsEntryInfoItemFieldValuesProvider
 				new InfoFieldValue<>(
 					BlogsEntryInfoItemFields.publishDateInfoField,
 					blogsEntry.getDisplayDate()));
-
-			if (themeDisplay != null) {
-				blogsEntryFieldValues.add(
-					new InfoFieldValue<>(
-						BlogsEntryInfoItemFields.displayPageURLInfoField,
-						_getDisplayPageURL(blogsEntry)));
-			}
-
 			blogsEntryFieldValues.add(
 				new InfoFieldValue<>(
 					BlogsEntryInfoItemFields.contentInfoField,
@@ -195,14 +205,6 @@ public class BlogsEntryInfoItemFieldValuesProvider
 		catch (PortalException portalException) {
 			throw new RuntimeException(portalException);
 		}
-	}
-
-	private String _getDisplayPageURL(BlogsEntry blogsEntry)
-		throws PortalException {
-
-		return _assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-			BlogsEntry.class.getName(), blogsEntry.getEntryId(),
-			_getThemeDisplay());
 	}
 
 	private ThemeDisplay _getThemeDisplay() {
@@ -217,12 +219,12 @@ public class BlogsEntryInfoItemFieldValuesProvider
 	}
 
 	@Reference
-	private AssetDisplayPageFriendlyURLProvider
-		_assetDisplayPageFriendlyURLProvider;
-
-	@Reference
 	private AssetEntryInfoItemFieldSetProvider
 		_assetEntryInfoItemFieldSetProvider;
+
+	@Reference
+	private DisplayPageInfoItemFieldSetProvider
+		_displayPageInfoItemFieldSetProvider;
 
 	@Reference
 	private ExpandoInfoItemFieldSetProvider _expandoInfoItemFieldSetProvider;

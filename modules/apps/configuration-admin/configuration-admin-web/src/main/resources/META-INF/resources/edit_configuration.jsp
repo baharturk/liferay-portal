@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -77,7 +68,7 @@ renderResponse.setTitle(categoryDisplayName);
 	ConfigurationModelListenerException cmle = (ConfigurationModelListenerException)errorException;
 	%>
 
-	<liferay-ui:message key="<%= cmle.causeMessage %>" localizeKey="<%= false %>" />
+	<liferay-ui:message key="<%= HtmlUtil.escape(cmle.causeMessage) %>" localizeKey="<%= false %>" />
 </liferay-ui:error>
 
 <portlet:actionURL name="/configuration_admin/bind_configuration" var="bindConfigurationActionURL" />
@@ -87,11 +78,8 @@ renderResponse.setTitle(categoryDisplayName);
 	<clay:col
 		size="12"
 	>
-		<liferay-ui:breadcrumb
-			showCurrentGroup="<%= false %>"
-			showGuestGroup="<%= false %>"
-			showLayout="<%= false %>"
-			showParentGroups="<%= false %>"
+		<liferay-site-navigation:breadcrumb
+			breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, false, true) %>"
 		/>
 	</clay:col>
 </clay:container-fluid>
@@ -209,10 +197,16 @@ renderResponse.setTitle(categoryDisplayName);
 						</c:if>
 					</h2>
 
+					<c:if test="<%= configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) && configurationModel.isReadOnly() %>">
+						<clay:alert
+							message="this-configuration-is-read-only"
+						/>
+					</c:if>
+
 					<c:if test="<%= !configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) %>">
-						<aui:alert closeable="<%= false %>" id="errorAlert" type="info">
-							<liferay-ui:message key="this-configuration-is-not-saved-yet.-the-values-shown-are-the-default" />
-						</aui:alert>
+						<clay:alert
+							message="this-configuration-is-not-saved-yet.-the-values-shown-are-the-default"
+						/>
 					</c:if>
 
 					<liferay-util:dynamic-include key='<%= "com.liferay.configuration.admin.web#/edit_configuration.jsp#" + configurationModel.getFactoryPid() + "#pre" %>' />
@@ -235,27 +229,29 @@ renderResponse.setTitle(categoryDisplayName);
 
 					<liferay-util:dynamic-include key='<%= "com.liferay.configuration.admin.web#/edit_configuration.jsp#" + configurationModel.getFactoryPid() + "#post" %>' />
 
-					<aui:button-row>
-						<c:choose>
-							<c:when test="<%= configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) %>">
-								<aui:button name="update" type="submit" value="update" />
-							</c:when>
-							<c:otherwise>
-								<aui:button name="save" type="submit" value="save" />
-							</c:otherwise>
-						</c:choose>
+					<c:if test="<%= !configurationModel.isReadOnly() %>">
+						<div class="align-items-center d-flex justify-content-between">
+							<aui:button-row>
+								<c:choose>
+									<c:when test="<%= configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) %>">
+										<aui:button name="update" type="submit" value="update" />
+									</c:when>
+									<c:otherwise>
+										<aui:button name="save" type="submit" value="save" />
+									</c:otherwise>
+								</c:choose>
 
-						<aui:button href="<%= redirect %>" name="cancel" type="cancel" />
+								<aui:button cssClass="ml-3" href="<%= redirect %>" name="cancel" type="cancel" />
+							</aui:button-row>
 
-						<c:if test="<%= Validator.isNotNull(configurationModel.getLiferayLearnMessageKey()) && Validator.isNotNull(configurationModel.getLiferayLearnMessageResource()) %>">
-							<div class="btn float-right">
+							<c:if test="<%= Validator.isNotNull(configurationModel.getLiferayLearnMessageKey()) && Validator.isNotNull(configurationModel.getLiferayLearnMessageResource()) %>">
 								<liferay-learn:message
 									key="<%= configurationModel.getLiferayLearnMessageKey() %>"
 									resource="<%= configurationModel.getLiferayLearnMessageResource() %>"
 								/>
-							</div>
-						</c:if>
-					</aui:button-row>
+							</c:if>
+						</div>
+					</c:if>
 				</aui:form>
 			</clay:sheet>
 		</clay:col>

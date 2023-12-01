@@ -1,25 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-calendar-date-picker-sanitizer',
 	(A) => {
-		var AArray = A.Array;
+		const AArray = A.Array;
 
-		var DateMath = A.DataType.DateMath;
+		const DateMath = A.DataType.DateMath;
 
-		var DatePickerSanitizer = A.Component.create({
+		const DatePickerSanitizer = A.Component.create({
 			ATTRS: {
 				datePickers: {},
 
@@ -38,17 +29,17 @@ AUI.add(
 				_onDatePickerSelectionChange: function _onDatePickerSelectionChange(
 					event
 				) {
-					var instance = this;
+					const instance = this;
 
-					var date = event.newSelection[0];
+					const date = event.newSelection[0];
 
-					var datePicker = event.currentTarget;
+					const datePicker = event.currentTarget;
 
-					var defaultDate = instance.get('defaultDate');
+					const defaultDate = instance.get('defaultDate');
 
-					var maximumDate = instance.get('maximumDate');
+					const maximumDate = instance.get('maximumDate');
 
-					var minimumDate = instance.get('minimumDate');
+					const minimumDate = instance.get('minimumDate');
 
 					if (
 						date &&
@@ -63,9 +54,9 @@ AUI.add(
 				},
 
 				bindUI() {
-					var instance = this;
+					const instance = this;
 
-					var datePickers = instance.get('datePickers');
+					const datePickers = instance.get('datePickers');
 
 					instance.eventHandlers = A.map(datePickers, (item) => {
 						return item.on(
@@ -79,7 +70,7 @@ AUI.add(
 				},
 
 				destructor() {
-					var instance = this;
+					const instance = this;
 
 					instance.unlink();
 
@@ -87,7 +78,7 @@ AUI.add(
 				},
 
 				initializer() {
-					var instance = this;
+					const instance = this;
 
 					instance.eventHandlers = [];
 
@@ -95,7 +86,7 @@ AUI.add(
 				},
 
 				unlink() {
-					var instance = this;
+					const instance = this;
 
 					AArray.invoke(instance.eventHandlers, 'detach');
 				},

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.contributor.blogs;
@@ -17,6 +8,7 @@ package com.liferay.portal.search.similar.results.web.internal.contributor.blogs
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryLocalService;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.similar.results.web.internal.helper.HttpHelper;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
@@ -44,7 +36,7 @@ public class BlogsSimilarResultsContributor
 		RouteBuilder routeBuilder, RouteHelper routeHelper) {
 
 		String[] parameters = _httpHelper.getFriendlyURLParameters(
-			routeHelper.getURLString());
+			HttpComponentsUtil.decodePath(routeHelper.getURLString()));
 
 		SearchStringUtil.requireEquals("blogs", parameters[0]);
 
@@ -74,39 +66,34 @@ public class BlogsSimilarResultsContributor
 		DestinationBuilder destinationBuilder,
 		DestinationHelper destinationHelper) {
 
+		AssetRenderer<?> assetRenderer = destinationHelper.getAssetRenderer();
+
+		if (assetRenderer.getGroupId() != destinationHelper.getScopeGroupId()) {
+			destinationBuilder.replaceURLString(
+				destinationHelper.getAssetViewURL());
+
+			return;
+		}
+
 		String urlTitle = (String)destinationHelper.getRouteParameter(
 			"urlTitle");
-
-		AssetRenderer<?> assetRenderer = destinationHelper.getAssetRenderer();
 
 		destinationBuilder.replace(
 			_getBlogsURLParameterPattern(urlTitle),
 			_getBlogsURLParameterPattern(assetRenderer.getUrlTitle()));
 	}
 
-	@Reference(unbind = "-")
-	protected void setBlogsEntryLocalService(
-		BlogsEntryLocalService blogsEntryLocalService) {
-
-		_blogsEntryLocalService = blogsEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setHttpHelper(HttpHelper httpHelper) {
-		_httpHelper = httpHelper;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUIDFactory(UIDFactory uidFactory) {
-		_uidFactory = uidFactory;
-	}
-
 	private String _getBlogsURLParameterPattern(String parameterValue) {
 		return "-/blogs/" + parameterValue + "?";
 	}
 
+	@Reference
 	private BlogsEntryLocalService _blogsEntryLocalService;
+
+	@Reference
 	private HttpHelper _httpHelper;
+
+	@Reference
 	private UIDFactory _uidFactory;
 
 }

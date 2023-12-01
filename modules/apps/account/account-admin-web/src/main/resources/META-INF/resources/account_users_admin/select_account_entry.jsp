@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -25,7 +16,12 @@ if ((accountGroupId > 0) && AccountGroupPermission.contains(permissionChecker, a
 	filterManageableAccountEntries = false;
 }
 
-SearchContainer<AccountEntryDisplay> accountEntryDisplaySearchContainer = AccountEntryDisplaySearchContainerFactory.create(liferayPortletRequest, liferayPortletResponse, filterManageableAccountEntries);
+SearchContainer<AccountEntryDisplay> accountEntryDisplaySearchContainer = AccountEntryDisplaySearchContainerFactory.createWithParams(
+	liferayPortletRequest, liferayPortletResponse,
+	LinkedHashMapBuilder.<String, Object>put(
+		"allowNewUserMembership", Boolean.TRUE
+	).build(),
+	filterManageableAccountEntries);
 
 if (accountGroupId > 0) {
 	accountEntryDisplaySearchContainer.setRowChecker(new AccountGroupAccountEntryRowChecker(liferayPortletResponse, accountGroupId));
@@ -55,15 +51,17 @@ if (selectAccountEntryManagementToolbarDisplayContext.isSingleSelect()) {
 		>
 
 			<%
+			Map<String, Object> data = HashMapBuilder.<String, Object>put(
+				"accountentryid", accountEntryDisplay.getAccountEntryId()
+			).put(
+				"entityid", accountEntryDisplay.getAccountEntryId()
+			).put(
+				"entityname", accountEntryDisplay.getName()
+			).build();
+
+			row.setData(data);
+
 			String cssClass = "table-cell-expand";
-
-			Optional<User> userOptional = accountEntryDisplay.getPersonAccountEntryUserOptional();
-
-			boolean disabled = userOptional.isPresent();
-
-			if (disabled) {
-				cssClass += " text-muted";
-			}
 			%>
 
 			<liferay-ui:search-container-column-text
@@ -81,20 +79,7 @@ if (selectAccountEntryManagementToolbarDisplayContext.isSingleSelect()) {
 
 			<c:if test="<%= selectAccountEntryManagementToolbarDisplayContext.isSingleSelect() %>">
 				<liferay-ui:search-container-column-text>
-					<aui:button
-						cssClass="choose-account selector-button"
-						data='<%=
-							HashMapBuilder.<String, Object>put(
-								"accountentryid", accountEntryDisplay.getAccountEntryId()
-							).put(
-								"entityid", accountEntryDisplay.getAccountEntryId()
-							).put(
-								"entityname", accountEntryDisplay.getName()
-							).build()
-						%>'
-						disabled="<%= disabled %>"
-						value="choose"
-					/>
+					<aui:button cssClass="choose-account selector-button" data="<%= data %>" value="choose" />
 				</liferay-ui:search-container-column-text>
 			</c:if>
 		</liferay-ui:search-container-row>

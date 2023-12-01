@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.internal.search;
@@ -31,7 +22,6 @@ import com.liferay.portal.kernel.search.IndexWriterHelper;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.SearchException;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -94,8 +84,7 @@ public class CTSearchEventListener implements CTEventListener {
 			() -> {
 				try (SafeCloseable safeCloseable =
 						CTCollectionThreadLocal.
-							setCTCollectionIdWithSafeCloseable(
-								CTConstants.CT_COLLECTION_ID_PRODUCTION)) {
+							setProductionModeWithSafeCloseable()) {
 
 					for (Map.Entry<CTService<?>, List<CTEntry>> ctEntryEntry :
 							_getCTEntryEntries(ctCollectionId)) {
@@ -122,7 +111,6 @@ public class CTSearchEventListener implements CTEventListener {
 						}
 
 						_indexWriterHelper.deleteDocuments(
-							indexer.getSearchEngineId(),
 							ctCollection.getCompanyId(), uids,
 							indexer.isCommitImmediately());
 
@@ -175,8 +163,8 @@ public class CTSearchEventListener implements CTEventListener {
 
 			try {
 				_indexWriterHelper.deleteDocuments(
-					indexer.getSearchEngineId(), ctCollection.getCompanyId(),
-					uids, indexer.isCommitImmediately());
+					ctCollection.getCompanyId(), uids,
+					indexer.isCommitImmediately());
 			}
 			catch (SearchException searchException) {
 				throw new CTEventException(searchException);
@@ -263,9 +251,6 @@ public class CTSearchEventListener implements CTEventListener {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CTSearchEventListener.class);
-
-	@Reference
-	private ClassNameLocalService _classNameLocalService;
 
 	@Reference
 	private CTCollectionLocalService _ctCollectionLocalService;

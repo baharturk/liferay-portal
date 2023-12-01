@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.marketplace.app.manager.web.internal.portlet;
@@ -25,7 +16,8 @@ import com.liferay.marketplace.exception.FileExtensionException;
 import com.liferay.marketplace.service.AppService;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.bundle.blacklist.BundleBlacklistManager;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.LayoutTemplate;
 import com.liferay.portal.kernel.model.Plugin;
 import com.liferay.portal.kernel.model.PluginSetting;
@@ -47,11 +39,13 @@ import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
@@ -63,7 +57,13 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Dictionary;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
@@ -77,6 +77,12 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.ConfigurationListener;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -85,7 +91,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Joan Kim
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=marketplace-app-manager-portlet",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -101,7 +106,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.view-template=/view.jsp",
 		"javax.portlet.name=" + MarketplaceAppManagerPortletKeys.MARKETPLACE_APP_MANAGER,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"javax.portlet.security-role-ref=administrator",
+		"javax.portlet.version=3.0"
 	},
 	service = javax.portlet.Portlet.class
 )
@@ -389,42 +395,6 @@ public class MarketplaceAppManagerPortlet extends MVCPortlet {
 		super.doDispatch(renderRequest, renderResponse);
 	}
 
-	@Reference(unbind = "-")
-	protected void setAppService(AppService appService) {
-		_appService = appService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPanelAppRegistry(PanelAppRegistry panelAppRegistry) {
-		_panelAppRegistry = panelAppRegistry;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPanelCategoryRegistry(
-		PanelCategoryRegistry panelCategoryRegistry) {
-
-		_panelCategoryRegistry = panelCategoryRegistry;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPluginSettingLocalService(
-		PluginSettingLocalService pluginSettingLocalService) {
-
-		_pluginSettingLocalService = pluginSettingLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPluginSettingService(
-		PluginSettingService pluginSettingService) {
-
-		_pluginSettingService = pluginSettingService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortletService(PortletService portletService) {
-		_portletService = portletService;
-	}
-
 	private void _checkOmniAdmin() throws PortletException {
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
@@ -525,25 +495,158 @@ public class MarketplaceAppManagerPortlet extends MVCPortlet {
 		}
 	}
 
-	private AppService _appService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		MarketplaceAppManagerPortlet.class);
 
 	@Reference
-	private BundleBlacklistManager _bundleBlacklistManager;
+	private AppService _appService;
+
+	private final BundleBlacklistManager _bundleBlacklistManager =
+		new BundleBlacklistManager();
 
 	@Reference
 	private BundleManager _bundleManager;
 
 	@Reference
+	private ConfigurationAdmin _configurationAdmin;
+
+	@Reference
 	private Http _http;
 
+	@Reference
 	private PanelAppRegistry _panelAppRegistry;
+
+	@Reference
 	private PanelCategoryRegistry _panelCategoryRegistry;
+
+	@Reference
 	private PluginSettingLocalService _pluginSettingLocalService;
+
+	@Reference
 	private PluginSettingService _pluginSettingService;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference
 	private PortletService _portletService;
+
+	private class BundleBlacklistManager {
+
+		public void addToBlacklistAndUninstall(String... bundleSymbolicNames)
+			throws IOException {
+
+			_updateProperties(
+				blacklistBundleSymbolicNames -> {
+					if (blacklistBundleSymbolicNames == null) {
+						return bundleSymbolicNames;
+					}
+
+					Set<String> blacklistBundleSymbolicNamesSet =
+						SetUtil.fromArray(blacklistBundleSymbolicNames);
+
+					Collections.addAll(
+						blacklistBundleSymbolicNamesSet, bundleSymbolicNames);
+
+					return blacklistBundleSymbolicNamesSet.toArray(
+						new String[0]);
+				});
+		}
+
+		private void _updateConfiguration(
+				Configuration configuration,
+				Dictionary<String, Object> properties)
+			throws IOException {
+
+			Bundle bundle = FrameworkUtil.getBundle(
+				BundleBlacklistManager.class);
+
+			BundleContext bundleContext = bundle.getBundleContext();
+
+			CountDownLatch countDownLatch = new CountDownLatch(1);
+
+			ServiceRegistration<?> serviceRegistration =
+				bundleContext.registerService(
+					ConfigurationListener.class,
+					configurationEvent -> {
+						if (Objects.equals(
+								_BUNDLE_BLACKLIST_CONFIGURATION_PID,
+								configurationEvent.getPid())) {
+
+							countDownLatch.countDown();
+						}
+					},
+					null);
+
+			try {
+				configuration.update(properties);
+
+				countDownLatch.await();
+			}
+			catch (InterruptedException interruptedException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(interruptedException);
+				}
+			}
+			finally {
+				serviceRegistration.unregister();
+			}
+		}
+
+		private void _updateProperties(
+				Function<String[], String[]> updateFunction)
+			throws IOException {
+
+			Configuration configuration = _configurationAdmin.getConfiguration(
+				_BUNDLE_BLACKLIST_CONFIGURATION_PID, StringPool.QUESTION);
+
+			Dictionary<String, Object> properties =
+				configuration.getProperties();
+
+			String[] blacklistBundleSymbolicNames = null;
+
+			if (properties == null) {
+				properties = new HashMapDictionary<>();
+			}
+			else {
+
+				// LPS-114840
+
+				Object value = properties.get("blacklistBundleSymbolicNames");
+
+				if (value instanceof String) {
+					blacklistBundleSymbolicNames = StringUtil.split(
+						(String)value);
+				}
+				else {
+					blacklistBundleSymbolicNames = (String[])properties.get(
+						"blacklistBundleSymbolicNames");
+				}
+			}
+
+			blacklistBundleSymbolicNames = updateFunction.apply(
+				blacklistBundleSymbolicNames);
+
+			if (blacklistBundleSymbolicNames == null) {
+				return;
+			}
+
+			if (blacklistBundleSymbolicNames.length == 0) {
+				properties.remove("blacklistBundleSymbolicNames");
+			}
+			else {
+				properties.put(
+					"blacklistBundleSymbolicNames",
+					blacklistBundleSymbolicNames);
+			}
+
+			_updateConfiguration(configuration, properties);
+		}
+
+		private static final String _BUNDLE_BLACKLIST_CONFIGURATION_PID =
+			"com.liferay.portal.bundle.blacklist.internal.configuration." +
+				"BundleBlacklistConfiguration";
+
+	}
 
 }

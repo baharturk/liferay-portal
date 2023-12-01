@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.adaptive.media;
@@ -38,9 +29,7 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.net.URI;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,7 +44,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pavel Savinov
  */
-@Component(immediate = true, service = LayoutAdaptiveMediaProcessor.class)
+@Component(service = LayoutAdaptiveMediaProcessor.class)
 public class LayoutAdaptiveMediaProcessorImpl
 	implements LayoutAdaptiveMediaProcessor {
 
@@ -67,16 +56,12 @@ public class LayoutAdaptiveMediaProcessorImpl
 		Document document = Jsoup.parse(processedContent);
 
 		try {
-			for (ViewportSize viewportSize : ViewportSize.values()) {
+			for (ViewportSize viewportSize : _viewportSizes) {
 				Elements elements = document.getElementsByAttribute(
 					"data-" + viewportSize.getViewportSizeId() +
 						"-configuration");
 
-				Iterator<Element> iterator = elements.iterator();
-
-				while (iterator.hasNext()) {
-					Element element = iterator.next();
-
+				for (Element element : elements) {
 					if (!StringUtil.equalsIgnoreCase(
 							element.tagName(), "img")) {
 
@@ -98,18 +83,14 @@ public class LayoutAdaptiveMediaProcessorImpl
 					FileEntry fileEntry = _dlAppService.getFileEntry(
 						fileEntryId);
 
-					Optional<AMImageConfigurationEntry>
-						amImageConfigurationEntryOptional =
-							_amImageConfigurationHelper.
-								getAMImageConfigurationEntry(
-									fileEntry.getCompanyId(), configuration);
+					AMImageConfigurationEntry amImageConfigurationEntry =
+						_amImageConfigurationHelper.
+							getAMImageConfigurationEntry(
+								fileEntry.getCompanyId(), configuration);
 
-					if (!amImageConfigurationEntryOptional.isPresent()) {
+					if (amImageConfigurationEntry == null) {
 						continue;
 					}
-
-					AMImageConfigurationEntry amImageConfigurationEntry =
-						amImageConfigurationEntryOptional.get();
 
 					URI uri = _amImageURLFactory.createFileEntryURL(
 						fileEntry.getFileVersion(), amImageConfigurationEntry);
@@ -237,6 +218,7 @@ public class LayoutAdaptiveMediaProcessorImpl
 
 	private static final Pattern _cssPropertyPattern = Pattern.compile(
 		"--background-image-file-entry-id:\\s*(\\d+);");
+	private static final ViewportSize[] _viewportSizes = ViewportSize.values();
 
 	@Reference
 	private AMImageConfigurationHelper _amImageConfigurationHelper;

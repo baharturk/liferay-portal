@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.index;
@@ -27,13 +18,15 @@ import java.io.IOException;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.xcontent.XContentType;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Michael C. Han
+ * @author Joshua Cords
+ * @author Tibor Lipusz
  */
 @Component(service = CreateIndexRequestExecutor.class)
 public class CreateIndexRequestExecutorImpl
@@ -65,6 +58,21 @@ public class CreateIndexRequestExecutorImpl
 				new org.elasticsearch.action.admin.indices.create.
 					CreateIndexRequest(createIndexRequest.getIndexName());
 
+		if (createIndexRequest.getMappings() != null) {
+			ClassLoaderUtil.getWithContextClassLoader(
+				() -> elasticsearchCreateIndexRequest.mapping(
+					"_doc", createIndexRequest.getMappings(),
+					XContentType.JSON),
+				getClass());
+		}
+
+		if (createIndexRequest.getSettings() != null) {
+			ClassLoaderUtil.getWithContextClassLoader(
+				() -> elasticsearchCreateIndexRequest.settings(
+					createIndexRequest.getSettings(), XContentType.JSON),
+				getClass());
+		}
+
 		if (createIndexRequest.getSource() != null) {
 			ClassLoaderUtil.getWithContextClassLoader(
 				() -> elasticsearchCreateIndexRequest.source(
@@ -73,13 +81,6 @@ public class CreateIndexRequestExecutorImpl
 		}
 
 		return elasticsearchCreateIndexRequest;
-	}
-
-	@Reference(unbind = "-")
-	protected void setElasticsearchClientResolver(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		_elasticsearchClientResolver = elasticsearchClientResolver;
 	}
 
 	private org.elasticsearch.action.admin.indices.create.CreateIndexResponse
@@ -107,6 +108,7 @@ public class CreateIndexRequestExecutorImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		CreateIndexRequestExecutorImpl.class);
 
+	@Reference
 	private ElasticsearchClientResolver _elasticsearchClientResolver;
 
 }

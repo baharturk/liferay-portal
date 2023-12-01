@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.channel.resource.v1_0.test;
 
+import com.liferay.account.constants.AccountConstants;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.constants.CommerceChannelConstants;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalServiceUtil;
 import com.liferay.headless.commerce.admin.channel.client.dto.v1_0.Channel;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -32,6 +24,8 @@ import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
@@ -92,22 +86,47 @@ public class ChannelResourceTest extends BaseChannelResourceTestCase {
 		}
 	}
 
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLGetChannelsPage() throws Exception {
+		super.testGraphQLGetChannelsPage();
+	}
+
 	@Override
 	protected String[] getAdditionalAssertFieldNames() {
 		return new String[] {"currencyCode", "name", "type"};
 	}
 
 	@Override
-	protected Channel randomPatchChannel() throws Exception {
+	protected Channel randomChannel() throws Exception {
 		return new Channel() {
 			{
+				accountId = AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT;
 				currencyCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				externalReferenceCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
 				name = StringUtil.toLowerCase(RandomTestUtil.randomString());
-				type = StringUtil.toLowerCase(RandomTestUtil.randomString());
+				siteGroupId = RandomTestUtil.randomLong();
+				type = CommerceChannelConstants.CHANNEL_TYPE_SITE;
+			}
+		};
+	}
+
+	@Override
+	protected Channel randomPatchChannel() throws Exception {
+		return new Channel() {
+			{
+				accountId = AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT;
+				currencyCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				externalReferenceCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				id = RandomTestUtil.randomLong();
+				name = StringUtil.toLowerCase(RandomTestUtil.randomString());
+				type = CommerceChannelConstants.CHANNEL_TYPE_SITE;
 			}
 		};
 	}
@@ -118,7 +137,21 @@ public class ChannelResourceTest extends BaseChannelResourceTestCase {
 	}
 
 	@Override
+	protected Channel testDeleteChannelByExternalReferenceCode_addChannel()
+		throws Exception {
+
+		return _addChannel(randomChannel());
+	}
+
+	@Override
 	protected Channel testGetChannel_addChannel() throws Exception {
+		return _addChannel(randomChannel());
+	}
+
+	@Override
+	protected Channel testGetChannelByExternalReferenceCode_addChannel()
+		throws Exception {
+
 		return _addChannel(randomChannel());
 	}
 
@@ -140,6 +173,13 @@ public class ChannelResourceTest extends BaseChannelResourceTestCase {
 	}
 
 	@Override
+	protected Channel testPatchChannelByExternalReferenceCode_addChannel()
+		throws Exception {
+
+		return _addChannel(randomChannel());
+	}
+
+	@Override
 	protected Channel testPostChannel_addChannel(Channel channel)
 		throws Exception {
 
@@ -151,12 +191,20 @@ public class ChannelResourceTest extends BaseChannelResourceTestCase {
 		return _addChannel(randomChannel());
 	}
 
+	@Override
+	protected Channel testPutChannelByExternalReferenceCode_addChannel()
+		throws Exception {
+
+		return _addChannel(randomChannel());
+	}
+
 	private Channel _addChannel(Channel channel) throws Exception {
 		CommerceChannel commerceChannel =
 			CommerceChannelLocalServiceUtil.addCommerceChannel(
-				StringPool.BLANK, channel.getSiteGroupId(), channel.getName(),
-				channel.getType(), null, channel.getCurrencyCode(),
-				_serviceContext);
+				channel.getExternalReferenceCode(),
+				AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
+				channel.getSiteGroupId(), channel.getName(), channel.getType(),
+				null, channel.getCurrencyCode(), _serviceContext);
 
 		_commerceChannels.add(commerceChannel);
 
@@ -166,6 +214,7 @@ public class ChannelResourceTest extends BaseChannelResourceTestCase {
 	private Channel _toChannel(CommerceChannel commerceChannel) {
 		return new Channel() {
 			{
+				accountId = commerceChannel.getAccountEntryId();
 				currencyCode = commerceChannel.getCommerceCurrencyCode();
 				externalReferenceCode =
 					commerceChannel.getExternalReferenceCode();

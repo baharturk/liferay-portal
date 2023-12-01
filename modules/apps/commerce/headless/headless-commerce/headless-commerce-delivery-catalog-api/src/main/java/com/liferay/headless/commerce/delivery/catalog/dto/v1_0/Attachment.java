@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.dto.v1_0;
@@ -93,6 +84,35 @@ public class Attachment implements Serializable {
 	protected String attachment;
 
 	@Schema
+	@Valid
+	public CustomField[] getCustomFields() {
+		return customFields;
+	}
+
+	public void setCustomFields(CustomField[] customFields) {
+		this.customFields = customFields;
+	}
+
+	@JsonIgnore
+	public void setCustomFields(
+		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+
+		try {
+			customFields = customFieldsUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected CustomField[] customFields;
+
+	@Schema(example = "2017-07-21")
 	public Date getDisplayDate() {
 		return displayDate;
 	}
@@ -120,7 +140,7 @@ public class Attachment implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date displayDate;
 
-	@Schema
+	@Schema(example = "2017-08-21")
 	public Date getExpirationDate() {
 		return expirationDate;
 	}
@@ -148,8 +168,36 @@ public class Attachment implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date expirationDate;
 
-	@DecimalMin("0")
 	@Schema
+	public Boolean getGalleryEnabled() {
+		return galleryEnabled;
+	}
+
+	public void setGalleryEnabled(Boolean galleryEnabled) {
+		this.galleryEnabled = galleryEnabled;
+	}
+
+	@JsonIgnore
+	public void setGalleryEnabled(
+		UnsafeSupplier<Boolean, Exception> galleryEnabledUnsafeSupplier) {
+
+		try {
+			galleryEnabled = galleryEnabledUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Boolean galleryEnabled;
+
+	@DecimalMin("0")
+	@Schema(example = "30130")
 	public Long getId() {
 		return id;
 	}
@@ -175,7 +223,7 @@ public class Attachment implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@Schema(example = "true")
 	public Boolean getNeverExpire() {
 		return neverExpire;
 	}
@@ -203,7 +251,7 @@ public class Attachment implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean neverExpire;
 
-	@Schema
+	@Schema(example = "{color=yellow, optionKey=optionValueKey, size=xs}")
 	@Valid
 	public Map<String, String> getOptions() {
 		return options;
@@ -232,7 +280,7 @@ public class Attachment implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> options;
 
-	@Schema
+	@Schema(example = "1.2")
 	public Double getPriority() {
 		return priority;
 	}
@@ -285,6 +333,34 @@ public class Attachment implements Serializable {
 	@GraphQLField(description = "URL of the location")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String src;
+
+	@Schema(example = "[tag1, tag2, tag3]")
+	public String[] getTags() {
+		return tags;
+	}
+
+	public void setTags(String[] tags) {
+		this.tags = tags;
+	}
+
+	@JsonIgnore
+	public void setTags(
+		UnsafeSupplier<String[], Exception> tagsUnsafeSupplier) {
+
+		try {
+			tags = tagsUnsafeSupplier.get();
+		}
+		catch (RuntimeException re) {
+			throw re;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String[] tags;
 
 	@Schema
 	public String getTitle() {
@@ -384,6 +460,26 @@ public class Attachment implements Serializable {
 			sb.append("\"");
 		}
 
+		if (customFields != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"customFields\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < customFields.length; i++) {
+				sb.append(String.valueOf(customFields[i]));
+
+				if ((i + 1) < customFields.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
 		if (displayDate != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -410,6 +506,16 @@ public class Attachment implements Serializable {
 			sb.append(liferayToJSONDateFormat.format(expirationDate));
 
 			sb.append("\"");
+		}
+
+		if (galleryEnabled != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"galleryEnabled\": ");
+
+			sb.append(galleryEnabled);
 		}
 
 		if (id != null) {
@@ -464,6 +570,30 @@ public class Attachment implements Serializable {
 			sb.append(_escape(src));
 
 			sb.append("\"");
+		}
+
+		if (tags != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"tags\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < tags.length; i++) {
+				sb.append("\"");
+
+				sb.append(_escape(tags[i]));
+
+				sb.append("\"");
+
+				if ((i + 1) < tags.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
 		}
 
 		if (title != null) {
@@ -584,5 +714,7 @@ public class Attachment implements Serializable {
 		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
 		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
 	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

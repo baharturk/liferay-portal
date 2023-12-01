@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -38,9 +29,9 @@ CommerceOrder commerceOrder = commerceOrderEditDisplayContext.getCommerceOrder()
 		/>
 
 		<commerce-ui:panel
-			actionLabel='<%= LanguageUtil.get(request, Validator.isNull(commerceOrder.getCommercePaymentMethodKey()) ? "add" : "edit") %>'
+			actionLabel='<%= commerceOrderEditDisplayContext.hasManageCommerceOrderPaymentMethodsPermission() ? LanguageUtil.get(request, Validator.isNull(commerceOrder.getCommercePaymentMethodKey()) ? "add" : "edit") : null %>'
 			actionTargetId="order-payment-method-modal"
-			actionUrl="<%= editOrderPaymentMethodURL %>"
+			actionUrl="<%= commerceOrderEditDisplayContext.hasManageCommerceOrderPaymentMethodsPermission() ? editOrderPaymentMethodURL : null %>"
 			elementClasses="flex-fill"
 			title='<%= LanguageUtil.get(request, "payment-method") %>'
 		>
@@ -89,9 +80,9 @@ CommerceOrder commerceOrder = commerceOrderEditDisplayContext.getCommerceOrder()
 		/>
 
 		<commerce-ui:panel
-			actionLabel='<%= LanguageUtil.get(request, "edit") %>'
+			actionLabel='<%= commerceOrderEditDisplayContext.hasManageCommerceOrderPaymentStatusesPermission() ? LanguageUtil.get(request, "edit") : null %>'
 			actionTargetId="order-payment-status-modal"
-			actionUrl="<%= editOrderPaymentStatusURL %>"
+			actionUrl="<%= commerceOrderEditDisplayContext.hasManageCommerceOrderPaymentStatusesPermission() ? editOrderPaymentStatusURL: null %>"
 			elementClasses="flex-fill"
 			title='<%= LanguageUtil.get(request, "payment-status") %>'
 		>
@@ -114,18 +105,15 @@ CommerceOrder commerceOrder = commerceOrderEditDisplayContext.getCommerceOrder()
 			elementClasses="flex-fill"
 			title='<%= LanguageUtil.get(request, "transaction-history") %>'
 		>
-			<clay:data-set-display
+			<frontend-data-set:classic-display
 				contextParams='<%=
 					HashMapBuilder.<String, String>put(
 						"commerceOrderId", String.valueOf(commerceOrder.getCommerceOrderId())
 					).build()
 				%>'
-				dataProviderKey="<%= CommerceOrderDataSetConstants.COMMERCE_DATA_SET_KEY_PAYMENTS %>"
-				id="<%= CommerceOrderDataSetConstants.COMMERCE_DATA_SET_KEY_PAYMENTS %>"
+				dataProviderKey="<%= CommerceOrderFDSNames.PAYMENTS %>"
+				id="<%= CommerceOrderFDSNames.PAYMENTS %>"
 				itemsPerPage="<%= 10 %>"
-				namespace="<%= liferayPortletResponse.getNamespace() %>"
-				pageNumber="<%= 1 %>"
-				portletURL="<%= commerceOrderEditDisplayContext.getCommerceOrderPaymentsPortletURL() %>"
 			/>
 		</commerce-ui:panel>
 	</div>

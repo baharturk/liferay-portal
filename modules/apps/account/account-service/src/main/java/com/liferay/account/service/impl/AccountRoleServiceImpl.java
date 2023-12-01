@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.impl;
@@ -17,19 +8,26 @@ package com.liferay.account.service.impl;
 import com.liferay.account.constants.AccountActionKeys;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountRole;
+import com.liferay.account.role.AccountRolePermissionThreadLocal;
 import com.liferay.account.service.base.AccountRoleServiceBaseImpl;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
+import com.liferay.portal.kernel.util.OrderByComparator;
 
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Brian Wing Shun Chan
@@ -70,9 +68,14 @@ public class AccountRoleServiceImpl extends AccountRoleServiceBaseImpl {
 			long accountEntryId, long accountRoleId, long userId)
 		throws PortalException {
 
-		_accountRoleModelResourcePermission.check(
-			getPermissionChecker(), accountRoleId,
-			AccountActionKeys.ASSIGN_USERS);
+		try (SafeCloseable safeCloseable =
+				AccountRolePermissionThreadLocal.setWithSafeCloseable(
+					accountEntryId)) {
+
+			_accountRoleModelResourcePermission.check(
+				getPermissionChecker(), accountRoleId,
+				AccountActionKeys.ASSIGN_USERS);
+		}
 
 		accountRoleLocalService.associateUser(
 			accountEntryId, accountRoleId, userId);
@@ -122,9 +125,40 @@ public class AccountRoleServiceImpl extends AccountRoleServiceBaseImpl {
 	}
 
 	@Override
+	public BaseModelSearchResult<AccountRole> searchAccountRoles(
+			long companyId, long[] accountEntryIds, String keywords,
+			LinkedHashMap<String, Object> params, int start, int end,
+			OrderByComparator<?> orderByComparator)
+		throws PortalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (params == null) {
+			params = new LinkedHashMap<>();
+		}
+
+		params.put("permissionUserId", permissionChecker.getUserId());
+
+		return accountRoleLocalService.searchAccountRoles(
+			companyId, accountEntryIds, keywords, params, start, end,
+			orderByComparator);
+	}
+
+	@Override
 	public void setUserAccountRoles(
 			long accountEntryId, long[] accountRoleIds, long userId)
 		throws PortalException {
+
+		try (SafeCloseable safeCloseable =
+				AccountRolePermissionThreadLocal.setWithSafeCloseable(
+					accountEntryId)) {
+
+			for (long accountRoleId : accountRoleIds) {
+				_accountRoleModelResourcePermission.check(
+					getPermissionChecker(), accountRoleId,
+					AccountActionKeys.ASSIGN_USERS);
+			}
+		}
 
 		_accountEntryModelResourcePermission.check(
 			getPermissionChecker(), accountEntryId, ActionKeys.MANAGE_USERS);
@@ -138,18 +172,25 @@ public class AccountRoleServiceImpl extends AccountRoleServiceBaseImpl {
 			long accountEntryId, long accountRoleId, long userId)
 		throws PortalException {
 
-		_accountRoleModelResourcePermission.check(
-			getPermissionChecker(), accountRoleId,
-			AccountActionKeys.ASSIGN_USERS);
+		try (SafeCloseable safeCloseable =
+				AccountRolePermissionThreadLocal.setWithSafeCloseable(
+					accountEntryId)) {
+
+			_accountRoleModelResourcePermission.check(
+				getPermissionChecker(), accountRoleId,
+				AccountActionKeys.ASSIGN_USERS);
+		}
 
 		accountRoleLocalService.unassociateUser(
 			accountEntryId, accountRoleId, userId);
 	}
 
 	@Reference(
+		policy = ReferencePolicy.DYNAMIC,
+		policyOption = ReferencePolicyOption.GREEDY,
 		target = "(model.class.name=com.liferay.account.model.AccountEntry)"
 	)
-	private ModelResourcePermission<AccountEntry>
+	private volatile ModelResourcePermission<AccountEntry>
 		_accountEntryModelResourcePermission;
 
 	@Reference(

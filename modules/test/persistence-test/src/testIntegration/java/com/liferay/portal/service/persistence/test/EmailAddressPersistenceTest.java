@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -123,6 +114,8 @@ public class EmailAddressPersistenceTest {
 
 		newEmailAddress.setMvccVersion(RandomTestUtil.nextLong());
 
+		newEmailAddress.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newEmailAddress.setUuid(RandomTestUtil.randomString());
 
 		newEmailAddress.setCompanyId(RandomTestUtil.nextLong());
@@ -141,7 +134,7 @@ public class EmailAddressPersistenceTest {
 
 		newEmailAddress.setAddress(RandomTestUtil.randomString());
 
-		newEmailAddress.setTypeId(RandomTestUtil.nextLong());
+		newEmailAddress.setListTypeId(RandomTestUtil.nextLong());
 
 		newEmailAddress.setPrimary(RandomTestUtil.randomBoolean());
 
@@ -153,6 +146,9 @@ public class EmailAddressPersistenceTest {
 		Assert.assertEquals(
 			existingEmailAddress.getMvccVersion(),
 			newEmailAddress.getMvccVersion());
+		Assert.assertEquals(
+			existingEmailAddress.getCtCollectionId(),
+			newEmailAddress.getCtCollectionId());
 		Assert.assertEquals(
 			existingEmailAddress.getUuid(), newEmailAddress.getUuid());
 		Assert.assertEquals(
@@ -179,7 +175,8 @@ public class EmailAddressPersistenceTest {
 		Assert.assertEquals(
 			existingEmailAddress.getAddress(), newEmailAddress.getAddress());
 		Assert.assertEquals(
-			existingEmailAddress.getTypeId(), newEmailAddress.getTypeId());
+			existingEmailAddress.getListTypeId(),
+			newEmailAddress.getListTypeId());
 		Assert.assertEquals(
 			existingEmailAddress.isPrimary(), newEmailAddress.isPrimary());
 	}
@@ -267,10 +264,11 @@ public class EmailAddressPersistenceTest {
 
 	protected OrderByComparator<EmailAddress> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"EmailAddress", "mvccVersion", true, "uuid", true, "emailAddressId",
-			true, "companyId", true, "userId", true, "userName", true,
-			"createDate", true, "modifiedDate", true, "classNameId", true,
-			"classPK", true, "address", true, "typeId", true, "primary", true);
+			"EmailAddress", "mvccVersion", true, "ctCollectionId", true, "uuid",
+			true, "emailAddressId", true, "companyId", true, "userId", true,
+			"userName", true, "createDate", true, "modifiedDate", true,
+			"classNameId", true, "classPK", true, "address", true, "listTypeId",
+			true, "primary", true);
 	}
 
 	@Test
@@ -493,6 +491,8 @@ public class EmailAddressPersistenceTest {
 
 		emailAddress.setMvccVersion(RandomTestUtil.nextLong());
 
+		emailAddress.setCtCollectionId(RandomTestUtil.nextLong());
+
 		emailAddress.setUuid(RandomTestUtil.randomString());
 
 		emailAddress.setCompanyId(RandomTestUtil.nextLong());
@@ -511,7 +511,7 @@ public class EmailAddressPersistenceTest {
 
 		emailAddress.setAddress(RandomTestUtil.randomString());
 
-		emailAddress.setTypeId(RandomTestUtil.nextLong());
+		emailAddress.setListTypeId(RandomTestUtil.nextLong());
 
 		emailAddress.setPrimary(RandomTestUtil.randomBoolean());
 

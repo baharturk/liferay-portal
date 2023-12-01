@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.internal.exportimport.data.handler.test;
@@ -48,7 +39,6 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -172,7 +162,8 @@ public class DDLRecordStagedModelDataHandlerTest
 
 		DDLRecordVersionLocalServiceUtil.updateDDLRecordVersion(
 			ddlRecordVersion);
-		DDLRecordLocalServiceUtil.updateDDLRecord(ddlRecord);
+
+		ddlRecord = DDLRecordLocalServiceUtil.updateDDLRecord(ddlRecord);
 
 		exportImportStagedModel(ddlRecord);
 
@@ -361,16 +352,14 @@ public class DDLRecordStagedModelDataHandlerTest
 
 		String fileName = "attachment.txt";
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				stagingGroup.getGroupId(), TestPropsValues.getUserId());
-
 		FileEntry fileEntry = DLAppLocalServiceUtil.addFileEntry(
 			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
 			ContentTypes.TEXT_PLAIN,
 			FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
-			null, serviceContext);
+			null,
+			ServiceContextTestUtil.getServiceContext(
+				stagingGroup.getGroupId(), TestPropsValues.getUserId()));
 
 		DDMFormFieldValue ddmFormFieldValue =
 			_createEmptyDocumentLibraryDDMFormFieldValue(locale, fieldName);
@@ -383,7 +372,7 @@ public class DDLRecordStagedModelDataHandlerTest
 
 		Value value = ddmFormFieldValue.getValue();
 
-		value.addString(locale, fieldValueJSONObject.toJSONString());
+		value.addString(locale, fieldValueJSONObject.toString());
 
 		return ddmFormFieldValue;
 	}
@@ -396,7 +385,7 @@ public class DDLRecordStagedModelDataHandlerTest
 
 		JSONObject fieldValueJSONObject = JSONFactoryUtil.createJSONObject();
 
-		localizedValue.addString(locale, fieldValueJSONObject.toJSONString());
+		localizedValue.addString(locale, fieldValueJSONObject.toString());
 
 		return DDMFormValuesTestUtil.createDDMFormFieldValue(
 			fieldName, localizedValue);

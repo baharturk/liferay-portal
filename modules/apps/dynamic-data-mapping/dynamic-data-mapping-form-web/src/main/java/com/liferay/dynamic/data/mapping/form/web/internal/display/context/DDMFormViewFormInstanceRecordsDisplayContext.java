@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.display.context;
 
 import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueRenderer;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.form.web.internal.search.DDMFormInstanceRecordSearch;
@@ -36,7 +27,7 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -44,7 +35,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
-import com.liferay.portal.kernel.search.BaseModelSearchResult;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchContextFactory;
@@ -52,7 +43,7 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HtmlParserUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -63,13 +54,12 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.portlet.PortletException;
 import javax.portlet.PortletURL;
@@ -87,27 +77,27 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 			RenderRequest renderRequest, RenderResponse renderResponse,
 			DDMFormInstance ddmFormInstance,
 			DDMFormInstanceRecordLocalService ddmFormInstanceRecordLocalService,
-			DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker)
+			DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry)
 		throws PortalException {
 
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 		_ddmFormInstance = ddmFormInstance;
 		_ddmFormInstanceRecordLocalService = ddmFormInstanceRecordLocalService;
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
+		_ddmFormFieldTypeServicesRegistry = ddmFormFieldTypeServicesRegistry;
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)_renderRequest.getAttribute(
+		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
 		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
 
 		portletDisplay.setShowBackIcon(true);
 
-		String redirect = ParamUtil.getString(_renderRequest, "redirect");
+		String redirect = ParamUtil.getString(renderRequest, "redirect");
 
 		if (Validator.isNull(redirect)) {
 			DDMFormAdminDisplayContext ddmFormAdminDisplayContext =
-				(DDMFormAdminDisplayContext)_renderRequest.getAttribute(
+				(DDMFormAdminDisplayContext)renderRequest.getAttribute(
 					WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 			redirect = String.valueOf(
@@ -182,7 +172,7 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 		String ddmFormFieldType = ddmFormField.getType();
 
 		final DDMFormFieldValueRenderer ddmFormFieldValueRenderer =
-			_ddmFormFieldTypeServicesTracker.getDDMFormFieldValueRenderer(
+			_ddmFormFieldTypeServicesRegistry.getDDMFormFieldValueRenderer(
 				ddmFormFieldType);
 
 		List<String> renderedDDMFormFieldValues = ListUtil.toList(
@@ -279,17 +269,13 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 		ThemeDisplay themeDisplay = (ThemeDisplay)_renderRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		Stream<String> stream = Arrays.stream(
-			columnValues.split(StringPool.COMMA_AND_SPACE));
-
 		return StringUtil.merge(
-			stream.map(
-				value -> value.toLowerCase()
-			).map(
-				value -> LanguageUtil.get(themeDisplay.getLocale(), value)
-			).toArray(
-				String[]::new
-			),
+			TransformUtil.transformToArray(
+				Arrays.asList(
+					StringUtil.split(columnValues, StringPool.COMMA_AND_SPACE)),
+				value -> LanguageUtil.get(
+					themeDisplay.getLocale(), value.toLowerCase()),
+				String.class),
 			StringPool.COMMA_AND_SPACE);
 	}
 
@@ -301,7 +287,7 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 				DDMFormInstance ddmFormInstance = getDDMFormInstance();
 
 				navigationItem.setLabel(
-					HtmlUtil.extractText(
+					HtmlParserUtil.extractText(
 						ddmFormInstance.getName(_renderRequest.getLocale())));
 			}
 		).build();
@@ -380,7 +366,25 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 		return portletURL;
 	}
 
-	public SearchContainer<?> getSearch() {
+	public String getSearchActionURL() {
+		PortletURL portletURL = _renderResponse.createRenderURL();
+
+		if (_ddmFormInstance == null) {
+			return portletURL.toString();
+		}
+
+		portletURL.setParameter(
+			"mvcPath", "/admin/view_form_instance_records.jsp");
+		portletURL.setParameter(
+			"redirect", ParamUtil.getString(_renderRequest, "redirect"));
+		portletURL.setParameter(
+			"formInstanceId",
+			String.valueOf(_ddmFormInstance.getFormInstanceId()));
+
+		return portletURL.toString();
+	}
+
+	public SearchContainer<?> getSearchContainer() {
 		PortletURL portletURL = PortletURLBuilder.create(
 			getPortletURL()
 		).setParameter(
@@ -407,28 +411,29 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 					getOrderByCol(), getOrderByType()));
 		ddmFormInstanceRecordSearch.setOrderByType(getOrderByType());
 
-		_setDDMFormInstanceRecordSearchResults(ddmFormInstanceRecordSearch);
-		_setDDMFormInstanceRecordSearchTotal(ddmFormInstanceRecordSearch);
-
-		return ddmFormInstanceRecordSearch;
-	}
-
-	public String getSearchActionURL() {
-		PortletURL portletURL = _renderResponse.createRenderURL();
-
 		if (_ddmFormInstance == null) {
-			return portletURL.toString();
+			ddmFormInstanceRecordSearch.setResultsAndTotal(
+				Collections::emptyList, 0);
+		}
+		else if (Validator.isNull(getKeywords())) {
+			ddmFormInstanceRecordSearch.setResultsAndTotal(
+				() -> _ddmFormInstanceRecordLocalService.getFormInstanceRecords(
+					_ddmFormInstance.getFormInstanceId(),
+					WorkflowConstants.STATUS_ANY,
+					ddmFormInstanceRecordSearch.getStart(),
+					ddmFormInstanceRecordSearch.getEnd(),
+					ddmFormInstanceRecordSearch.getOrderByComparator()),
+				_ddmFormInstanceRecordLocalService.getFormInstanceRecordsCount(
+					_ddmFormInstance.getFormInstanceId(),
+					WorkflowConstants.STATUS_ANY));
+		}
+		else {
+			ddmFormInstanceRecordSearch.setResultsAndTotal(
+				_ddmFormInstanceRecordLocalService.searchFormInstanceRecords(
+					_getSearchContext(WorkflowConstants.STATUS_ANY)));
 		}
 
-		portletURL.setParameter(
-			"mvcPath", "/admin/view_form_instance_records.jsp");
-		portletURL.setParameter(
-			"redirect", ParamUtil.getString(_renderRequest, "redirect"));
-		portletURL.setParameter(
-			"formInstanceId",
-			String.valueOf(_ddmFormInstance.getFormInstanceId()));
-
-		return portletURL.toString();
+		return ddmFormInstanceRecordSearch;
 	}
 
 	public String getSearchContainerId() {
@@ -454,7 +459,7 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 	}
 
 	public int getTotalItems() {
-		SearchContainer<?> searchContainer = getSearch();
+		SearchContainer<?> searchContainer = getSearchContainer();
 
 		return searchContainer.getTotal();
 	}
@@ -463,17 +468,13 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 		LocalizedValue visibleFields = (LocalizedValue)ddmFormField.getProperty(
 			"visibleFields");
 
-		return Stream.of(
+		return TransformUtil.transformToList(
 			StringUtil.split(
 				StringUtil.removeChars(
 					visibleFields.getString(_renderRequest.getLocale()),
 					CharPool.CLOSE_BRACKET, CharPool.OPEN_BRACKET,
-					CharPool.QUOTE))
-		).map(
-			String::trim
-		).collect(
-			Collectors.toList()
-		);
+					CharPool.QUOTE)),
+			String::trim);
 	}
 
 	public boolean isDisabledManagementBar() {
@@ -488,9 +489,7 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 		return DropdownItemListBuilder.add(
 			dropdownItem -> {
 				dropdownItem.setActive(true);
-
 				dropdownItem.setHref(getPortletURL(), "navigation", "all");
-
 				dropdownItem.setLabel(
 					LanguageUtil.get(
 						PortalUtil.getHttpServletRequest(_renderRequest),
@@ -588,33 +587,25 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 		DDMFormFieldOptions ddmFormFieldOptions,
 		List<String> renderedFormFieldValues) {
 
-		Stream<String> stream = renderedFormFieldValues.stream();
+		List<String> values = new ArrayList<>();
 
-		List<String> convertedFormFieldValues = stream.flatMap(
-			renderedFormFieldValue -> Arrays.stream(
-				StringUtil.split(renderedFormFieldValue, CharPool.COMMA))
-		).map(
-			String::trim
-		).collect(
-			Collectors.toList()
-		);
+		for (String renderedFormFieldValue : renderedFormFieldValues) {
+			Collections.addAll(
+				values,
+				StringUtil.split(renderedFormFieldValue, CharPool.COMMA));
+		}
 
-		return ListUtil.toList(
-			convertedFormFieldValues,
-			new Function<String, String>() {
+		return TransformUtil.transform(
+			values,
+			value -> {
+				LocalizedValue optionLabel =
+					ddmFormFieldOptions.getOptionLabels(value.trim());
 
-				@Override
-				public String apply(String formFieldValue) {
-					LocalizedValue optionLabel =
-						ddmFormFieldOptions.getOptionLabels(formFieldValue);
-
-					if (optionLabel == null) {
-						return formFieldValue;
-					}
-
-					return optionLabel.getString(_renderRequest.getLocale());
+				if (optionLabel == null) {
+					return value;
 				}
 
+				return optionLabel.getString(_renderRequest.getLocale());
 			});
 	}
 
@@ -647,65 +638,11 @@ public class DDMFormViewFormInstanceRecordsDisplayContext {
 		}
 	}
 
-	private void _setDDMFormInstanceRecordSearchResults(
-		DDMFormInstanceRecordSearch ddmFormInstanceRecordSearch) {
-
-		List<DDMFormInstanceRecord> results;
-
-		int status = WorkflowConstants.STATUS_ANY;
-
-		if (_ddmFormInstance == null) {
-			results = new ArrayList<>();
-		}
-		else if (Validator.isNull(getKeywords())) {
-			results = _ddmFormInstanceRecordLocalService.getFormInstanceRecords(
-				_ddmFormInstance.getFormInstanceId(), status,
-				ddmFormInstanceRecordSearch.getStart(),
-				ddmFormInstanceRecordSearch.getEnd(),
-				ddmFormInstanceRecordSearch.getOrderByComparator());
-		}
-		else {
-			BaseModelSearchResult<DDMFormInstanceRecord> baseModelSearchResult =
-				_ddmFormInstanceRecordLocalService.searchFormInstanceRecords(
-					_getSearchContext(status));
-
-			results = baseModelSearchResult.getBaseModels();
-		}
-
-		ddmFormInstanceRecordSearch.setResults(results);
-	}
-
-	private void _setDDMFormInstanceRecordSearchTotal(
-		DDMFormInstanceRecordSearch ddmFormInstanceRecordSearch) {
-
-		int total;
-
-		int status = WorkflowConstants.STATUS_ANY;
-
-		if (_ddmFormInstance == null) {
-			total = 0;
-		}
-		else if (Validator.isNull(getKeywords())) {
-			total =
-				_ddmFormInstanceRecordLocalService.getFormInstanceRecordsCount(
-					_ddmFormInstance.getFormInstanceId(), status);
-		}
-		else {
-			BaseModelSearchResult<DDMFormInstanceRecord> baseModelSearchResult =
-				_ddmFormInstanceRecordLocalService.searchFormInstanceRecords(
-					_getSearchContext(status));
-
-			total = baseModelSearchResult.getLength();
-		}
-
-		ddmFormInstanceRecordSearch.setTotal(total);
-	}
-
 	private static final int _MAX_COLUMNS = 5;
 
 	private final List<DDMFormField> _ddmFormFields = new ArrayList<>();
-	private final DDMFormFieldTypeServicesTracker
-		_ddmFormFieldTypeServicesTracker;
+	private final DDMFormFieldTypeServicesRegistry
+		_ddmFormFieldTypeServicesRegistry;
 	private final DDMFormInstance _ddmFormInstance;
 	private final DDMFormInstanceRecordLocalService
 		_ddmFormInstanceRecordLocalService;

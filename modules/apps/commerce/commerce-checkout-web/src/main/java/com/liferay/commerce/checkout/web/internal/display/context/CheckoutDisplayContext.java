@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.checkout.web.internal.display.context;
@@ -20,7 +11,7 @@ import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.util.CommerceCheckoutStep;
-import com.liferay.commerce.util.CommerceCheckoutStepServicesTracker;
+import com.liferay.commerce.util.CommerceCheckoutStepRegistry;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -41,14 +32,12 @@ import javax.servlet.jsp.PageContext;
 public class CheckoutDisplayContext {
 
 	public CheckoutDisplayContext(
-			CommerceCheckoutStepServicesTracker
-				commerceCheckoutStepServicesTracker,
+			CommerceCheckoutStepRegistry commerceCheckoutStepRegistry,
 			LiferayPortletRequest liferayPortletRequest,
 			LiferayPortletResponse liferayPortletResponse, Portal portal)
 		throws Exception {
 
-		_commerceCheckoutStepServicesTracker =
-			commerceCheckoutStepServicesTracker;
+		_commerceCheckoutStepRegistry = commerceCheckoutStepRegistry;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
 
@@ -64,13 +53,13 @@ public class CheckoutDisplayContext {
 			liferayPortletRequest, "checkoutStepName");
 
 		CommerceCheckoutStep commerceCheckoutStep =
-			_commerceCheckoutStepServicesTracker.getCommerceCheckoutStep(
+			commerceCheckoutStepRegistry.getCommerceCheckoutStep(
 				checkoutStepName);
 
 		if ((commerceCheckoutStep == null) && (_commerceOrder != null)) {
 			List<CommerceCheckoutStep> commerceCheckoutSteps =
-				_commerceCheckoutStepServicesTracker.getCommerceCheckoutSteps(
-					_httpServletRequest, _httpServletResponse);
+				commerceCheckoutStepRegistry.getCommerceCheckoutSteps(
+					_httpServletRequest, _httpServletResponse, true);
 
 			commerceCheckoutStep = commerceCheckoutSteps.get(0);
 		}
@@ -81,8 +70,8 @@ public class CheckoutDisplayContext {
 	public List<CommerceCheckoutStep> getCommerceCheckoutSteps()
 		throws Exception {
 
-		return _commerceCheckoutStepServicesTracker.getCommerceCheckoutSteps(
-			_httpServletRequest, _httpServletResponse);
+		return _commerceCheckoutStepRegistry.getCommerceCheckoutSteps(
+			_httpServletRequest, _httpServletResponse, true);
 	}
 
 	public String getCommerceOrderUuid() {
@@ -95,10 +84,9 @@ public class CheckoutDisplayContext {
 
 	public String getPreviousCheckoutStepName() throws Exception {
 		CommerceCheckoutStep commerceCheckoutStep =
-			_commerceCheckoutStepServicesTracker.
-				getPreviousCommerceCheckoutStep(
-					_commerceCheckoutStep.getName(), _httpServletRequest,
-					_httpServletResponse);
+			_commerceCheckoutStepRegistry.getPreviousCommerceCheckoutStep(
+				_commerceCheckoutStep.getName(), _httpServletRequest,
+				_httpServletResponse);
 
 		if ((commerceCheckoutStep == null) ||
 			(_commerceCheckoutStep.isOrder() &&
@@ -158,8 +146,7 @@ public class CheckoutDisplayContext {
 	}
 
 	private final CommerceCheckoutStep _commerceCheckoutStep;
-	private final CommerceCheckoutStepServicesTracker
-		_commerceCheckoutStepServicesTracker;
+	private final CommerceCheckoutStepRegistry _commerceCheckoutStepRegistry;
 	private final CommerceOrder _commerceOrder;
 	private final HttpServletRequest _httpServletRequest;
 	private final HttpServletResponse _httpServletResponse;

@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service;
 
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
@@ -35,6 +28,8 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -45,7 +40,6 @@ import java.io.Serializable;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -59,13 +53,15 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see CommercePriceListLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface CommercePriceListLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<CommercePriceList>,
+			PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -128,7 +124,7 @@ public interface CommercePriceListLocalService
 
 	public void checkCommercePriceLists() throws PortalException;
 
-	public void cleanPriceListCache(long companyId);
+	public void cleanPriceListCache();
 
 	/**
 	 * Creates a new commerce price list with the primary key. Does not add the commerce price list to the database.
@@ -291,24 +287,9 @@ public interface CommercePriceListLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList fetchCommercePriceList(long commercePriceListId);
 
-	/**
-	 * Returns the commerce price list with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce price list's external reference code
-	 * @return the matching commerce price list, or <code>null</code> if a matching commerce price list could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList fetchCommercePriceListByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommercePriceListByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePriceList fetchCommercePriceListByReferenceCode(
-		long companyId, String externalReferenceCode);
+		String externalReferenceCode, long companyId);
 
 	/**
 	 * Returns the commerce price list matching the UUID and group.
@@ -368,89 +349,125 @@ public interface CommercePriceListLocalService
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Optional<CommercePriceList> getCommercePriceList(
-			long companyId, long groupId, long commerceAccountId,
+	public CommercePriceList getCommercePriceList(
+			long groupId, long commerceAccountId,
 			long[] commerceAccountGroupIds)
 		throws PortalException;
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList
 		getCommercePriceListByAccountAndChannelAndOrderTypeId(
 			long groupId, long commerceAccountId, long commerceChannelId,
 			long commerceOrderTypeId, String type);
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByAccountAndChannelId(
 		long groupId, long commerceAccountId, long commerceChannelId,
 		String type);
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByAccountAndOrderTypeId(
 		long groupId, long commerceAccountId, long commerceOrderTypeId,
 		String type);
 
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommercePriceList getCommercePriceListByAccountGroupAndOrderTypeId(
-		long groupId, long[] commerceAccountGroupIds, long commerceOrderTypeId,
-		String type);
-
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByAccountGroupIds(
 		long groupId, long[] commerceAccountGroupIds, String type);
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList
 		getCommercePriceListByAccountGroupsAndChannelAndOrderTypeId(
 			long groupId, long[] commerceAccountGroupIds,
 			long commerceChannelId, long commerceOrderTypeId, String type);
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByAccountGroupsAndChannelId(
 		long groupId, long[] commerceAccountGroupIds, long commerceChannelId,
 		String type);
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByAccountGroupsAndOrderTypeId(
 		long groupId, long[] commerceAccountGroupIds, long commerceOrderTypeId,
 		String type);
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByAccountId(
 		long groupId, long commerceAccountId, String type);
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByChannelAndOrderTypeId(
 		long groupId, long commerceChannelId, long commerceOrderTypeId,
 		String type);
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByChannelId(
 		long groupId, long commerceChannelId, String type);
 
-	/**
-	 * Returns the commerce price list with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce price list's external reference code
-	 * @return the matching commerce price list
-	 * @throws PortalException if a matching commerce price list could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByLowestPrice(
 			long groupId, long commerceAccountId,
 			long[] commerceAccountGroupIds, long commerceChannelId,
-			long commerceOrderTypeId, String cPInstanceUuid, String type)
+			long commerceOrderTypeId, String cPInstanceUuid, String type,
+			String unitOfMeasureKey)
 		throws PortalException;
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByOrderTypeId(
 		long groupId, long commerceOrderTypeId, String type);
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommercePriceList getCommercePriceListByUnqualified(
 		long groupId, String type);
@@ -494,6 +511,65 @@ public interface CommercePriceListLocalService
 	public List<CommercePriceList> getCommercePriceLists(
 		long[] groupIds, long companyId, int status, int start, int end,
 		OrderByComparator<CommercePriceList> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList>
+		getCommercePriceListsByAccountAndChannelAndOrderTypeId(
+			long groupId, long commerceAccountId, long commerceChannelId,
+			long commerceOrderTypeId, String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList> getCommercePriceListsByAccountAndChannelId(
+		long groupId, long commerceAccountId, long commerceChannelId,
+		String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList> getCommercePriceListsByAccountAndOrderTypeId(
+		long groupId, long commerceAccountId, long commerceOrderTypeId,
+		String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList> getCommercePriceListsByAccountGroupIds(
+		long groupId, long[] commerceAccountGroupIds, String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList>
+		getCommercePriceListsByAccountGroupsAndChannelAndOrderTypeId(
+			long groupId, long[] commerceAccountGroupIds,
+			long commerceChannelId, long commerceOrderTypeId, String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList>
+		getCommercePriceListsByAccountGroupsAndChannelId(
+			long groupId, long[] commerceAccountGroupIds,
+			long commerceChannelId, String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList>
+		getCommercePriceListsByAccountGroupsAndOrderTypeId(
+			long groupId, long[] commerceAccountGroupIds,
+			long commerceOrderTypeId, String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList> getCommercePriceListsByAccountId(
+		long groupId, long commerceAccountId, String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList> getCommercePriceListsByChannelAndOrderTypeId(
+		long groupId, long commerceChannelId, long commerceOrderTypeId,
+		String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList> getCommercePriceListsByChannelId(
+		long groupId, long commerceChannelId, String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList> getCommercePriceListsByOrderTypeId(
+		long groupId, long commerceOrderTypeId, String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommercePriceList> getCommercePriceListsByUnqualified(
+		long groupId, String type);
 
 	/**
 	 * Returns all the commerce price lists matching the UUID and company.
@@ -637,5 +713,20 @@ public interface CommercePriceListLocalService
 			ServiceContext serviceContext,
 			Map<String, Serializable> workflowContext)
 		throws PortalException;
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<CommercePriceList> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<CommercePriceList> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CommercePriceList>, R, E>
+				updateUnsafeFunction)
+		throws E;
 
 }

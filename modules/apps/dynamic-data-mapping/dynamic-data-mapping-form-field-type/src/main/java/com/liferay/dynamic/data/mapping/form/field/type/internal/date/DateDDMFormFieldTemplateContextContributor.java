@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.date;
@@ -19,10 +10,10 @@ import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTy
 import com.liferay.dynamic.data.mapping.form.field.type.internal.util.DDMFormFieldTypeUtil;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.CalendarUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.LocaleThreadLocal;
 
 import java.time.DayOfWeek;
 import java.time.temporal.WeekFields;
@@ -31,25 +22,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Marcellus Tavares
  */
 @Component(
-	immediate = true,
 	property = {
 		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.DATE,
 		"ddm.form.field.type.name=" + DDMFormFieldTypeConstants.DATE_TIME
 	},
-	service = {
-		DateDDMFormFieldTemplateContextContributor.class,
-		DDMFormFieldTemplateContextContributor.class
-	}
+	service = DDMFormFieldTemplateContextContributor.class
 )
 public class DateDDMFormFieldTemplateContextContributor
 	implements DDMFormFieldTemplateContextContributor {
@@ -60,35 +47,36 @@ public class DateDDMFormFieldTemplateContextContributor
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
 
 		return HashMapBuilder.<String, Object>put(
-			"firstDayOfWeek", _getFirstDayOfWeek()
+			"firstDayOfWeek",
+			_getFirstDayOfWeek(ddmFormFieldRenderingContext.getLocale())
 		).put(
 			"months",
 			Arrays.asList(
 				CalendarUtil.getMonths(
-					LocaleThreadLocal.getThemeDisplayLocale()))
+					ddmFormFieldRenderingContext.getLocale()))
 		).put(
 			"predefinedValue",
 			DDMFormFieldTypeUtil.getPropertyValue(
 				ddmFormField, ddmFormFieldRenderingContext.getLocale(),
 				"predefinedValue")
 		).put(
+			"tooltip",
+			DDMFormFieldTypeUtil.getPropertyValue(
+				ddmFormField, ddmFormFieldRenderingContext.getLocale(),
+				"tooltip")
+		).put(
 			"weekdaysShort",
-			Stream.of(
-				CalendarUtil.DAYS_ABBREVIATION
-			).map(
-				day -> LanguageUtil.get(
-					LocaleThreadLocal.getThemeDisplayLocale(), day)
-			).collect(
-				Collectors.toList()
-			)
+			TransformUtil.transformToList(
+				CalendarUtil.DAYS_ABBREVIATION,
+				day -> _language.get(
+					ddmFormFieldRenderingContext.getLocale(), day))
 		).put(
 			"years", _getYears()
 		).build();
 	}
 
-	private int _getFirstDayOfWeek() {
-		WeekFields weekFields = WeekFields.of(
-			LocaleThreadLocal.getThemeDisplayLocale());
+	private int _getFirstDayOfWeek(Locale locale) {
+		WeekFields weekFields = WeekFields.of(locale);
 
 		DayOfWeek dayOfWeek = weekFields.getFirstDayOfWeek();
 
@@ -110,5 +98,8 @@ public class DateDDMFormFieldTemplateContextContributor
 
 		return years;
 	}
+
+	@Reference
+	private Language _language;
 
 }

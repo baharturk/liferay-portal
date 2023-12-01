@@ -1,31 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-portlet-kaleo-designer',
 	(A) => {
-		var DiagramBuilder = A.DiagramBuilder;
-		var Lang = A.Lang;
+		const DiagramBuilder = A.DiagramBuilder;
+		const Lang = A.Lang;
 
-		var DefinitionDiagramController =
+		const DefinitionDiagramController =
 			Liferay.KaleoDesignerDefinitionDiagramController;
-		var KaleoDesignerEditors = Liferay.KaleoDesignerEditors;
-		var KaleoDesignerStrings = Liferay.KaleoDesignerStrings;
-		var XMLUtil = Liferay.XMLUtil;
+		const KaleoDesignerEditors = Liferay.KaleoDesignerEditors;
+		const KaleoDesignerStrings = Liferay.KaleoDesignerStrings;
+		const XMLUtil = Liferay.XMLUtil;
 
-		var isObject = Lang.isObject;
+		const isObject = Lang.isObject;
 
-		var STR_BLANK = '';
+		const STR_BLANK = '';
 
-		var PropertyListFormatter =
+		const PropertyListFormatter =
 			Liferay.KaleoDesignerUtils.PropertyListFormatter;
 
 		// Updates icons to produce lexicon SVG markup instead of default glyphicon
@@ -42,7 +36,7 @@ AUI.add(
 			'{cssClass}'
 		);
 
-		var KaleoDesigner = A.Component.create({
+		const KaleoDesigner = A.Component.create({
 			ATTRS: {
 				aceEditorConfig: {
 					setter: '_setAceEditor',
@@ -123,7 +117,7 @@ AUI.add(
 
 			prototype: {
 				_afterRenderKaleoDesigner() {
-					var instance = this;
+					const instance = this;
 
 					instance.connectDefinitionFields();
 
@@ -136,9 +130,9 @@ AUI.add(
 				},
 
 				_afterRenderSettings() {
-					var instance = this;
+					const instance = this;
 
-					var dataTable = instance.propertyList;
+					const dataTable = instance.propertyList;
 
 					dataTable.after(
 						A.bind(
@@ -151,19 +145,22 @@ AUI.add(
 
 					// Dynamically removes unnecessary icons from editor toolbar buttons
 
-					var defaultGetEditorFn = dataTable.getEditor;
+					const defaultGetEditorFn = dataTable.getEditor;
 
 					dataTable.getEditor = function () {
-						var editor = defaultGetEditorFn.apply(this, arguments);
+						const editor = defaultGetEditorFn.apply(
+							this,
+							arguments
+						);
 
 						if (editor) {
-							var defaultSetToolbarFn = A.bind(
+							const defaultSetToolbarFn = A.bind(
 								editor._setToolbar,
 								editor
 							);
 
 							editor._setToolbar = function (val) {
-								var toolbar = defaultSetToolbarFn(val);
+								const toolbar = defaultSetToolbarFn(val);
 
 								if (toolbar && toolbar.children) {
 									toolbar.children = toolbar.children.map(
@@ -190,14 +187,14 @@ AUI.add(
 				},
 
 				_afterRenderSettingsTableBody() {
-					var instance = this;
+					const instance = this;
 
 					instance._fixTableWidth();
 				},
 
 				_afterSelectionChangeKaleoDesigner(event) {
-					var instance = this;
-					var tabContentNode = event.newVal.get('boundingBox');
+					const instance = this;
+					const tabContentNode = event.newVal.get('boundingBox');
 
 					if (instance.get('rendered')) {
 						instance.stopEditing();
@@ -222,13 +219,13 @@ AUI.add(
 				},
 
 				_fixTableWidth() {
-					var instance = this;
+					const instance = this;
 
 					instance.propertyList._tableNode.setStyle('width', '100%');
 				},
 
 				_onDestroyPortlet() {
-					var instance = this;
+					const instance = this;
 
 					const baseCellEditor = document.querySelector(
 						'.basecelleditor'
@@ -247,12 +244,12 @@ AUI.add(
 				},
 
 				_renderContentTabs() {
-					var instance = this;
+					const instance = this;
 
 					instance.closeEditProperties();
 
 					if (!instance.contentTabView) {
-						var contentTabView = new A.TabView(
+						const contentTabView = new A.TabView(
 							instance.get('contentTabView')
 						);
 
@@ -270,11 +267,11 @@ AUI.add(
 				},
 
 				_setAceEditor(val) {
-					var instance = this;
+					const instance = this;
 
-					var portletNamespace = instance.get('portletNamespace');
+					const portletNamespace = instance.get('portletNamespace');
 
-					var canvasRegion = instance.canvasRegion;
+					const canvasRegion = instance.canvasRegion;
 
 					return {
 						boundingBox: '#' + portletNamespace + 'editorWrapper',
@@ -287,15 +284,15 @@ AUI.add(
 				},
 
 				_setContentTabView(val) {
-					var instance = this;
+					const instance = this;
 
-					var boundingBox = instance.get('boundingBox');
+					const boundingBox = instance.get('boundingBox');
 
-					var contentTabListNode = boundingBox.one(
+					const contentTabListNode = boundingBox.one(
 						'.tabbable .nav-tabs'
 					);
 
-					var defaultValue = {
+					const defaultValue = {
 						after: {
 							selectionChange: A.bind(
 								instance._afterSelectionChangeKaleoDesigner,
@@ -315,7 +312,7 @@ AUI.add(
 					};
 
 					if (!contentTabListNode) {
-						var strings = instance.getStrings();
+						const strings = instance.getStrings();
 
 						defaultValue.items = [
 							{
@@ -331,7 +328,7 @@ AUI.add(
 				},
 
 				_setDefinition(val) {
-					var instance = this;
+					const instance = this;
 
 					instance.definitionController = new DefinitionDiagramController(
 						encodeURIComponent(val),
@@ -342,10 +339,10 @@ AUI.add(
 				},
 
 				_uiSetAvailableFields() {
-					var instance = this;
+					const instance = this;
 
-					var disabled = instance.get('disabled');
-					var fieldsNode = instance.fieldsNode;
+					const disabled = instance.get('disabled');
+					const fieldsNode = instance.fieldsNode;
 
 					if (fieldsNode) {
 						if (disabled) {
@@ -365,7 +362,7 @@ AUI.add(
 				},
 
 				_uiSetDefinition() {
-					var instance = this;
+					const instance = this;
 
 					instance.clearFields();
 
@@ -380,22 +377,22 @@ AUI.add(
 				},
 
 				connectDefinitionFields() {
-					var instance = this;
+					const instance = this;
 
-					var connectors = instance.definitionController.getConnectors();
+					const connectors = instance.definitionController.getConnectors();
 
 					instance.connectAll(connectors);
 				},
 
 				createField(val) {
-					var instance = this;
+					const instance = this;
 
-					var field = KaleoDesigner.superclass.createField.call(
+					const field = KaleoDesigner.superclass.createField.call(
 						instance,
 						val
 					);
 
-					var controlsToolbar = field.get('controlsToolbar');
+					const controlsToolbar = field.get('controlsToolbar');
 
 					controlsToolbar.children[0].icon = 'times';
 
@@ -405,15 +402,15 @@ AUI.add(
 				},
 
 				destructor() {
-					var instance = this;
+					const instance = this;
 
-					var dataTable = instance.propertyList;
+					const dataTable = instance.propertyList;
 
 					if (dataTable) {
-						var data = dataTable.get('data');
+						const data = dataTable.get('data');
 
-						for (var i = 0; i < data.size(); i++) {
-							var editor = data.item(i).get('editor');
+						for (let i = 0; i < data.size(); i++) {
+							const editor = data.item(i).get('editor');
 
 							if (editor) {
 								editor.destroy();
@@ -423,7 +420,7 @@ AUI.add(
 				},
 
 				editNode(diagramNode) {
-					var instance = this;
+					const instance = this;
 
 					if (diagramNode.getProperties()) {
 						KaleoDesigner.superclass.editNode.apply(
@@ -439,7 +436,7 @@ AUI.add(
 				},
 
 				getContent() {
-					var instance = this;
+					const instance = this;
 
 					const draftVersionInput = document.getElementById(
 						instance.get('portletNamespace') + 'draftVersion'
@@ -452,15 +449,15 @@ AUI.add(
 				},
 
 				getEditorContent() {
-					var instance = this;
+					const instance = this;
 
-					var editor = instance.editor;
+					const editor = instance.editor;
 
 					return editor.get('value');
 				},
 
 				initializer(config) {
-					var instance = this;
+					const instance = this;
 
 					instance.definitionController = new DefinitionDiagramController(
 						encodeURIComponent(config.definition),
@@ -521,17 +518,17 @@ AUI.add(
 				},
 
 				setEditorContent(content) {
-					var instance = this;
+					const instance = this;
 
-					var editor = instance.editor;
+					const editor = instance.editor;
 
 					editor.set('value', content);
 				},
 
 				showEditor() {
-					var instance = this;
+					const instance = this;
 
-					var editor = instance.editor;
+					let editor = instance.editor;
 
 					if (!editor) {
 						editor = new A.AceEditor(
@@ -541,7 +538,7 @@ AUI.add(
 						instance.editor = editor;
 					}
 
-					var content = instance.get('definition');
+					let content = instance.get('definition');
 
 					if (!content || XMLUtil.validateDefinition(content)) {
 						content = instance.getContent();
@@ -616,9 +613,9 @@ AUI.add(
 
 			KALEO_FORMS_EDIT: {
 				task(model, parentModel) {
-					var instance = this;
+					const instance = this;
 
-					var strings = instance.getStrings();
+					const strings = instance.getStrings();
 
 					return parentModel.concat(model).concat([
 						{

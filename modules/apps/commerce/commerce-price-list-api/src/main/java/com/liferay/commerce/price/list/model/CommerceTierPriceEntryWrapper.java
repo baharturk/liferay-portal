@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.model;
@@ -23,6 +14,8 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -48,6 +41,7 @@ public class CommerceTierPriceEntryWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put(
@@ -83,6 +77,12 @@ public class CommerceTierPriceEntryWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
 		}
 
 		String uuid = (String)attributes.get("uuid");
@@ -189,7 +189,7 @@ public class CommerceTierPriceEntryWrapper
 			setDiscountLevel4(discountLevel4);
 		}
 
-		Integer minQuantity = (Integer)attributes.get("minQuantity");
+		BigDecimal minQuantity = (BigDecimal)attributes.get("minQuantity");
 
 		if (minQuantity != null) {
 			setMinQuantity(minQuantity);
@@ -291,6 +291,16 @@ public class CommerceTierPriceEntryWrapper
 	}
 
 	/**
+	 * Returns the ct collection ID of this commerce tier price entry.
+	 *
+	 * @return the ct collection ID of this commerce tier price entry
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
+	}
+
+	/**
 	 * Returns the discount discovery of this commerce tier price entry.
 	 *
 	 * @return the discount discovery of this commerce tier price entry
@@ -386,7 +396,7 @@ public class CommerceTierPriceEntryWrapper
 	 * @return the min quantity of this commerce tier price entry
 	 */
 	@Override
-	public int getMinQuantity() {
+	public BigDecimal getMinQuantity() {
 		return model.getMinQuantity();
 	}
 
@@ -682,6 +692,16 @@ public class CommerceTierPriceEntryWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this commerce tier price entry.
+	 *
+	 * @param ctCollectionId the ct collection ID of this commerce tier price entry
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
 	 * Sets whether this commerce tier price entry is discount discovery.
 	 *
 	 * @param discountDiscovery the discount discovery of this commerce tier price entry
@@ -777,7 +797,7 @@ public class CommerceTierPriceEntryWrapper
 	 * @param minQuantity the min quantity of this commerce tier price entry
 	 */
 	@Override
-	public void setMinQuantity(int minQuantity) {
+	public void setMinQuantity(BigDecimal minQuantity) {
 		model.setMinQuantity(minQuantity);
 	}
 
@@ -919,6 +939,25 @@ public class CommerceTierPriceEntryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CommerceTierPriceEntry, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CommerceTierPriceEntry, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

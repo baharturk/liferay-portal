@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.content.web.internal.portlet.action;
@@ -45,6 +36,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.trash.TrashHelper;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
@@ -52,7 +44,6 @@ import javax.portlet.PortletConfig;
 import javax.portlet.PortletRequest;
 import javax.portlet.PortletResponse;
 
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -65,7 +56,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Raymond Augé
  */
 @Component(
-	immediate = true,
 	property = "javax.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT,
 	service = ConfigurationAction.class
 )
@@ -92,18 +82,19 @@ public class JournalContentConfigurationAction
 				JavaConstants.JAVAX_PORTLET_RESPONSE);
 
 		httpServletRequest.setAttribute(
-			JournalWebKeys.ITEM_SELECTOR, _itemSelector);
+			ItemSelector.class.getName(), _itemSelector);
 		httpServletRequest.setAttribute(
 			JournalWebKeys.JOURNAL_CONTENT, _journalContent);
 
 		try {
 			JournalContentDisplayContext.create(
 				portletRequest, portletResponse, _CLASS_NAME_ID,
-				_ddmTemplateModelResourcePermission);
+				_ddmTemplateModelResourcePermission, _itemSelector,
+				_trashHelper);
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -140,15 +131,6 @@ public class JournalContentConfigurationAction
 		_addDDMTemplateLinks(actionRequest);
 
 		super.processAction(portletConfig, actionRequest, actionResponse);
-	}
-
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.journal.content.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
 	}
 
 	private void _addDDMTemplateLinks(ActionRequest actionRequest)
@@ -272,5 +254,8 @@ public class JournalContentConfigurationAction
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private TrashHelper _trashHelper;
 
 }

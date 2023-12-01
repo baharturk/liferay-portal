@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fedex.internal;
@@ -29,8 +20,8 @@ import com.liferay.commerce.service.CommerceShippingMethodLocalService;
 import com.liferay.commerce.shipping.engine.fedex.internal.helper.FedExCommerceShippingOptionHelper;
 import com.liferay.commerce.shipping.origin.locator.CommerceShippingOriginLocator;
 import com.liferay.commerce.util.CommerceShippingHelper;
-import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
 import java.util.Collections;
@@ -46,7 +37,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = "commerce.shipping.engine.key=" + FedExCommerceShippingEngine.KEY,
 	service = CommerceShippingEngine.class
 )
@@ -62,6 +52,47 @@ public class FedExCommerceShippingEngine implements CommerceShippingEngine {
 
 	@Override
 	public List<CommerceShippingOption> getCommerceShippingOptions(
+			CommerceContext commerceContext, CommerceOrder commerceOrder,
+			Locale locale)
+		throws CommerceShippingEngineException {
+
+		return _getCommerceShippingOptions(
+			commerceContext, commerceOrder, locale);
+	}
+
+	@Override
+	public String getDescription(Locale locale) {
+		return _language.get(_getResourceBundle(locale), "fedex-description");
+	}
+
+	@Override
+	public List<CommerceShippingOption> getEnabledCommerceShippingOptions(
+			CommerceContext commerceContext, CommerceOrder commerceOrder,
+			Locale locale)
+		throws CommerceShippingEngineException {
+
+		return _getCommerceShippingOptions(
+			commerceContext, commerceOrder, locale);
+	}
+
+	@Override
+	public String getName(Locale locale) {
+		return _language.get(_getResourceBundle(locale), "fedex");
+	}
+
+	private long _getCommerceShippingMethodId(CommerceOrder commerceOrder) {
+		CommerceShippingMethod commerceShippingMethod =
+			_commerceShippingMethodLocalService.fetchCommerceShippingMethod(
+				commerceOrder.getGroupId(), KEY);
+
+		if (commerceShippingMethod == null) {
+			return 0;
+		}
+
+		return commerceShippingMethod.getCommerceShippingMethodId();
+	}
+
+	private List<CommerceShippingOption> _getCommerceShippingOptions(
 			CommerceContext commerceContext, CommerceOrder commerceOrder,
 			Locale locale)
 		throws CommerceShippingEngineException {
@@ -102,29 +133,6 @@ public class FedExCommerceShippingEngine implements CommerceShippingEngine {
 		}
 	}
 
-	@Override
-	public String getDescription(Locale locale) {
-		return LanguageUtil.get(
-			_getResourceBundle(locale), "fedex-description");
-	}
-
-	@Override
-	public String getName(Locale locale) {
-		return LanguageUtil.get(_getResourceBundle(locale), "fedex");
-	}
-
-	private long _getCommerceShippingMethodId(CommerceOrder commerceOrder) {
-		CommerceShippingMethod commerceShippingMethod =
-			_commerceShippingMethodLocalService.fetchCommerceShippingMethod(
-				commerceOrder.getGroupId(), KEY);
-
-		if (commerceShippingMethod == null) {
-			return 0;
-		}
-
-		return commerceShippingMethod.getCommerceShippingMethodId();
-	}
-
 	private ResourceBundle _getResourceBundle(Locale locale) {
 		return ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
@@ -155,5 +163,8 @@ public class FedExCommerceShippingEngine implements CommerceShippingEngine {
 
 	@Reference
 	private CPMeasurementUnitLocalService _cpMeasurementUnitLocalService;
+
+	@Reference
+	private Language _language;
 
 }

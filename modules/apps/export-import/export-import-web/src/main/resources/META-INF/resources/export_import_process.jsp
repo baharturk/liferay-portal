@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,13 +10,9 @@
 <%
 String backURL = ParamUtil.getString(request, "backURL");
 
-long backgroundTaskId = ParamUtil.getLong(request, "backgroundTaskId");
+ExportImportProcessDisplayContext exportImportProcessDisplayContext = new ExportImportProcessDisplayContext(request);
 
-BackgroundTask backgroundTask = null;
-
-if (backgroundTaskId > 0) {
-	backgroundTask = BackgroundTaskManagerUtil.getBackgroundTask(backgroundTaskId);
-}
+BackgroundTask backgroundTask = exportImportProcessDisplayContext.getBackgroundTask();
 
 if (Validator.isNotNull(backURL)) {
 	portletDisplay.setShowBackIcon(true);
@@ -34,25 +21,8 @@ if (Validator.isNotNull(backURL)) {
 %>
 
 <liferay-ui:search-container
-	emptyResultsMessage="no-processes-were-found"
+	searchContainer="<%= exportImportProcessDisplayContext.getSearchContainer() %>"
 >
-	<liferay-ui:search-container-results>
-
-		<%
-		List<BackgroundTask> backgroundTasks = new ArrayList<>();
-		int backgroundTasksCount = 0;
-
-		if (backgroundTask != null) {
-			backgroundTasks.add(backgroundTask);
-			backgroundTasksCount = 1;
-		}
-
-		searchContainer.setResults(backgroundTasks);
-		searchContainer.setTotal(backgroundTasksCount);
-		%>
-
-	</liferay-ui:search-container-results>
-
 	<liferay-ui:search-container-row
 		className="com.liferay.portal.kernel.backgroundtask.BackgroundTask"
 		keyProperty="backgroundTaskId"
@@ -66,7 +36,7 @@ if (Validator.isNotNull(backURL)) {
 		%>
 
 		<liferay-ui:search-container-column-text>
-			<liferay-ui:user-portrait
+			<liferay-user:user-portrait
 				userId="<%= curBackgroundTask.getUserId() %>"
 			/>
 		</liferay-ui:search-container-column-text>
@@ -94,7 +64,7 @@ if (Validator.isNotNull(backURL)) {
 			</h6>
 
 			<h5>
-				<span id="<%= liferayPortletResponse.getNamespace() + "backgroundTaskName" + String.valueOf(backgroundTask.getBackgroundTaskId()) %>">
+				<span id="<portlet:namespace />backgroundTaskName<%= String.valueOf(backgroundTask.getBackgroundTaskId()) %>">
 					<%= HtmlUtil.escape(backgroundTaskName) %>
 				</span>
 
@@ -166,7 +136,7 @@ if (Validator.isNotNull(backURL)) {
 
 			<c:if test="<%= Validator.isNotNull(curBackgroundTask.getStatusMessage()) %>">
 				<h6 class="background-task-status-row">
-					<a class="details-link" href="javascript:;" onclick="<portlet:namespace />viewBackgroundTaskDetails(<%= curBackgroundTask.getBackgroundTaskId() %>);">
+					<a class="details-link" href="javascript:void(0);" onclick="<portlet:namespace />viewBackgroundTaskDetails(<%= curBackgroundTask.getBackgroundTaskId() %>);">
 						<liferay-ui:message key="see-more-details" />
 					</a>
 				</h6>
@@ -187,16 +157,16 @@ if (Validator.isNotNull(backURL)) {
 </liferay-ui:search-container>
 
 <%
-int incompleteBackgroundTaskCount = 0;
+int incompleteBackgroundTasksCount = 0;
 
 if ((backgroundTask != null) && backgroundTask.isInProgress()) {
-	incompleteBackgroundTaskCount = 1;
+	incompleteBackgroundTasksCount = 1;
 }
 %>
 
 <div class="hide incomplete-process-message">
 	<liferay-util:include page="/incomplete_processes_message.jsp" servletContext="<%= application %>">
-		<liferay-util:param name="incompleteBackgroundTaskCount" value="<%= String.valueOf(incompleteBackgroundTaskCount) %>" />
+		<liferay-util:param name="incompleteBackgroundTasksCount" value="<%= String.valueOf(incompleteBackgroundTasksCount) %>" />
 	</liferay-util:include>
 </div>
 

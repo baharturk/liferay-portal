@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.search.bar.portlet.helper;
@@ -20,18 +11,17 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.service.PortletLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.search.web.constants.SearchBarPortletKeys;
 import com.liferay.portal.search.web.internal.portlet.preferences.PortletPreferencesLookup;
 import com.liferay.portal.search.web.internal.search.bar.portlet.SearchBarPortletPreferences;
-import com.liferay.portal.search.web.internal.search.bar.portlet.configuration.SearchBarPortletInstanceConfiguration;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import javax.portlet.PortletPreferences;
 
@@ -41,9 +31,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Joshua Cords
@@ -58,8 +46,6 @@ public class SearchBarPrecedenceHelperTest {
 
 	@Before
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
-
 		Layout layout = _createLayout(_portlets);
 
 		_layout = layout;
@@ -168,8 +154,7 @@ public class SearchBarPrecedenceHelperTest {
 		_portlets.add(portlet);
 
 		Mockito.doReturn(
-			Optional.ofNullable(
-				_createPortletPreferences(federatedSearchKey, _DESTINATION))
+			_createPortletPreferences(federatedSearchKey, _DESTINATION)
 		).when(
 			_portletPreferencesLookup
 		).fetchPreferences(
@@ -246,12 +231,10 @@ public class SearchBarPrecedenceHelperTest {
 	private PortletDisplay _createPortletDisplay() throws Exception {
 		PortletDisplay portletDisplay = Mockito.mock(PortletDisplay.class);
 
-		Mockito.doReturn(
-			Mockito.mock(SearchBarPortletInstanceConfiguration.class)
-		).when(
-			portletDisplay
-		).getPortletInstanceConfiguration(
-			Mockito.any()
+		Mockito.when(
+			portletDisplay.getPortletResource()
+		).thenReturn(
+			"test"
 		);
 
 		return portletDisplay;
@@ -286,9 +269,11 @@ public class SearchBarPrecedenceHelperTest {
 		SearchBarPrecedenceHelper searchBarPrecedenceHelper =
 			new SearchBarPrecedenceHelper();
 
-		searchBarPrecedenceHelper.setPortletLocalService(_portletLocalService);
-
-		searchBarPrecedenceHelper.setPortletPreferencesLookup(
+		ReflectionTestUtil.setFieldValue(
+			searchBarPrecedenceHelper, "_portletLocalService",
+			_portletLocalService);
+		ReflectionTestUtil.setFieldValue(
+			searchBarPrecedenceHelper, "_portletPreferencesLookup",
 			_portletPreferencesLookup);
 
 		return searchBarPrecedenceHelper;
@@ -329,13 +314,10 @@ public class SearchBarPrecedenceHelperTest {
 	private static final String _DESTINATION = RandomTestUtil.randomString();
 
 	private Layout _layout;
-
-	@Mock
-	private PortletLocalService _portletLocalService;
-
-	@Mock
-	private PortletPreferencesLookup _portletPreferencesLookup;
-
+	private final PortletLocalService _portletLocalService = Mockito.mock(
+		PortletLocalService.class);
+	private final PortletPreferencesLookup _portletPreferencesLookup =
+		Mockito.mock(PortletPreferencesLookup.class);
 	private final List<Portlet> _portlets = new ArrayList<>();
 	private SearchBarPrecedenceHelper _searchBarPrecedenceHelper;
 	private ThemeDisplay _themeDisplay;

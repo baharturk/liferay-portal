@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.service.base;
@@ -17,21 +8,18 @@ package com.liferay.batch.planner.service.base;
 import com.liferay.batch.planner.model.BatchPlannerMapping;
 import com.liferay.batch.planner.service.BatchPlannerMappingService;
 import com.liferay.batch.planner.service.BatchPlannerMappingServiceUtil;
-import com.liferay.batch.planner.service.persistence.BatchPlannerLogPersistence;
 import com.liferay.batch.planner.service.persistence.BatchPlannerMappingPersistence;
-import com.liferay.batch.planner.service.persistence.BatchPlannerPlanPersistence;
-import com.liferay.batch.planner.service.persistence.BatchPlannerPolicyPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.BaseServiceImpl;
 import com.liferay.portal.kernel.util.PortalUtil;
-
-import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -60,7 +48,7 @@ public abstract class BatchPlannerMappingServiceBaseImpl
 	 */
 	@Deactivate
 	protected void deactivate() {
-		_setServiceUtilService(null);
+		BatchPlannerMappingServiceUtil.setService(null);
 	}
 
 	@Override
@@ -74,7 +62,7 @@ public abstract class BatchPlannerMappingServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		batchPlannerMappingService = (BatchPlannerMappingService)aopProxy;
 
-		_setServiceUtilService(batchPlannerMappingService);
+		BatchPlannerMappingServiceUtil.setService(batchPlannerMappingService);
 	}
 
 	/**
@@ -120,25 +108,6 @@ public abstract class BatchPlannerMappingServiceBaseImpl
 		}
 	}
 
-	private void _setServiceUtilService(
-		BatchPlannerMappingService batchPlannerMappingService) {
-
-		try {
-			Field field = BatchPlannerMappingServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, batchPlannerMappingService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
-	@Reference
-	protected BatchPlannerLogPersistence batchPlannerLogPersistence;
-
 	@Reference
 	protected com.liferay.batch.planner.service.BatchPlannerMappingLocalService
 		batchPlannerMappingLocalService;
@@ -149,32 +118,10 @@ public abstract class BatchPlannerMappingServiceBaseImpl
 	protected BatchPlannerMappingPersistence batchPlannerMappingPersistence;
 
 	@Reference
-	protected BatchPlannerPlanPersistence batchPlannerPlanPersistence;
-
-	@Reference
-	protected BatchPlannerPolicyPersistence batchPlannerPolicyPersistence;
-
-	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameService
-		classNameService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserService userService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		BatchPlannerMappingServiceBaseImpl.class);
 
 }

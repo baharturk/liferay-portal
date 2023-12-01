@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.translation.web.internal.portlet.action;
 
 import com.liferay.info.field.InfoFieldValue;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
 import com.liferay.petra.string.StringPool;
@@ -26,6 +18,7 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.translation.constants.TranslationPortletKeys;
 import com.liferay.translation.service.TranslationEntryLocalService;
 import com.liferay.translation.web.internal.display.context.ImportTranslationDisplayContext;
@@ -63,7 +56,8 @@ public class ImportTranslationMVCRenderCommand implements MVCRenderCommand {
 
 			TranslationRequestHelper translationRequestHelper =
 				new TranslationRequestHelper(
-					_infoItemServiceTracker, renderRequest);
+					_infoItemServiceRegistry, renderRequest,
+					_segmentsExperienceLocalService);
 
 			renderRequest.setAttribute(
 				ImportTranslationDisplayContext.class.getName(),
@@ -92,10 +86,12 @@ public class ImportTranslationMVCRenderCommand implements MVCRenderCommand {
 		throws PortalException {
 
 		InfoItemObjectProvider<Object> infoItemObjectProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
-				InfoItemObjectProvider.class, className);
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemObjectProvider.class, className,
+				ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
-		return infoItemObjectProvider.getInfoItem(classPK);
+		return infoItemObjectProvider.getInfoItem(
+			new ClassPKInfoItemIdentifier(classPK));
 	}
 
 	private String _getTitle(String className, long[] classPKs, Locale locale)
@@ -106,7 +102,7 @@ public class ImportTranslationMVCRenderCommand implements MVCRenderCommand {
 		}
 
 		InfoItemFieldValuesProvider<Object> infoItemFieldValuesProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
+			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFieldValuesProvider.class, className);
 
 		InfoFieldValue<Object> infoFieldValue = _getTitleInfoFieldValue(
@@ -130,10 +126,13 @@ public class ImportTranslationMVCRenderCommand implements MVCRenderCommand {
 	}
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	@Reference
 	private TranslationEntryLocalService _translationEntryLocalService;

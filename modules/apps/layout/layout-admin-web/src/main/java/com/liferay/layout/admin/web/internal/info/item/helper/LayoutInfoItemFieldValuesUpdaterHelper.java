@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.info.item.helper;
@@ -29,9 +20,8 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
+import com.liferay.segments.service.SegmentsExperienceLocalServiceUtil;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -164,7 +154,7 @@ public class LayoutInfoItemFieldValuesUpdaterHelper {
 			if (jsonObject != null) {
 				FragmentEntryLink fragmentEntryLink = entry.getKey();
 
-				fragmentEntryLink.setEditableValues(jsonObject.toJSONString());
+				fragmentEntryLink.setEditableValues(jsonObject.toString());
 
 				_fragmentEntryLinkLocalService.updateFragmentEntryLink(
 					fragmentEntryLink);
@@ -180,7 +170,11 @@ public class LayoutInfoItemFieldValuesUpdaterHelper {
 			return null;
 		}
 
-		if (segmentsExperienceId == SegmentsExperienceConstants.ID_DEFAULT) {
+		long defaultSegmentsExperienceId =
+			SegmentsExperienceLocalServiceUtil.fetchDefaultSegmentsExperienceId(
+				layout.getPlid());
+
+		if (segmentsExperienceId == defaultSegmentsExperienceId) {
 			layout.setNameMap(
 				_getFieldMap(
 					LayoutInfoItemFields.nameInfoField.getName(),
@@ -189,14 +183,6 @@ public class LayoutInfoItemFieldValuesUpdaterHelper {
 
 		if (layout.isDraftLayout()) {
 			layout.setStatus(WorkflowConstants.STATUS_DRAFT);
-
-			UnicodeProperties unicodeProperties =
-				layout.getTypeSettingsProperties();
-
-			unicodeProperties.setProperty(
-				"published", Boolean.FALSE.toString());
-
-			layout.setTypeSettingsProperties(unicodeProperties);
 		}
 
 		return _layoutLocalService.updateLayout(layout);

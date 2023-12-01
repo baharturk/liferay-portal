@@ -1,26 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.resource.v1_0;
 
-import com.liferay.headless.common.spi.service.context.ServiceContextRequestUtil;
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
 import com.liferay.headless.delivery.dto.v1_0.NavigationMenu;
 import com.liferay.headless.delivery.dto.v1_0.NavigationMenuItem;
 import com.liferay.headless.delivery.dto.v1_0.util.CreatorUtil;
 import com.liferay.headless.delivery.resource.v1_0.NavigationMenuResource;
+import com.liferay.portal.kernel.json.JSONException;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutFriendlyURL;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutFriendlyURLLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -33,6 +29,9 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
+import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
+import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.JaxRsLinkUtil;
@@ -43,19 +42,16 @@ import com.liferay.site.navigation.model.SiteNavigationMenu;
 import com.liferay.site.navigation.model.SiteNavigationMenuItem;
 import com.liferay.site.navigation.service.SiteNavigationMenuItemService;
 import com.liferay.site.navigation.service.SiteNavigationMenuService;
+import com.liferay.site.navigation.util.comparator.SiteNavigationMenuItemOrderComparator;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -89,12 +85,29 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 		Long siteId, Pagination pagination) {
 
 		return Page.of(
-			Collections.singletonMap(
+			HashMapBuilder.put(
 				"create",
 				addAction(
 					SiteNavigationActionKeys.ADD_SITE_NAVIGATION_MENU,
 					"postSiteNavigationMenu",
-					SiteNavigationConstants.RESOURCE_NAME, siteId)),
+					SiteNavigationConstants.RESOURCE_NAME, siteId)
+			).put(
+				"createBatch",
+				addAction(
+					SiteNavigationActionKeys.ADD_SITE_NAVIGATION_MENU,
+					"postSiteNavigationMenuBatch",
+					SiteNavigationConstants.RESOURCE_NAME, siteId)
+			).put(
+				"deleteBatch",
+				addAction(
+					ActionKeys.DELETE, "deleteNavigationMenuBatch",
+					SiteNavigationConstants.RESOURCE_NAME, null)
+			).put(
+				"updateBatch",
+				addAction(
+					ActionKeys.UPDATE, "putNavigationMenuBatch",
+					SiteNavigationConstants.RESOURCE_NAME, null)
+			).build(),
 			transform(
 				_siteNavigationMenuService.getSiteNavigationMenus(
 					siteId, pagination.getStartPosition(),
@@ -113,8 +126,9 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 			_siteNavigationMenuService.addSiteNavigationMenu(
 				siteId, navigationMenu.getName(),
 				SiteNavigationConstants.TYPE_DEFAULT, true,
-				ServiceContextRequestUtil.createServiceContext(
-					siteId, contextHttpServletRequest, null));
+				ServiceContextBuilder.create(
+					siteId, contextHttpServletRequest, null
+				).build());
 
 		_createNavigationMenuItems(
 			navigationMenu.getNavigationMenuItems(), 0, siteId,
@@ -137,10 +151,9 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 			siteNavigationMenu.getGroupId(),
 			siteNavigationMenu.getSiteNavigationMenuId());
 
-		ServiceContext serviceContext =
-			ServiceContextRequestUtil.createServiceContext(
-				siteNavigationMenu.getGroupId(), contextHttpServletRequest,
-				null);
+		ServiceContext serviceContext = ServiceContextBuilder.create(
+			siteNavigationMenu.getGroupId(), contextHttpServletRequest, null
+		).build();
 
 		NavigationMenu.NavigationType navigationType =
 			navigationMenu.getNavigationType();
@@ -186,8 +199,9 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 			_siteNavigationMenuItemService.addSiteNavigationMenuItem(
 				siteId, siteNavigationMenuId, parentNavigationMenuId,
 				_getType(navigationMenuItem), unicodeProperties,
-				ServiceContextRequestUtil.createServiceContext(
-					siteId, contextHttpServletRequest, null));
+				ServiceContextBuilder.create(
+					siteId, contextHttpServletRequest, null
+				).build());
 
 		_createNavigationMenuItems(
 			navigationMenuItem.getNavigationMenuItems(),
@@ -247,28 +261,44 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 			return new HashMap<>();
 		}
 
-		Set<Map.Entry<String, String>> properties =
-			unicodeProperties.entrySet();
+		Map<Locale, String> properties = new HashMap<>();
 
-		Stream<Map.Entry<String, String>> propertiesStream =
-			properties.stream();
+		for (Map.Entry<String, String> entry : unicodeProperties.entrySet()) {
+			if (!_isNameProperty(entry)) {
+				continue;
+			}
 
-		return propertiesStream.filter(
-			this::_isNameProperty
-		).collect(
-			Collectors.toMap(this::_getLocaleFromProperty, Map.Entry::getValue)
-		);
+			properties.put(_getLocaleFromProperty(entry), entry.getValue());
+		}
+
+		return properties;
 	}
 
-	private String _getName(UnicodeProperties unicodeProperties) {
-		String preferredLanguageId =
-			contextAcceptLanguage.getPreferredLanguageId();
+	private String _getName(
+			String type, UnicodeProperties unicodeProperties,
+			boolean useCustomName)
+		throws JSONException {
+
 		String defaultLanguageId = LocaleUtil.toLanguageId(
 			LocaleUtil.getDefault());
 
-		return unicodeProperties.getProperty(
-			"name_" + preferredLanguageId,
-			unicodeProperties.getProperty("name_" + defaultLanguageId));
+		if (useCustomName) {
+			JSONObject customNameJSONObject = _jsonFactory.createJSONObject(
+				unicodeProperties.getProperty("localizedNames"));
+
+			return customNameJSONObject.getString(defaultLanguageId);
+		}
+
+		if (StringUtil.equals(type, "url")) {
+			String preferredLanguageId =
+				contextAcceptLanguage.getPreferredLanguageId();
+
+			return unicodeProperties.getProperty(
+				"name_" + preferredLanguageId,
+				unicodeProperties.getProperty("name_" + defaultLanguageId));
+		}
+
+		return unicodeProperties.getProperty("title");
 	}
 
 	private Map<Long, List<SiteNavigationMenuItem>>
@@ -413,17 +443,18 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 	private NavigationMenu _toNavigationMenu(
 		SiteNavigationMenu siteNavigationMenu) {
 
-		List<SiteNavigationMenuItem> siteNavigationMenuItems =
-			_siteNavigationMenuItemService.getSiteNavigationMenuItems(
-				siteNavigationMenu.getSiteNavigationMenuId());
-
 		Map<Long, List<SiteNavigationMenuItem>> siteNavigationMenuItemsMap =
-			_getSiteNavigationMenuItemsMap(siteNavigationMenuItems);
+			_getSiteNavigationMenuItemsMap(
+				_siteNavigationMenuItemService.getSiteNavigationMenuItems(
+					siteNavigationMenu.getSiteNavigationMenuId(),
+					new SiteNavigationMenuItemOrderComparator()));
 
 		return new NavigationMenu() {
 			{
 				creator = CreatorUtil.toCreator(
-					_portal, Optional.of(contextUriInfo),
+					new DefaultDTOConverterContext(
+						null, null, null, contextUriInfo, null),
+					_portal,
 					_userLocalService.fetchUser(
 						siteNavigationMenu.getUserId()));
 				dateCreated = siteNavigationMenu.getCreateDate();
@@ -478,7 +509,9 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 		return new NavigationMenuItem() {
 			{
 				creator = CreatorUtil.toCreator(
-					_portal, Optional.of(contextUriInfo),
+					new DefaultDTOConverterContext(
+						null, null, null, contextUriInfo, null),
+					_portal,
 					_userLocalService.fetchUser(
 						siteNavigationMenuItem.getUserId()));
 				dateCreated = siteNavigationMenuItem.getCreateDate();
@@ -494,12 +527,33 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 				type = _toType(siteNavigationMenuItem.getType());
 				url = unicodeProperties.getProperty("url");
 
+				useCustomName = Boolean.valueOf(
+					unicodeProperties.getProperty("useCustomName"));
+
 				setAvailableLanguages(
 					() -> {
 						Set<Locale> locales = localizedMap.keySet();
 
 						return LocaleUtil.toW3cLanguageIds(
 							locales.toArray(new Locale[localizedMap.size()]));
+					});
+				setContentURL(
+					() -> {
+						if (Objects.equals(type, FileEntry.class.getName())) {
+							type = DLFileEntry.class.getName();
+						}
+
+						DTOConverter<?, ?> dtoConverter =
+							_dtoConverterRegistry.getDTOConverter(type);
+
+						if (dtoConverter == null) {
+							return null;
+						}
+
+						return dtoConverter.getJaxRsLink(
+							GetterUtil.getLong(
+								unicodeProperties.getProperty("classPK")),
+							contextUriInfo);
 					});
 				setLink(
 					() -> {
@@ -537,7 +591,8 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 					});
 				setName(
 					() -> {
-						String name = _getName(unicodeProperties);
+						String name = _getName(
+							type, unicodeProperties, useCustomName);
 
 						if ((name == null) && (layout != null)) {
 							return layout.getName(
@@ -582,15 +637,19 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 							"getSiteSitePage", contextUriInfo,
 							arguments.toArray(new Object[0]));
 					});
-				setUseCustomName(
+				setType(
 					() -> {
-						if (layout == null) {
-							return null;
+						DTOConverter<?, ?> dtoConverter =
+							_dtoConverterRegistry.getDTOConverter(type);
+
+						if (dtoConverter == null) {
+							return type;
 						}
 
-						return Boolean.valueOf(
-							unicodeProperties.getProperty(
-								"useCustomName", "false"));
+						String contentType = dtoConverter.getContentType();
+
+						return Character.toLowerCase(contentType.charAt(0)) +
+							contentType.substring(1);
 					});
 			}
 		};
@@ -619,40 +678,43 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 
 		if (navigationMenuItems != null) {
 			for (NavigationMenuItem navigationMenuItem : navigationMenuItems) {
-				Stream<SiteNavigationMenuItem> stream =
-					siteNavigationMenuItems.stream();
-
 				Long navigationMenuItemId = navigationMenuItem.getId();
 
-				Optional<SiteNavigationMenuItem>
-					siteNavigationMenuItemOptional = stream.filter(
-						siteNavigationMenuItem -> Objects.equals(
-							siteNavigationMenuItem.
-								getSiteNavigationMenuItemId(),
-							navigationMenuItemId)
-					).findFirst();
+				SiteNavigationMenuItem siteNavigationMenuItem = null;
 
-				if (siteNavigationMenuItemOptional.isPresent()) {
-					SiteNavigationMenuItem existingSiteNavigationMenuItem =
-						siteNavigationMenuItemOptional.get();
+				for (SiteNavigationMenuItem curSiteNavigationMenuItem :
+						siteNavigationMenuItems) {
 
-					SiteNavigationMenuItem siteNavigationMenuItem =
+					if (Objects.equals(
+							navigationMenuItemId,
+							curSiteNavigationMenuItem.
+								getSiteNavigationMenuItemId())) {
+
+						siteNavigationMenuItem = curSiteNavigationMenuItem;
+
+						break;
+					}
+				}
+
+				if (siteNavigationMenuItem != null) {
+					SiteNavigationMenuItem updatedSiteNavigationMenuItem =
 						_siteNavigationMenuItemService.
 							updateSiteNavigationMenuItem(
 								navigationMenuItemId,
 								_getUnicodeProperties(
 									false, navigationMenuItem, siteId,
-									existingSiteNavigationMenuItem),
-								ServiceContextRequestUtil.createServiceContext(
-									siteId, contextHttpServletRequest, null));
+									siteNavigationMenuItem),
+								ServiceContextBuilder.create(
+									siteId, contextHttpServletRequest, null
+								).build());
 
 					_updateNavigationMenuItems(
 						navigationMenuItem.getNavigationMenuItems(),
-						siteNavigationMenuItem.getSiteNavigationMenuItemId(),
+						updatedSiteNavigationMenuItem.
+							getSiteNavigationMenuItemId(),
 						siteId, siteNavigationMenuId);
 
-					siteNavigationMenuItems.remove(
-						existingSiteNavigationMenuItem);
+					siteNavigationMenuItems.remove(siteNavigationMenuItem);
 				}
 				else {
 					_createNavigationMenuItem(
@@ -669,6 +731,12 @@ public class NavigationMenuResourceImpl extends BaseNavigationMenuResourceImpl {
 				siteNavigationMenuItem.getSiteNavigationMenuItemId());
 		}
 	}
+
+	@Reference
+	private DTOConverterRegistry _dtoConverterRegistry;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private LayoutFriendlyURLLocalService _layoutFriendlyURLLocalService;

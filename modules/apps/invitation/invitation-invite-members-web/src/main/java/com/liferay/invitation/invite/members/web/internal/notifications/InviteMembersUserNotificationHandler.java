@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.invitation.invite.members.web.internal.notifications;
@@ -17,10 +8,9 @@ package com.liferay.invitation.invite.members.web.internal.notifications;
 import com.liferay.invitation.invite.members.constants.InviteMembersPortletKeys;
 import com.liferay.invitation.invite.members.model.MemberRequest;
 import com.liferay.invitation.invite.members.service.MemberRequestLocalService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -31,6 +21,7 @@ import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.notifications.BaseUserNotificationHandler;
 import com.liferay.portal.kernel.notifications.UserNotificationHandler;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
@@ -51,7 +42,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jonathan Lee
  */
 @Component(
-	immediate = true,
 	property = "javax.portlet.name=" + InviteMembersPortletKeys.INVITE_MEMBERS,
 	service = UserNotificationHandler.class
 )
@@ -69,7 +59,7 @@ public class InviteMembersUserNotificationHandler
 			ServiceContext serviceContext)
 		throws Exception {
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
 			userNotificationEvent.getPayload());
 
 		long memberRequestId = jsonObject.getLong("classPK");
@@ -83,28 +73,8 @@ public class InviteMembersUserNotificationHandler
 			return StringPool.BLANK;
 		}
 
-		Group group = null;
-
-		if (memberRequest != null) {
-			group = _groupLocalService.fetchGroup(memberRequest.getGroupId());
-		}
-
-		if ((group == null) || (memberRequest == null)) {
-			_userNotificationEventLocalService.deleteUserNotificationEvent(
-				userNotificationEvent.getUserNotificationEventId());
-
-			return null;
-		}
-
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			serviceContext.getLocale(),
-			InviteMembersUserNotificationHandler.class);
-
-		String title = ResourceBundleUtil.getString(
-			resourceBundle, "x-invited-you-to-join-x",
-			_getUserNameLink(memberRequest.getUserId(), serviceContext),
-			_getSiteDescriptiveName(
-				memberRequest.getGroupId(), serviceContext));
+		String title = _getTitle(
+			memberRequest, userNotificationEvent, serviceContext);
 
 		LiferayPortletResponse liferayPortletResponse =
 			serviceContext.getLiferayPortletResponse();
@@ -161,28 +131,27 @@ public class InviteMembersUserNotificationHandler
 		return StringPool.BLANK;
 	}
 
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
-	}
+	@Override
+	protected String getTitle(
+			UserNotificationEvent userNotificationEvent,
+			ServiceContext serviceContext)
+		throws Exception {
 
-	@Reference(unbind = "-")
-	protected void setMemberRequestLocalService(
-		MemberRequestLocalService memberRequestLocalService) {
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
+			userNotificationEvent.getPayload());
 
-		_memberRequestLocalService = memberRequestLocalService;
-	}
+		long memberRequestId = jsonObject.getLong("classPK");
 
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
+		MemberRequest memberRequest =
+			_memberRequestLocalService.fetchMemberRequest(memberRequestId);
 
-	@Reference(unbind = "-")
-	protected void setUserNotificationEventLocalService(
-		UserNotificationEventLocalService userNotificationEventLocalService) {
+		if (memberRequest.getStatus() !=
+				MembershipRequestConstants.STATUS_PENDING) {
 
-		_userNotificationEventLocalService = userNotificationEventLocalService;
+			return StringPool.BLANK;
+		}
+
+		return _getTitle(memberRequest, userNotificationEvent, serviceContext);
 	}
 
 	private String _getSiteDescriptiveName(
@@ -197,13 +166,10 @@ public class InviteMembersUserNotificationHandler
 
 		if (group.hasPublicLayouts()) {
 			sb.append(" href=\"");
-
-			String groupFriendlyURL = _portal.getGroupFriendlyURL(
-				group.getPublicLayoutSet(), serviceContext.getThemeDisplay(),
-				false, false);
-
-			sb.append(groupFriendlyURL);
-
+			sb.append(
+				_portal.getGroupFriendlyURL(
+					group.getPublicLayoutSet(),
+					serviceContext.getThemeDisplay(), false, false));
 			sb.append("\">");
 		}
 		else {
@@ -216,6 +182,36 @@ public class InviteMembersUserNotificationHandler
 		sb.append("</a>");
 
 		return sb.toString();
+	}
+
+	private String _getTitle(
+			MemberRequest memberRequest,
+			UserNotificationEvent userNotificationEvent,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		Group group = null;
+
+		if (memberRequest != null) {
+			group = _groupLocalService.fetchGroup(memberRequest.getGroupId());
+		}
+
+		if ((group == null) || (memberRequest == null)) {
+			_userNotificationEventLocalService.deleteUserNotificationEvent(
+				userNotificationEvent.getUserNotificationEventId());
+
+			return null;
+		}
+
+		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
+			serviceContext.getLocale(),
+			InviteMembersUserNotificationHandler.class);
+
+		return ResourceBundleUtil.getString(
+			resourceBundle, "x-invited-you-to-join-x",
+			_getUserNameLink(memberRequest.getUserId(), serviceContext),
+			_getSiteDescriptiveName(
+				memberRequest.getGroupId(), serviceContext));
 	}
 
 	private String _getUserNameLink(
@@ -239,7 +235,7 @@ public class InviteMembersUserNotificationHandler
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return StringPool.BLANK;
@@ -249,13 +245,22 @@ public class InviteMembersUserNotificationHandler
 	private static final Log _log = LogFactoryUtil.getLog(
 		InviteMembersUserNotificationHandler.class);
 
+	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
 	private MemberRequestLocalService _memberRequestLocalService;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference
 	private UserLocalService _userLocalService;
+
+	@Reference
 	private UserNotificationEventLocalService
 		_userNotificationEventLocalService;
 

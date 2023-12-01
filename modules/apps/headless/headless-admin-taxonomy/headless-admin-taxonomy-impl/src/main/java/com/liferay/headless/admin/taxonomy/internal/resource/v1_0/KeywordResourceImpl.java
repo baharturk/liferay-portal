@@ -1,25 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.taxonomy.internal.resource.v1_0;
 
 import com.liferay.asset.kernel.model.AssetTag;
-import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.asset.kernel.service.AssetTagService;
 import com.liferay.headless.admin.taxonomy.dto.v1_0.Keyword;
-import com.liferay.headless.admin.taxonomy.internal.dto.v1_0.converter.KeywordDTOConverter;
 import com.liferay.headless.admin.taxonomy.internal.odata.entity.v1_0.KeywordEntityModel;
 import com.liferay.headless.admin.taxonomy.resource.v1_0.KeywordResource;
 import com.liferay.petra.string.StringPool;
@@ -34,18 +23,17 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.vulcan.aggregation.Aggregation;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.SearchUtil;
 import com.liferay.portlet.asset.model.impl.AssetTagImpl;
 import com.liferay.portlet.asset.service.permission.AssetTagsPermission;
@@ -53,6 +41,7 @@ import com.liferay.portlet.asset.service.permission.AssetTagsPermission;
 import java.sql.Timestamp;
 
 import java.util.Date;
+import java.util.Map;
 
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -67,8 +56,7 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/keyword.properties",
 	scope = ServiceScope.PROTOTYPE, service = KeywordResource.class
 )
-public class KeywordResourceImpl
-	extends BaseKeywordResourceImpl implements EntityModelResource {
+public class KeywordResourceImpl extends BaseKeywordResourceImpl {
 
 	@Override
 	public void deleteKeyword(Long keywordId) throws Exception {
@@ -77,12 +65,38 @@ public class KeywordResourceImpl
 
 	@Override
 	public Page<Keyword> getAssetLibraryKeywordsPage(
-			Long assetLibraryId, String search, Filter filter,
-			Pagination pagination, Sort[] sorts)
+			Long assetLibraryId, String search, Aggregation aggregation,
+			Filter filter, Pagination pagination, Sort[] sorts)
 		throws Exception {
 
-		return getSiteKeywordsPage(
-			assetLibraryId, search, filter, pagination, sorts);
+		return _getKeywordsPage(
+			HashMapBuilder.put(
+				"create",
+				addAction(
+					ActionKeys.MANAGE_TAG, "postAssetLibraryKeyword",
+					AssetTagsPermission.RESOURCE_NAME, assetLibraryId)
+			).put(
+				"createBatch",
+				addAction(
+					ActionKeys.MANAGE_TAG, "postAssetLibraryKeywordBatch",
+					AssetTagsPermission.RESOURCE_NAME, assetLibraryId)
+			).put(
+				"deleteBatch",
+				addAction(
+					ActionKeys.DELETE, "deleteKeywordBatch",
+					AssetTagsPermission.RESOURCE_NAME, null)
+			).put(
+				"get",
+				addAction(
+					ActionKeys.MANAGE_TAG, "getAssetLibraryKeywordsPage",
+					AssetTagsPermission.RESOURCE_NAME, assetLibraryId)
+			).put(
+				"updateBatch",
+				addAction(
+					ActionKeys.UPDATE, "putKeywordBatch",
+					AssetTagsPermission.RESOURCE_NAME, null)
+			).build(),
+			assetLibraryId, search, aggregation, filter, pagination, sorts);
 	}
 
 	@Override
@@ -131,36 +145,38 @@ public class KeywordResourceImpl
 
 	@Override
 	public Page<Keyword> getSiteKeywordsPage(
-			Long siteId, String search, Filter filter, Pagination pagination,
-			Sort[] sorts)
+			Long siteId, String search, Aggregation aggregation, Filter filter,
+			Pagination pagination, Sort[] sorts)
 		throws Exception {
 
-		return SearchUtil.search(
+		return _getKeywordsPage(
 			HashMapBuilder.put(
 				"create",
 				addAction(
 					ActionKeys.MANAGE_TAG, "postSiteKeyword",
 					AssetTagsPermission.RESOURCE_NAME, siteId)
 			).put(
+				"createBatch",
+				addAction(
+					ActionKeys.MANAGE_TAG, "postSiteKeywordBatch",
+					AssetTagsPermission.RESOURCE_NAME, siteId)
+			).put(
+				"deleteBatch",
+				addAction(
+					ActionKeys.DELETE, "deleteKeywordBatch",
+					AssetTagsPermission.RESOURCE_NAME, null)
+			).put(
 				"get",
 				addAction(
 					ActionKeys.MANAGE_TAG, "getSiteKeywordsPage",
 					AssetTagsPermission.RESOURCE_NAME, siteId)
+			).put(
+				"updateBatch",
+				addAction(
+					ActionKeys.UPDATE, "putKeywordBatch",
+					AssetTagsPermission.RESOURCE_NAME, null)
 			).build(),
-			booleanQuery -> {
-			},
-			filter, AssetTag.class.getName(), search, pagination,
-			queryConfig -> queryConfig.setSelectedFieldNames(
-				Field.ENTRY_CLASS_PK),
-			searchContext -> {
-				searchContext.setAttribute(Field.NAME, search);
-				searchContext.setCompanyId(contextCompany.getCompanyId());
-				searchContext.setGroupIds(new long[] {siteId});
-			},
-			sorts,
-			document -> _toKeyword(
-				_assetTagService.getTag(
-					GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK)))));
+			siteId, search, aggregation, filter, pagination, sorts);
 	}
 
 	@Override
@@ -215,6 +231,31 @@ public class KeywordResourceImpl
 	@Override
 	protected String getPermissionCheckerResourceName(Object id) {
 		return AssetTagsPermission.RESOURCE_NAME;
+	}
+
+	private Page<Keyword> _getKeywordsPage(
+			Map<String, Map<String, String>> actions, Long groupId,
+			String search, Aggregation aggregation, Filter filter,
+			Pagination pagination, Sort[] sorts)
+		throws Exception {
+
+		return SearchUtil.search(
+			actions,
+			booleanQuery -> {
+			},
+			filter, AssetTag.class.getName(), search, pagination,
+			queryConfig -> queryConfig.setSelectedFieldNames(
+				Field.ENTRY_CLASS_PK),
+			searchContext -> {
+				searchContext.addVulcanAggregation(aggregation);
+				searchContext.setAttribute(Field.NAME, search);
+				searchContext.setCompanyId(contextCompany.getCompanyId());
+				searchContext.setGroupIds(new long[] {groupId});
+			},
+			sorts,
+			document -> _toKeyword(
+				_assetTagService.getTag(
+					GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK)))));
 	}
 
 	private ProjectionList _getProjectionList() {
@@ -281,46 +322,10 @@ public class KeywordResourceImpl
 		return new Date(timestamp.getTime());
 	}
 
-	private Keyword _toKeyword(AssetTag assetTag) {
+	private Keyword _toKeyword(AssetTag assetTag) throws Exception {
 		return _keywordDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
-				contextAcceptLanguage.isAcceptAllLanguages(),
-				HashMapBuilder.put(
-					"delete",
-					addAction(
-						ActionKeys.MANAGE_TAG, assetTag.getTagId(),
-						"deleteKeyword", assetTag.getUserId(),
-						AssetTagsPermission.RESOURCE_NAME,
-						assetTag.getGroupId())
-				).put(
-					"get",
-					addAction(
-						ActionKeys.MANAGE_TAG, assetTag.getTagId(),
-						"getKeyword", assetTag.getUserId(),
-						AssetTagsPermission.RESOURCE_NAME,
-						assetTag.getGroupId())
-				).put(
-					"replace",
-					addAction(
-						ActionKeys.MANAGE_TAG, assetTag.getTagId(),
-						"putKeyword", assetTag.getUserId(),
-						AssetTagsPermission.RESOURCE_NAME,
-						assetTag.getGroupId())
-				).put(
-					"subscribe",
-					addAction(
-						ActionKeys.SUBSCRIBE, assetTag.getTagId(),
-						"putKeywordSubscribe", assetTag.getUserId(),
-						AssetTagsPermission.RESOURCE_NAME,
-						assetTag.getGroupId())
-				).put(
-					"unsubscribe",
-					addAction(
-						ActionKeys.SUBSCRIBE, assetTag.getTagId(),
-						"putKeywordUnsubscribe", assetTag.getUserId(),
-						AssetTagsPermission.RESOURCE_NAME,
-						assetTag.getGroupId())
-				).build(),
+				contextAcceptLanguage.isAcceptAllLanguages(), null,
 				_dtoConverterRegistry, assetTag.getTagId(),
 				contextAcceptLanguage.getPreferredLocale(), contextUriInfo,
 				contextUser),
@@ -328,9 +333,6 @@ public class KeywordResourceImpl
 	}
 
 	private static final EntityModel _entityModel = new KeywordEntityModel();
-
-	@Reference
-	private AssetEntryLocalService _assetEntryLocalService;
 
 	@Reference
 	private AssetTagLocalService _assetTagLocalService;
@@ -341,13 +343,9 @@ public class KeywordResourceImpl
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;
 
-	@Reference
-	private KeywordDTOConverter _keywordDTOConverter;
-
-	@Reference
-	private Portal _portal;
-
-	@Reference
-	private UserLocalService _userLocalService;
+	@Reference(
+		target = "(component.name=com.liferay.headless.admin.taxonomy.internal.dto.v1_0.converter.KeywordDTOConverter)"
+	)
+	private DTOConverter<AssetTag, Keyword> _keywordDTOConverter;
 
 }

@@ -1,36 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.web.internal.portlet;
 
 import com.liferay.change.tracking.constants.CTPortletKeys;
-import com.liferay.change.tracking.model.CTPreferences;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTCollectionService;
 import com.liferay.change.tracking.service.CTEntryLocalService;
 import com.liferay.change.tracking.service.CTPreferencesLocalService;
+import com.liferay.change.tracking.service.CTRemoteLocalService;
+import com.liferay.change.tracking.spi.display.CTDisplayRendererRegistry;
+import com.liferay.change.tracking.web.internal.configuration.helper.CTSettingsConfigurationHelper;
 import com.liferay.change.tracking.web.internal.constants.CTWebKeys;
-import com.liferay.change.tracking.web.internal.display.CTDisplayRendererRegistry;
 import com.liferay.change.tracking.web.internal.display.context.PublicationsDisplayContext;
+import com.liferay.change.tracking.web.internal.helper.PublicationHelper;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
-import com.liferay.portal.kernel.service.permission.PortletPermission;
+import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
@@ -67,7 +59,8 @@ import org.osgi.service.component.annotations.Reference;
 		"javax.portlet.init-param.view-template=/publications/view_publications.jsp",
 		"javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
 		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"javax.portlet.security-role-ref=administrator",
+		"javax.portlet.version=3.0"
 	},
 	service = Portlet.class
 )
@@ -87,11 +80,10 @@ public class PublicationsPortlet extends MVCPortlet {
 
 		PublicationsDisplayContext publicationsDisplayContext =
 			new PublicationsDisplayContext(
-				_ctCollectionLocalService, _ctCollectionService,
-				_ctDisplayRendererRegistry, _ctEntryLocalService,
-				_ctPreferencesLocalService,
+				_ctCollectionLocalService, _ctDisplayRendererRegistry,
+				_ctPreferencesLocalService, _ctRemoteLocalService,
 				_portal.getHttpServletRequest(renderRequest), _language,
-				renderRequest, renderResponse);
+				_publicationHelper, renderRequest, renderResponse);
 
 		renderRequest.setAttribute(
 			CTWebKeys.PUBLICATIONS_DISPLAY_CONTEXT, publicationsDisplayContext);
@@ -103,14 +95,9 @@ public class PublicationsPortlet extends MVCPortlet {
 	protected void checkPermissions(PortletRequest portletRequest)
 		throws Exception {
 
-		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
+		if (!_ctSettingsConfigurationHelper.isEnabled(
+				_portal.getCompanyId(portletRequest))) {
 
-		CTPreferences ctPreferences =
-			_ctPreferencesLocalService.fetchCTPreferences(
-				permissionChecker.getCompanyId(), 0);
-
-		if (ctPreferences == null) {
 			String actionName = ParamUtil.getString(
 				portletRequest, ActionRequest.ACTION_NAME);
 			String mvcRenderCommandName = ParamUtil.getString(
@@ -126,8 +113,9 @@ public class PublicationsPortlet extends MVCPortlet {
 			}
 		}
 
-		_portletPermission.check(
-			permissionChecker, CTPortletKeys.PUBLICATIONS, ActionKeys.VIEW);
+		PortletPermissionUtil.check(
+			PermissionThreadLocal.getPermissionChecker(),
+			CTPortletKeys.PUBLICATIONS, ActionKeys.VIEW);
 	}
 
 	@Reference
@@ -146,13 +134,19 @@ public class PublicationsPortlet extends MVCPortlet {
 	private CTPreferencesLocalService _ctPreferencesLocalService;
 
 	@Reference
+	private CTRemoteLocalService _ctRemoteLocalService;
+
+	@Reference
+	private CTSettingsConfigurationHelper _ctSettingsConfigurationHelper;
+
+	@Reference
 	private Language _language;
 
 	@Reference
 	private Portal _portal;
 
 	@Reference
-	private PortletPermission _portletPermission;
+	private PublicationHelper _publicationHelper;
 
 	@Reference(
 		target = "(&(release.bundle.symbolic.name=com.liferay.change.tracking.web)(&(release.schema.version>=1.0.2)(!(release.schema.version>=2.0.0))))"

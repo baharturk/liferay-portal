@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import {useResource} from '@clayui/data-provider';
-import ClayDropDown from '@clayui/drop-down';
 import ClayForm, {
 	ClayCheckbox,
 	ClayInput,
@@ -25,7 +15,7 @@ import ClayIcon from '@clayui/icon';
 import ClayModal from '@clayui/modal';
 import ClayMultiSelect from '@clayui/multi-select';
 import ClaySticker from '@clayui/sticker';
-import {fetch, objectToFormData} from 'frontend-js-web';
+import {fetch, getOpener, objectToFormData, sub} from 'frontend-js-web';
 import React, {useCallback, useRef, useState} from 'react';
 
 function filterDuplicateItems(items) {
@@ -37,47 +27,6 @@ function filterDuplicateItems(items) {
 			) === index
 	);
 }
-
-const SharingAutocomplete = ({onItemClick = () => {}, sourceItems}) => {
-	return (
-		<ClayDropDown.ItemList>
-			{sourceItems.map((item) => (
-				<ClayDropDown.Item
-					key={item.id}
-					onClick={() => onItemClick(item)}
-				>
-					<div className="autofit-row autofit-row-center">
-						<div className="autofit-col mr-3">
-							<ClaySticker
-								className={`sticker-user-icon ${
-									item.portraitURL ? '' : item.userId % 10
-								}`}
-								size="lg"
-							>
-								{item.portraitURL ? (
-									<div className="sticker-overlay">
-										<img
-											className="sticker-img"
-											src={item.portraitURL}
-										/>
-									</div>
-								) : (
-									<ClayIcon symbol="user" />
-								)}
-							</ClaySticker>
-						</div>
-
-						<div className="autofit-col">
-							<strong>{item.fullName}</strong>
-
-							<span>{item.emailAddress}</span>
-						</div>
-					</div>
-				</ClayDropDown.Item>
-			))}
-		</ClayDropDown.ItemList>
-	);
-};
 
 const Sharing = ({
 	autocompleteUserURL,
@@ -99,13 +48,13 @@ const Sharing = ({
 	const emailValidationInProgressRef = useRef(false);
 
 	const closeDialog = () => {
-		Liferay.Util.getOpener().Liferay.fire('closeModal', {
+		getOpener().Liferay.fire('closeModal', {
 			id: 'sharingDialog',
 		});
 	};
 
 	const showNotification = (message, error) => {
-		const parentOpenToast = Liferay.Util.getOpener().Liferay.Util.openToast;
+		const parentOpenToast = getOpener().Liferay.Util.openToast;
 
 		const openToastParams = {message};
 
@@ -183,7 +132,7 @@ const Sharing = ({
 
 					if (!isEmailAddressValid(item.value)) {
 						return Promise.resolve({
-							error: Liferay.Util.sub(
+							error: sub(
 								Liferay.Language.get(
 									'x-is-not-a-valid-email-address'
 								),
@@ -202,7 +151,7 @@ const Sharing = ({
 						.then((response) => response.json())
 						.then(({userExists}) => ({
 							error: !userExists
-								? Liferay.Util.sub(
+								? sub(
 										Liferay.Language.get(
 											'user-x-does-not-exist'
 										),
@@ -221,7 +170,7 @@ const Sharing = ({
 					erroredResults.map(({error}) => error)
 				);
 
-				if (erroredResults.length === 0) {
+				if (!erroredResults.length) {
 					setMultiSelectValue('');
 				}
 
@@ -251,6 +200,7 @@ const Sharing = ({
 		}
 	}, []);
 
+	const [networkStatus, setNetworkStatus] = useState(4);
 	const {resource} = useResource({
 		fetchOptions: {
 			credentials: 'include',
@@ -261,6 +211,7 @@ const Sharing = ({
 			attempts: 0,
 		},
 		link: autocompleteUserURL,
+		onNetworkStatusChange: setNetworkStatus,
 		variables: {
 			[`${portletNamespace}query`]: multiSelectValue,
 		},
@@ -284,9 +235,8 @@ const Sharing = ({
 
 							<ClayMultiSelect
 								inputName={`${portletNamespace}userEmailAddress`}
-								inputValue={multiSelectValue}
 								items={selectedItems}
-								menuRenderer={SharingAutocomplete}
+								loadingState={networkStatus}
 								onChange={handleChange}
 								onItemsChange={handleItemsChange}
 								placeholder={Liferay.Language.get(
@@ -308,7 +258,47 @@ const Sharing = ({
 										  })
 										: []
 								}
-							/>
+								value={multiSelectValue}
+							>
+								{(item) => (
+									<ClayMultiSelect.Item
+										key={item.id}
+										textValue={item.fullName}
+									>
+										<div className="autofit-row autofit-row-center">
+											<div className="autofit-col mr-3">
+												<ClaySticker
+													className={`sticker-user-icon ${
+														item.portraitURL
+															? ''
+															: item.userId % 10
+													}`}
+													size="lg"
+												>
+													{item.portraitURL ? (
+														<div className="sticker-overlay">
+															<img
+																className="sticker-img"
+																src={
+																	item.portraitURL
+																}
+															/>
+														</div>
+													) : (
+														<ClayIcon symbol="user" />
+													)}
+												</ClaySticker>
+											</div>
+
+											<div className="autofit-col">
+												<strong>{item.fullName}</strong>
+
+												<span>{item.emailAddress}</span>
+											</div>
+										</div>
+									</ClayMultiSelect.Item>
+								)}
+							</ClayMultiSelect>
 
 							<ClayForm.FeedbackGroup>
 								<ClayForm.Text>
@@ -318,7 +308,7 @@ const Sharing = ({
 								</ClayForm.Text>
 							</ClayForm.FeedbackGroup>
 
-							{emailAddressErrorMessages.length > 0 && (
+							{!!emailAddressErrorMessages.length && (
 								<ClayForm.FeedbackGroup>
 									{emailAddressErrorMessages.map(
 										(emailAddressErrorMessage) => (
@@ -355,10 +345,10 @@ const Sharing = ({
 				<ClayForm.Group>
 					<ClayRadioGroup
 						name={`${portletNamespace}sharingEntryPermissionDisplayActionId`}
-						onSelectedValueChange={(permission) =>
+						onChange={(permission) =>
 							setSharingPermission(permission)
 						}
-						selectedValue={sharingPermission}
+						value={sharingPermission}
 					>
 						{sharingEntryPermissionDisplays.map((display) => (
 							<ClayRadio
