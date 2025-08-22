@@ -874,19 +874,25 @@ test(
 		tag: '@LPS-135880',
 	},
 
-	async ({page, pageEditorPage, productMenuPage, segmentsPage, teamsPage}) => {
+	async ({
+		page,
+		pageEditorPage,
+		productMenuPage,
+		segmentsPage,
+		teamsPage,
+	}) => {
 		const segmentName = 'Validate Site Segment';
-		const teamName = "Test Team";		
+		const teamName = 'Test Team';
 
 		await test.step('Given a team is created', async () => {
 			await teamsPage.goTo(site.friendlyUrlPath);
-			
+
 			await teamsPage.newTeamButton.click();
 
 			await teamsPage.nameInput.fill(teamName);
 
 			await teamsPage.saveButton.click();
-	
+
 			await waitForAlert(page);
 
 			await expect(teamsPage.teamsTable.cell(teamName)).toBeVisible();
@@ -965,15 +971,19 @@ test(
 		tag: '@LPS-135880',
 	},
 
-	async ({apiHelpers, page, pageEditorPage, productMenuPage, segmentsPage}) => {
-		const segmentName = 'Validate User Group Segment';	
+	async ({
+		apiHelpers,
+		page,
+		pageEditorPage,
+		productMenuPage,
+		segmentsPage,
+	}) => {
+		const segmentName = 'Validate User Group Segment';
 
 		await test.step('Given a User Group is created', async () => {
-			await apiHelpers.headlessAdminUser.postUserGroup(
-				{
-					name: 'User Group Name',
-				}
-			);
+			await apiHelpers.headlessAdminUser.postUserGroup({
+				name: 'User Group Name',
+			});
 		});
 
 		await test.step('When a segment designer adds a segment with User Group criterion', async () => {
@@ -1019,7 +1029,7 @@ test(
 		});
 
 		await test.step('Then can assert that the segment field types are displayed', async () => {
-   			const fieldTypes = ['segments', 'user', 'user-organization'];
+			const fieldTypes = ['segments', 'user', 'user-organization'];
 			const sessionLocator = page.locator('div#context');
 
 			for (const typeName of fieldTypes) {
@@ -1030,7 +1040,6 @@ test(
 		});
 	}
 );
-
 
 test(
 	'Can understand the actions of keyboard from screen reader.',
